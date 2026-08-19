@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import {
   Expert,
   ExperienceLevel,
@@ -23,6 +23,8 @@ type ExpertWithTopics = Expert & { topics: { topic: { slug: string } }[] };
 
 @Injectable()
 export class ExpertsService {
+  private readonly logger = new Logger(ExpertsService.name);
+
   constructor(
     private prisma: PrismaService,
     private audit: AuditService,
@@ -155,15 +157,40 @@ export class ExpertsService {
       );
 
     const from = expert.workStatus;
-    await this.prisma.expert.update({
-      where: { id: expert.id },
-      data: { workStatus: dto.workStatus },
-    });
+    const becomesAvailable = dto.workStatus === WorkStatus.ACCEPTING;
 
-    if (dto.workStatus === WorkStatus.ACCEPTING) {
+    // Порядок: сначала Redis (presence), затем БД. Redis упал — ничего не
+    // изменилось (чистый 500). БД упала после Redis — компенсирующая обратная
+    // presence-операция (best-effort) и проброс исходной ошибки.
+    if (becomesAvailable) {
       await this.presence.setAvailable(expert.id);
     } else {
       await this.presence.setUnavailable(expert.id);
+    }
+
+    try {
+      await this.prisma.expert.update({
+        where: { id: expert.id },
+        data: { workStatus: dto.workStatus },
+      });
+    } catch (e) {
+      try {
+        if (becomesAvailable) {
+          await this.presence.setUnavailable(expert.id);
+        } else if (from === WorkStatus.ACCEPTING) {
+          await this.presence.setAvailable(expert.id);
+        }
+      } catch (compensationError) {
+        this.logger.error(
+          `Failed to compensate presence for expert ${expert.id}: ${
+            compensationError instanceof Error
+              ? compensationError.message
+              : String(compensationError)
+          }`,
+          compensationError instanceof Error ? compensationError.stack : '',
+        );
+      }
+      throw e;
     }
 
     await this.audit.log({

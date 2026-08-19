@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import {
   DocumentStatus,
   Expert,
@@ -19,6 +19,8 @@ const REQUIRED_DOCUMENTS_COUNT = 4;
 
 @Injectable()
 export class VerificationService {
+  private readonly logger = new Logger(VerificationService.name);
+
   constructor(
     private prisma: PrismaService,
     private audit: AuditService,
@@ -172,7 +174,21 @@ export class VerificationService {
       },
     });
 
-    await this.presence.setUnavailable(expertId);
+    // Блокировка в БД ДОЛЖНА сохраниться даже при сбое Redis: presence чистим
+    // best-effort, без проброса ошибки (расхождение с presence временное).
+    // Матчинг E3 обязан перепроверять isBlocked/verificationStatus из БД перед
+    // диспатчем заявки — presence это подсказка доступности, не источник
+    // истины о допуске.
+    try {
+      await this.presence.setUnavailable(expertId);
+    } catch (e) {
+      this.logger.error(
+        `Failed to remove blocked expert ${expertId} from presence: ${
+          e instanceof Error ? e.message : String(e)
+        }`,
+        e instanceof Error ? e.stack : '',
+      );
+    }
 
     await this.audit.log({
       actorType: 'admin',
