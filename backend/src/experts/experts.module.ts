@@ -10,6 +10,6 @@ import { DocumentsService } from './documents.service';
   imports: [AuditModule],
   controllers: [ExpertsController, DocumentsController],
   providers: [ExpertsService, ExpertGuard, DocumentsService],
-  exports: [ExpertsService],
+  exports: [ExpertsService, ExpertGuard],
 })
 export class ExpertsModule {}

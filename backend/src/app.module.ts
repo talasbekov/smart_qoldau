@@ -12,6 +12,7 @@ import { StorageModule } from './storage/storage.module';
 import { PresenceModule } from './presence/presence.module';
 import { ExpertsModule } from './experts/experts.module';
 import { VerificationModule } from './verification/verification.module';
+import { ScheduleModule } from './schedule/schedule.module';
 
 @Module({
   imports: [
@@ -28,6 +29,7 @@ import { VerificationModule } from './verification/verification.module';
     PresenceModule,
     ExpertsModule,
     VerificationModule,
+    ScheduleModule,
   ],
   controllers: [AppController],
   providers: [AppService],
