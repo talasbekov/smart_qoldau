@@ -9,6 +9,7 @@ import { AuthModule } from './auth/auth.module';
 import { AuditModule } from './audit/audit.module';
 import { RedisModule } from './redis/redis.module';
 import { StorageModule } from './storage/storage.module';
+import { ExpertsModule } from './experts/experts.module';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { StorageModule } from './storage/storage.module';
     TopicsModule,
     AuthModule,
     StorageModule,
+    ExpertsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

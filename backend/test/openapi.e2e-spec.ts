@@ -24,6 +24,8 @@ describe('OpenAPI (e2e)', () => {
       '/v1/auth/refresh',
       '/v1/auth/guest',
       '/v1/auth/guest/convert',
+      '/v1/experts',
+      '/v1/experts/me',
     ])
       expect(paths).toContain(p);
   });
