@@ -1,0 +1,12 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment: { POSTGRES_USER: sq, POSTGRES_PASSWORD: sq, POSTGRES_DB: smartqoldau }
+    ports: ["5432:5432"]
+  postgres_test:
+    image: postgres:16-alpine
+    environment: { POSTGRES_USER: sq, POSTGRES_PASSWORD: sq, POSTGRES_DB: smartqoldau_test }
+    ports: ["5433:5432"]
+  redis:
+    image: redis:7-alpine
+    ports: ["6379:6379"]

@@ -1,0 +1,9 @@
+node_modules/
+dist/
+.env
+*.log
+brain/.obsidian/workspace.json
+.obsidian/workspace.json
+.obsidian/workspace-mobile.json
+.trash/
+.superpowers/

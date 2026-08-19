@@ -1,0 +1,10 @@
+import Joi from 'joi';
+
+export const envValidationSchema = Joi.object({
+  DATABASE_URL: Joi.string().uri().required(),
+  REDIS_URL: Joi.string().uri().required(),
+  JWT_SECRET: Joi.string().min(32).required(),
+  JWT_ACCESS_TTL: Joi.string().default('15m'),
+  JWT_REFRESH_TTL_DAYS: Joi.number().default(30),
+  SMS_PROVIDER: Joi.string().valid('dev', 'mobizon').default('dev'),
+});
