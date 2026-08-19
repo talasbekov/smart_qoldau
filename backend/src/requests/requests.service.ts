@@ -1,6 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { randomInt } from 'node:crypto';
 import { CandidateResponse, Request, RequestStatus } from '@prisma/client';
+import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import { ClockService } from '../common/clock/clock.service';
@@ -132,12 +133,17 @@ export class RequestsService {
   // response для этой заявки) и экспертов с активным PENDING-оффером ЭТОЙ
   // же заявки (защита от повторной отправки). false — кандидатов нет
   // (заявка остаётся как есть — вызывающий код решает, что делать).
+  // Гонки (sweep задачи 5 vs decline, decline vs accept) закрыты двумя
+  // рубежами: гейт по статусу SEARCHING + перечитка статуса непосредственно
+  // перед create + частичный уникальный индекс
+  // request_candidates_one_pending_uq (один PENDING на заявку) —
+  // проигравший параллельный create ловит P2002.
   async offerToNext(requestId: string): Promise<boolean> {
     const request = await this.prisma.request.findUnique({
       where: { id: requestId },
       include: { topic: true },
     });
-    if (!request) return false;
+    if (!request || request.status !== RequestStatus.SEARCHING) return false;
 
     const existingCandidates = await this.prisma.requestCandidate.findMany({
       where: { requestId },
@@ -171,15 +177,34 @@ export class RequestsService {
         (request.isEmergency ? EMERGENCY_DEADLINE_MS : NORMAL_DEADLINE_MS),
     );
 
-    const offer = await this.prisma.requestCandidate.create({
-      data: {
-        requestId,
-        expertId: nextExpertId,
-        offeredAt: now,
-        deadlineAt,
-        response: CandidateResponse.PENDING,
-      },
+    // Перечитка статуса НЕПОСРЕДСТВЕННО перед create: заявка могла быть
+    // сматчена/отменена, пока считались кандидаты (гонка decline vs accept —
+    // без этого возник бы фантомный PENDING на закрытой заявке).
+    const stillSearching = await this.prisma.request.findFirst({
+      where: { id: requestId, status: RequestStatus.SEARCHING },
+      select: { id: true },
     });
+    if (!stillSearching) return false;
+
+    let offer: { id: string };
+    try {
+      offer = await this.prisma.requestCandidate.create({
+        data: {
+          requestId,
+          expertId: nextExpertId,
+          offeredAt: now,
+          deadlineAt,
+          response: CandidateResponse.PENDING,
+        },
+      });
+    } catch (e) {
+      // P2002 по request_candidates_one_pending_uq: параллельный offerToNext
+      // (sweep vs decline) уже создал PENDING-оффер этой заявки. Ротация
+      // выполнена другим потоком — это успех, не ошибка.
+      if (e instanceof PrismaClientKnownRequestError && e.code === 'P2002')
+        return true;
+      throw e;
+    }
 
     await this.offerTimer.schedule(offer.id, deadlineAt);
 

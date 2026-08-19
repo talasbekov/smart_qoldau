@@ -203,6 +203,12 @@ model Request {
   @@map("requests")
 }
 
+// Частичный уникальный индекс request_candidates_one_pending_uq (raw SQL в
+// миграции 20260819151329_one_pending_offer_per_request):
+//   UNIQUE(request_id) WHERE response = 'PENDING'.
+// Не более одного PENDING-оффера на заявку — гейт от гонок ротации
+// offerToNext (sweep vs decline, decline vs accept). Prisma частичные
+// индексы не выражает — не удалять при prisma migrate dev.
 model RequestCandidate {
   id          String            @id @default(uuid())
   requestId   String            @map("request_id")

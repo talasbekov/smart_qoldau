@@ -5,6 +5,7 @@ import { AppModule } from '../src/app.module';
 import { PrismaService } from '../src/prisma/prisma.service';
 import { RedisService } from '../src/redis/redis.service';
 import { SMS_PROVIDER_TOKEN, SmsProvider } from '../src/auth/sms/sms.provider';
+import { RequestsService } from '../src/requests/requests.service';
 import { createApp } from './utils/create-app';
 import { acceptingExpert as acceptingExpertHelper } from './utils/expert-helpers';
 import { clientUser as clientUserHelper } from './utils/client-helpers';
@@ -18,7 +19,18 @@ const PH_C2 = '+77078000092';
 const PH_C3 = '+77078000093';
 const PH_C4 = '+77078000094';
 const PH_C5 = '+77078000095';
-const ALL_PHONES = [PH_E1, PH_E2, PH_E3, PH_C1, PH_C2, PH_C3, PH_C4, PH_C5];
+const PH_C6 = '+77078000096';
+const ALL_PHONES = [
+  PH_E1,
+  PH_E2,
+  PH_E3,
+  PH_C1,
+  PH_C2,
+  PH_C3,
+  PH_C4,
+  PH_C5,
+  PH_C6,
+];
 
 let lastCode = '';
 
@@ -311,5 +323,67 @@ describe('Заявки: создание, ротация офферов, ато�
       })
       .expect(409);
     expect(bad.body.error.code).toBe('EXPERT_UNAVAILABLE');
+  });
+
+  it('гонка offerToNext: два параллельных вызова → ровно один PENDING-оффер заявки', async () => {
+    await acceptingExpert(PH_E1);
+    await acceptingExpert(PH_E2);
+    await acceptingExpert(PH_E3);
+    const cli = await clientUser(PH_C6);
+
+    const r = await post(cli.accessToken, '/v1/requests')
+      .send({ topicSlug: 'anxiety-stress', format: 'video' })
+      .expect(201);
+
+    // Симулируем decline без встроенной ротации: первый оффер помечаем
+    // DECLINED напрямую в БД, чтобы столкнуть два offerToNext в гонке.
+    await prisma.requestCandidate.updateMany({
+      where: { requestId: r.body.id, response: 'PENDING' },
+      data: { response: 'DECLINED', respondedAt: new Date() },
+    });
+
+    const requestsService = app.get(RequestsService);
+    const [res1, res2] = await Promise.all([
+      requestsService.offerToNext(r.body.id),
+      requestsService.offerToNext(r.body.id),
+    ]);
+    // Оба вызова успешны (проигравший P2002 тоже true: ротацию сделал
+    // другой поток), но PENDING-оффер в БД ровно один.
+    expect(res1).toBe(true);
+    expect(res2).toBe(true);
+
+    const pending = await prisma.requestCandidate.findMany({
+      where: { requestId: r.body.id, response: 'PENDING' },
+    });
+    expect(pending.length).toBe(1);
+  });
+
+  it('offerToNext на MATCHED-заявке → false и ноль новых кандидатов', async () => {
+    const exp = await acceptingExpert(PH_E1);
+    const cli = await clientUser(PH_C6);
+
+    const r = await post(cli.accessToken, '/v1/requests')
+      .send({ topicSlug: 'anxiety-stress', format: 'video' })
+      .expect(201);
+    const offers = await get(exp.accessToken, '/v1/experts/me/offers').expect(
+      200,
+    );
+    await post(
+      exp.accessToken,
+      `/v1/offers/${offers.body[0].offerId}/accept`,
+    ).expect(200);
+
+    const before = await prisma.requestCandidate.count({
+      where: { requestId: r.body.id },
+    });
+
+    const requestsService = app.get(RequestsService);
+    const result = await requestsService.offerToNext(r.body.id);
+    expect(result).toBe(false);
+
+    const after = await prisma.requestCandidate.count({
+      where: { requestId: r.body.id },
+    });
+    expect(after).toBe(before);
   });
 });
