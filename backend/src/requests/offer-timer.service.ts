@@ -12,6 +12,7 @@ import { OfferTimerRegistry } from './offer-timer.registry';
 // разрешается forwardRef() на обеих сторонах инъекции.
 import { RequestsService } from './requests.service';
 import { EscalationService } from './escalation.service';
+import { EventsService } from '../ws/events.service';
 
 export const OFFERS_DEADLINES_KEY = 'offers:deadlines';
 export const REQUESTS_RESCAN_KEY = 'requests:rescan';
@@ -35,6 +36,7 @@ export class OfferTimerService implements OfferTimerRegistry {
     private clock: ClockService,
     private prisma: PrismaService,
     private audit: AuditService,
+    private events: EventsService,
     @Inject(forwardRef(() => RequestsService))
     private requestsService: RequestsService,
     @Inject(forwardRef(() => EscalationService))
@@ -158,6 +160,8 @@ export class OfferTimerService implements OfferTimerRegistry {
       payload: { expertId: offer.expertId },
     });
 
+    this.events.emitToExpert(offer.expertId, 'offer.revoked', { offerId });
+
     // Пост-TIMEOUT шаги изолированы: оффер уже TIMEOUT + ZREM, и если
     // ротация упадёт, заявка осталась бы без PENDING-оффера и без рескана.
     // При ошибке — принудительный ZADD в requests:rescan, чтобы следующий
@@ -245,6 +249,11 @@ export class OfferTimerService implements OfferTimerRegistry {
         entity: 'request',
         entityId: req.id,
         transition: 'request.no_experts',
+      });
+
+      this.events.emitToUser(req.clientUserId, 'request.updated', {
+        id: req.id,
+        status: RequestStatus.NO_EXPERTS,
       });
     }
   }

@@ -14,6 +14,7 @@ import {
 import { AuditService } from '../src/audit/audit.service';
 import { RequestsService } from '../src/requests/requests.service';
 import { EscalationService } from '../src/requests/escalation.service';
+import { EventsService } from '../src/ws/events.service';
 import { createApp } from './utils/create-app';
 import { acceptingExpert as acceptingExpertHelper } from './utils/expert-helpers';
 import { clientUser as clientUserHelper } from './utils/client-helpers';
@@ -426,11 +427,13 @@ describe('Дедлайны офферов на Redis ZSET + sweep, виртуа�
     const audit = app.get(AuditService);
     const requestsService = app.get(RequestsService);
     const escalationService = app.get(EscalationService);
+    const eventsService = app.get(EventsService);
     const restartedTimer = new OfferTimerService(
       redis,
       clock,
       prismaSvc,
       audit,
+      eventsService,
       requestsService,
       escalationService,
     );

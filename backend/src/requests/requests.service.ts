@@ -7,6 +7,7 @@ import { AuditService } from '../audit/audit.service';
 import { ClockService } from '../common/clock/clock.service';
 import { MatchingService } from '../matching/matching.service';
 import { ExpertsService } from '../experts/experts.service';
+import { EventsService } from '../ws/events.service';
 import { apiError } from '../common/filters/app-exception.filter';
 import { CreateRequestDto } from './dto/create-request.dto';
 import { RequestDto } from './dto/request.dto';
@@ -29,6 +30,7 @@ export class RequestsService {
     private clock: ClockService,
     private matching: MatchingService,
     private experts: ExpertsService,
+    private events: EventsService,
     @Inject(forwardRef(() => OFFER_TIMER_REGISTRY))
     private offerTimer: OfferTimerRegistry,
   ) {}
@@ -225,6 +227,17 @@ export class RequestsService {
       payload: { expertId: nextExpertId },
     });
 
+    // PII-инвариант как в GET /v1/experts/me/offers (OfferDto) — никакого
+    // clientUserId в payload.
+    this.events.emitToExpert(nextExpertId, 'offer.new', {
+      offerId: offer.id,
+      topicSlug: request.topic.slug,
+      format: request.format,
+      isEmergency: request.isEmergency,
+      clientCode: request.clientCode,
+      deadlineAt,
+    });
+
     return true;
   }
 
@@ -299,9 +312,18 @@ export class RequestsService {
 
     await this.revokeOtherPendingOffers(offer!.requestId, offerId);
 
-    return this.prisma.request.findUniqueOrThrow({
+    const matched = await this.prisma.request.findUniqueOrThrow({
       where: { id: offer!.requestId },
     });
+
+    const matchedExpert = await this.experts.findPublicById(expertId);
+    this.events.emitToUser(matched.clientUserId, 'request.updated', {
+      id: matched.id,
+      status: matched.status,
+      matchedExpert,
+    });
+
+    return matched;
   }
 
   async acceptOffer(
@@ -382,6 +404,12 @@ export class RequestsService {
     const fresh = await this.prisma.request.findUniqueOrThrow({
       where: { id: requestId },
     });
+
+    this.events.emitToUser(clientUserId, 'request.updated', {
+      id: fresh.id,
+      status: fresh.status,
+    });
+
     return this.toRequestDto(fresh);
   }
 
@@ -440,6 +468,9 @@ export class RequestsService {
         entity: 'offer',
         entityId: p.id,
         transition: 'offer.revoked',
+      });
+      this.events.emitToExpert(p.expertId, 'offer.revoked', {
+        offerId: p.id,
       });
     }
   }

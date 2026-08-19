@@ -5,6 +5,7 @@ import { ClockModule } from '../common/clock/clock.module';
 import { MatchingModule } from '../matching/matching.module';
 import { ExpertsModule } from '../experts/experts.module';
 import { RedisModule } from '../redis/redis.module';
+import { WsModule } from '../ws/ws.module';
 import { RequestsService } from './requests.service';
 import { RequestsController } from './requests.controller';
 import { OffersController } from './offers.controller';
@@ -20,6 +21,7 @@ import { EscalationService } from './escalation.service';
     MatchingModule,
     ExpertsModule,
     RedisModule,
+    WsModule,
   ],
   controllers: [RequestsController, OffersController],
   providers: [

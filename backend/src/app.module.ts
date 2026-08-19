@@ -19,6 +19,7 @@ import { ScheduleModule } from './schedule/schedule.module';
 import { ClockModule } from './common/clock/clock.module';
 import { MatchingModule } from './matching/matching.module';
 import { RequestsModule } from './requests/requests.module';
+import { WsModule } from './ws/ws.module';
 
 @Module({
   imports: [
@@ -39,6 +40,7 @@ import { RequestsModule } from './requests/requests.module';
     VerificationModule,
     ScheduleModule,
     MatchingModule,
+    WsModule,
     RequestsModule,
   ],
   controllers: [AppController],

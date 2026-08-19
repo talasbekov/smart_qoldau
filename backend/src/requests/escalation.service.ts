@@ -8,6 +8,9 @@ import {
   OFFER_TIMER_REGISTRY,
   OfferTimerRegistry,
 } from './offer-timer.registry';
+import { EventsService } from '../ws/events.service';
+
+const HOTLINES = ['150', '103', '112'];
 
 // Дедлайн broadcast-оффера — как у обычного экстренного оффера (Р-16 §11.5).
 const EMERGENCY_DEADLINE_MS = 20_000;
@@ -37,6 +40,7 @@ export class EscalationService {
     private audit: AuditService,
     private clock: ClockService,
     private matching: MatchingService,
+    private events: EventsService,
     @Inject(forwardRef(() => OFFER_TIMER_REGISTRY))
     private offerTimer: OfferTimerRegistry,
   ) {}
@@ -65,7 +69,12 @@ export class EscalationService {
     });
 
     for (const req of candidates) {
-      await this.broadcastOne(req.id, req.topic.slug, req.format);
+      await this.broadcastOne(
+        req.id,
+        req.topic.slug,
+        req.format,
+        req.clientCode,
+      );
     }
   }
 
@@ -77,6 +86,7 @@ export class EscalationService {
     requestId: string,
     topicSlug: string,
     format: string,
+    clientCode: number,
   ): Promise<void> {
     const existing = await this.prisma.requestCandidate.findMany({
       where: { requestId },
@@ -115,7 +125,7 @@ export class EscalationService {
     });
 
     const deadlineAt = new Date(now.getTime() + EMERGENCY_DEADLINE_MS);
-    const createdOfferIds: string[] = [];
+    const createdOffers: { id: string; expertId: string }[] = [];
     for (const expertId of candidateIds) {
       try {
         const offer = await this.prisma.requestCandidate.create({
@@ -127,7 +137,7 @@ export class EscalationService {
             response: CandidateResponse.PENDING,
           },
         });
-        createdOfferIds.push(offer.id);
+        createdOffers.push({ id: offer.id, expertId });
       } catch {
         // P2002 по request_candidates_pending_per_expert_uq — этому эксперту
         // уже есть PENDING этой заявки (гонка с offerToNext/другим
@@ -136,8 +146,17 @@ export class EscalationService {
       }
     }
 
-    for (const offerId of createdOfferIds) {
-      await this.offerTimer.schedule(offerId, deadlineAt);
+    const createdOfferIds = createdOffers.map((o) => o.id);
+    for (const offer of createdOffers) {
+      await this.offerTimer.schedule(offer.id, deadlineAt);
+      this.events.emitToExpert(offer.expertId, 'offer.new', {
+        offerId: offer.id,
+        topicSlug,
+        format,
+        isEmergency: true,
+        clientCode,
+        deadlineAt,
+      });
     }
 
     await this.audit.log({
@@ -159,15 +178,19 @@ export class EscalationService {
         isEmergency: true,
         createdAt: { lte: cutoff },
       },
-      select: { id: true },
+      select: { id: true, clientUserId: true },
     });
 
     for (const req of stale) {
-      await this.callbackOne(req.id, now);
+      await this.callbackOne(req.id, req.clientUserId, now);
     }
   }
 
-  private async callbackOne(requestId: string, now: Date): Promise<void> {
+  private async callbackOne(
+    requestId: string,
+    clientUserId: string,
+    now: Date,
+  ): Promise<void> {
     const closeResult = await this.prisma.request.updateMany({
       where: { id: requestId, status: RequestStatus.SEARCHING },
       data: { status: RequestStatus.CALLBACK_REQUESTED, closedAt: now },
@@ -191,6 +214,9 @@ export class EscalationService {
           entityId: p.id,
           transition: 'offer.revoked',
         });
+        this.events.emitToExpert(p.expertId, 'offer.revoked', {
+          offerId: p.id,
+        });
       }
     }
 
@@ -199,6 +225,12 @@ export class EscalationService {
       entity: 'request',
       entityId: requestId,
       transition: 'request.callback_requested',
+    });
+
+    this.events.emitToUser(clientUserId, 'request.updated', {
+      id: requestId,
+      status: RequestStatus.CALLBACK_REQUESTED,
+      hotlines: HOTLINES,
     });
   }
 }
