@@ -1,20 +1,13 @@
 import { Test } from '@nestjs/testing';
-import {
-  Controller,
-  Get,
-  HttpException,
-  INestApplication,
-  UseGuards,
-  ValidationPipe,
-} from '@nestjs/common';
+import { Controller, Get, INestApplication, UseGuards } from '@nestjs/common';
 import request from 'supertest';
 import { AppModule } from '../src/app.module';
-import { AppExceptionFilter } from '../src/common/filters/app-exception.filter';
 import { PrismaService } from '../src/prisma/prisma.service';
 import { SMS_PROVIDER_TOKEN, SmsProvider } from '../src/auth/sms/sms.provider';
 import { JwtAuthGuard } from '../src/auth/jwt-auth.guard';
 import { CurrentUser } from '../src/auth/current-user.decorator';
 import { JwtPayload } from '../src/auth/jwt.strategy';
+import { createApp } from './utils/create-app';
 
 // Бриф-константа +77011234567 занята спеком задачи 5
 // (auth-request-code.e2e-spec.ts) — используем отдельный номер спека.
@@ -58,31 +51,14 @@ describe('Auth verify-code / refresh (e2e)', () => {
   }
 
   beforeAll(async () => {
-    const m = await Test.createTestingModule({
-      imports: [AppModule],
-      controllers: [GuardCheckController],
-    })
-      .overrideProvider(SMS_PROVIDER_TOKEN)
-      .useClass(FakeSmsProvider)
-      .compile();
-    app = m.createNestApplication();
-    app.setGlobalPrefix('v1');
-    app.useGlobalFilters(new AppExceptionFilter());
-    app.useGlobalPipes(
-      new ValidationPipe({
-        whitelist: true,
-        exceptionFactory: (e) =>
-          new HttpException(
-            {
-              code: 'VALIDATION_FAILED',
-              message: 'Validation failed',
-              details: e,
-            },
-            400,
-          ),
-      }),
+    app = await createApp(
+      Test.createTestingModule({
+        imports: [AppModule],
+        controllers: [GuardCheckController],
+      })
+        .overrideProvider(SMS_PROVIDER_TOKEN)
+        .useClass(FakeSmsProvider),
     );
-    await app.init();
     prisma = app.get(PrismaService);
   });
 

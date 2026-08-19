@@ -1,13 +1,9 @@
 import { Test } from '@nestjs/testing';
-import {
-  HttpException,
-  INestApplication,
-  ValidationPipe,
-} from '@nestjs/common';
+import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import { AppModule } from '../src/app.module';
-import { AppExceptionFilter } from '../src/common/filters/app-exception.filter';
 import { PrismaService } from '../src/prisma/prisma.service';
+import { createApp } from './utils/create-app';
 
 const PHONE = '+77011234567';
 const PHONE_RATE_LIMIT = '+77012345678';
@@ -17,27 +13,7 @@ describe('Auth request-code (e2e)', () => {
   let prisma: PrismaService;
 
   beforeAll(async () => {
-    const m = await Test.createTestingModule({
-      imports: [AppModule],
-    }).compile();
-    app = m.createNestApplication();
-    app.setGlobalPrefix('v1');
-    app.useGlobalFilters(new AppExceptionFilter());
-    app.useGlobalPipes(
-      new ValidationPipe({
-        whitelist: true,
-        exceptionFactory: (e) =>
-          new HttpException(
-            {
-              code: 'VALIDATION_FAILED',
-              message: 'Validation failed',
-              details: e,
-            },
-            400,
-          ),
-      }),
-    );
-    await app.init();
+    app = await createApp(Test.createTestingModule({ imports: [AppModule] }));
     prisma = app.get(PrismaService);
   });
 

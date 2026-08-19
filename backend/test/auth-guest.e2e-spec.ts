@@ -1,10 +1,10 @@
 import { Test } from '@nestjs/testing';
-import { HttpException, INestApplication, ValidationPipe } from '@nestjs/common';
+import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import { AppModule } from '../src/app.module';
-import { AppExceptionFilter } from '../src/common/filters/app-exception.filter';
 import { PrismaService } from '../src/prisma/prisma.service';
 import { SMS_PROVIDER_TOKEN, SmsProvider } from '../src/auth/sms/sms.provider';
+import { createApp } from './utils/create-app';
 
 // Отдельные номера/deviceId спека задачи 7, не пересекаются с другими спеками.
 const PHONE2 = '+77022222222';
@@ -43,35 +43,18 @@ describe('Auth guest / convert (e2e)', () => {
     await prisma.auditLog.deleteMany({
       where: { entityId: { in: userIds } },
     });
-    await prisma.smsCode.deleteMany({ where: { phone: { in: [PHONE2, PHONE3] } } });
+    await prisma.smsCode.deleteMany({
+      where: { phone: { in: [PHONE2, PHONE3] } },
+    });
     await prisma.user.deleteMany({ where: { id: { in: userIds } } });
   }
 
   beforeAll(async () => {
-    const m = await Test.createTestingModule({
-      imports: [AppModule],
-    })
-      .overrideProvider(SMS_PROVIDER_TOKEN)
-      .useClass(FakeSmsProvider)
-      .compile();
-    app = m.createNestApplication();
-    app.setGlobalPrefix('v1');
-    app.useGlobalFilters(new AppExceptionFilter());
-    app.useGlobalPipes(
-      new ValidationPipe({
-        whitelist: true,
-        exceptionFactory: (e) =>
-          new HttpException(
-            {
-              code: 'VALIDATION_FAILED',
-              message: 'Validation failed',
-              details: e,
-            },
-            400,
-          ),
-      }),
+    app = await createApp(
+      Test.createTestingModule({ imports: [AppModule] })
+        .overrideProvider(SMS_PROVIDER_TOKEN)
+        .useClass(FakeSmsProvider),
     );
-    await app.init();
     prisma = app.get(PrismaService);
   });
 

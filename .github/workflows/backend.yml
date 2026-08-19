@@ -1,0 +1,26 @@
+name: backend
+on: { pull_request: { paths: ['backend/**'] }, push: { branches: [main] } }
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env: { POSTGRES_USER: sq, POSTGRES_PASSWORD: sq, POSTGRES_DB: smartqoldau_test }
+        ports: ['5433:5432']
+      redis: { image: redis:7-alpine, ports: ['6379:6379'] }
+    env:
+      DATABASE_URL: postgresql://sq:sq@localhost:5433/smartqoldau_test
+      REDIS_URL: redis://localhost:6379
+      JWT_SECRET: ci-secret-0123456789abcdef0123456789abcdef
+      SMS_PROVIDER: dev
+    defaults: { run: { working-directory: backend } }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm, cache-dependency-path: backend/package-lock.json }
+      - run: npm ci
+      - run: npx prisma migrate deploy && npx prisma db seed
+      - run: npm run lint
+      - run: npm test
+      - run: npm run test:e2e

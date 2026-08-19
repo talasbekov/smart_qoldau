@@ -94,7 +94,9 @@ export class AuthController {
       'Пара токенов + гостевой пользователь (идемпотентно по deviceId)',
     type: TokensDto,
   })
-  @ApiBadRequestResponse({ description: 'VALIDATION_FAILED — deviceId не задан' })
+  @ApiBadRequestResponse({
+    description: 'VALIDATION_FAILED — deviceId не задан',
+  })
   async guest(@Body() dto: GuestDto): Promise<TokensDto> {
     const { accessToken, refreshToken, user } = await this.authService.guest(
       dto.deviceId,
@@ -118,7 +120,9 @@ export class AuthController {
   @ApiBadRequestResponse({
     description: 'SMS_CODE_EXPIRED | SMS_CODE_INVALID | VALIDATION_FAILED',
   })
-  @ApiUnauthorizedResponse({ description: 'UNAUTHORIZED — access-токен недействителен' })
+  @ApiUnauthorizedResponse({
+    description: 'UNAUTHORIZED — access-токен недействителен',
+  })
   @ApiForbiddenResponse({
     description: 'FORBIDDEN — вызывающий не является гостем (isGuest=false)',
   })

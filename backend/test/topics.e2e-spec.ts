@@ -2,15 +2,13 @@ import { Test } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import { AppModule } from '../src/app.module';
+import { createApp } from './utils/create-app';
 
 describe('Topics (e2e)', () => {
   let app: INestApplication;
 
   beforeAll(async () => {
-    const m = await Test.createTestingModule({ imports: [AppModule] }).compile();
-    app = m.createNestApplication();
-    app.setGlobalPrefix('v1');
-    await app.init();
+    app = await createApp(Test.createTestingModule({ imports: [AppModule] }));
   });
 
   afterAll(() => app.close());

@@ -7,6 +7,7 @@ import { PrismaModule } from './prisma/prisma.module';
 import { TopicsModule } from './topics/topics.module';
 import { AuthModule } from './auth/auth.module';
 import { AuditModule } from './audit/audit.module';
+import { RedisModule } from './redis/redis.module';
 
 @Module({
   imports: [
@@ -15,6 +16,7 @@ import { AuditModule } from './audit/audit.module';
       validationSchema: envValidationSchema,
     }),
     PrismaModule,
+    RedisModule,
     AuditModule,
     TopicsModule,
     AuthModule,
