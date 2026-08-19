@@ -15,6 +15,8 @@ import { CreateExpertDto } from './dto/create-expert.dto';
 import { UpdateExpertDto } from './dto/update-expert.dto';
 import { WorkStatusDto } from './dto/work-status.dto';
 import { ExpertMeDto } from './dto/expert-me.dto';
+import { ExpertPublicDto } from './dto/expert-public.dto';
+import { ListExpertsDto } from './dto/list-experts.dto';
 
 const PRICE_MIN = 200_000;
 const PRICE_MAX = 1_500_000;
@@ -206,6 +208,49 @@ export class ExpertsService {
     return withTopics!;
   }
 
+  // Публичный список: только VERIFIED и не заблокированные. Фильтры
+  // опциональны (topic/language/format), сортировка по цене опциональна.
+  async listPublic(filters: ListExpertsDto): Promise<ExpertPublicDto[]> {
+    const where: Prisma.ExpertWhereInput = {
+      verificationStatus: VerificationStatus.VERIFIED,
+      isBlocked: false,
+    };
+    if (filters.topic)
+      where.topics = { some: { topic: { slug: filters.topic } } };
+    if (filters.language) where.languages = { has: filters.language };
+    if (filters.format) where.formats = { has: filters.format };
+
+    const orderBy: Prisma.ExpertOrderByWithRelationInput | undefined =
+      filters.sort === 'price_asc'
+        ? { priceTiyn: 'asc' }
+        : filters.sort === 'price_desc'
+          ? { priceTiyn: 'desc' }
+          : undefined;
+
+    const experts = await this.prisma.expert.findMany({
+      where,
+      orderBy,
+      include: { topics: { include: { topic: true } } },
+    });
+    return experts.map((e) => this.toPublicDto(e));
+  }
+
+  // 404 EXPERT_NOT_FOUND для DRAFT/PENDING/blocked/несуществующего —
+  // причина не раскрывается.
+  async findPublicById(id: string): Promise<ExpertPublicDto> {
+    const expert = await this.prisma.expert.findUnique({
+      where: { id },
+      include: { topics: { include: { topic: true } } },
+    });
+    if (
+      !expert ||
+      expert.verificationStatus !== VerificationStatus.VERIFIED ||
+      expert.isBlocked
+    )
+      apiError('EXPERT_NOT_FOUND', 'Эксперт не найден', 404);
+    return this.toPublicDto(expert);
+  }
+
   toMeDto(expert: ExpertWithTopics): ExpertMeDto {
     return {
       id: expert.id,
@@ -221,6 +266,22 @@ export class ExpertsService {
       workStatus: expert.workStatus,
       isBlocked: expert.isBlocked,
       acceptsUrgent: expert.acceptsUrgent,
+    };
+  }
+
+  // Эталон PII-инварианта: сборка ТОЛЬКО явным перечислением полей — без
+  // spread модели, без userId/phone/documents/education/verificationStatus.
+  private toPublicDto(expert: ExpertWithTopics): ExpertPublicDto {
+    return {
+      id: expert.id,
+      displayName: expert.displayName,
+      city: expert.city,
+      experience: expert.experience,
+      priceTiyn: expert.priceTiyn,
+      languages: expert.languages,
+      formats: expert.formats,
+      topicSlugs: expert.topics.map((t) => t.topic.slug),
+      workStatus: expert.workStatus,
     };
   }
 

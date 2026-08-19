@@ -25,6 +25,7 @@ describe('OpenAPI (e2e)', () => {
       '/v1/auth/guest',
       '/v1/auth/guest/convert',
       '/v1/experts',
+      '/v1/experts/{id}',
       '/v1/experts/me',
       '/v1/experts/me/work-status',
       '/v1/experts/me/schedule',
