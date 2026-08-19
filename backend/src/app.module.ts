@@ -1,5 +1,8 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+// Алиас: избегаем коллизии имён с доменным ./schedule/schedule.module
+// (расписание эксперта, БП-05) — это модуль @nestjs/schedule (@Interval/@Cron).
+import { ScheduleModule as NestScheduleModule } from '@nestjs/schedule';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { envValidationSchema } from './config/env.validation';
@@ -23,6 +26,7 @@ import { RequestsModule } from './requests/requests.module';
       isGlobal: true,
       validationSchema: envValidationSchema,
     }),
+    NestScheduleModule.forRoot(),
     ClockModule,
     PrismaModule,
     RedisModule,

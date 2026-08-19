@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, forwardRef } from '@nestjs/common';
 import { randomInt } from 'node:crypto';
 import { CandidateResponse, Request, RequestStatus } from '@prisma/client';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
@@ -29,7 +29,8 @@ export class RequestsService {
     private clock: ClockService,
     private matching: MatchingService,
     private experts: ExpertsService,
-    @Inject(OFFER_TIMER_REGISTRY) private offerTimer: OfferTimerRegistry,
+    @Inject(forwardRef(() => OFFER_TIMER_REGISTRY))
+    private offerTimer: OfferTimerRegistry,
   ) {}
 
   // Создание заявки. Одна активная (SEARCHING) заявка на клиента — проверка
@@ -91,6 +92,10 @@ export class RequestsService {
         isEmergency,
         directedExpertId: dto.expertId ?? null,
         status: RequestStatus.SEARCHING,
+        // Явно из ClockService (а не @default(now()) БД) — иначе возраст
+        // заявки для sweep-логики (120с NO_EXPERTS/рескан, задача 5) не
+        // подчиняется виртуальному времени в тестах.
+        createdAt: now,
       },
     });
 
