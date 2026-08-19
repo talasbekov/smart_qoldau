@@ -6,8 +6,6 @@ import {
   Patch,
   Post,
   UseGuards,
-  createParamDecorator,
-  ExecutionContext,
 } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
@@ -29,13 +27,7 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CurrentUser } from '../auth/current-user.decorator';
 import { JwtPayload } from '../auth/jwt.strategy';
 import { ExpertGuard } from './expert.guard';
-
-const CurrentExpert = createParamDecorator(
-  (_data: unknown, ctx: ExecutionContext): Expert => {
-    const request = ctx.switchToHttp().getRequest();
-    return request.expert as Expert;
-  },
-);
+import { CurrentExpert } from './current-expert.decorator';
 
 @ApiTags('experts')
 @Controller('experts')

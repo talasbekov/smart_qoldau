@@ -3,11 +3,13 @@ import { AuditModule } from '../audit/audit.module';
 import { ExpertsController } from './experts.controller';
 import { ExpertsService } from './experts.service';
 import { ExpertGuard } from './expert.guard';
+import { DocumentsController } from './documents.controller';
+import { DocumentsService } from './documents.service';
 
 @Module({
   imports: [AuditModule],
-  controllers: [ExpertsController],
-  providers: [ExpertsService, ExpertGuard],
+  controllers: [ExpertsController, DocumentsController],
+  providers: [ExpertsService, ExpertGuard, DocumentsService],
   exports: [ExpertsService],
 })
 export class ExpertsModule {}
