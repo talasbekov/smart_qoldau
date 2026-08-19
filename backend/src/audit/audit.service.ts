@@ -3,7 +3,7 @@ import { PrismaService } from '../prisma/prisma.service';
 
 export interface AuditEntry {
   actorType: 'user' | 'expert' | 'admin' | 'system';
-  actorId?: string;
+  actorId?: string | null;
   entity: string;
   entityId: string;
   transition: string;

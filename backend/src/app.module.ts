@@ -10,6 +10,7 @@ import { AuditModule } from './audit/audit.module';
 import { RedisModule } from './redis/redis.module';
 import { StorageModule } from './storage/storage.module';
 import { ExpertsModule } from './experts/experts.module';
+import { VerificationModule } from './verification/verification.module';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { ExpertsModule } from './experts/experts.module';
     AuthModule,
     StorageModule,
     ExpertsModule,
+    VerificationModule,
   ],
   controllers: [AppController],
   providers: [AppService],
