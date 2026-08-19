@@ -40,6 +40,9 @@ describe('Auth guest / convert (e2e)', () => {
     await prisma.refreshToken.deleteMany({
       where: { userId: { in: userIds } },
     });
+    await prisma.auditLog.deleteMany({
+      where: { entityId: { in: userIds } },
+    });
     await prisma.smsCode.deleteMany({ where: { phone: { in: [PHONE2, PHONE3] } } });
     await prisma.user.deleteMany({ where: { id: { in: userIds } } });
   }
@@ -166,5 +169,27 @@ describe('Auth guest / convert (e2e)', () => {
       .post('/v1/auth/guest/convert')
       .send({ phone: PHONE2, code: '1234' })
       .expect(401);
+  });
+
+  it('конверсия логирует события guest_created и guest_converted', async () => {
+    const g = await request(app.getHttpServer())
+      .post('/v1/auth/guest')
+      .send({ deviceId: DEVICE_1 })
+      .expect(200);
+    await request(app.getHttpServer())
+      .post('/v1/auth/request-code')
+      .send({ phone: PHONE2 })
+      .expect(204);
+    await request(app.getHttpServer())
+      .post('/v1/auth/guest/convert')
+      .set('Authorization', `Bearer ${g.body.accessToken}`)
+      .send({ phone: PHONE2, code: lastCode })
+      .expect(200);
+    const audit = await prisma.auditLog.findMany({
+      where: { entityId: g.body.user.id },
+    });
+    expect(audit.map((a) => a.transition)).toEqual(
+      expect.arrayContaining(['user.guest_created', 'user.guest_converted']),
+    );
   });
 });

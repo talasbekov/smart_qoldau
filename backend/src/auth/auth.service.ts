@@ -6,6 +6,7 @@ import * as bcrypt from 'bcrypt';
 import { User } from '@prisma/client';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 import { PrismaService } from '../prisma/prisma.service';
+import { AuditService } from '../audit/audit.service';
 import { apiError } from '../common/filters/app-exception.filter';
 import { SMS_PROVIDER_TOKEN, SmsProvider } from './sms/sms.provider';
 
@@ -18,6 +19,7 @@ export class AuthService {
     private jwt: JwtService,
     private config: ConfigService,
     @Inject(SMS_PROVIDER_TOKEN) private sms: SmsProvider,
+    private audit: AuditService,
   ) {
     this.refreshTtlDays = this.config.get<number>('JWT_REFRESH_TTL_DAYS')!;
   }
@@ -52,11 +54,25 @@ export class AuthService {
   ): Promise<{ accessToken: string; refreshToken: string; user: User }> {
     await this.checkCode(phone, code);
 
+    // Проверяем, существует ли пользователь до upsert
+    const existingUser = await this.prisma.user.findUnique({ where: { phone } });
+
     const user = await this.prisma.user.upsert({
       where: { phone },
       update: {},
       create: { phone },
     });
+
+    // Логируем события только при создании нового пользователя
+    if (!existingUser) {
+      await this.audit.log({
+        actorType: 'user',
+        actorId: user.id,
+        entity: 'user',
+        entityId: user.id,
+        transition: 'user.registered',
+      });
+    }
 
     const tokens = await this.issueTokens(user);
     return { ...tokens, user };
@@ -124,6 +140,15 @@ export class AuthService {
     if (count !== 1 || !existing)
       apiError('UNAUTHORIZED', 'Refresh-токен недействителен', 401);
 
+    // Логируем успешную ротацию refresh-токена
+    await this.audit.log({
+      actorType: 'user',
+      actorId: existing.user.id,
+      entity: 'auth',
+      entityId: existing.user.id,
+      transition: 'auth.refresh_rotated',
+    });
+
     const tokens = await this.issueTokens(existing.user);
     return { ...tokens, user: existing.user };
   }
@@ -134,11 +159,13 @@ export class AuthService {
     let user = await this.prisma.user.findFirst({
       where: { deviceId, isGuest: true },
     });
+    let isNewGuest = false;
     if (!user) {
       try {
         user = await this.prisma.user.create({
           data: { deviceId, isGuest: true },
         });
+        isNewGuest = true;
       } catch (e) {
         // Гонка двух параллельных гостевых входов с одним deviceId: частичный
         // уникальный индекс users_device_id_guest_uq даёт P2002 проигравшему —
@@ -150,6 +177,14 @@ export class AuthService {
         });
         if (!user) throw e;
       }
+    }
+    if (isNewGuest) {
+      await this.audit.log({
+        actorType: 'system',
+        entity: 'user',
+        entityId: user.id,
+        transition: 'user.guest_created',
+      });
     }
     const tokens = await this.issueTokens(user);
     return { ...tokens, user };
@@ -188,6 +223,16 @@ export class AuthService {
         );
       throw e;
     }
+
+    // Логируем конверсию гостя в пользователя с телефоном
+    await this.audit.log({
+      actorType: 'user',
+      actorId: user.id,
+      entity: 'user',
+      entityId: user.id,
+      transition: 'user.guest_converted',
+      payload: { phone },
+    });
 
     // Отзыв всех активных refresh-токенов гостя: старые сессии по этому
     // deviceId больше не должны продолжать работать после конверсии.
