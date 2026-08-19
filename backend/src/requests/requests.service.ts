@@ -165,11 +165,15 @@ export class RequestsService {
         nextExpertId = request.directedExpertId;
       }
     } else {
+      // До broadcast-эскалации (Р-16, задача 6) экстренная заявка ротируется
+      // только среди acceptsUrgent-экспертов; после broadcastAt — полный
+      // круг (расширение круга уже сделано EscalationService.broadcast(),
+      // здесь urgentOnly=false просто не сужает дальнейшую ротацию).
       const ranked = await this.matching.findCandidates({
         topicSlug: request.topic.slug,
         format: request.format,
         excludeExpertIds,
-        urgentOnly: request.isEmergency,
+        urgentOnly: request.isEmergency && !request.broadcastAt,
       });
       nextExpertId = ranked[0];
     }

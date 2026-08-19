@@ -203,12 +203,21 @@ model Request {
   @@map("requests")
 }
 
-// Частичный уникальный индекс request_candidates_one_pending_uq (raw SQL в
-// миграции 20260819151329_one_pending_offer_per_request):
-//   UNIQUE(request_id) WHERE response = 'PENDING'.
-// Не более одного PENDING-оффера на заявку — гейт от гонок ротации
-// offerToNext (sweep vs decline, decline vs accept). Prisma частичные
-// индексы не выражает — не удалять при prisma migrate dev.
+// Частичный уникальный индекс request_candidates_pending_per_expert_uq (raw
+// SQL в миграции 20260819160000_pending_offer_per_expert, заменившей более
+// раннюю request_candidates_one_pending_uq):
+//   UNIQUE(request_id, expert_id) WHERE response = 'PENDING'.
+// Инвариант ослаблен с "один PENDING на заявку" до "один PENDING на пару
+// (заявка, эксперт)" — иначе экстренный broadcast (Р-16, задача 6:
+// EscalationService.broadcast()) не смог бы создать несколько одновременных
+// PENDING-офферов одной заявки. Гейт "не более одного PENDING у ОБЫЧНОЙ
+// (не broadcast) заявки" по-прежнему держится ЛОГИКОЙ offerToNext —
+// перечитка статуса SEARCHING непосредственно перед create + исключение
+// экспертов с уже существующим response этой заявки (см. комментарий у
+// offerToNext() в requests.service.ts). Второй одновременный PENDING одной
+// заявки возможен теперь только через EscalationService.broadcast(), которая
+// создаёт офферы разным экспертам одним проходом. Prisma частичные индексы
+// не выражает — не удалять при prisma migrate dev.
 model RequestCandidate {
   id          String            @id @default(uuid())
   requestId   String            @map("request_id")

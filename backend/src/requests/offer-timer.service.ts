@@ -11,6 +11,7 @@ import { OfferTimerRegistry } from './offer-timer.registry';
 // OfferTimerService.sweep вызывает requestsService.offerToNext) —
 // разрешается forwardRef() на обеих сторонах инъекции.
 import { RequestsService } from './requests.service';
+import { EscalationService } from './escalation.service';
 
 export const OFFERS_DEADLINES_KEY = 'offers:deadlines';
 export const REQUESTS_RESCAN_KEY = 'requests:rescan';
@@ -36,6 +37,8 @@ export class OfferTimerService implements OfferTimerRegistry {
     private audit: AuditService,
     @Inject(forwardRef(() => RequestsService))
     private requestsService: RequestsService,
+    @Inject(forwardRef(() => EscalationService))
+    private escalation: EscalationService,
   ) {}
 
   async schedule(offerId: string, deadlineAt: Date): Promise<void> {
@@ -67,7 +70,10 @@ export class OfferTimerService implements OfferTimerRegistry {
   //   1) истёкшие офферы -> TIMEOUT -> ротация следующему кандидату;
   //   2) отложенный рескан заявок с временно пустым пулом кандидатов;
   //   3) закрытие заявок старше 120с без PENDING-офферов -> NO_EXPERTS
-  //      (кроме emergency — эскалация добавляется задачей 6).
+  //      (кроме emergency — у них своя эскалация, шаг 4, Р-16);
+  //   4) экстренная эскалация Р-16 (EscalationService): SEARCHING emergency
+  //      ≥120с без broadcastAt -> broadcast всем кандидатам; ≥300с ->
+  //      CALLBACK_REQUESTED + горячие линии.
   // Возвращает число обработанных истёкших офферов (шаг 1).
   // Каждый шаг изолирован собственным try/catch: сбой одного (например,
   // транзиентная ошибка Redis в рескане) не блокирует остальные.
@@ -87,6 +93,11 @@ export class OfferTimerService implements OfferTimerRegistry {
       await this.sweepStaleRequests();
     } catch (e) {
       this.logStepError('sweepStaleRequests', e);
+    }
+    try {
+      await this.escalation.escalate();
+    } catch (e) {
+      this.logStepError('escalation', e);
     }
     return processed;
   }

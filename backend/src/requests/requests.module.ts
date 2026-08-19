@@ -10,6 +10,7 @@ import { RequestsController } from './requests.controller';
 import { OffersController } from './offers.controller';
 import { OFFER_TIMER_REGISTRY } from './offer-timer.registry';
 import { OfferTimerService } from './offer-timer.service';
+import { EscalationService } from './escalation.service';
 
 @Module({
   imports: [
@@ -24,8 +25,9 @@ import { OfferTimerService } from './offer-timer.service';
   providers: [
     RequestsService,
     OfferTimerService,
+    EscalationService,
     { provide: OFFER_TIMER_REGISTRY, useExisting: OfferTimerService },
   ],
-  exports: [RequestsService, OfferTimerService],
+  exports: [RequestsService, OfferTimerService, EscalationService],
 })
 export class RequestsModule {}
