@@ -114,9 +114,19 @@ describe('Matching pipeline + scoring (e2e)', () => {
 
   // прямые вставки prisma: создаёт фиктивный Request (клиент - отдельный
   // тестовый user) и вешает на него N кандидатов с заданными исходами.
+  // PENDING-офферы не влияют на score (окно скоринга — только завершённые),
+  // но считаются в tie-break «офферы за сегодня».
+  // opts.offeredAt — момент оффера (по умолчанию сейчас);
+  // opts.responseDelaySec — respondedAt = offeredAt + delay (по умолчанию 0).
   async function seedCandidateHistory(
     expertId: string,
-    outcomes: { accepted?: number; declined?: number; timeout?: number },
+    outcomes: {
+      accepted?: number;
+      declined?: number;
+      timeout?: number;
+      pending?: number;
+    },
+    opts: { offeredAt?: Date; responseDelaySec?: number } = {},
   ) {
     const clientUser = await prisma.user.upsert({
       where: { phone: PH_CLIENT },
@@ -135,26 +145,30 @@ describe('Matching pipeline + scoring (e2e)', () => {
       },
     });
 
+    type SeedResponse = 'ACCEPTED' | 'DECLINED' | 'TIMEOUT' | 'PENDING';
     const rows: {
       requestId: string;
       expertId: string;
       offeredAt: Date;
       deadlineAt: Date;
       respondedAt: Date | null;
-      response: 'ACCEPTED' | 'DECLINED' | 'TIMEOUT';
+      response: SeedResponse;
     }[] = [];
-    const now = new Date();
-    const push = (
-      response: 'ACCEPTED' | 'DECLINED' | 'TIMEOUT',
-      count: number,
-    ) => {
+    const offeredAt = opts.offeredAt ?? new Date();
+    const respondedAt = new Date(
+      offeredAt.getTime() + (opts.responseDelaySec ?? 0) * 1000,
+    );
+    const push = (response: SeedResponse, count: number) => {
       for (let i = 0; i < count; i++) {
         rows.push({
           requestId: req.id,
           expertId,
-          offeredAt: now,
-          deadlineAt: new Date(now.getTime() + 30_000),
-          respondedAt: response === 'TIMEOUT' ? null : now,
+          offeredAt,
+          deadlineAt: new Date(offeredAt.getTime() + 30_000),
+          respondedAt:
+            response === 'ACCEPTED' || response === 'DECLINED'
+              ? respondedAt
+              : null,
           response,
         });
       }
@@ -162,6 +176,7 @@ describe('Matching pipeline + scoring (e2e)', () => {
     push('ACCEPTED', outcomes.accepted ?? 0);
     push('DECLINED', outcomes.declined ?? 0);
     push('TIMEOUT', outcomes.timeout ?? 0);
+    push('PENDING', outcomes.pending ?? 0);
 
     await prisma.requestCandidate.createMany({ data: rows });
   }
@@ -214,6 +229,55 @@ describe('Matching pipeline + scoring (e2e)', () => {
       excludeExpertIds: [good.expertId],
     });
     expect(excl).not.toContain(good.expertId);
+  });
+
+  it('tie-break при равном score: меньше офферов за сегодня — выше; вчерашние офферы не считаются', async () => {
+    const base = { topics: ['anxiety-stress'], formats: ['video'] };
+    // score у всех троих одинаковый: PENDING-офферы не входят в окно
+    // скоринга (только ACCEPTED/DECLINED/TIMEOUT) -> у всех «без истории» 0.5.
+    const fresh = await acceptingExpert(PH1, base); // 0 офферов
+    const busyToday = await acceptingExpert(PH2, base); // 3 оффера сегодня
+    const busyYesterday = await acceptingExpert(PH3, base); // 3 оффера вчера
+
+    await seedCandidateHistory(busyToday.expertId, { pending: 3 });
+    await seedCandidateHistory(
+      busyYesterday.expertId,
+      { pending: 3 },
+      { offeredAt: new Date(Date.now() - 24 * 60 * 60 * 1000) },
+    );
+
+    const ids = await matching.findCandidates({
+      topicSlug: 'anxiety-stress',
+      format: 'video',
+    });
+    // Эксперт с сегодняшними офферами — последний; вчерашние офферы
+    // в tie-break не участвуют (busyYesterday наравне с fresh, выше busyToday).
+    expect(ids.indexOf(fresh.expertId)).toBeLessThan(
+      ids.indexOf(busyToday.expertId),
+    );
+    expect(ids.indexOf(busyYesterday.expertId)).toBeLessThan(
+      ids.indexOf(busyToday.expertId),
+    );
+  });
+
+  it('speed-компонента: при равном acceptRate быстрый эксперт выше медленного', async () => {
+    const base = { topics: ['anxiety-stress'], formats: ['video'] };
+    const fast = await acceptingExpert(PH5, base);
+    const slow = await acceptingExpert(PH6, base);
+    // acceptRate одинаковый (5/10); разница только в скорости ответа:
+    // fast avg 0с -> speed 1; slow avg 40с -> speed = 1 - 40/45 ≈ 0.11.
+    await seedCandidateHistory(fast.expertId, { accepted: 5, declined: 5 });
+    await seedCandidateHistory(
+      slow.expertId,
+      { accepted: 5, declined: 5 },
+      { responseDelaySec: 40 },
+    );
+
+    const ids = await matching.findCandidates({
+      topicSlug: 'anxiety-stress',
+      format: 'video',
+    });
+    expect(ids.indexOf(fast.expertId)).toBeLessThan(ids.indexOf(slow.expertId));
   });
 
   it('urgentOnly: эксперт с acceptsUrgent=false отфильтрован', async () => {
