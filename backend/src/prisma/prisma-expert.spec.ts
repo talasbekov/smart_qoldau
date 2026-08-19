@@ -9,9 +9,14 @@ describe('Prisma Expert schema', () => {
     const user = await s.user.create({ data: { phone: '+77070000001' } });
     const expert = await s.expert.create({
       data: {
-        userId: user.id, displayName: 'Тест Эксперт', city: 'Астана',
-        experience: 'FIVE_TO_TEN', education: 'КазНУ', priceTiyn: 399000,
-        languages: ['ru', 'kz'], formats: ['chat', 'video'],
+        userId: user.id,
+        displayName: 'Тест Эксперт',
+        city: 'Астана',
+        experience: 'FIVE_TO_TEN',
+        education: 'КазНУ',
+        priceTiyn: 399000,
+        languages: ['ru', 'kz'],
+        formats: ['chat', 'video'],
       },
     });
     expect(expert.verificationStatus).toBe('DRAFT');
