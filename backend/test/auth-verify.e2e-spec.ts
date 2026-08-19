@@ -1,7 +1,10 @@
 import { Test } from '@nestjs/testing';
 import {
+  Controller,
+  Get,
   HttpException,
   INestApplication,
+  UseGuards,
   ValidationPipe,
 } from '@nestjs/common';
 import request from 'supertest';
@@ -9,7 +12,12 @@ import { AppModule } from '../src/app.module';
 import { AppExceptionFilter } from '../src/common/filters/app-exception.filter';
 import { PrismaService } from '../src/prisma/prisma.service';
 import { SMS_PROVIDER_TOKEN, SmsProvider } from '../src/auth/sms/sms.provider';
+import { JwtAuthGuard } from '../src/auth/jwt-auth.guard';
+import { CurrentUser } from '../src/auth/current-user.decorator';
+import { JwtPayload } from '../src/auth/jwt.strategy';
 
+// Бриф-константа +77011234567 занята спеком задачи 5
+// (auth-request-code.e2e-spec.ts) — используем отдельный номер спека.
 const PHONE = '+77019876543';
 
 let lastCode = '';
@@ -21,13 +29,38 @@ class FakeSmsProvider implements SmsProvider {
   }
 }
 
+// Тестовый контроллер для проверки JwtAuthGuard и @CurrentUser();
+// подключается только в тестовом модуле (в проде guard применяется задачей 7).
+@Controller('guard-check')
+class GuardCheckController {
+  @Get('me')
+  @UseGuards(JwtAuthGuard)
+  me(@CurrentUser() user: JwtPayload): JwtPayload {
+    return user;
+  }
+}
+
 describe('Auth verify-code / refresh (e2e)', () => {
   let app: INestApplication;
   let prisma: PrismaService;
 
+  async function cleanup() {
+    const users = await prisma.user.findMany({
+      where: { phone: { in: [PHONE] } },
+      select: { id: true },
+    });
+    const userIds = users.map((u) => u.id);
+    await prisma.refreshToken.deleteMany({
+      where: { userId: { in: userIds } },
+    });
+    await prisma.smsCode.deleteMany({ where: { phone: { in: [PHONE] } } });
+    await prisma.user.deleteMany({ where: { phone: { in: [PHONE] } } });
+  }
+
   beforeAll(async () => {
     const m = await Test.createTestingModule({
       imports: [AppModule],
+      controllers: [GuardCheckController],
     })
       .overrideProvider(SMS_PROVIDER_TOKEN)
       .useClass(FakeSmsProvider)
@@ -53,16 +86,10 @@ describe('Auth verify-code / refresh (e2e)', () => {
     prisma = app.get(PrismaService);
   });
 
-  beforeEach(async () => {
-    await prisma.refreshToken.deleteMany();
-    await prisma.smsCode.deleteMany();
-    await prisma.user.deleteMany();
-  });
+  beforeEach(() => cleanup());
 
   afterAll(async () => {
-    await prisma.refreshToken.deleteMany();
-    await prisma.smsCode.deleteMany();
-    await prisma.user.deleteMany();
+    await cleanup();
     await app.close();
   });
 
@@ -118,5 +145,22 @@ describe('Auth verify-code / refresh (e2e)', () => {
       .send({ refreshToken })
       .expect(401);
     expect(r1.body.refreshToken).not.toBe(refreshToken);
+  });
+
+  it('защищённый маршрут без токена -> 401 в едином формате', async () => {
+    const res = await request(app.getHttpServer())
+      .get('/v1/guard-check/me')
+      .expect(401);
+    expect(res.body.error.code).toBe('UNAUTHORIZED');
+    expect(res.body.error.message).toEqual(expect.any(String));
+  });
+
+  it('защищённый маршрут с валидным access-токеном -> 200 и {sub, isGuest}', async () => {
+    const { accessToken, user } = await login();
+    const res = await request(app.getHttpServer())
+      .get('/v1/guard-check/me')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .expect(200);
+    expect(res.body).toEqual({ sub: user.id, isGuest: false });
   });
 });

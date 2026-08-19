@@ -41,10 +41,16 @@ describe('Auth request-code (e2e)', () => {
     prisma = app.get(PrismaService);
   });
 
-  beforeEach(() => prisma.smsCode.deleteMany());
+  beforeEach(() =>
+    prisma.smsCode.deleteMany({
+      where: { phone: { in: [PHONE, PHONE_RATE_LIMIT] } },
+    }),
+  );
 
   afterAll(async () => {
-    await prisma.smsCode.deleteMany();
+    await prisma.smsCode.deleteMany({
+      where: { phone: { in: [PHONE, PHONE_RATE_LIMIT] } },
+    });
     await app.close();
   });
 

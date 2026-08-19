@@ -57,7 +57,7 @@ export class AuthService {
 
     const valid = await bcrypt.compare(code, smsCode.codeHash);
     if (!valid) {
-      await this.prisma.smsCode.update({
+      await this.prisma.smsCode.updateMany({
         where: { phone },
         data: { attempts: { increment: 1 } },
       });
@@ -97,17 +97,20 @@ export class AuthService {
     refreshToken: string,
   ): Promise<{ accessToken: string; refreshToken: string; user: User }> {
     const tokenHash = createHash('sha256').update(refreshToken).digest('hex');
+    // findUnique — только чтобы получить user; решение об отказе принимается
+    // исключительно по count атомарного updateMany ниже.
     const existing = await this.prisma.refreshToken.findUnique({
       where: { tokenHash },
       include: { user: true },
     });
-    if (!existing || existing.revokedAt || existing.expiresAt < new Date())
-      apiError('UNAUTHORIZED', 'Refresh-токен недействителен', 401);
-
-    await this.prisma.refreshToken.update({
-      where: { id: existing.id },
+    // Атомарная ротация: отзыв срабатывает ровно один раз — параллельный
+    // refresh того же токена получит count === 0 и 401.
+    const { count } = await this.prisma.refreshToken.updateMany({
+      where: { tokenHash, revokedAt: null, expiresAt: { gt: new Date() } },
       data: { revokedAt: new Date() },
     });
+    if (count !== 1 || !existing)
+      apiError('UNAUTHORIZED', 'Refresh-токен недействителен', 401);
 
     const tokens = await this.issueTokens(existing.user);
     return { ...tokens, user: existing.user };
