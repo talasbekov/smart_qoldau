@@ -1,6 +1,8 @@
-import { Body, Controller, HttpCode, Post } from '@nestjs/common';
+import { Body, Controller, HttpCode, Post, UseGuards } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
+  ApiBearerAuth,
+  ApiForbiddenResponse,
   ApiNoContentResponse,
   ApiOkResponse,
   ApiOperation,
@@ -12,7 +14,13 @@ import { AuthService } from './auth.service';
 import { RequestCodeDto } from './dto/request-code.dto';
 import { VerifyCodeDto } from './dto/verify-code.dto';
 import { RefreshDto } from './dto/refresh.dto';
+import { GuestDto } from './dto/guest.dto';
+import { ConvertGuestDto } from './dto/convert.dto';
 import { TokensDto } from './dto/tokens.dto';
+import { JwtAuthGuard } from './jwt-auth.guard';
+import { CurrentUser } from './current-user.decorator';
+import { JwtPayload } from './jwt.strategy';
+import { apiError } from '../common/filters/app-exception.filter';
 
 @ApiTags('auth')
 @Controller('auth')
@@ -70,6 +78,58 @@ export class AuthController {
     const { accessToken, refreshToken, user } = await this.authService.refresh(
       dto.refreshToken,
     );
+    return {
+      accessToken,
+      refreshToken,
+      user: { id: user.id, phone: user.phone, isGuest: user.isGuest },
+    };
+  }
+
+  @Post('guest')
+  @HttpCode(200)
+  @ApiOperation({ summary: 'Гостевой вход по deviceId' })
+  @ApiOkResponse({
+    description:
+      'Пара токенов + гостевой пользователь (идемпотентно по deviceId)',
+    type: TokensDto,
+  })
+  @ApiBadRequestResponse({ description: 'VALIDATION_FAILED — deviceId не задан' })
+  async guest(@Body() dto: GuestDto): Promise<TokensDto> {
+    const { accessToken, refreshToken, user } = await this.authService.guest(
+      dto.deviceId,
+    );
+    return {
+      accessToken,
+      refreshToken,
+      user: { id: user.id, phone: user.phone, isGuest: user.isGuest },
+    };
+  }
+
+  @Post('guest/convert')
+  @HttpCode(200)
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Конверсия гостя в аккаунт по телефону (Р-22)' })
+  @ApiOkResponse({
+    description: 'Тот же user.id, isGuest=false, телефон записан',
+    type: TokensDto,
+  })
+  @ApiBadRequestResponse({
+    description: 'SMS_CODE_EXPIRED | SMS_CODE_INVALID | VALIDATION_FAILED',
+  })
+  @ApiUnauthorizedResponse({ description: 'UNAUTHORIZED — access-токен недействителен' })
+  @ApiForbiddenResponse({
+    description: 'FORBIDDEN — вызывающий не является гостем (isGuest=false)',
+  })
+  async convertGuest(
+    @CurrentUser() currentUser: JwtPayload,
+    @Body() dto: ConvertGuestDto,
+  ): Promise<TokensDto> {
+    if (!currentUser.isGuest)
+      apiError('FORBIDDEN', 'Доступно только гостевым аккаунтам', 403);
+
+    const { accessToken, refreshToken, user } =
+      await this.authService.convertGuest(currentUser.sub, dto.phone, dto.code);
     return {
       accessToken,
       refreshToken,

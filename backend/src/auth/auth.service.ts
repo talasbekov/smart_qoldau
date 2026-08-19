@@ -49,6 +49,25 @@ export class AuthService {
     phone: string,
     code: string,
   ): Promise<{ accessToken: string; refreshToken: string; user: User }> {
+    await this.checkCode(phone, code);
+
+    const user = await this.prisma.user.upsert({
+      where: { phone },
+      update: {},
+      create: { phone },
+    });
+
+    const tokens = await this.issueTokens(user);
+    return { ...tokens, user };
+  }
+
+  /**
+   * Проверяет SMS-код для телефона: истечение, число попыток, соответствие
+   * хэшу. При успехе удаляет запись SmsCode. При неудаче атомарно
+   * инкрементирует attempts и бросает apiError (поведение не меняется
+   * относительно исходного verifyCode).
+   */
+  private async checkCode(phone: string, code: string): Promise<void> {
     const smsCode = await this.prisma.smsCode.findUnique({ where: { phone } });
     if (!smsCode || smsCode.expiresAt < new Date())
       apiError('SMS_CODE_EXPIRED', 'Код истёк, запросите новый', 400);
@@ -65,14 +84,6 @@ export class AuthService {
     }
 
     await this.prisma.smsCode.delete({ where: { phone } });
-    const user = await this.prisma.user.upsert({
-      where: { phone },
-      update: {},
-      create: { phone },
-    });
-
-    const tokens = await this.issueTokens(user);
-    return { ...tokens, user };
   }
 
   async issueTokens(
@@ -114,5 +125,51 @@ export class AuthService {
 
     const tokens = await this.issueTokens(existing.user);
     return { ...tokens, user: existing.user };
+  }
+
+  async guest(
+    deviceId: string,
+  ): Promise<{ accessToken: string; refreshToken: string; user: User }> {
+    let user = await this.prisma.user.findFirst({
+      where: { deviceId, isGuest: true },
+    });
+    if (!user) {
+      user = await this.prisma.user.create({
+        data: { deviceId, isGuest: true },
+      });
+    }
+    const tokens = await this.issueTokens(user);
+    return { ...tokens, user };
+  }
+
+  async convertGuest(
+    userId: string,
+    phone: string,
+    code: string,
+  ): Promise<{ accessToken: string; refreshToken: string; user: User }> {
+    await this.checkCode(phone, code);
+
+    const existing = await this.prisma.user.findUnique({ where: { phone } });
+    if (existing && existing.id !== userId)
+      apiError(
+        'PHONE_ALREADY_REGISTERED',
+        'Номер уже используется другим аккаунтом',
+        409,
+      );
+
+    const user = await this.prisma.user.update({
+      where: { id: userId },
+      data: { phone, isGuest: false },
+    });
+
+    // Отзыв всех активных refresh-токенов гостя: старые сессии по этому
+    // deviceId больше не должны продолжать работать после конверсии.
+    await this.prisma.refreshToken.updateMany({
+      where: { userId, revokedAt: null },
+      data: { revokedAt: new Date() },
+    });
+
+    const tokens = await this.issueTokens(user);
+    return { ...tokens, user };
   }
 }
