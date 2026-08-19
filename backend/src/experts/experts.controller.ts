@@ -12,6 +12,7 @@ import {
   ApiBearerAuth,
   ApiConflictResponse,
   ApiForbiddenResponse,
+  ApiNoContentResponse,
   ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
@@ -29,11 +30,15 @@ import { CurrentUser } from '../auth/current-user.decorator';
 import { JwtPayload } from '../auth/jwt.strategy';
 import { ExpertGuard } from './expert.guard';
 import { CurrentExpert } from './current-expert.decorator';
+import { PresenceService } from '../presence/presence.service';
 
 @ApiTags('experts')
 @Controller('experts')
 export class ExpertsController {
-  constructor(private expertsService: ExpertsService) {}
+  constructor(
+    private expertsService: ExpertsService,
+    private presence: PresenceService,
+  ) {}
 
   @Post()
   @HttpCode(201)
@@ -112,5 +117,19 @@ export class ExpertsController {
   ): Promise<ExpertMeDto> {
     const updated = await this.expertsService.updateWorkStatus(expert, dto);
     return this.expertsService.toMeDto(updated);
+  }
+
+  @Post('me/heartbeat')
+  @HttpCode(204)
+  @UseGuards(JwtAuthGuard, ExpertGuard)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Heartbeat эксперта — обновить свежесть presence (E3)',
+  })
+  @ApiNoContentResponse({ description: 'Presence обновлён' })
+  @ApiUnauthorizedResponse({ description: 'UNAUTHORIZED' })
+  @ApiNotFoundResponse({ description: 'EXPERT_NOT_FOUND' })
+  async heartbeat(@CurrentExpert() expert: Expert): Promise<void> {
+    await this.presence.touch(expert.id);
   }
 }

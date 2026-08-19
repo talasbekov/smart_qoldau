@@ -4,6 +4,7 @@ import { PresenceService } from '../presence/presence.service';
 import { RedisService } from '../redis/redis.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
+import { ClockService } from '../common/clock/clock.service';
 
 const EXPERT_ID = 'exp-compensation-test';
 
@@ -27,7 +28,7 @@ describe('ExpertsService.updateWorkStatus — компенсация presence п
     redis = new RedisService({
       getOrThrow: () => 'redis://localhost:6379',
     } as never);
-    presence = new PresenceService(redis);
+    presence = new PresenceService(redis, new ClockService());
   });
 
   beforeEach(() => {

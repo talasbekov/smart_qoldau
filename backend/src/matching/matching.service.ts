@@ -22,15 +22,16 @@ export class MatchingService {
     private scoring: ScoringService,
   ) {}
 
-  // Конвейер матчинга E3: presence (Redis) — лишь подсказка о кандидатах;
-  // фактический допуск ВСЕГДА перепроверяется из БД (verificationStatus,
-  // isBlocked, workStatus, formats, topics), затем расписание на now().
-  // Итог сортируется по скору Р-12 (см. ScoringService), tie-break — меньше
-  // офферов за сегодня (Asia/Almaty).
+  // Конвейер матчинга E3: presence (Redis, только свежие по heartbeat —
+  // listFresh) — лишь подсказка о кандидатах; фактический допуск ВСЕГДА
+  // перепроверяется из БД (verificationStatus, isBlocked, workStatus,
+  // formats, topics), затем расписание на now(). Итог сортируется по скору
+  // Р-12 (см. ScoringService), tie-break — меньше офферов за сегодня
+  // (Asia/Almaty).
   async findCandidates(params: FindCandidatesParams): Promise<string[]> {
     const { topicSlug, format, excludeExpertIds = [], urgentOnly } = params;
 
-    const availableIds = await this.presence.listAvailable();
+    const availableIds = await this.presence.listFresh();
     const candidateIds = availableIds.filter(
       (id) => !excludeExpertIds.includes(id),
     );

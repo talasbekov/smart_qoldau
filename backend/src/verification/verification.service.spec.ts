@@ -4,6 +4,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import { StorageService } from '../storage/storage.service';
 import { RedisService } from '../redis/redis.service';
+import { ClockService } from '../common/clock/clock.service';
 
 const EXPERT_ID = 'exp-block-resilience-test';
 
@@ -18,7 +19,10 @@ describe('VerificationService.block — устойчивость к сбою Red
       },
     };
     const audit = { log: jest.fn() };
-    const presence = new PresenceService({} as RedisService);
+    const presence = new PresenceService(
+      {} as RedisService,
+      new ClockService(),
+    );
     jest
       .spyOn(presence, 'setUnavailable')
       .mockRejectedValue(new Error('redis down'));
