@@ -14,6 +14,7 @@ import { ExpertsModule } from './experts/experts.module';
 import { VerificationModule } from './verification/verification.module';
 import { ScheduleModule } from './schedule/schedule.module';
 import { ClockModule } from './common/clock/clock.module';
+import { MatchingModule } from './matching/matching.module';
 
 @Module({
   imports: [
@@ -32,6 +33,7 @@ import { ClockModule } from './common/clock/clock.module';
     ExpertsModule,
     VerificationModule,
     ScheduleModule,
+    MatchingModule,
   ],
   controllers: [AppController],
   providers: [AppService],
