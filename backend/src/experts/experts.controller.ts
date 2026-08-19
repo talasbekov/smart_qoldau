@@ -22,6 +22,7 @@ import { Expert } from '@prisma/client';
 import { ExpertsService } from './experts.service';
 import { CreateExpertDto } from './dto/create-expert.dto';
 import { UpdateExpertDto } from './dto/update-expert.dto';
+import { WorkStatusDto } from './dto/work-status.dto';
 import { ExpertMeDto } from './dto/expert-me.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CurrentUser } from '../auth/current-user.decorator';
@@ -87,6 +88,29 @@ export class ExpertsController {
     @Body() dto: UpdateExpertDto,
   ): Promise<ExpertMeDto> {
     const updated = await this.expertsService.update(expert, dto);
+    return this.expertsService.toMeDto(updated);
+  }
+
+  @Patch('me/work-status')
+  @UseGuards(JwtAuthGuard, ExpertGuard)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Изменить рабочий статус эксперта (presence в Redis)',
+  })
+  @ApiOkResponse({ description: 'Статус изменён', type: ExpertMeDto })
+  @ApiBadRequestResponse({
+    description: 'NOT_VERIFIED — ACCEPTING доступен только VERIFIED-эксперту',
+  })
+  @ApiUnauthorizedResponse({ description: 'UNAUTHORIZED' })
+  @ApiNotFoundResponse({ description: 'EXPERT_NOT_FOUND' })
+  @ApiForbiddenResponse({
+    description: 'EXPERT_BLOCKED — эксперт заблокирован',
+  })
+  async updateWorkStatus(
+    @CurrentExpert() expert: Expert,
+    @Body() dto: WorkStatusDto,
+  ): Promise<ExpertMeDto> {
+    const updated = await this.expertsService.updateWorkStatus(expert, dto);
     return this.expertsService.toMeDto(updated);
   }
 }

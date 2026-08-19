@@ -8,6 +8,7 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import { StorageService } from '../storage/storage.service';
+import { PresenceService } from '../presence/presence.service';
 import { apiError } from '../common/filters/app-exception.filter';
 import { DecisionDto } from './dto/decision.dto';
 import { BlockExpertDto } from './dto/block.dto';
@@ -22,6 +23,7 @@ export class VerificationService {
     private prisma: PrismaService,
     private audit: AuditService,
     private storage: StorageService,
+    private presence: PresenceService,
   ) {}
 
   async queue(): Promise<QueueEntryDto[]> {
@@ -169,6 +171,8 @@ export class VerificationService {
         workStatus: WorkStatus.NOT_ACCEPTING,
       },
     });
+
+    await this.presence.setUnavailable(expertId);
 
     await this.audit.log({
       actorType: 'admin',

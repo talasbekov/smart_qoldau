@@ -1,11 +1,19 @@
 import { Injectable } from '@nestjs/common';
-import { Expert, ExperienceLevel, Prisma } from '@prisma/client';
+import {
+  Expert,
+  ExperienceLevel,
+  Prisma,
+  VerificationStatus,
+  WorkStatus,
+} from '@prisma/client';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
+import { PresenceService } from '../presence/presence.service';
 import { apiError } from '../common/filters/app-exception.filter';
 import { CreateExpertDto } from './dto/create-expert.dto';
 import { UpdateExpertDto } from './dto/update-expert.dto';
+import { WorkStatusDto } from './dto/work-status.dto';
 import { ExpertMeDto } from './dto/expert-me.dto';
 
 const PRICE_MIN = 200_000;
@@ -18,6 +26,7 @@ export class ExpertsService {
   constructor(
     private prisma: PrismaService,
     private audit: AuditService,
+    private presence: PresenceService,
   ) {}
 
   async findByUserId(userId: string): Promise<ExpertWithTopics | null> {
@@ -120,6 +129,50 @@ export class ExpertsService {
       entityId: expert.id,
       transition: 'expert.profile_updated',
       payload: dto as object,
+    });
+
+    const withTopics = await this.findByUserId(expert.userId);
+    return withTopics!;
+  }
+
+  // Рабочий статус эксперта + presence в Redis (задел матчинга E3).
+  // Заблокирован -> EXPERT_BLOCKED 403; ACCEPTING без VERIFIED -> NOT_VERIFIED 400.
+  async updateWorkStatus(
+    expert: Expert,
+    dto: WorkStatusDto,
+  ): Promise<ExpertWithTopics> {
+    if (expert.isBlocked)
+      apiError('EXPERT_BLOCKED', 'Эксперт заблокирован', 403);
+
+    if (
+      dto.workStatus === WorkStatus.ACCEPTING &&
+      expert.verificationStatus !== VerificationStatus.VERIFIED
+    )
+      apiError(
+        'NOT_VERIFIED',
+        'Только верифицированный эксперт может принимать заявки',
+        400,
+      );
+
+    const from = expert.workStatus;
+    await this.prisma.expert.update({
+      where: { id: expert.id },
+      data: { workStatus: dto.workStatus },
+    });
+
+    if (dto.workStatus === WorkStatus.ACCEPTING) {
+      await this.presence.setAvailable(expert.id);
+    } else {
+      await this.presence.setUnavailable(expert.id);
+    }
+
+    await this.audit.log({
+      actorType: 'expert',
+      actorId: expert.id,
+      entity: 'expert',
+      entityId: expert.id,
+      transition: 'expert.work_status_changed',
+      payload: { from, to: dto.workStatus },
     });
 
     const withTopics = await this.findByUserId(expert.userId);
