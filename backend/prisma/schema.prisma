@@ -14,6 +14,10 @@ model User {
   id            String         @id @default(uuid())
   phone         String?        @unique
   isGuest       Boolean        @default(false) @map("is_guest")
+  // Частичный уникальный индекс users_device_id_guest_uq (raw SQL в миграции
+  // 20260819122334_guest_device_id_partial_unique):
+  //   UNIQUE(device_id) WHERE is_guest = true.
+  // Prisma частичные индексы не выражает — не удалять при prisma migrate dev.
   deviceId      String?        @map("device_id")
   locale        String         @default("ru")
   createdAt     DateTime       @default(now()) @map("created_at")

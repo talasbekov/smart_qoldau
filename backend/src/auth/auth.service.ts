@@ -4,6 +4,7 @@ import { JwtService } from '@nestjs/jwt';
 import { createHash, randomBytes, randomInt } from 'node:crypto';
 import * as bcrypt from 'bcrypt';
 import { User } from '@prisma/client';
+import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 import { PrismaService } from '../prisma/prisma.service';
 import { apiError } from '../common/filters/app-exception.filter';
 import { SMS_PROVIDER_TOKEN, SmsProvider } from './sms/sms.provider';
@@ -134,9 +135,21 @@ export class AuthService {
       where: { deviceId, isGuest: true },
     });
     if (!user) {
-      user = await this.prisma.user.create({
-        data: { deviceId, isGuest: true },
-      });
+      try {
+        user = await this.prisma.user.create({
+          data: { deviceId, isGuest: true },
+        });
+      } catch (e) {
+        // Гонка двух параллельных гостевых входов с одним deviceId: частичный
+        // уникальный индекс users_device_id_guest_uq даёт P2002 проигравшему —
+        // перечитываем и выдаём токены уже созданному гостю.
+        if (!(e instanceof PrismaClientKnownRequestError && e.code === 'P2002'))
+          throw e;
+        user = await this.prisma.user.findFirst({
+          where: { deviceId, isGuest: true },
+        });
+        if (!user) throw e;
+      }
     }
     const tokens = await this.issueTokens(user);
     return { ...tokens, user };
@@ -149,6 +162,7 @@ export class AuthService {
   ): Promise<{ accessToken: string; refreshToken: string; user: User }> {
     await this.checkCode(phone, code);
 
+    // Быстрый путь: телефон уже занят другим пользователем.
     const existing = await this.prisma.user.findUnique({ where: { phone } });
     if (existing && existing.id !== userId)
       apiError(
@@ -157,10 +171,23 @@ export class AuthService {
         409,
       );
 
-    const user = await this.prisma.user.update({
-      where: { id: userId },
-      data: { phone, isGuest: false },
-    });
+    let user: User;
+    try {
+      user = await this.prisma.user.update({
+        where: { id: userId },
+        data: { phone, isGuest: false },
+      });
+    } catch (e) {
+      // TOCTOU: между findUnique выше и update телефон могли занять параллельной
+      // конверсией/регистрацией — unique(phone) даёт P2002; отдаём 409, а не 500.
+      if (e instanceof PrismaClientKnownRequestError && e.code === 'P2002')
+        apiError(
+          'PHONE_ALREADY_REGISTERED',
+          'Номер уже используется другим аккаунтом',
+          409,
+        );
+      throw e;
+    }
 
     // Отзыв всех активных refresh-токенов гостя: старые сессии по этому
     // deviceId больше не должны продолжать работать после конверсии.

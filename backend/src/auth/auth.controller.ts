@@ -2,6 +2,7 @@ import { Body, Controller, HttpCode, Post, UseGuards } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
   ApiBearerAuth,
+  ApiConflictResponse,
   ApiForbiddenResponse,
   ApiNoContentResponse,
   ApiOkResponse,
@@ -120,6 +121,10 @@ export class AuthController {
   @ApiUnauthorizedResponse({ description: 'UNAUTHORIZED — access-токен недействителен' })
   @ApiForbiddenResponse({
     description: 'FORBIDDEN — вызывающий не является гостем (isGuest=false)',
+  })
+  @ApiConflictResponse({
+    description:
+      'PHONE_ALREADY_REGISTERED — номер уже используется другим аккаунтом',
   })
   async convertGuest(
     @CurrentUser() currentUser: JwtPayload,
