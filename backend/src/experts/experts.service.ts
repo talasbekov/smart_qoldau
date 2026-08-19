@@ -271,7 +271,7 @@ export class ExpertsService {
 
   // Эталон PII-инварианта: сборка ТОЛЬКО явным перечислением полей — без
   // spread модели, без userId/phone/documents/education/verificationStatus.
-  private toPublicDto(expert: ExpertWithTopics): ExpertPublicDto {
+  toPublicDto(expert: ExpertWithTopics): ExpertPublicDto {
     return {
       id: expert.id,
       displayName: expert.displayName,

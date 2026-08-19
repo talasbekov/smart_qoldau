@@ -20,6 +20,7 @@ import { ClockModule } from './common/clock/clock.module';
 import { MatchingModule } from './matching/matching.module';
 import { RequestsModule } from './requests/requests.module';
 import { WsModule } from './ws/ws.module';
+import { FavoritesModule } from './favorites/favorites.module';
 
 @Module({
   imports: [
@@ -42,6 +43,7 @@ import { WsModule } from './ws/ws.module';
     MatchingModule,
     WsModule,
     RequestsModule,
+    FavoritesModule,
   ],
   controllers: [AppController],
   providers: [AppService],

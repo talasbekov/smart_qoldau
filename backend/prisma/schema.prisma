@@ -232,6 +232,9 @@ model RequestCandidate {
   @@map("request_candidates")
 }
 
+// Сознательно БЕЗ FK на users/experts (решение задачи 1): связка-строка,
+// join выполняется вручную в FavoritesService. Скрытые/удалённые эксперты
+// просто выпадают из выдачи, связка остаётся.
 model Favorite {
   userId    String   @map("user_id")
   expertId  String   @map("expert_id")
