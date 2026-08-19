@@ -15,6 +15,7 @@ import { VerificationModule } from './verification/verification.module';
 import { ScheduleModule } from './schedule/schedule.module';
 import { ClockModule } from './common/clock/clock.module';
 import { MatchingModule } from './matching/matching.module';
+import { RequestsModule } from './requests/requests.module';
 
 @Module({
   imports: [
@@ -34,6 +35,7 @@ import { MatchingModule } from './matching/matching.module';
     VerificationModule,
     ScheduleModule,
     MatchingModule,
+    RequestsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

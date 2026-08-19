@@ -5,6 +5,10 @@ const ADMIN = { 'X-Admin-Token': 'dev-admin-token-0123456789abcdef' };
 
 const DOC_TYPES = ['IDENTITY', 'DIPLOMA', 'CERTIFICATES', 'QUALIFICATION'];
 
+// Минимальный валидный PDF-заголовок (сигнатура %PDF- + байты комментария
+// %âãÏÓ), который file-type/FileTypeValidator распознаёт как application/pdf.
+const PDF_MAGIC_BYTES = Buffer.from('%PDF-1.4\n%\xE2\xE3\xCF\xD3\n', 'binary');
+
 const DEFAULT_EXPERT_DTO = {
   displayName: 'Айгуль С.',
   city: 'Алматы',
@@ -92,7 +96,10 @@ export async function verifiedExpert(
     await request(app.getHttpServer())
       .post(`/v1/experts/me/documents/${type}`)
       .set('Authorization', `Bearer ${accessToken}`)
-      .attach('file', Buffer.from('%PDF-1.4 fake'), 'doc.pdf')
+      // Настоящие magic bytes PDF (не просто текст '%PDF-1.4') — нужны для
+      // FileTypeValidator, который в @nestjs/common@10.4.x определяет тип по
+      // сигнатуре через пакет file-type, а не по расширению/заголовку.
+      .attach('file', PDF_MAGIC_BYTES, 'doc.pdf')
       .expect(201);
   }
 
