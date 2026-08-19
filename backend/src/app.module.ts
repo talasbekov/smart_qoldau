@@ -13,6 +13,7 @@ import { PresenceModule } from './presence/presence.module';
 import { ExpertsModule } from './experts/experts.module';
 import { VerificationModule } from './verification/verification.module';
 import { ScheduleModule } from './schedule/schedule.module';
+import { ClockModule } from './common/clock/clock.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { ScheduleModule } from './schedule/schedule.module';
       isGlobal: true,
       validationSchema: envValidationSchema,
     }),
+    ClockModule,
     PrismaModule,
     RedisModule,
     AuditModule,
