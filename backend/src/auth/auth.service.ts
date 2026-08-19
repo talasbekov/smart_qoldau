@@ -54,17 +54,25 @@ export class AuthService {
   ): Promise<{ accessToken: string; refreshToken: string; user: User }> {
     await this.checkCode(phone, code);
 
-    // Проверяем, существует ли пользователь до upsert
-    const existingUser = await this.prisma.user.findUnique({ where: { phone } });
+    // Новизна определяется по результату операции (create + catch P2002 — как
+    // в guest()), а не чтением до записи: иначе два параллельных verifyCode на
+    // новый номер оба увидели бы findUnique === null и задублировали бы
+    // audit-событие user.registered.
+    let user: User;
+    let isNewUser = false;
+    try {
+      user = await this.prisma.user.create({ data: { phone } });
+      isNewUser = true;
+    } catch (e) {
+      if (!(e instanceof PrismaClientKnownRequestError && e.code === 'P2002'))
+        throw e;
+      const existing = await this.prisma.user.findUnique({ where: { phone } });
+      if (!existing) throw e;
+      user = existing;
+    }
 
-    const user = await this.prisma.user.upsert({
-      where: { phone },
-      update: {},
-      create: { phone },
-    });
-
-    // Логируем события только при создании нового пользователя
-    if (!existingUser) {
+    // Логируем событие только при реальном создании нового пользователя
+    if (isNewUser) {
       await this.audit.log({
         actorType: 'user',
         actorId: user.id,
