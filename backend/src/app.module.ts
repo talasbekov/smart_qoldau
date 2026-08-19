@@ -4,6 +4,7 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { envValidationSchema } from './config/env.validation';
 import { PrismaModule } from './prisma/prisma.module';
+import { TopicsModule } from './topics/topics.module';
 
 @Module({
   imports: [
@@ -12,6 +13,7 @@ import { PrismaModule } from './prisma/prisma.module';
       validationSchema: envValidationSchema,
     }),
     PrismaModule,
+    TopicsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
