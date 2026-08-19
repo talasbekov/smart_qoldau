@@ -1,4 +1,4 @@
-import { Inject, Injectable, forwardRef } from '@nestjs/common';
+import { Inject, Injectable, Logger, forwardRef } from '@nestjs/common';
 import { Interval } from '@nestjs/schedule';
 import { CandidateResponse, RequestStatus } from '@prisma/client';
 import { RedisService } from '../redis/redis.service';
@@ -27,6 +27,8 @@ const RESCAN_DELAY_MS = 5_000;
 // рестарта первый sweep() подбирает все просроченные дедлайны.
 @Injectable()
 export class OfferTimerService implements OfferTimerRegistry {
+  private readonly logger = new Logger(OfferTimerService.name);
+
   constructor(
     private redis: RedisService,
     private clock: ClockService,
@@ -49,7 +51,16 @@ export class OfferTimerService implements OfferTimerRegistry {
   @Interval(1000)
   async tick(): Promise<void> {
     if (process.env.NODE_ENV === 'test') return;
-    await this.sweep();
+    // @nestjs/schedule не оборачивает async-исключения — без catch
+    // транзиентная ошибка Redis/БД дала бы unhandled rejection.
+    try {
+      await this.sweep();
+    } catch (e) {
+      this.logger.error(
+        `sweep tick failed: ${e instanceof Error ? e.message : String(e)}`,
+        e instanceof Error ? e.stack : undefined,
+      );
+    }
   }
 
   // Единый тик обработки просроченных таймеров. Порядок важен:
@@ -58,10 +69,25 @@ export class OfferTimerService implements OfferTimerRegistry {
   //   3) закрытие заявок старше 120с без PENDING-офферов -> NO_EXPERTS
   //      (кроме emergency — эскалация добавляется задачей 6).
   // Возвращает число обработанных истёкших офферов (шаг 1).
+  // Каждый шаг изолирован собственным try/catch: сбой одного (например,
+  // транзиентная ошибка Redis в рескане) не блокирует остальные.
   async sweep(): Promise<number> {
-    const processed = await this.sweepExpiredOffers();
-    await this.sweepRescans();
-    await this.sweepStaleRequests();
+    let processed = 0;
+    try {
+      processed = await this.sweepExpiredOffers();
+    } catch (e) {
+      this.logStepError('sweepExpiredOffers', e);
+    }
+    try {
+      await this.sweepRescans();
+    } catch (e) {
+      this.logStepError('sweepRescans', e);
+    }
+    try {
+      await this.sweepStaleRequests();
+    } catch (e) {
+      this.logStepError('sweepStaleRequests', e);
+    }
     return processed;
   }
 
@@ -74,8 +100,19 @@ export class OfferTimerService implements OfferTimerRegistry {
     );
     if (expiredOfferIds.length === 0) return 0;
 
+    // Изоляция ошибок: исключение на одном оффере не обрывает обработку
+    // остальных истёкших офферов этого тика.
     for (const offerId of expiredOfferIds) {
-      await this.timeoutOffer(offerId);
+      try {
+        await this.timeoutOffer(offerId);
+      } catch (e) {
+        this.logger.error(
+          `timeoutOffer failed for offer ${offerId}: ${
+            e instanceof Error ? e.message : String(e)
+          }`,
+          e instanceof Error ? e.stack : undefined,
+        );
+      }
     }
     return expiredOfferIds.length;
   }
@@ -110,9 +147,28 @@ export class OfferTimerService implements OfferTimerRegistry {
       payload: { expertId: offer.expertId },
     });
 
-    const rotated = await this.requestsService.offerToNext(offer.requestId);
-    if (!rotated) {
-      await this.maybeScheduleRescan(offer.requestId);
+    // Пост-TIMEOUT шаги изолированы: оффер уже TIMEOUT + ZREM, и если
+    // ротация упадёт, заявка осталась бы без PENDING-оффера и без рескана.
+    // При ошибке — принудительный ZADD в requests:rescan, чтобы следующий
+    // sweep повторил ротацию.
+    try {
+      const rotated = await this.requestsService.offerToNext(offer.requestId);
+      if (!rotated) {
+        await this.maybeScheduleRescan(offer.requestId);
+      }
+    } catch (e) {
+      this.logger.error(
+        `offerToNext failed after timeout of offer ${offerId} ` +
+          `(request ${offer.requestId}): ${
+            e instanceof Error ? e.message : String(e)
+          }`,
+        e instanceof Error ? e.stack : undefined,
+      );
+      await this.redis.zadd(
+        REQUESTS_RESCAN_KEY,
+        this.clock.now().getTime() + RESCAN_DELAY_MS,
+        offer.requestId,
+      );
     }
   }
 
@@ -205,6 +261,15 @@ export class OfferTimerService implements OfferTimerRegistry {
       REQUESTS_RESCAN_KEY,
       now.getTime() + RESCAN_DELAY_MS,
       requestId,
+    );
+  }
+
+  private logStepError(step: string, e: unknown): void {
+    this.logger.error(
+      `sweep step ${step} failed: ${
+        e instanceof Error ? e.message : String(e)
+      }`,
+      e instanceof Error ? e.stack : undefined,
     );
   }
 }

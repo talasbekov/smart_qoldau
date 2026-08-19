@@ -344,6 +344,62 @@ describe('Дедлайны офферов на Redis ZSET + sweep, виртуа�
     expect(score).toBeNull();
   });
 
+  it('изоляция ошибок sweep: сбой offerToNext на одном оффере не мешает второму; упавшая заявка получает рескан', async () => {
+    // Два эксперта с разными темами -> два независимых оффера двух заявок.
+    const e1 = await acceptingExpert(PH_E1, { topics: ['anxiety-stress'] });
+    const e2 = await acceptingExpert(PH_E2, { topics: ['burnout'] });
+    const cli1 = await clientUser(PH_C1);
+    const cli2 = await clientUser(PH_C2);
+
+    const r1 = await post(cli1.accessToken, '/v1/requests')
+      .send({ topicSlug: 'anxiety-stress', format: 'video' })
+      .expect(201);
+    const r2 = await post(cli2.accessToken, '/v1/requests')
+      .send({ topicSlug: 'burnout', format: 'video' })
+      .expect(201);
+    ownRequestIds.push(r1.body.id, r2.body.id);
+
+    const offers1 = await offersOf(e1);
+    const offers2 = await offersOf(e2);
+    expect(offers1).toHaveLength(1);
+    expect(offers2).toHaveLength(1);
+    ownOfferIds.push(offers1[0].offerId, offers2[0].offerId);
+
+    // Мок: ротация первой заявки падает, второй — успешна.
+    const requestsService = app.get(RequestsService);
+    const spy = jest
+      .spyOn(requestsService, 'offerToNext')
+      .mockImplementation(async (requestId: string) => {
+        if (requestId === r1.body.id) throw new Error('transient db error');
+        return true;
+      });
+
+    try {
+      fakeClock.advance(46_000);
+      // Не бросает наружу; оба истёкших оффера обработаны.
+      const processed = await timer.sweep();
+      expect(processed).toBe(2);
+    } finally {
+      spy.mockRestore();
+    }
+
+    // Оба оффера получили TIMEOUT, дедлайны сняты из ZSET.
+    for (const offerId of [offers1[0].offerId, offers2[0].offerId]) {
+      const cand = await prisma.requestCandidate.findUniqueOrThrow({
+        where: { id: offerId },
+      });
+      expect(cand.response).toBe('TIMEOUT');
+      expect(await redis.zscore(OFFERS_DEADLINES_KEY, offerId)).toBeNull();
+    }
+
+    // Упавшая заявка не зависла: для неё запланирован рескан.
+    const rescan1 = await redis.zscore(REQUESTS_RESCAN_KEY, r1.body.id);
+    expect(rescan1).not.toBeNull();
+    // Успешная ротация второй заявки рескана не требует.
+    const rescan2 = await redis.zscore(REQUESTS_RESCAN_KEY, r2.body.id);
+    expect(rescan2).toBeNull();
+  });
+
   it('рестарт-устойчивость: schedule -> новый инстанс OfferTimerService -> sweep видит дедлайн из Redis', async () => {
     const e1 = await acceptingExpert(PH_E1);
     const cli = await clientUser(PH_C4);
