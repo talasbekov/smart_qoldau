@@ -22,6 +22,7 @@ model User {
   locale        String         @default("ru")
   createdAt     DateTime       @default(now()) @map("created_at")
   refreshTokens RefreshToken[]
+  expert        Expert?
 
   @@map("users")
 }
@@ -49,12 +50,13 @@ model RefreshToken {
 }
 
 model Topic {
-  id        String  @id @default(uuid())
-  slug      String  @unique
-  nameRu    String  @map("name_ru")
-  nameKz    String  @map("name_kz")
-  sortOrder Int     @map("sort_order")
-  isActive  Boolean @default(true) @map("is_active")
+  id        String        @id @default(uuid())
+  slug      String        @unique
+  nameRu    String        @map("name_ru")
+  nameKz    String        @map("name_kz")
+  sortOrder Int           @map("sort_order")
+  isActive  Boolean       @default(true) @map("is_active")
+  experts   ExpertTopic[]
 
   @@map("topics")
 }
@@ -71,4 +73,96 @@ model AuditLog {
 
   @@index([entity, entityId])
   @@map("audit_log")
+}
+
+enum ExperienceLevel {
+  LESS_THAN_YEAR
+  ONE_TO_THREE
+  THREE_TO_FIVE
+  FIVE_TO_TEN
+  MORE_THAN_TEN
+}
+
+enum VerificationStatus {
+  DRAFT
+  PENDING
+  VERIFIED
+}
+
+enum WorkStatus {
+  ACCEPTING
+  BUSY
+  NOT_ACCEPTING
+  UNAVAILABLE
+}
+
+enum DocumentType {
+  IDENTITY
+  DIPLOMA
+  CERTIFICATES
+  QUALIFICATION
+}
+
+enum DocumentStatus {
+  UPLOADED
+  APPROVED
+  REUPLOAD_REQUIRED
+}
+
+model Expert {
+  id                 String              @id @default(uuid())
+  userId             String              @unique @map("user_id")
+  user               User                @relation(fields: [userId], references: [id])
+  displayName        String              @map("display_name")
+  city               String
+  experience         ExperienceLevel
+  education          String
+  priceTiyn          Int                 @map("price_tiyn")
+  languages          String[]            // 'ru' | 'kz' | 'en'
+  formats            String[]            // 'chat' | 'audio' | 'video'
+  verificationStatus VerificationStatus  @default(DRAFT) @map("verification_status")
+  workStatus         WorkStatus          @default(NOT_ACCEPTING) @map("work_status")
+  isBlocked          Boolean             @default(false) @map("is_blocked")
+  blockedReason      String?             @map("blocked_reason")
+  acceptsUrgent      Boolean             @default(false) @map("accepts_urgent")
+  createdAt          DateTime            @default(now()) @map("created_at")
+  topics             ExpertTopic[]
+  documents          ExpertDocument[]
+  scheduleDays       ExpertScheduleDay[]
+  @@map("experts")
+}
+
+model ExpertTopic {
+  expertId String @map("expert_id")
+  topicId  String @map("topic_id")
+  expert   Expert @relation(fields: [expertId], references: [id])
+  topic    Topic  @relation(fields: [topicId], references: [id])
+  @@id([expertId, topicId])
+  @@map("expert_topics")
+}
+
+model ExpertDocument {
+  id        String         @id @default(uuid())
+  expertId  String         @map("expert_id")
+  expert    Expert         @relation(fields: [expertId], references: [id])
+  type      DocumentType
+  status    DocumentStatus @default(UPLOADED)
+  fileKey   String         @map("file_key")
+  comment   String?
+  updatedAt DateTime       @updatedAt @map("updated_at")
+  @@unique([expertId, type])
+  @@map("expert_documents")
+}
+
+model ExpertScheduleDay {
+  expertId   String  @map("expert_id")
+  expert     Expert  @relation(fields: [expertId], references: [id])
+  weekday    Int     // 0=Пн … 6=Вс
+  enabled    Boolean @default(false)
+  startMin   Int     @map("start_min")   // минуты от полуночи, 540 = 09:00
+  endMin     Int     @map("end_min")
+  breakStart Int?    @map("break_start")
+  breakEnd   Int?    @map("break_end")
+  @@id([expertId, weekday])
+  @@map("expert_schedule_days")
 }
