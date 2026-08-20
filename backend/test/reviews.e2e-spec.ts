@@ -26,7 +26,10 @@ const PH_E7 = '+77084000007';
 const PH_E8 = '+77084000008';
 const PH_ETHRESH = '+77084000009';
 const PH_ETHRESH2 = '+77084000010';
+const PH_ECONC = '+77084000011';
 const PH_CTHRESH2 = '+77084000100';
+const PH_CCONC1 = '+77084000101';
+const PH_CCONC2 = '+77084000102';
 const PH_C1 = '+77084000091';
 const PH_C2 = '+77084000092';
 const PH_C3 = '+77084000093';
@@ -47,7 +50,10 @@ const ALL_PHONES = [
   PH_E8,
   PH_ETHRESH,
   PH_ETHRESH2,
+  PH_ECONC,
   PH_CTHRESH2,
+  PH_CCONC1,
+  PH_CCONC2,
   PH_C1,
   PH_C2,
   PH_C3,
@@ -487,6 +493,48 @@ describe('Отзывы и рейтинг (E4, задача 7)', () => {
     for (let i = 1; i < ratings.length; i++) {
       expect(ratings[i - 1]).toBeGreaterThanOrEqual(ratings[i]);
     }
+  });
+
+  it('конкурентные отзывы двух клиентов одному эксперту: оба 201, агрегаты точны (row-lock FOR UPDATE)', async () => {
+    const exp = await acceptingExpert(PH_ECONC);
+    const cli1 = await clientUser(PH_CCONC1);
+    const cli2 = await clientUser(PH_CCONC2);
+
+    const consultation1 = await matchAndComplete(cli1, exp);
+    const consultation2 = await matchAndComplete(cli2, exp);
+
+    // Параллельные POST: без блокировки строки эксперта два пересчёта
+    // на ReadCommitted могли бы не увидеть вставку друг друга и записать
+    // заниженные агрегаты. С FOR UPDATE второй ждёт коммита первого.
+    const [r1, r2] = await Promise.all([
+      post(cli1.accessToken, `/v1/consultations/${consultation1}/review`).send({
+        rating: 5,
+      }),
+      post(cli2.accessToken, `/v1/consultations/${consultation2}/review`).send({
+        rating: 3,
+      }),
+    ]);
+    expect(r1.status).toBe(201);
+    expect(r2.status).toBe(201);
+
+    const expertRow = await prisma.expert.findUniqueOrThrow({
+      where: { id: exp.expertId },
+    });
+    expect(expertRow.ratingCount).toBe(2);
+    expect(expertRow.ratingAvg).toBe(4);
+  });
+
+  it('rating вне диапазона 1..5 (0 и 6) -> 400', async () => {
+    const exp = await acceptingExpert(PH_E1);
+    const cli = await clientUser(PH_C1);
+    const consultationId = await matchAndComplete(cli, exp);
+
+    await post(cli.accessToken, `/v1/consultations/${consultationId}/review`)
+      .send({ rating: 0 })
+      .expect(400);
+    await post(cli.accessToken, `/v1/consultations/${consultationId}/review`)
+      .send({ rating: 6 })
+      .expect(400);
   });
 
   it('порог Р-20: 20 PUBLISHED-отзывов с avg<4.0 -> audit expert.rating_below_threshold', async () => {

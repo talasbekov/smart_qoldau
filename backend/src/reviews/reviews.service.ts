@@ -66,6 +66,7 @@ export class ReviewsService {
     let review: Review;
     try {
       review = await this.prisma.$transaction(async (tx) => {
+        await this.lockExpertRow(tx, consultation.expertId);
         const created = await tx.review.create({
           data: {
             consultationId,
@@ -119,6 +120,7 @@ export class ReviewsService {
       apiError('REVIEW_NOT_FOUND', 'Отзыв не найден', 404);
 
     await this.prisma.$transaction(async (tx) => {
+      await this.lockExpertRow(tx, review!.expertId);
       await tx.review.delete({ where: { id: reviewId } });
       await this.recalcExpertRating(tx, review!.expertId);
     });
@@ -177,9 +179,25 @@ export class ReviewsService {
     };
   }
 
+  // Pessimistic row-lock строки эксперта (SELECT ... FOR UPDATE). Сама по
+  // себе транзакция на уровне ReadCommitted НЕ защищает пересчёт: два
+  // параллельных create отзывов разным консультациям одного эксперта видят
+  // снимки без чужой (ещё не закоммиченной) вставки, и второй записал бы
+  // устаревшие агрегаты. FOR UPDATE сериализует такие транзакции по одному
+  // эксперту: вторая блокируется на этой строке до коммита первой, после
+  // чего её aggregate уже видит закоммиченную вставку/удаление. Вызывать
+  // ПЕРВЫМ действием транзакции — до create/delete отзыва.
+  private async lockExpertRow(
+    tx: Prisma.TransactionClient,
+    expertId: string,
+  ): Promise<void> {
+    await tx.$queryRaw`SELECT id FROM experts WHERE id = ${expertId} FOR UPDATE`;
+  }
+
   // Пересчёт агрегатов эксперта агрегатом по PUBLISHED-отзывам. Вызывается
-  // ВНУТРИ транзакции create/remove — консистентность агрегатов с набором
-  // отзывов гарантирована атомарностью транзакции. round до 2 знаков.
+  // ВНУТРИ транзакции create/remove ПОСЛЕ lockExpertRow — корректность при
+  // конкурентных пересчётах по одному эксперту обеспечивает именно row-lock
+  // (см. lockExpertRow), а не изоляция транзакции. round до 2 знаков.
   private async recalcExpertRating(
     tx: Prisma.TransactionClient,
     expertId: string,
