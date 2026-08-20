@@ -17,9 +17,7 @@ const SIGNATURES: ReadonlyArray<{
     matches: (buf) =>
       buf
         .subarray(0, 8)
-        .equals(
-          Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
-        ),
+        .equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])),
   },
   {
     mime: 'image/jpeg',
@@ -33,9 +31,7 @@ export class FileSignatureValidator extends FileValidator {
   }
 
   isValid(file?: Express.Multer.File): boolean {
-    return (
-      !!file?.buffer && SIGNATURES.some((s) => s.matches(file.buffer))
-    );
+    return !!file?.buffer && SIGNATURES.some((s) => s.matches(file.buffer));
   }
 
   buildErrorMessage(file?: Express.Multer.File): string {
