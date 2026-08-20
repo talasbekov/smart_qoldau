@@ -15,6 +15,8 @@ import { ConsultationExpertDto } from './dto/consultation-expert.dto';
 const DEFAULT_TAKE = 20;
 const MAX_TAKE = 100;
 
+export type ParticipantRole = 'client' | 'expert';
+
 @Injectable()
 export class ConsultationsService {
   private readonly logger = new Logger(ConsultationsService.name);
@@ -150,27 +152,46 @@ export class ConsultationsService {
     });
   }
 
-  async findForParticipant(
+  // Резолвит участие пользователя в консультации: клиент по clientUserId,
+  // либо эксперт через ExpertsService.findByUserId -> expertId. Не
+  // участник/не найдена -> CONSULTATION_NOT_FOUND 404 (не раскрываем
+  // существование чужой консультации). Общий резолвер эпика — используется
+  // ConsultationsService, ChatService и MediaService.
+  async resolveParticipant(
     consultationId: string,
     userSub: string,
-  ): Promise<ConsultationClientDto | ConsultationExpertDto> {
+  ): Promise<{ consultation: Consultation; role: ParticipantRole }> {
     const consultation = await this.prisma.consultation.findUnique({
       where: { id: consultationId },
     });
-    if (!consultation)
+    if (!consultation) {
       apiError('CONSULTATION_NOT_FOUND', 'Консультация не найдена', 404);
+    }
 
     if (consultation!.clientUserId === userSub) {
-      return this.toClientDto(consultation!);
+      return { consultation: consultation!, role: 'client' };
     }
 
     const expert = await this.experts.findByUserId(userSub);
     if (expert && expert.id === consultation!.expertId) {
-      return this.toExpertDto(consultation!);
+      return { consultation: consultation!, role: 'expert' };
     }
 
     apiError('CONSULTATION_NOT_FOUND', 'Консультация не найдена', 404);
     throw new Error('unreachable');
+  }
+
+  async findForParticipant(
+    consultationId: string,
+    userSub: string,
+  ): Promise<ConsultationClientDto | ConsultationExpertDto> {
+    const { consultation, role } = await this.resolveParticipant(
+      consultationId,
+      userSub,
+    );
+    return role === 'client'
+      ? this.toClientDto(consultation)
+      : this.toExpertDto(consultation);
   }
 
   async listForUser(

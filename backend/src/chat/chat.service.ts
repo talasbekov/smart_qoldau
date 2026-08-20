@@ -1,7 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { Consultation, ConsultationStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
-import { ExpertsService } from '../experts/experts.service';
+import {
+  ConsultationsService,
+  ParticipantRole,
+} from '../consultations/consultations.service';
 import { apiError } from '../common/filters/app-exception.filter';
 import { MessageCipher } from './message-cipher';
 import { MessageDto } from './dto/message.dto';
@@ -11,43 +14,24 @@ const MAX_TEXT_LENGTH = 4000;
 const DEFAULT_LIMIT = 50;
 const MAX_LIMIT = 100;
 
-export type SenderRole = 'client' | 'expert';
+export type SenderRole = ParticipantRole;
 
 @Injectable()
 export class ChatService {
   constructor(
     private prisma: PrismaService,
-    private experts: ExpertsService,
+    private consultations: ConsultationsService,
     private cipher: MessageCipher,
   ) {}
 
-  // Резолвит участие пользователя в консультации: клиент по clientUserId,
-  // либо эксперт через ExpertsService.findByUserId -> expertId. Не
-  // участник/не найдена -> CONSULTATION_NOT_FOUND 404 (единообразно с
-  // ConsultationsService.findForParticipant — не раскрываем существование
-  // чужой консультации).
+  // Резолвер участника вынесен в ConsultationsService.resolveParticipant
+  // (общий с MediaService) — тонкая обёртка для обратной совместимости
+  // вызывающих внутри модуля чата.
   async resolveParticipant(
     consultationId: string,
     userSub: string,
   ): Promise<{ consultation: Consultation; role: SenderRole }> {
-    const consultation = await this.prisma.consultation.findUnique({
-      where: { id: consultationId },
-    });
-    if (!consultation) {
-      apiError('CONSULTATION_NOT_FOUND', 'Консультация не найдена', 404);
-    }
-
-    if (consultation!.clientUserId === userSub) {
-      return { consultation: consultation!, role: 'client' };
-    }
-
-    const expert = await this.experts.findByUserId(userSub);
-    if (expert && expert.id === consultation!.expertId) {
-      return { consultation: consultation!, role: 'expert' };
-    }
-
-    apiError('CONSULTATION_NOT_FOUND', 'Консультация не найдена', 404);
-    throw new Error('unreachable');
+    return this.consultations.resolveParticipant(consultationId, userSub);
   }
 
   async send(

@@ -4,13 +4,16 @@ import { AuditModule } from '../audit/audit.module';
 import { ClockModule } from '../common/clock/clock.module';
 import { PresenceModule } from '../presence/presence.module';
 import { ExpertsModule } from '../experts/experts.module';
-import { WsModule } from '../ws/ws.module';
 import { ConsultationsService } from './consultations.service';
 import { ConsultationsController } from './consultations.controller';
 
 // Односторонняя зависимость: ConsultationsModule НЕ импортирует
 // RequestsModule (во избежание циклической зависимости) — RequestsModule
 // импортирует ConsultationsModule и вызывает createFromMatch напрямую.
+// WsModule НЕ импортируется явно: он @Global() (см. ws/ws.module.ts) и сам
+// импортирует ChatModule -> ConsultationsModule — явный импорт здесь создал
+// бы цикл WsModule -> ChatModule -> ConsultationsModule -> WsModule.
+// EventsService доступен через глобальный контейнер без импорта.
 @Module({
   imports: [
     PrismaModule,
@@ -18,7 +21,6 @@ import { ConsultationsController } from './consultations.controller';
     ClockModule,
     PresenceModule,
     ExpertsModule,
-    WsModule,
   ],
   controllers: [ConsultationsController],
   providers: [ConsultationsService],

@@ -23,6 +23,7 @@ import { WsModule } from './ws/ws.module';
 import { FavoritesModule } from './favorites/favorites.module';
 import { ConsultationsModule } from './consultations/consultations.module';
 import { ChatModule } from './chat/chat.module';
+import { MediaModule } from './media/media.module';
 
 @Module({
   imports: [
@@ -48,6 +49,7 @@ import { ChatModule } from './chat/chat.module';
     RequestsModule,
     FavoritesModule,
     ChatModule,
+    MediaModule,
   ],
   controllers: [AppController],
   providers: [AppService],
