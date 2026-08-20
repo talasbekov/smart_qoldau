@@ -1,5 +1,6 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import {
+  ConsultationOutcome,
   ConsultationPaymentStatus,
   ConsultationStatus,
   PaymentStatus,
@@ -11,14 +12,26 @@ import { ClockService } from '../common/clock/clock.service';
 import { EventsService } from '../ws/events.service';
 import { apiError } from '../common/filters/app-exception.filter';
 import { ConsultationsService } from '../consultations/consultations.service';
+import {
+  ACC_ACQUIRER,
+  ACC_COMMISSION,
+  expertAccount,
+  LedgerService,
+} from '../ledger/ledger.service';
 import { PaymentProviderPort } from './provider/payment-provider.port';
 import { PayResultDto } from './dto/pay-result.dto';
 import { PaymentStatusDto } from './dto/payment-status.dto';
+import { EarningsDto } from './dto/earnings.dto';
+import { ListEarningsDto } from './dto/list-earnings.dto';
 
 const COMMISSION_RATE = 0.15;
+const DEFAULT_TAKE = 20;
+const MAX_TAKE = 100;
 
 @Injectable()
 export class PaymentsService {
+  private readonly logger = new Logger(PaymentsService.name);
+
   constructor(
     private prisma: PrismaService,
     private audit: AuditService,
@@ -26,6 +39,7 @@ export class PaymentsService {
     private events: EventsService,
     private consultations: ConsultationsService,
     private provider: PaymentProviderPort,
+    private ledger: LedgerService,
   ) {}
 
   // POST /v1/consultations/:id/pay — только клиент-участник ACTIVE-
@@ -233,6 +247,176 @@ export class PaymentsService {
       status: payment!.status,
       amountTiyn: payment!.amountTiyn,
       maskedPan: method?.maskedPan ?? '',
+    };
+  }
+
+  // Вызывается из ConsultationsService.complete()/cancel() ПОСЛЕ фиксации
+  // исхода, вне транзакции исхода, в try/catch на стороне вызывающего —
+  // сбой settle никогда не должен откатывать исход консультации. Ветвится
+  // по Payment.status; CAPTURED/VOIDED — no-op (идемпотентность повторного
+  // вызова).
+  async settle(consultationId: string): Promise<void> {
+    const consultation = await this.prisma.consultation.findUniqueOrThrow({
+      where: { id: consultationId },
+    });
+    const payment = await this.prisma.payment.findUnique({
+      where: { consultationId },
+    });
+
+    if (!payment || payment.status === PaymentStatus.FAILED) {
+      if (consultation.outcome === ConsultationOutcome.COMPLETED) {
+        await this.audit.log({
+          actorType: 'system',
+          entity: 'payment',
+          entityId: consultationId,
+          transition: 'payment.missing_on_completion',
+          payload: { consultationId },
+        });
+      }
+      return;
+    }
+
+    if (
+      payment.status === PaymentStatus.CAPTURED ||
+      payment.status === PaymentStatus.VOIDED
+    ) {
+      return;
+    }
+
+    if (payment.status !== PaymentStatus.HELD) {
+      return;
+    }
+
+    if (consultation.outcome === ConsultationOutcome.COMPLETED) {
+      await this.captureAndCredit(payment, consultation.expertId);
+    } else {
+      await this.voidAndRelease(payment, consultation.outcome);
+    }
+  }
+
+  private async captureAndCredit(
+    payment: {
+      id: string;
+      consultationId: string;
+      amountTiyn: number;
+      commissionTiyn: number;
+      providerHoldId: string | null;
+      clientUserId: string;
+      expertId: string;
+    },
+    expertId: string,
+  ): Promise<void> {
+    await this.provider.capture({
+      idempotencyKey: `capture:${payment.id}`,
+      providerHoldId: payment.providerHoldId!,
+      amountTiyn: payment.amountTiyn,
+    });
+
+    const netTiyn = payment.amountTiyn - payment.commissionTiyn;
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.payment.update({
+        where: { id: payment.id },
+        data: { status: PaymentStatus.CAPTURED },
+      });
+      await tx.consultation.update({
+        where: { id: payment.consultationId },
+        data: { paymentStatus: ConsultationPaymentStatus.CAPTURED },
+      });
+      await this.ledger.post(
+        'capture',
+        payment.id,
+        [
+          { account: ACC_ACQUIRER, debitTiyn: payment.amountTiyn },
+          { account: expertAccount(expertId), creditTiyn: netTiyn },
+          { account: ACC_COMMISSION, creditTiyn: payment.commissionTiyn },
+        ],
+        tx,
+      );
+    });
+
+    await this.audit.log({
+      actorType: 'system',
+      entity: 'payment',
+      entityId: payment.id,
+      transition: 'payment.captured',
+      payload: {
+        amountTiyn: payment.amountTiyn,
+        commissionTiyn: payment.commissionTiyn,
+      },
+    });
+
+    this.events.emitToExpert(expertId, 'earning.credited', {
+      consultationId: payment.consultationId,
+      amountTiyn: netTiyn,
+    });
+  }
+
+  private async voidAndRelease(
+    payment: {
+      id: string;
+      consultationId: string;
+      providerHoldId: string | null;
+      clientUserId: string;
+    },
+    outcome: ConsultationOutcome,
+  ): Promise<void> {
+    await this.provider.void({
+      idempotencyKey: `void:${payment.id}`,
+      providerHoldId: payment.providerHoldId!,
+    });
+
+    await this.prisma.payment.update({
+      where: { id: payment.id },
+      data: { status: PaymentStatus.VOIDED },
+    });
+    await this.prisma.consultation.update({
+      where: { id: payment.consultationId },
+      data: { paymentStatus: ConsultationPaymentStatus.VOIDED },
+    });
+
+    await this.audit.log({
+      actorType: 'system',
+      entity: 'payment',
+      entityId: payment.id,
+      transition: 'payment.voided',
+      payload: { outcome },
+    });
+
+    this.events.emitToUser(payment.clientUserId, 'consultation.updated', {
+      id: payment.consultationId,
+      paymentStatus: ConsultationPaymentStatus.VOIDED,
+    });
+  }
+
+  // GET /v1/experts/me/earnings — список capture-начислений эксперта +
+  // текущий баланс (из ledger). Пагинация take/skip, паттерн
+  // ConsultationsService.list.
+  async getEarnings(
+    expertId: string,
+    filters: ListEarningsDto,
+  ): Promise<EarningsDto> {
+    const take = Math.min(filters.take ?? DEFAULT_TAKE, MAX_TAKE);
+    const skip = filters.skip ?? 0;
+
+    const balanceTiyn = await this.ledger.balanceTiyn(expertAccount(expertId));
+
+    const payments = await this.prisma.payment.findMany({
+      where: { expertId, status: PaymentStatus.CAPTURED },
+      orderBy: { updatedAt: 'desc' },
+      take,
+      skip,
+    });
+
+    return {
+      balanceTiyn,
+      items: payments.map((p) => ({
+        consultationId: p.consultationId,
+        priceTiyn: p.amountTiyn,
+        commissionTiyn: p.commissionTiyn,
+        netTiyn: p.amountTiyn - p.commissionTiyn,
+        createdAt: p.updatedAt,
+      })),
     };
   }
 }

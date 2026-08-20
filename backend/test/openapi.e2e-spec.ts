@@ -66,6 +66,7 @@ describe('OpenAPI (e2e)', () => {
       '/v1/payment-methods/{id}',
       '/v1/consultations/{id}/pay',
       '/v1/consultations/{id}/payment',
+      '/v1/experts/me/earnings',
     ])
       expect(paths).toContain(p);
   });

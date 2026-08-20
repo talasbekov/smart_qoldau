@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { forwardRef, Inject, Injectable, Logger } from '@nestjs/common';
 import {
   Consultation,
   ConsultationOutcome,
@@ -21,6 +21,7 @@ import { ListConsultationsDto } from './dto/list-consultations.dto';
 import { ConsultationClientDto } from './dto/consultation-client.dto';
 import { ConsultationExpertDto } from './dto/consultation-expert.dto';
 import { ExpertNoteDto } from './dto/expert-note.dto';
+import { PaymentsService } from '../payments/payments.service';
 
 const ABUSE_CLIENT_TTL_SECONDS = 30 * 24 * 3600;
 
@@ -42,6 +43,8 @@ export class ConsultationsService {
     private events: EventsService,
     private redis: RedisService,
     private cipher: MessageCipher,
+    @Inject(forwardRef(() => PaymentsService))
+    private payments: PaymentsService,
   ) {}
 
   // Вызывается из RequestsService.claimOffer ВНУТРИ транзакции матча (tx),
@@ -215,6 +218,8 @@ export class ConsultationsService {
       outcome,
     );
 
+    await this.settleSafely(consultationId);
+
     const updated = await this.prisma.consultation.findUniqueOrThrow({
       where: { id: consultationId },
     });
@@ -279,10 +284,35 @@ export class ConsultationsService {
       ConsultationOutcome.CLIENT_CANCELLED,
     );
 
+    await this.settleSafely(consultationId);
+
     const updated = await this.prisma.consultation.findUniqueOrThrow({
       where: { id: consultationId },
     });
     return this.toClientDto(updated);
+  }
+
+  // Settle платежа (capture/void по исходу) ПОСЛЕ фиксации исхода
+  // консультации, вне транзакции исхода. Сбой — лог + audit
+  // payment.settle_failed, ретрай ЗДЕСЬ не делается (ретраит sweep-джоба,
+  // Task 6); исход консультации НИКОГДА не откатывается из-за денег.
+  private async settleSafely(consultationId: string): Promise<void> {
+    try {
+      await this.payments.settle(consultationId);
+    } catch (e) {
+      const message = e instanceof Error ? e.message : String(e);
+      this.logger.error(
+        `settle failed for consultation ${consultationId}: ${message}`,
+        e instanceof Error ? e.stack : undefined,
+      );
+      await this.audit.log({
+        actorType: 'system',
+        entity: 'payment',
+        entityId: consultationId,
+        transition: 'payment.settle_failed',
+        payload: { consultationId, error: message },
+      });
+    }
   }
 
   // Паттерн компенсации: эксперт возвращается ACCEPTING+presence, ТОЛЬКО
