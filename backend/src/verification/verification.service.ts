@@ -236,7 +236,7 @@ export class VerificationService {
       priceTiyn: expert.priceTiyn,
       languages: expert.languages,
       formats: expert.formats,
-      topicSlugs: expert.topics.map((t) => t.topic.slug),
+      topicSlugs: expert.topics.map((t) => t.topic.slug).sort(),
       verificationStatus: expert.verificationStatus,
       workStatus: expert.workStatus,
       isBlocked: expert.isBlocked,
