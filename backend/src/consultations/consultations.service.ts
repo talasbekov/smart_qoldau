@@ -443,6 +443,7 @@ export class ConsultationsService {
       endedAt: consultation.endedAt,
       priceTiyn: consultation.priceTiyn,
       plannedDurationMin: consultation.plannedDurationMin,
+      paymentStatus: consultation.paymentStatus,
       expert: this.experts.toPublicDto(expert),
     };
   }
@@ -467,6 +468,7 @@ export class ConsultationsService {
       topicSlug: topic.slug,
       priceTiyn: consultation.priceTiyn,
       plannedDurationMin: consultation.plannedDurationMin,
+      paymentStatus: consultation.paymentStatus,
     };
   }
 

@@ -63,13 +63,22 @@ export class MockPaymentProvider extends PaymentProviderPort {
     // же ключом возвращает тот же providerHoldId. Declined не запоминается,
     // чтобы повтор с тем же ключом на другой карте мог пройти (retry после
     // отказа банка).
+    //
+    // Гонка двух ПАРАЛЛЕЛЬНЫХ hold() с одним idempotencyKey: наивный
+    // GET-затем-SET не атомарен — оба вызова могли бы пройти проверку
+    // "холда ещё нет" и создать два разных providerHoldId. Резервируем
+    // idem-ключ атомарным SET NX ДО создания холда — только один из
+    // параллельных вызовов выигрывает запись; проигравший коротким
+    // поллингом дожидается значения победителя и возвращает его holdId.
     const existingHoldId = await this.redis.get(this.idemKey(idempotencyKey));
     if (existingHoldId) {
       return { providerHoldId: existingHoldId, status: 'held' };
     }
 
     // Decline-сценарий: PAN оканчивался на 0002 — признак закодирован в
-    // токене tokenizeCard() как `mockpay_tok_{last4}_...`.
+    // токене tokenizeCard() как `mockpay_tok_{last4}_...`. Не резервируем
+    // idem-ключ — decline не идемпотентен, повтор с другой картой должен
+    // пройти обычным путём.
     if (token.startsWith('mockpay_tok_0002_')) {
       return {
         providerHoldId: '',
@@ -79,6 +88,31 @@ export class MockPaymentProvider extends PaymentProviderPort {
     }
 
     const providerHoldId = `mockpay_hold_${randomUUID()}`;
+
+    const reserved = await this.redis.set(
+      this.idemKey(idempotencyKey),
+      providerHoldId,
+      'EX',
+      HOLD_TTL_SECONDS,
+      'NX',
+    );
+
+    if (reserved !== 'OK') {
+      // Проиграли гонку резервации — победитель уже держит (или вот-вот
+      // запишет) ключ. Короткий поллинг на случай минимального окна между
+      // его NX-успехом и видимостью значения.
+      for (let attempt = 0; attempt < 20; attempt++) {
+        const winnerHoldId = await this.redis.get(this.idemKey(idempotencyKey));
+        if (winnerHoldId) {
+          return { providerHoldId: winnerHoldId, status: 'held' };
+        }
+        await new Promise((resolve) => setTimeout(resolve, 5));
+      }
+      throw new ConflictException(
+        'Не удалось определить холд-победителя идемпотентной гонки',
+      );
+    }
+
     const record: HoldRecord = {
       providerHoldId,
       token,
@@ -88,12 +122,6 @@ export class MockPaymentProvider extends PaymentProviderPort {
     await this.redis.set(
       this.holdKey(providerHoldId),
       JSON.stringify(record),
-      'EX',
-      HOLD_TTL_SECONDS,
-    );
-    await this.redis.set(
-      this.idemKey(idempotencyKey),
-      providerHoldId,
       'EX',
       HOLD_TTL_SECONDS,
     );
