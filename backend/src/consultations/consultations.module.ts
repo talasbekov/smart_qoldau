@@ -1,12 +1,14 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { PrismaModule } from '../prisma/prisma.module';
 import { AuditModule } from '../audit/audit.module';
 import { ClockModule } from '../common/clock/clock.module';
 import { PresenceModule } from '../presence/presence.module';
 import { ExpertsModule } from '../experts/experts.module';
 import { RedisModule } from '../redis/redis.module';
+import { ChatModule } from '../chat/chat.module';
 import { ConsultationsService } from './consultations.service';
 import { ConsultationsController } from './consultations.controller';
+import { NotesController } from './notes.controller';
 import { NoShowService } from './no-show.service';
 
 // Односторонняя зависимость: ConsultationsModule НЕ импортирует
@@ -24,8 +26,9 @@ import { NoShowService } from './no-show.service';
     PresenceModule,
     ExpertsModule,
     RedisModule,
+    forwardRef(() => ChatModule),
   ],
-  controllers: [ConsultationsController],
+  controllers: [ConsultationsController, NotesController],
   providers: [ConsultationsService, NoShowService],
   exports: [ConsultationsService, NoShowService],
 })

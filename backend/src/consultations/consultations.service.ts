@@ -15,10 +15,12 @@ import { PresenceService } from '../presence/presence.service';
 import { ExpertsService } from '../experts/experts.service';
 import { EventsService } from '../ws/events.service';
 import { RedisService } from '../redis/redis.service';
+import { MessageCipher } from '../chat/message-cipher';
 import { apiError } from '../common/filters/app-exception.filter';
 import { ListConsultationsDto } from './dto/list-consultations.dto';
 import { ConsultationClientDto } from './dto/consultation-client.dto';
 import { ConsultationExpertDto } from './dto/consultation-expert.dto';
+import { ExpertNoteDto } from './dto/expert-note.dto';
 
 const ABUSE_CLIENT_TTL_SECONDS = 30 * 24 * 3600;
 
@@ -39,6 +41,7 @@ export class ConsultationsService {
     private experts: ExpertsService,
     private events: EventsService,
     private redis: RedisService,
+    private cipher: MessageCipher,
   ) {}
 
   // Вызывается из RequestsService.claimOffer ВНУТРИ транзакции матча (tx),
@@ -464,6 +467,103 @@ export class ConsultationsService {
       topicSlug: topic.slug,
       priceTiyn: consultation.priceTiyn,
       plannedDurationMin: consultation.plannedDurationMin,
+    };
+  }
+
+  // GET приватной заметки эксперта. Только эксперт-участник (клиент → 404).
+  // Возвращает {text: null} если заметки нет.
+  async getExpertNote(
+    consultationId: string,
+    userSub: string,
+  ): Promise<ExpertNoteDto> {
+    // resolveParticipant гарантирует что это участник (иначе 404).
+    // Для клиента это тоже вернёт 404 — заметка приватна.
+    const { consultation, role } = await this.resolveParticipant(
+      consultationId,
+      userSub,
+    );
+
+    if (role !== 'expert') {
+      apiError('CONSULTATION_NOT_FOUND', 'Консультация не найдена', 404);
+    }
+
+    const note = await this.prisma.expertNote.findUnique({
+      where: { consultationId: consultation.id },
+    });
+
+    if (!note) {
+      return { text: null };
+    }
+
+    // Prisma возвращает Uint8Array; кастируем в Buffer для MessageCipher
+    const plaintext = this.cipher.decrypt(note.ciphertext as Buffer);
+    return {
+      text: plaintext,
+      updatedAt: note.updatedAt.toISOString(),
+    };
+  }
+
+  // PUT (upsert) приватной заметки эксперта. Только эксперт-участник.
+  // text должен быть 1..5000 символов после trim.
+  async updateExpertNote(
+    consultationId: string,
+    userSub: string,
+    text: string,
+  ): Promise<ExpertNoteDto> {
+    // resolveParticipant гарантирует что это участник (иначе 404).
+    const { consultation, role } = await this.resolveParticipant(
+      consultationId,
+      userSub,
+    );
+
+    if (role !== 'expert') {
+      apiError('CONSULTATION_NOT_FOUND', 'Консультация не найдена', 404);
+    }
+
+    const trimmed = text.trim();
+
+    // Валидация длины (уже проверена в DTO, но дополнительная подстраховка)
+    if (trimmed.length === 0 || trimmed.length > 5000) {
+      apiError(
+        'INVALID_NOTE_TEXT',
+        'Текст не может быть пустым или >5000 символов',
+        400,
+      );
+    }
+
+    const encrypted = this.cipher.encrypt(trimmed);
+
+    // Prisma Bytes ожидает Uint8Array<ArrayBuffer>; Buffer — рантайм
+    // Uint8Array-совместим, но TS-типы SharedArrayBuffer-инвариантны.
+    const ciphertextBytes = encrypted as unknown as Uint8Array<ArrayBuffer>;
+
+    const note = await this.prisma.expertNote.upsert({
+      where: { consultationId: consultation.id },
+      update: {
+        ciphertext: ciphertextBytes,
+      },
+      create: {
+        consultationId: consultation.id,
+        expertId: consultation.expertId,
+        ciphertext: ciphertextBytes,
+      },
+    });
+
+    // Audit: консультация.note_updated БЕЗ содержимого
+    await this.audit.log({
+      actorType: 'expert',
+      actorId: consultation.expertId,
+      entity: 'consultation',
+      entityId: consultation.id,
+      transition: 'consultation.note_updated',
+      payload: {
+        // БЕЗ текста — это приватная информация
+      },
+    });
+
+    return {
+      text: trimmed,
+      updatedAt: note.updatedAt.toISOString(),
     };
   }
 }
