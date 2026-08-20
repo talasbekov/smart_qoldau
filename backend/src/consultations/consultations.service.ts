@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { Consultation, Request, WorkStatus } from '@prisma/client';
+import { Consultation, Prisma, Request, WorkStatus } from '@prisma/client';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
@@ -28,22 +28,27 @@ export class ConsultationsService {
     private events: EventsService,
   ) {}
 
-  // Вызывается из RequestsService.claimOffer РОВНО при count===1 на переходе
-  // SEARCHING->MATCHED. requestId уникален (@unique) -> create с P2002
-  // означает конкурентный/повторный вызов (ретрай claimOffer) — идемпотентно
-  // возвращаем уже созданную запись, а не падаем.
+  // Вызывается из RequestsService.claimOffer ВНУТРИ транзакции матча (tx),
+  // атомарно с переходами оффера PENDING->ACCEPTED и заявки
+  // SEARCHING->MATCHED — сбой создания консультации откатывает весь матч
+  // (заявка остаётся SEARCHING, оффер PENDING — повторный accept возможен).
+  // requestId уникален (@unique) -> P2002 = конкурентный/повторный вызов —
+  // идемпотентно возвращаем уже созданную запись, а не падаем.
+  // ТОЛЬКО запись в БД: сайд-эффекты (BUSY, аудит, WS) — в
+  // applyMatchSideEffects, вызываемой ПОСЛЕ коммита транзакции.
   async createFromMatch(
     request: Request,
     expertId: string,
+    tx?: Prisma.TransactionClient,
   ): Promise<Consultation> {
-    const expert = await this.prisma.expert.findUniqueOrThrow({
+    const db = tx ?? this.prisma;
+    const expert = await db.expert.findUniqueOrThrow({
       where: { id: expertId },
     });
     const now = this.clock.now();
 
-    let consultation: Consultation;
     try {
-      consultation = await this.prisma.consultation.create({
+      return await db.consultation.create({
         data: {
           requestId: request.id,
           clientUserId: request.clientUserId,
@@ -58,35 +63,43 @@ export class ConsultationsService {
       });
     } catch (e) {
       if (e instanceof PrismaClientKnownRequestError && e.code === 'P2002') {
-        const existing = await this.prisma.consultation.findUnique({
+        const existing = await db.consultation.findUnique({
           where: { requestId: request.id },
         });
         if (existing) return existing;
       }
       throw e;
     }
+  }
 
+  // Сайд-эффекты матча — ПОСЛЕ коммита транзакции (best-effort относительно
+  // уже созданной консультации): авто-BUSY эксперта (Р-13), audit
+  // consultation.created, WS эксперту. Сбой BUSY при существующей
+  // консультации — приемлемое частичное состояние (эксперт увидит
+  // консультацию в своём списке).
+  async applyMatchSideEffects(consultation: Consultation): Promise<void> {
     await this.audit.log({
       actorType: 'system',
       entity: 'consultation',
       entityId: consultation.id,
       transition: 'consultation.created',
-      payload: { requestId: request.id, expertId },
+      payload: {
+        requestId: consultation.requestId,
+        expertId: consultation.expertId,
+      },
     });
 
-    await this.setExpertBusy(expertId);
+    await this.setExpertBusy(consultation.expertId);
 
     const topic = await this.prisma.topic.findUniqueOrThrow({
-      where: { id: request.topicId },
+      where: { id: consultation.topicId },
     });
-    this.events.emitToExpert(expertId, 'consultation.created', {
+    this.events.emitToExpert(consultation.expertId, 'consultation.created', {
       consultationId: consultation.id,
       clientCode: consultation.clientCode,
       topicSlug: topic.slug,
       format: consultation.format,
     });
-
-    return consultation;
   }
 
   // Системный переход эксперта в BUSY (не self-set, поэтому не

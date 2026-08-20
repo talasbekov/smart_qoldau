@@ -1,6 +1,11 @@
 import { Inject, Injectable, forwardRef } from '@nestjs/common';
 import { randomInt } from 'node:crypto';
-import { CandidateResponse, Request, RequestStatus } from '@prisma/client';
+import {
+  CandidateResponse,
+  Consultation,
+  Request,
+  RequestStatus,
+} from '@prisma/client';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
@@ -22,6 +27,11 @@ import {
 const EMERGENCY_DEADLINE_MS = 20_000;
 const NORMAL_DEADLINE_MS = 45_000;
 const HOTLINES = ['150', '103', '112'];
+
+// Маркерные ошибки транзакции claimOffer: проигравший count-гейт внутри
+// $transaction сигналит откат, снаружи мапится в прежние коды 409/410.
+class OfferClaimLostError extends Error {}
+class RequestNotSearchingError extends Error {}
 
 @Injectable()
 export class RequestsService {
@@ -243,9 +253,14 @@ export class RequestsService {
     return true;
   }
 
-  // Атомарное принятие оффера. Два шага updateMany (сначала оффер, затем
-  // заявка) держат гонки безопасными без транзакции на уровне приложения —
-  // выигрывает ровно один updateMany на каждом шаге.
+  // Атомарное принятие оффера: оффер PENDING->ACCEPTED, заявка
+  // SEARCHING->MATCHED и создание консультации (Р-13) — три шага в ОДНОЙ
+  // транзакции. Гонки по-прежнему закрыты count-гейтами updateMany
+  // (выигрывает ровно один), а сбой любого шага (в т.ч. создания
+  // консультации) откатывает весь матч: заявка остаётся SEARCHING, оффер
+  // PENDING — повторный accept возможен, «MATCHED без консультации» не
+  // существует как наблюдаемое состояние. Проигравшие гейты сигналят
+  // маркерными ошибками, снаружи замапленными в прежние коды 409/410.
   async claimOffer(
     offerId: string,
     expertId: string,
@@ -257,48 +272,71 @@ export class RequestsService {
       apiError('OFFER_NOT_FOUND', 'Оффер не найден', 404);
 
     const now = this.clock.now();
-    const claimResult = await this.prisma.requestCandidate.updateMany({
-      where: { id: offerId, response: CandidateResponse.PENDING },
-      data: { response: CandidateResponse.ACCEPTED, respondedAt: now },
-    });
 
-    if (claimResult.count === 0) {
-      const actual = await this.prisma.requestCandidate.findUniqueOrThrow({
-        where: { id: offerId },
-      });
-      if (
-        actual.response === CandidateResponse.TIMEOUT ||
-        actual.response === CandidateResponse.REVOKED
-      )
-        apiError('OFFER_EXPIRED', 'Срок действия оффера истёк', 410);
-      apiError('OFFER_ALREADY_TAKEN', 'Оффер уже принят', 409);
+    let matched: Request;
+    let consultation: Consultation;
+    try {
+      ({ matched, consultation } = await this.prisma.$transaction(
+        async (tx) => {
+          const claimResult = await tx.requestCandidate.updateMany({
+            where: { id: offerId, response: CandidateResponse.PENDING },
+            data: { response: CandidateResponse.ACCEPTED, respondedAt: now },
+          });
+          if (claimResult.count === 0) throw new OfferClaimLostError();
+
+          const matchResult = await tx.request.updateMany({
+            where: { id: offer!.requestId, status: RequestStatus.SEARCHING },
+            data: {
+              status: RequestStatus.MATCHED,
+              matchedExpertId: expertId,
+              closedAt: now,
+            },
+          });
+          if (matchResult.count === 0) throw new RequestNotSearchingError();
+
+          const matchedRow = await tx.request.findUniqueOrThrow({
+            where: { id: offer!.requestId },
+          });
+          const created = await this.consultations.createFromMatch(
+            matchedRow,
+            expertId,
+            tx,
+          );
+          return { matched: matchedRow, consultation: created };
+        },
+      ));
+    } catch (e) {
+      if (e instanceof OfferClaimLostError) {
+        const actual = await this.prisma.requestCandidate.findUniqueOrThrow({
+          where: { id: offerId },
+        });
+        if (
+          actual.response === CandidateResponse.TIMEOUT ||
+          actual.response === CandidateResponse.REVOKED
+        )
+          apiError('OFFER_EXPIRED', 'Срок действия оффера истёк', 410);
+        apiError('OFFER_ALREADY_TAKEN', 'Оффер уже принят', 409);
+      }
+      if (e instanceof RequestNotSearchingError) {
+        // Заявка уже закрыта (отменена/сматчена иначе). Транзакция
+        // откатилась — оффер снова PENDING, ревокируем его как раньше.
+        await this.offerTimer.cancel(offerId);
+        await this.prisma.requestCandidate.update({
+          where: { id: offerId },
+          data: { response: CandidateResponse.REVOKED },
+        });
+        await this.audit.log({
+          actorType: 'system',
+          entity: 'offer',
+          entityId: offerId,
+          transition: 'offer.revoked',
+        });
+        apiError('OFFER_ALREADY_TAKEN', 'Оффер уже принят', 409);
+      }
+      throw e;
     }
 
     await this.offerTimer.cancel(offerId);
-
-    const matchResult = await this.prisma.request.updateMany({
-      where: { id: offer!.requestId, status: RequestStatus.SEARCHING },
-      data: {
-        status: RequestStatus.MATCHED,
-        matchedExpertId: expertId,
-        closedAt: now,
-      },
-    });
-
-    if (matchResult.count === 0) {
-      // Заявка уже закрыта (отменена/сматчена иначе) — откатываем оффер.
-      await this.prisma.requestCandidate.update({
-        where: { id: offerId },
-        data: { response: CandidateResponse.REVOKED },
-      });
-      await this.audit.log({
-        actorType: 'system',
-        entity: 'offer',
-        entityId: offerId,
-        transition: 'offer.revoked',
-      });
-      apiError('OFFER_ALREADY_TAKEN', 'Оффер уже принят', 409);
-    }
 
     await this.audit.log({
       actorType: 'expert',
@@ -315,17 +353,9 @@ export class RequestsService {
       payload: { expertId },
     });
 
-    const matched = await this.prisma.request.findUniqueOrThrow({
-      where: { id: offer!.requestId },
-    });
-
-    // Создание консультации ДО revokeOtherPendingOffers/эмитов — эксперт
-    // сразу переходит в BUSY (авто-BUSY, Р-13), прежде чем остальные
-    // офферы этой заявки будут отозваны и клиенту/эксперту уйдут события.
-    const consultation = await this.consultations.createFromMatch(
-      matched,
-      expertId,
-    );
+    // Сайд-эффекты матча (авто-BUSY, audit consultation.created, WS
+    // эксперту) — ПОСЛЕ коммита, ДО revokeOtherPendingOffers/эмитов клиенту.
+    await this.consultations.applyMatchSideEffects(consultation);
 
     await this.revokeOtherPendingOffers(offer!.requestId, offerId);
 

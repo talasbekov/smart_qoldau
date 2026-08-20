@@ -7,6 +7,7 @@ import { RedisService } from '../src/redis/redis.service';
 import { PresenceService } from '../src/presence/presence.service';
 import { SMS_PROVIDER_TOKEN, SmsProvider } from '../src/auth/sms/sms.provider';
 import { RequestsService } from '../src/requests/requests.service';
+import { ConsultationsService } from '../src/consultations/consultations.service';
 import { createApp } from './utils/create-app';
 import { acceptingExpert as acceptingExpertHelper } from './utils/expert-helpers';
 import { clientUser as clientUserHelper } from './utils/client-helpers';
@@ -19,7 +20,8 @@ const PH_C2 = '+77082000092';
 const PH_C3 = '+77082000093';
 const PH_C4 = '+77082000094'; // «чужой» пользователь в тесте 404
 const PH_C5 = '+77082000095';
-const ALL_PHONES = [PH_E1, PH_E2, PH_C1, PH_C2, PH_C3, PH_C4, PH_C5];
+const PH_C6 = '+77082000096';
+const ALL_PHONES = [PH_E1, PH_E2, PH_C1, PH_C2, PH_C3, PH_C4, PH_C5, PH_C6];
 
 let lastCode = '';
 
@@ -322,5 +324,63 @@ describe('Консультация из матча: атомарное созд�
       where: { requestId: r.body.id },
     });
     expect(consultations.length).toBe(1);
+  });
+
+  it('сбой создания консультации откатывает весь матч: оффер снова PENDING, заявка SEARCHING, повторный accept успешен', async () => {
+    const exp = await acceptingExpert(PH_E2);
+    const cli = await clientUser(PH_C6);
+
+    const r = await post(cli.accessToken, '/v1/requests')
+      .send({ topicSlug: 'anxiety-stress', format: 'video' })
+      .expect(201);
+    const offers = await get(exp.accessToken, '/v1/experts/me/offers').expect(
+      200,
+    );
+    const offerId = offers.body[0].offerId as string;
+
+    // Первый вызов createFromMatch падает внутри транзакции матча.
+    const consultationsService = app.get(ConsultationsService);
+    const spy = jest
+      .spyOn(consultationsService, 'createFromMatch')
+      .mockRejectedValueOnce(new Error('transient db error'));
+
+    await post(exp.accessToken, `/v1/offers/${offerId}/accept`).expect(500);
+
+    // Транзакция откатилась целиком: консультации нет, заявка SEARCHING,
+    // оффер снова PENDING, эксперт НЕ BUSY — «MATCHED без консультации»
+    // не существует как наблюдаемое состояние (окно денег E5 закрыто).
+    expect(
+      await prisma.consultation.count({ where: { requestId: r.body.id } }),
+    ).toBe(0);
+    const requestRow = await prisma.request.findUniqueOrThrow({
+      where: { id: r.body.id },
+    });
+    expect(requestRow.status).toBe('SEARCHING');
+    expect(requestRow.matchedExpertId).toBeNull();
+    const offerRow = await prisma.requestCandidate.findUniqueOrThrow({
+      where: { id: offerId },
+    });
+    expect(offerRow.response).toBe('PENDING');
+    const expertRow = await prisma.expert.findUniqueOrThrow({
+      where: { id: exp.expertId },
+    });
+    expect(expertRow.workStatus).toBe('ACCEPTING');
+
+    // Повторный accept (spy отработал once — дальше оригинал) успешен.
+    const retry = await post(
+      exp.accessToken,
+      `/v1/offers/${offerId}/accept`,
+    ).expect(200);
+    expect(retry.body.status).toBe('MATCHED');
+    expect(retry.body.consultationId).toBeDefined();
+    expect(
+      await prisma.consultation.count({ where: { requestId: r.body.id } }),
+    ).toBe(1);
+    const expertAfter = await prisma.expert.findUniqueOrThrow({
+      where: { id: exp.expertId },
+    });
+    expect(expertAfter.workStatus).toBe('BUSY');
+
+    spy.mockRestore();
   });
 });
