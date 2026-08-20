@@ -50,14 +50,15 @@ model RefreshToken {
 }
 
 model Topic {
-  id        String        @id @default(uuid())
-  slug      String        @unique
-  nameRu    String        @map("name_ru")
-  nameKz    String        @map("name_kz")
-  sortOrder Int           @map("sort_order")
-  isActive  Boolean       @default(true) @map("is_active")
-  experts   ExpertTopic[]
-  requests  Request[]
+  id            String         @id @default(uuid())
+  slug          String         @unique
+  nameRu        String         @map("name_ru")
+  nameKz        String         @map("name_kz")
+  sortOrder     Int            @map("sort_order")
+  isActive      Boolean        @default(true) @map("is_active")
+  experts       ExpertTopic[]
+  requests      Request[]
+  consultations Consultation[]
 
   @@map("topics")
 }
@@ -126,6 +127,8 @@ model Expert {
   isBlocked          Boolean             @default(false) @map("is_blocked")
   blockedReason      String?             @map("blocked_reason")
   acceptsUrgent      Boolean             @default(false) @map("accepts_urgent")
+  ratingAvg          Float               @default(0) @map("rating_avg")
+  ratingCount        Int                 @default(0) @map("rating_count")
   createdAt          DateTime            @default(now()) @map("created_at")
   topics             ExpertTopic[]
   documents          ExpertDocument[]
@@ -241,4 +244,90 @@ model Favorite {
   createdAt DateTime @default(now()) @map("created_at")
   @@id([userId, expertId])
   @@map("favorites")
+}
+
+enum ConsultationStatus {
+  ACTIVE
+  COMPLETED
+  CANCELLED
+}
+
+enum ConsultationOutcome {
+  COMPLETED
+  CLIENT_NO_SHOW
+  CLIENT_CANCELLED
+  TECH_ISSUE
+}
+
+enum ReviewStatus {
+  PUBLISHED
+  FLAGGED
+  HIDDEN
+}
+
+// Сознательно БЕЗ FK на users/experts (как в E3): связь строкой, join —
+// вручную в сервисах. FK оставлены только на Topic и на внутренние
+// ChatMessage/ExpertNote/Review → Consultation.
+model Consultation {
+  id                 String              @id @default(uuid())
+  requestId          String              @unique @map("request_id")
+  clientUserId       String              @map("client_user_id")
+  clientCode         Int                 @map("client_code")
+  expertId           String              @map("expert_id")
+  topicId            String              @map("topic_id")
+  topic              Topic               @relation(fields: [topicId], references: [id])
+  format             String              // 'chat' | 'audio' | 'video' — текущий (эскалация меняет)
+  isEmergency        Boolean             @default(false) @map("is_emergency")
+  priceTiyn          Int                 @map("price_tiyn")           // снапшот цены эксперта
+  plannedDurationMin Int                 @default(50) @map("planned_duration_min")
+  status             ConsultationStatus  @default(ACTIVE)
+  outcome            ConsultationOutcome?
+  startedAt          DateTime            @map("started_at")
+  endedAt            DateTime?           @map("ended_at")
+  clientJoinedAt     DateTime?           @map("client_joined_at")     // медиа-вебхук
+  expertJoinedAt     DateTime?           @map("expert_joined_at")
+  noShowNotifiedAt   DateTime?           @map("no_show_notified_at")
+  messages           ChatMessage[]
+  note               ExpertNote?
+  review             Review?
+  @@index([clientUserId, status])
+  @@index([expertId, status])
+  @@map("consultations")
+}
+
+model ChatMessage {
+  id             String       @id @default(uuid())
+  consultationId String       @map("consultation_id")
+  consultation   Consultation @relation(fields: [consultationId], references: [id])
+  senderRole     String       @map("sender_role") // 'client' | 'expert'
+  ciphertext     Bytes        // AES-256-GCM: iv(12) + tag(16) + data
+  createdAt      DateTime     @default(now()) @map("created_at")
+  @@index([consultationId, createdAt])
+  @@map("chat_messages")
+}
+
+model ExpertNote {
+  consultationId String       @id @map("consultation_id")
+  consultation   Consultation @relation(fields: [consultationId], references: [id])
+  expertId       String       @map("expert_id")
+  ciphertext     Bytes
+  updatedAt      DateTime     @updatedAt @map("updated_at")
+  @@map("expert_notes")
+}
+
+model Review {
+  id             String       @id @default(uuid())
+  consultationId String       @unique @map("consultation_id")
+  consultation   Consultation @relation(fields: [consultationId], references: [id])
+  clientUserId   String       @map("client_user_id")
+  expertId       String       @map("expert_id")
+  rating         Int          // 1..5
+  publicText     String?      @map("public_text")
+  privateText    String?      @map("private_text") // видит только команда качества
+  expertReply    String?      @map("expert_reply")
+  status         ReviewStatus @default(PUBLISHED)
+  complaint      String?      // текст жалобы эксперта
+  createdAt      DateTime     @default(now()) @map("created_at")
+  @@index([expertId, status])
+  @@map("reviews")
 }

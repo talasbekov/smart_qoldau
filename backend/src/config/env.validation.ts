@@ -12,4 +12,8 @@ export const envValidationSchema = Joi.object({
   S3_SECRET_KEY: Joi.string().required(),
   S3_BUCKET_DOCUMENTS: Joi.string().default('expert-documents'),
   ADMIN_API_TOKEN: Joi.string().min(24).required(),
+  CHAT_ENCRYPTION_KEY: Joi.string().hex().length(64).required(),
+  LIVEKIT_API_KEY: Joi.string().required(),
+  LIVEKIT_API_SECRET: Joi.string().required(),
+  LIVEKIT_URL: Joi.string().uri().default('ws://localhost:7880'),
 });
