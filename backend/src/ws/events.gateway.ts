@@ -3,16 +3,35 @@ import { JwtService } from '@nestjs/jwt';
 import {
   OnGatewayConnection,
   OnGatewayInit,
+  SubscribeMessage,
   WebSocketGateway,
   WebSocketServer,
+  MessageBody,
+  ConnectedSocket,
 } from '@nestjs/websockets';
+import { HttpException } from '@nestjs/common';
 import { Server, Socket } from 'socket.io';
 import { ExpertsService } from '../experts/experts.service';
 import { EventsService } from './events.service';
+import { ChatService } from '../chat/chat.service';
 
 interface JwtPayload {
   sub: string;
   isGuest: boolean;
+}
+
+interface SocketData {
+  userId: string;
+  expertId?: string;
+}
+
+interface ChatSendPayload {
+  consultationId: string;
+  text: string;
+}
+
+interface ChatTypingPayload {
+  consultationId: string;
 }
 
 // Namespace '/ws' (не engine.io path — избегаем конфликта с socket.io
@@ -33,6 +52,7 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection {
     private jwt: JwtService,
     private experts: ExpertsService,
     private events: EventsService,
+    private chat: ChatService,
   ) {}
 
   afterInit(server: Server): void {
@@ -56,10 +76,14 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection {
 
     await client.join(`user:${payload.sub}`);
 
+    const data: SocketData = { userId: payload.sub };
+    client.data = data;
+
     try {
       const expert = await this.experts.findByUserId(payload.sub);
       if (expert) {
         await client.join(`expert:${expert.id}`);
+        data.expertId = expert.id;
       }
     } catch (e) {
       this.logger.error(
@@ -68,6 +92,76 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection {
         }`,
         e instanceof Error ? e.stack : undefined,
       );
+    }
+  }
+
+  // Персист + рассылка в ОБЕ комнаты (user:{clientUserId} и
+  // expert:{expertId}) — отправитель тоже получает своё сообщение (проще
+  // клиенту: единый путь рендера вместо optimistic-update). Ошибки — НЕ
+  // бросаем исключение из хендлера (иначе socket.io закроет соединение) —
+  // единообразный client.emit('chat.error', {code}).
+  @SubscribeMessage('chat.send')
+  async handleChatSend(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() payload: ChatSendPayload,
+  ): Promise<void> {
+    const data = client.data as SocketData | undefined;
+    if (!data?.userId) return;
+
+    try {
+      const resolved = await this.chat.resolveParticipant(
+        payload?.consultationId,
+        data.userId,
+      );
+      const message = await this.chat.sendResolved(
+        resolved.consultation,
+        resolved.role,
+        payload?.text,
+      );
+      this.events.emitToUser(
+        resolved.consultation.clientUserId,
+        'chat.message',
+        message,
+      );
+      this.events.emitToExpert(
+        resolved.consultation.expertId,
+        'chat.message',
+        message,
+      );
+    } catch (e) {
+      const code =
+        e instanceof HttpException
+          ? ((e.getResponse() as { code?: string })?.code ?? 'INTERNAL')
+          : 'INTERNAL';
+      client.emit('chat.error', { code });
+    }
+  }
+
+  // Ретрансляция ТОЛЬКО второй стороне (не отправителю), без персиста.
+  // Не участник -> молча игнор (без chat.error — typing не критичен).
+  @SubscribeMessage('chat.typing')
+  async handleChatTyping(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() payload: ChatTypingPayload,
+  ): Promise<void> {
+    const data = client.data as SocketData | undefined;
+    if (!data?.userId || !payload?.consultationId) return;
+
+    try {
+      const { consultation, role } = await this.chat.resolveParticipant(
+        payload.consultationId,
+        data.userId,
+      );
+      const targetRoom =
+        role === 'client'
+          ? `expert:${consultation.expertId}`
+          : `user:${consultation.clientUserId}`;
+      this.server.to(targetRoom).emit('chat.typing', {
+        consultationId: payload.consultationId,
+        senderRole: role,
+      });
+    } catch {
+      // не участник/консультация не найдена -> молча игнор
     }
   }
 }

@@ -22,6 +22,7 @@ import { RequestsModule } from './requests/requests.module';
 import { WsModule } from './ws/ws.module';
 import { FavoritesModule } from './favorites/favorites.module';
 import { ConsultationsModule } from './consultations/consultations.module';
+import { ChatModule } from './chat/chat.module';
 
 @Module({
   imports: [
@@ -46,6 +47,7 @@ import { ConsultationsModule } from './consultations/consultations.module';
     ConsultationsModule,
     RequestsModule,
     FavoritesModule,
+    ChatModule,
   ],
   controllers: [AppController],
   providers: [AppService],

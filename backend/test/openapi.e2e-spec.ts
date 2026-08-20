@@ -49,6 +49,7 @@ describe('OpenAPI (e2e)', () => {
       '/v1/favorites/{expertId}',
       '/v1/consultations',
       '/v1/consultations/{id}',
+      '/v1/consultations/{id}/messages',
     ])
       expect(paths).toContain(p);
   });
