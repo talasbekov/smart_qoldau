@@ -1,5 +1,12 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { Consultation, Prisma, Request, WorkStatus } from '@prisma/client';
+import {
+  Consultation,
+  ConsultationOutcome,
+  ConsultationStatus,
+  Prisma,
+  Request,
+  WorkStatus,
+} from '@prisma/client';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
@@ -7,10 +14,13 @@ import { ClockService } from '../common/clock/clock.service';
 import { PresenceService } from '../presence/presence.service';
 import { ExpertsService } from '../experts/experts.service';
 import { EventsService } from '../ws/events.service';
+import { RedisService } from '../redis/redis.service';
 import { apiError } from '../common/filters/app-exception.filter';
 import { ListConsultationsDto } from './dto/list-consultations.dto';
 import { ConsultationClientDto } from './dto/consultation-client.dto';
 import { ConsultationExpertDto } from './dto/consultation-expert.dto';
+
+const ABUSE_CLIENT_TTL_SECONDS = 30 * 24 * 3600;
 
 const DEFAULT_TAKE = 20;
 const MAX_TAKE = 100;
@@ -28,6 +38,7 @@ export class ConsultationsService {
     private presence: PresenceService,
     private experts: ExpertsService,
     private events: EventsService,
+    private redis: RedisService,
   ) {}
 
   // Вызывается из RequestsService.claimOffer ВНУТРИ транзакции матча (tx),
@@ -150,6 +161,186 @@ export class ConsultationsService {
       transition: 'expert.work_status_changed',
       payload: { from, to: WorkStatus.BUSY },
     });
+  }
+
+  // Эксперт завершает консультацию (роль зафиксирована контроллером через
+  // resolveParticipant). Только ACTIVE -> иначе 409 CONSULTATION_NOT_ACTIVE;
+  // атомарный updateMany {id, status: ACTIVE} защищает от гонки с
+  // parallel cancel() клиента — ровно один из двух переходов побеждает.
+  async complete(
+    consultationId: string,
+    userSub: string,
+    outcome: ConsultationOutcome,
+  ): Promise<ConsultationExpertDto> {
+    const { consultation, role } = await this.resolveParticipant(
+      consultationId,
+      userSub,
+    );
+    if (role !== 'expert')
+      apiError('FORBIDDEN', 'Только эксперт может завершить консультацию', 403);
+
+    const now = this.clock.now();
+    const result = await this.prisma.consultation.updateMany({
+      where: { id: consultationId, status: ConsultationStatus.ACTIVE },
+      data: { status: ConsultationStatus.COMPLETED, outcome, endedAt: now },
+    });
+    if (result.count === 0)
+      apiError(
+        'CONSULTATION_NOT_ACTIVE',
+        'Консультация уже завершена или отменена',
+        409,
+      );
+
+    const durationMin = Math.round(
+      (now.getTime() - consultation.startedAt.getTime()) / 60000,
+    );
+
+    await this.returnExpertToAccepting(consultation.expertId);
+
+    await this.audit.log({
+      actorType: 'expert',
+      actorId: consultation.expertId,
+      entity: 'consultation',
+      entityId: consultationId,
+      transition: 'consultation.completed',
+      payload: { outcome, durationMin },
+    });
+
+    this.emitConsultationUpdated(
+      consultation,
+      ConsultationStatus.COMPLETED,
+      outcome,
+    );
+
+    const updated = await this.prisma.consultation.findUniqueOrThrow({
+      where: { id: consultationId },
+    });
+    return this.toExpertDto(updated);
+  }
+
+  // Клиент отменяет консультацию. Только ACTIVE -> 409 иначе; атомарный
+  // updateMany на защиту от гонки с complete() эксперта. Redis-счётчик
+  // злоупотреблений: INCR (создаёт ключ при первом вызове) + EXPIRE только
+  // если TTL ещё не установлен (ttl === -1) — идемпотентно относительно
+  // повторных отмен того же клиента внутри окна.
+  async cancel(
+    consultationId: string,
+    userSub: string,
+  ): Promise<ConsultationClientDto> {
+    const { consultation, role } = await this.resolveParticipant(
+      consultationId,
+      userSub,
+    );
+    if (role !== 'client')
+      apiError('FORBIDDEN', 'Только клиент может отменить консультацию', 403);
+
+    const now = this.clock.now();
+    const result = await this.prisma.consultation.updateMany({
+      where: { id: consultationId, status: ConsultationStatus.ACTIVE },
+      data: {
+        status: ConsultationStatus.CANCELLED,
+        outcome: ConsultationOutcome.CLIENT_CANCELLED,
+        endedAt: now,
+      },
+    });
+    if (result.count === 0)
+      apiError(
+        'CONSULTATION_NOT_ACTIVE',
+        'Консультация уже завершена или отменена',
+        409,
+      );
+
+    const abuseKey = `abuse:client:${userSub}`;
+    const count = await this.redis.incr(abuseKey);
+    if (count === 1) {
+      await this.redis.expire(abuseKey, ABUSE_CLIENT_TTL_SECONDS);
+    } else {
+      const ttl = await this.redis.ttl(abuseKey);
+      if (ttl === -1)
+        await this.redis.expire(abuseKey, ABUSE_CLIENT_TTL_SECONDS);
+    }
+
+    await this.returnExpertToAccepting(consultation.expertId);
+
+    await this.audit.log({
+      actorType: 'user',
+      actorId: userSub,
+      entity: 'consultation',
+      entityId: consultationId,
+      transition: 'consultation.cancelled_by_client',
+    });
+
+    this.emitConsultationUpdated(
+      consultation,
+      ConsultationStatus.CANCELLED,
+      ConsultationOutcome.CLIENT_CANCELLED,
+    );
+
+    const updated = await this.prisma.consultation.findUniqueOrThrow({
+      where: { id: consultationId },
+    });
+    return this.toClientDto(updated);
+  }
+
+  // Паттерн компенсации: эксперт возвращается ACCEPTING+presence, ТОЛЬКО
+  // если он всё ещё BUSY (не сменил статус сам/не заблокирован в промежутке
+  // — в этих случаях его состояние трогать нельзя, оно уже managed кем-то
+  // другим). Presence сначала, БД потом — при сбое БД компенсация обратно.
+  private async returnExpertToAccepting(expertId: string): Promise<void> {
+    const expert = await this.prisma.expert.findUnique({
+      where: { id: expertId },
+    });
+    if (!expert || expert.workStatus !== WorkStatus.BUSY) return;
+
+    await this.presence.setAvailable(expertId);
+    try {
+      await this.prisma.expert.update({
+        where: { id: expertId },
+        data: { workStatus: WorkStatus.ACCEPTING },
+      });
+    } catch (e) {
+      try {
+        await this.presence.setUnavailable(expertId);
+      } catch (compensationError) {
+        this.logger.error(
+          `Failed to compensate presence for expert ${expertId}: ${
+            compensationError instanceof Error
+              ? compensationError.message
+              : String(compensationError)
+          }`,
+          compensationError instanceof Error
+            ? compensationError.stack
+            : undefined,
+        );
+      }
+      throw e;
+    }
+
+    await this.audit.log({
+      actorType: 'system',
+      entity: 'expert',
+      entityId: expertId,
+      transition: 'expert.work_status_changed',
+      payload: { from: WorkStatus.BUSY, to: WorkStatus.ACCEPTING },
+    });
+  }
+
+  private emitConsultationUpdated(
+    consultation: Consultation,
+    status: ConsultationStatus,
+    outcome: ConsultationOutcome,
+  ): void {
+    const payload = { id: consultation.id, status, outcome };
+    this.events.emitToUser(
+      consultation.clientUserId,
+      'consultation.updated',
+      payload,
+    );
+    this.events.emitToExpert(
+      consultation.expertId,
+      'consultation.updated',
+      payload,
+    );
   }
 
   // Резолвит участие пользователя в консультации: клиент по clientUserId,

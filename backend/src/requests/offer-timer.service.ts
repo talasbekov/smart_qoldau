@@ -13,6 +13,7 @@ import { OfferTimerRegistry } from './offer-timer.registry';
 import { RequestsService } from './requests.service';
 import { EscalationService } from './escalation.service';
 import { EventsService } from '../ws/events.service';
+import { NoShowService } from '../consultations/no-show.service';
 
 export const OFFERS_DEADLINES_KEY = 'offers:deadlines';
 export const REQUESTS_RESCAN_KEY = 'requests:rescan';
@@ -41,6 +42,7 @@ export class OfferTimerService implements OfferTimerRegistry {
     private requestsService: RequestsService,
     @Inject(forwardRef(() => EscalationService))
     private escalation: EscalationService,
+    private noShow: NoShowService,
   ) {}
 
   async schedule(offerId: string, deadlineAt: Date): Promise<void> {
@@ -75,7 +77,10 @@ export class OfferTimerService implements OfferTimerRegistry {
   //      (кроме emergency — у них своя эскалация, шаг 4, Р-16);
   //   4) экстренная эскалация Р-16 (EscalationService): SEARCHING emergency
   //      ≥120с без broadcastAt -> broadcast всем кандидатам; ≥300с ->
-  //      CALLBACK_REQUESTED + горячие линии.
+  //      CALLBACK_REQUESTED + горячие линии;
+  //   5) no-show хинт (NoShowService, E4 Task 5): ACTIVE audio/video
+  //      консультации без clientJoinedAt спустя 180с после старта ->
+  //      уведомление эксперта (решение за ним — complete CLIENT_NO_SHOW).
   // Возвращает число обработанных истёкших офферов (шаг 1).
   // Каждый шаг изолирован собственным try/catch: сбой одного (например,
   // транзиентная ошибка Redis в рескане) не блокирует остальные.
@@ -100,6 +105,11 @@ export class OfferTimerService implements OfferTimerRegistry {
       await this.escalation.escalate();
     } catch (e) {
       this.logStepError('escalation', e);
+    }
+    try {
+      await this.noShow.sweep();
+    } catch (e) {
+      this.logStepError('noShow', e);
     }
     return processed;
   }
