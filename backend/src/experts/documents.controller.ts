@@ -10,7 +10,6 @@ import {
   UploadedFile,
   UseGuards,
   UseInterceptors,
-  FileTypeValidator,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import {
@@ -31,6 +30,7 @@ import { ExpertDocumentDto, SubmitVerificationDto } from './dto/document.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { ExpertGuard } from './expert.guard';
 import { CurrentExpert } from './current-expert.decorator';
+import { FileSignatureValidator } from './file-signature.validator';
 
 @ApiTags('experts')
 @Controller('experts/me/documents')
@@ -82,7 +82,7 @@ export class DocumentsController {
       new ParseFilePipe({
         validators: [
           new MaxFileSizeValidator({ maxSize: 10 * 1024 * 1024 }),
-          new FileTypeValidator({ fileType: /(pdf|jpe?g|png)$/ }),
+          new FileSignatureValidator(),
         ],
       }),
     )
