@@ -6,6 +6,7 @@ import { MatchingModule } from '../matching/matching.module';
 import { ExpertsModule } from '../experts/experts.module';
 import { RedisModule } from '../redis/redis.module';
 import { WsModule } from '../ws/ws.module';
+import { ConsultationsModule } from '../consultations/consultations.module';
 import { RequestsService } from './requests.service';
 import { RequestsController } from './requests.controller';
 import { OffersController } from './offers.controller';
@@ -22,6 +23,7 @@ import { EscalationService } from './escalation.service';
     ExpertsModule,
     RedisModule,
     WsModule,
+    ConsultationsModule,
   ],
   controllers: [RequestsController, OffersController],
   providers: [

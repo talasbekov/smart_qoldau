@@ -8,6 +8,7 @@ import { ClockService } from '../common/clock/clock.service';
 import { MatchingService } from '../matching/matching.service';
 import { ExpertsService } from '../experts/experts.service';
 import { EventsService } from '../ws/events.service';
+import { ConsultationsService } from '../consultations/consultations.service';
 import { apiError } from '../common/filters/app-exception.filter';
 import { CreateRequestDto } from './dto/create-request.dto';
 import { RequestDto } from './dto/request.dto';
@@ -31,6 +32,7 @@ export class RequestsService {
     private matching: MatchingService,
     private experts: ExpertsService,
     private events: EventsService,
+    private consultations: ConsultationsService,
     @Inject(forwardRef(() => OFFER_TIMER_REGISTRY))
     private offerTimer: OfferTimerRegistry,
   ) {}
@@ -244,7 +246,10 @@ export class RequestsService {
   // Атомарное принятие оффера. Два шага updateMany (сначала оффер, затем
   // заявка) держат гонки безопасными без транзакции на уровне приложения —
   // выигрывает ровно один updateMany на каждом шаге.
-  async claimOffer(offerId: string, expertId: string): Promise<Request> {
+  async claimOffer(
+    offerId: string,
+    expertId: string,
+  ): Promise<Request & { consultationId: string }> {
     const offer = await this.prisma.requestCandidate.findUnique({
       where: { id: offerId },
     });
@@ -310,20 +315,29 @@ export class RequestsService {
       payload: { expertId },
     });
 
-    await this.revokeOtherPendingOffers(offer!.requestId, offerId);
-
     const matched = await this.prisma.request.findUniqueOrThrow({
       where: { id: offer!.requestId },
     });
+
+    // Создание консультации ДО revokeOtherPendingOffers/эмитов — эксперт
+    // сразу переходит в BUSY (авто-BUSY, Р-13), прежде чем остальные
+    // офферы этой заявки будут отозваны и клиенту/эксперту уйдут события.
+    const consultation = await this.consultations.createFromMatch(
+      matched,
+      expertId,
+    );
+
+    await this.revokeOtherPendingOffers(offer!.requestId, offerId);
 
     const matchedExpert = await this.experts.findPublicById(expertId);
     this.events.emitToUser(matched.clientUserId, 'request.updated', {
       id: matched.id,
       status: matched.status,
       matchedExpert,
+      consultationId: consultation.id,
     });
 
-    return matched;
+    return { ...matched, consultationId: consultation.id };
   }
 
   async acceptOffer(
@@ -331,7 +345,11 @@ export class RequestsService {
     expertId: string,
   ): Promise<AcceptOfferDto> {
     const request = await this.claimOffer(offerId, expertId);
-    return { requestId: request.id, status: request.status };
+    return {
+      requestId: request.id,
+      status: request.status,
+      consultationId: request.consultationId,
+    };
   }
 
   async declineOffer(offerId: string, expertId: string): Promise<void> {
@@ -486,6 +504,13 @@ export class RequestsService {
       dto.matchedExpert = await this.experts.findPublicById(
         request.matchedExpertId,
       );
+      // Консультация создаётся сразу при матче (claimOffer -> createFromMatch,
+      // Р-13) — клиент видит её id прямо в статусе заявки.
+      const consultation = await this.prisma.consultation.findUnique({
+        where: { requestId: request.id },
+        select: { id: true },
+      });
+      if (consultation) dto.consultationId = consultation.id;
     }
     if (request.status === RequestStatus.CALLBACK_REQUESTED) {
       dto.hotlines = HOTLINES;

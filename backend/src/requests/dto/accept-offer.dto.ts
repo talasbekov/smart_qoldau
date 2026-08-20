@@ -7,4 +7,7 @@ export class AcceptOfferDto {
 
   @ApiProperty({ enum: RequestStatus, example: 'MATCHED' })
   status: RequestStatus;
+
+  @ApiProperty({ format: 'uuid' })
+  consultationId: string;
 }

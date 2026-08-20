@@ -21,6 +21,12 @@ export class RequestDto {
   matchedExpert?: ExpertPublicDto;
 
   @ApiPropertyOptional({
+    format: 'uuid',
+    description: 'Консультация, созданная при матче (статус MATCHED)',
+  })
+  consultationId?: string;
+
+  @ApiPropertyOptional({
     isArray: true,
     example: ['150', '103', '112'],
     description: 'Горячие линии при статусе CALLBACK_REQUESTED',

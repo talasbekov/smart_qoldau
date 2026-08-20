@@ -21,6 +21,7 @@ import { MatchingModule } from './matching/matching.module';
 import { RequestsModule } from './requests/requests.module';
 import { WsModule } from './ws/ws.module';
 import { FavoritesModule } from './favorites/favorites.module';
+import { ConsultationsModule } from './consultations/consultations.module';
 
 @Module({
   imports: [
@@ -42,6 +43,7 @@ import { FavoritesModule } from './favorites/favorites.module';
     ScheduleModule,
     MatchingModule,
     WsModule,
+    ConsultationsModule,
     RequestsModule,
     FavoritesModule,
   ],
