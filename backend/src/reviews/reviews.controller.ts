@@ -24,6 +24,8 @@ import { CreateReviewDto } from './dto/create-review.dto';
 import { ListExpertReviewsDto } from './dto/list-expert-reviews.dto';
 import { ExpertReviewsDto } from './dto/expert-reviews.dto';
 import { ReviewCreatedDto } from './dto/review-created.dto';
+import { ReplyReviewDto } from './dto/reply-review.dto';
+import { ComplaintReviewDto } from './dto/complaint-review.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CurrentUser } from '../auth/current-user.decorator';
 import { JwtPayload } from '../auth/jwt.strategy';
@@ -72,6 +74,40 @@ export class ReviewsController {
     @Param('id') id: string,
   ): Promise<void> {
     await this.reviews.remove(id, user.sub);
+  }
+
+  @Post(':id/reply')
+  @HttpCode(200)
+  @ApiOperation({
+    summary:
+      'Ответ эксперта на отзыв о себе (только PUBLISHED, повтор перезаписывает)',
+  })
+  @ApiOkResponse({ description: 'Ответ сохранён' })
+  @ApiNotFoundResponse({ description: 'REVIEW_NOT_FOUND' })
+  @ApiConflictResponse({ description: 'INVALID_STATE_TRANSITION' })
+  async reply(
+    @CurrentUser() user: JwtPayload,
+    @Param('id') id: string,
+    @Body() dto: ReplyReviewDto,
+  ): Promise<void> {
+    await this.reviews.reply(id, user.sub, dto);
+  }
+
+  @Post(':id/complaint')
+  @HttpCode(200)
+  @ApiOperation({
+    summary:
+      'Жалоба эксперта на отзыв о себе: PUBLISHED -> FLAGGED, скрывается из публичной выдачи до решения админа',
+  })
+  @ApiOkResponse({ description: 'Жалоба зафиксирована' })
+  @ApiNotFoundResponse({ description: 'REVIEW_NOT_FOUND' })
+  @ApiConflictResponse({ description: 'INVALID_STATE_TRANSITION' })
+  async complaint(
+    @CurrentUser() user: JwtPayload,
+    @Param('id') id: string,
+    @Body() dto: ComplaintReviewDto,
+  ): Promise<void> {
+    await this.reviews.complaint(id, user.sub, dto);
   }
 }
 

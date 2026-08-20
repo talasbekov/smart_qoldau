@@ -10,11 +10,16 @@ import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import { ConsultationsService } from '../consultations/consultations.service';
+import { ExpertsService } from '../experts/experts.service';
 import { apiError } from '../common/filters/app-exception.filter';
 import { CreateReviewDto } from './dto/create-review.dto';
 import { ListExpertReviewsDto } from './dto/list-expert-reviews.dto';
 import { ExpertReviewsDto } from './dto/expert-reviews.dto';
 import { ReviewCreatedDto } from './dto/review-created.dto';
+import { ReplyReviewDto } from './dto/reply-review.dto';
+import { ComplaintReviewDto } from './dto/complaint-review.dto';
+import { ResolveReviewDto } from './dto/resolve-review.dto';
+import { FlaggedReviewDto } from './dto/flagged-review.dto';
 
 const DEFAULT_TAKE = 20;
 const MAX_TAKE = 100;
@@ -34,6 +39,7 @@ export class ReviewsService {
     private prisma: PrismaService,
     private audit: AuditService,
     private consultations: ConsultationsService,
+    private experts: ExpertsService,
   ) {}
 
   // Клиент оставляет отзыв на завершённую консультацию (COMPLETED +
@@ -132,6 +138,146 @@ export class ReviewsService {
       entityId: reviewId,
       transition: 'review.deleted',
       payload: { expertId: review!.expertId },
+    });
+  }
+
+  // Найти отзыв и проверить, что вызывающий — эксперт, о котором этот
+  // отзыв. Чужой эксперт/не-эксперт/несуществующий отзыв -> 404
+  // REVIEW_NOT_FOUND (не раскрываем существование чужого отзыва).
+  private async findOwnReviewOrThrow(
+    reviewId: string,
+    userSub: string,
+  ): Promise<Review> {
+    const expert = await this.experts.findByUserId(userSub);
+    const review = await this.prisma.review.findUnique({
+      where: { id: reviewId },
+    });
+    if (!review || !expert || review.expertId !== expert.id)
+      apiError('REVIEW_NOT_FOUND', 'Отзыв не найден', 404);
+    return review!;
+  }
+
+  // Ответ эксперта на отзыв о себе. Разрешён только для PUBLISHED —
+  // FLAGGED/HIDDEN -> 409 (сначала разбор жалобы/модерация). Повторный
+  // reply перезаписывает предыдущий текст.
+  async reply(
+    reviewId: string,
+    userSub: string,
+    dto: ReplyReviewDto,
+  ): Promise<void> {
+    const review = await this.findOwnReviewOrThrow(reviewId, userSub);
+
+    if (review.status !== ReviewStatus.PUBLISHED)
+      apiError(
+        'INVALID_STATE_TRANSITION',
+        'Ответ можно оставить только на опубликованный отзыв',
+        409,
+      );
+
+    await this.prisma.review.update({
+      where: { id: reviewId },
+      data: { expertReply: dto.text },
+    });
+
+    await this.audit.log({
+      actorType: 'expert',
+      actorId: userSub,
+      entity: 'review',
+      entityId: reviewId,
+      transition: 'review.replied',
+    });
+  }
+
+  // Жалоба эксперта на отзыв о себе: PUBLISHED -> FLAGGED (+ текст жалобы).
+  // Отзыв временно выпадает из публичной выдачи и агрегатов рейтинга —
+  // пересчёт делаем В ТРАНЗАКЦИИ сразу (recalcExpertRating считает только
+  // PUBLISHED, поэтому FLAGGED автоматически исключается). Повторная жалоба
+  // на уже FLAGGED-отзыв -> 409.
+  async complaint(
+    reviewId: string,
+    userSub: string,
+    dto: ComplaintReviewDto,
+  ): Promise<void> {
+    const review = await this.findOwnReviewOrThrow(reviewId, userSub);
+
+    if (review.status !== ReviewStatus.PUBLISHED)
+      apiError(
+        'INVALID_STATE_TRANSITION',
+        'Жалобу можно подать только на опубликованный отзыв',
+        409,
+      );
+
+    await this.prisma.$transaction(async (tx) => {
+      await this.lockExpertRow(tx, review.expertId);
+      await tx.review.update({
+        where: { id: reviewId },
+        data: { status: ReviewStatus.FLAGGED, complaint: dto.text },
+      });
+      await this.recalcExpertRating(tx, review.expertId);
+    });
+
+    await this.audit.log({
+      actorType: 'expert',
+      actorId: userSub,
+      entity: 'review',
+      entityId: reviewId,
+      transition: 'review.flagged',
+    });
+  }
+
+  // Админ: список FLAGGED-отзывов для разбора — видит ВСЁ, включая
+  // privateText (обычно скрытый от эксперта/публики).
+  async listFlagged(): Promise<FlaggedReviewDto[]> {
+    const reviews = await this.prisma.review.findMany({
+      where: { status: ReviewStatus.FLAGGED },
+      orderBy: { createdAt: 'asc' },
+      select: {
+        id: true,
+        expertId: true,
+        rating: true,
+        publicText: true,
+        privateText: true,
+        complaint: true,
+        createdAt: true,
+      },
+    });
+    return reviews;
+  }
+
+  // Админ-решение по FLAGGED-отзыву: hide -> HIDDEN (остаётся вне выдачи
+  // и агрегатов), restore -> PUBLISHED (возврат в публичную выдачу и
+  // агрегаты). В обоих случаях пересчёт в той же транзакции. Не-FLAGGED
+  // отзыв -> 409 INVALID_STATE_TRANSITION.
+  async resolve(reviewId: string, dto: ResolveReviewDto): Promise<void> {
+    const review = await this.prisma.review.findUnique({
+      where: { id: reviewId },
+    });
+    if (!review) apiError('REVIEW_NOT_FOUND', 'Отзыв не найден', 404);
+    if (review!.status !== ReviewStatus.FLAGGED)
+      apiError(
+        'INVALID_STATE_TRANSITION',
+        'Разрешить можно только отзыв в статусе FLAGGED',
+        409,
+      );
+
+    const newStatus =
+      dto.action === 'hide' ? ReviewStatus.HIDDEN : ReviewStatus.PUBLISHED;
+
+    await this.prisma.$transaction(async (tx) => {
+      await this.lockExpertRow(tx, review!.expertId);
+      await tx.review.update({
+        where: { id: reviewId },
+        data: { status: newStatus },
+      });
+      await this.recalcExpertRating(tx, review!.expertId);
+    });
+
+    await this.audit.log({
+      actorType: 'admin',
+      entity: 'review',
+      entityId: reviewId,
+      transition: dto.action === 'hide' ? 'review.hidden' : 'review.restored',
+      payload: { comment: dto.comment },
     });
   }
 
