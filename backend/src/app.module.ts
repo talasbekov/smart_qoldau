@@ -25,6 +25,7 @@ import { ConsultationsModule } from './consultations/consultations.module';
 import { ChatModule } from './chat/chat.module';
 import { MediaModule } from './media/media.module';
 import { ReviewsModule } from './reviews/reviews.module';
+import { LedgerModule } from './ledger/ledger.module';
 
 @Module({
   imports: [
@@ -52,6 +53,7 @@ import { ReviewsModule } from './reviews/reviews.module';
     ChatModule,
     MediaModule,
     ReviewsModule,
+    LedgerModule,
   ],
   controllers: [AppController],
   providers: [AppService],
