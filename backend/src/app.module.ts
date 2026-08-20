@@ -24,6 +24,7 @@ import { FavoritesModule } from './favorites/favorites.module';
 import { ConsultationsModule } from './consultations/consultations.module';
 import { ChatModule } from './chat/chat.module';
 import { MediaModule } from './media/media.module';
+import { ReviewsModule } from './reviews/reviews.module';
 
 @Module({
   imports: [
@@ -50,6 +51,7 @@ import { MediaModule } from './media/media.module';
     FavoritesModule,
     ChatModule,
     MediaModule,
+    ReviewsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -220,12 +220,17 @@ export class ExpertsService {
     if (filters.language) where.languages = { has: filters.language };
     if (filters.format) where.formats = { has: filters.format };
 
-    const orderBy: Prisma.ExpertOrderByWithRelationInput | undefined =
+    const orderBy:
+      | Prisma.ExpertOrderByWithRelationInput
+      | Prisma.ExpertOrderByWithRelationInput[]
+      | undefined =
       filters.sort === 'price_asc'
         ? { priceTiyn: 'asc' }
         : filters.sort === 'price_desc'
           ? { priceTiyn: 'desc' }
-          : undefined;
+          : filters.sort === 'rating'
+            ? [{ ratingAvg: 'desc' }, { priceTiyn: 'asc' }]
+            : undefined;
 
     const experts = await this.prisma.expert.findMany({
       where,
@@ -282,6 +287,8 @@ export class ExpertsService {
       formats: expert.formats,
       topicSlugs: expert.topics.map((t) => t.topic.slug).sort(),
       workStatus: expert.workStatus,
+      ratingAvg: expert.ratingAvg,
+      ratingCount: expert.ratingCount,
     };
   }
 

@@ -55,6 +55,9 @@ describe('OpenAPI (e2e)', () => {
       '/v1/consultations/{id}/cancel',
       '/v1/consultations/{id}/note',
       '/v1/webhooks/livekit',
+      '/v1/consultations/{id}/review',
+      '/v1/reviews/{id}',
+      '/v1/experts/{id}/reviews',
     ])
       expect(paths).toContain(p);
   });

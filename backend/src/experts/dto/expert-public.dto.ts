@@ -31,4 +31,12 @@ export class ExpertPublicDto {
 
   @ApiProperty({ enum: WorkStatus })
   workStatus: WorkStatus;
+
+  @ApiProperty({
+    description: 'Средний рейтинг по PUBLISHED-отзывам (0 если отзывов нет)',
+  })
+  ratingAvg: number;
+
+  @ApiProperty({ description: 'Количество PUBLISHED-отзывов' })
+  ratingCount: number;
 }
