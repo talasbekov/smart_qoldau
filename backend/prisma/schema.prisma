@@ -576,7 +576,13 @@ model Ticket {
   createdAt             DateTime         @default(now()) @map("created_at")
   updatedAt             DateTime         @updatedAt @map("updated_at")
   messages              TicketMessage[]
-  @@index([status, team, createdAt])
+  // (team, status, createdAt), а не (status, team, createdAt): дефолтный
+  // запрос очереди GET /v1/admin/tickets (без фильтра status) —
+  // WHERE team IN (...) ORDER BY created_at DESC, id DESC — не содержит
+  // status в предикате вообще, поэтому status как ведущая колонка индекс не
+  // обслуживает (финальное ревью E8a, п.6). team ведущей колонкой обслуживает
+  // и «вся своя очередь», и «своя очередь + фильтр status».
+  @@index([team, status, createdAt])
   @@index([authorUserId, createdAt])
   @@map("tickets")
 }

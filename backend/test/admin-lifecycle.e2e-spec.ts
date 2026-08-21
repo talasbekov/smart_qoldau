@@ -200,7 +200,7 @@ describe('Сквозной e2e ролей админки и тикетов по�
       200,
     );
     expect(
-      (supportQueue.body as Array<{ id: string }>).map((t) => t.id),
+      (supportQueue.body.items as Array<{ id: string }>).map((t) => t.id),
     ).toContain(paymentTicketId);
 
     // ...а финконтроль его не видит (своя команда FINANCE_CONTROL не
@@ -211,7 +211,7 @@ describe('Сквозной e2e ролей админки и тикетов по�
       financeToken,
     ).expect(200);
     expect(
-      (financeQueueBefore.body as Array<{ id: string }>).map((t) => t.id),
+      (financeQueueBefore.body.items as Array<{ id: string }>).map((t) => t.id),
     ).not.toContain(paymentTicketId);
 
     // --- 4. Оператор поддержки отвечает -------------------------------------
@@ -278,7 +278,7 @@ describe('Сквозной e2e ролей админки и тикетов по�
       financeToken,
     ).expect(200);
     expect(
-      (financeQueueAfter.body as Array<{ id: string }>).map((t) => t.id),
+      (financeQueueAfter.body.items as Array<{ id: string }>).map((t) => t.id),
     ).toContain(payoutTicketId);
 
     // ...поддержка его не видит.
@@ -287,7 +287,7 @@ describe('Сквозной e2e ролей админки и тикетов по�
       supportToken,
     ).expect(200);
     expect(
-      (supportQueueAfter.body as Array<{ id: string }>).map((t) => t.id),
+      (supportQueueAfter.body.items as Array<{ id: string }>).map((t) => t.id),
     ).not.toContain(payoutTicketId);
 
     // --- 7. Пользовательский JWT в админку -> 403 ADMIN_FORBIDDEN ----------

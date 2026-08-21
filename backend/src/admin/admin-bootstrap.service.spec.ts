@@ -1,5 +1,6 @@
 import * as bcrypt from 'bcrypt';
 import { ConfigService } from '@nestjs/config';
+import { Prisma } from '@prisma/client';
 import { AdminBootstrapService } from './admin-bootstrap.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
@@ -7,7 +8,11 @@ import { AuditService } from '../audit/audit.service';
 const EMAIL = 'root@smartqoldau.kz';
 const PASSWORD = 'super-secret-pass-1234';
 
-function buildService(count: number, env: Record<string, string | undefined>) {
+function buildService(
+  count: number,
+  env: Record<string, string | undefined>,
+  createImpl?: (args: { data: Record<string, unknown> }) => Promise<unknown>,
+) {
   const created = {
     id: 'admin-bootstrap-1',
     email: EMAIL,
@@ -18,8 +23,9 @@ function buildService(count: number, env: Record<string, string | undefined>) {
       count: jest.fn().mockResolvedValue(count),
       create: jest
         .fn()
-        .mockImplementation(({ data }) =>
-          Promise.resolve({ ...created, ...data }),
+        .mockImplementation(
+          createImpl ??
+            (({ data }) => Promise.resolve({ ...created, ...data })),
         ),
     },
   };
@@ -82,5 +88,35 @@ describe('AdminBootstrapService.seedIfEmpty', () => {
     await expect(service.seedIfEmpty()).resolves.toBe('skipped');
     expect(prisma.adminUser.create).not.toHaveBeenCalled();
     expect(audit.log).not.toHaveBeenCalled();
+  });
+
+  it('гонка параллельного старта: count()=0 у обоих, create() второго ловит P2002 -> skipped, без audit и без падения onModuleInit', async () => {
+    const p2002 = new Prisma.PrismaClientKnownRequestError(
+      'Unique constraint failed on the fields: (`email`)',
+      { code: 'P2002', clientVersion: '6.19.3' },
+    );
+    const { service, prisma, audit } = buildService(
+      0,
+      { ADMIN_BOOTSTRAP_EMAIL: EMAIL, ADMIN_BOOTSTRAP_PASSWORD: PASSWORD },
+      () => Promise.reject(p2002),
+    );
+
+    await expect(service.seedIfEmpty()).resolves.toBe('skipped');
+    expect(prisma.adminUser.create).toHaveBeenCalledTimes(1);
+    expect(audit.log).not.toHaveBeenCalled();
+  });
+
+  it('create() падает с не-P2002 ошибкой -> проброс исключения (не проглатывается как skipped)', async () => {
+    const other = new Prisma.PrismaClientKnownRequestError('Timeout', {
+      code: 'P2024',
+      clientVersion: '6.19.3',
+    });
+    const { service } = buildService(
+      0,
+      { ADMIN_BOOTSTRAP_EMAIL: EMAIL, ADMIN_BOOTSTRAP_PASSWORD: PASSWORD },
+      () => Promise.reject(other),
+    );
+
+    await expect(service.seedIfEmpty()).rejects.toBe(other);
   });
 });

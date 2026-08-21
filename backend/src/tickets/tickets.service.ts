@@ -25,6 +25,7 @@ import { ListTicketsDto } from './dto/list-tickets.dto';
 import { AdminListTicketsDto } from './dto/admin-list-tickets.dto';
 import {
   AdminTicketDetailDto,
+  AdminTicketsListDto,
   TicketCreatedDto,
   TicketDetailDto,
   TicketSummaryDto,
@@ -159,10 +160,12 @@ export class TicketsService {
   // тикеты своих команд (staffTeams по ролям сотрудника, объединение при
   // нескольких ролях). Явный фильтр team за пределами своих команд -> пустой
   // список (не 403 — очередь чужой команды просто пуста для этого сотрудника).
+  // {items, total} (финальное ревью E8a, п.8) — как в admin-staff.service.ts:
+  // count() той же выборки без take/skip, параллельно с findMany.
   async adminList(
     admin: CurrentAdminPayload,
     filters: AdminListTicketsDto,
-  ): Promise<TicketSummaryDto[]> {
+  ): Promise<AdminTicketsListDto> {
     const take = Math.min(filters.take ?? DEFAULT_TAKE, MAX_TAKE);
     const skip = filters.skip ?? 0;
     const isSuperadmin = admin.roles.includes(AdminRole.SUPERADMIN);
@@ -172,20 +175,24 @@ export class TicketsService {
     if (filters.status) where.status = filters.status;
 
     if (filters.team) {
-      if (!isSuperadmin && !ownTeams.includes(filters.team)) return [];
+      if (!isSuperadmin && !ownTeams.includes(filters.team))
+        return { items: [], total: 0 };
       where.team = filters.team;
     } else if (!isSuperadmin) {
       where.team = { in: ownTeams };
     }
 
-    const tickets = await this.prisma.ticket.findMany({
-      where,
-      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
-      take,
-      skip,
-    });
+    const [tickets, total] = await Promise.all([
+      this.prisma.ticket.findMany({
+        where,
+        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+        take,
+        skip,
+      }),
+      this.prisma.ticket.count({ where }),
+    ]);
 
-    return tickets.map((t) => this.toSummary(t));
+    return { items: tickets.map((t) => this.toSummary(t)), total };
   }
 
   // GET /v1/admin/tickets/:id — карточка сотрудника: та же переписка, что и
@@ -225,10 +232,19 @@ export class TicketsService {
 
   // POST /v1/admin/tickets/:id/reply — сообщение сотрудника. Первый ответ
   // проставляет firstReplyAt и переводит NEW -> IN_PROGRESS; повторные ответы
-  // идемпотентны — firstReplyAt НЕ сдвигается (условное ?? поверх уже
-  // сохранённого значения), IN_PROGRESS не откатывается назад. Тикет в
-  // RESOLVED -> 409 TICKET_ALREADY_RESOLVED (решённый тикет не переоткрывается
-  // ответом).
+  // идемпотентны — firstReplyAt НЕ сдвигается, IN_PROGRESS не откатывается
+  // назад. Тикет в RESOLVED -> 409 TICKET_ALREADY_RESOLVED (решённый тикет не
+  // переоткрывается ответом).
+  //
+  // firstReplyAt/status проставляются условным updateMany (фильтр
+  // firstReplyAt: null), а не безусловной записью прочитанного выше
+  // ticket.firstReplyAt (финальное ревью E8a, п.4): при check-then-act два
+  // сотрудника, одновременно первыми ответившие в один NEW-тикет, оба видели
+  // бы firstReplyAt === null и оба писали бы СВОЙ now — победила бы
+  // транзакция с более поздним commit'ом, искажая метрику первой реакции.
+  // Условный апдейт гарантирует, что запись выигрывает ровно один вызов (тот
+  // же паттерн "victory by count", что approve()/reject() в
+  // payouts.service.ts).
   async reply(
     admin: CurrentAdminPayload,
     id: string,
@@ -239,9 +255,8 @@ export class TicketsService {
       apiError('TICKET_ALREADY_RESOLVED', 'Обращение уже решено', 409);
 
     const now = this.clock.now();
-    const isFirstReply = ticket.firstReplyAt === null;
 
-    await this.prisma.$transaction([
+    const [, firstReplyUpdate] = await this.prisma.$transaction([
       this.prisma.ticketMessage.create({
         data: {
           ticketId: id,
@@ -251,17 +266,12 @@ export class TicketsService {
           createdAt: now,
         },
       }),
-      this.prisma.ticket.update({
-        where: { id },
-        data: {
-          status:
-            ticket.status === TicketStatus.NEW
-              ? TicketStatus.IN_PROGRESS
-              : ticket.status,
-          firstReplyAt: ticket.firstReplyAt ?? now,
-        },
+      this.prisma.ticket.updateMany({
+        where: { id, firstReplyAt: null },
+        data: { status: TicketStatus.IN_PROGRESS, firstReplyAt: now },
       }),
     ]);
+    const isFirstReply = firstReplyUpdate.count > 0;
 
     await this.audit.log({
       actorType: 'admin',
@@ -289,15 +299,22 @@ export class TicketsService {
 
   // POST /v1/admin/tickets/:id/resolve — решение тикета сотрудником.
   // Повторный вызов на уже решённом тикете -> 409 TICKET_ALREADY_RESOLVED.
+  //
+  // updateMany с фильтром по текущему статусу (не check-then-act update) —
+  // тот же паттерн, что approve()/reject() в payouts.service.ts, «победит
+  // ровно один»: двое операторов, одновременно нажавших «Решить» на одном
+  // тикете, иначе оба получили бы 200 и resolvedAt перезаписался бы вторым
+  // (финальное ревью E8a, п.4).
   async resolve(admin: CurrentAdminPayload, id: string): Promise<void> {
-    const ticket = await this.findAccessibleOrThrow(admin, id);
-    if (ticket.status === TicketStatus.RESOLVED)
-      apiError('TICKET_ALREADY_RESOLVED', 'Обращение уже решено', 409);
+    await this.findAccessibleOrThrow(admin, id);
 
-    await this.prisma.ticket.update({
-      where: { id },
+    const resolved = await this.prisma.ticket.updateMany({
+      where: { id, status: { not: TicketStatus.RESOLVED } },
       data: { status: TicketStatus.RESOLVED, resolvedAt: this.clock.now() },
     });
+    if (resolved.count === 0) {
+      apiError('TICKET_ALREADY_RESOLVED', 'Обращение уже решено', 409);
+    }
 
     await this.audit.log({
       actorType: 'admin',

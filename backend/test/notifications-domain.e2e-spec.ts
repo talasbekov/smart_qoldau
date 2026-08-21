@@ -228,9 +228,6 @@ describe('Уведомления доменных событий: деньги, 
       where: { entityId: { in: [...userIds, ...expertIds] } },
     });
     await prisma.user.deleteMany({ where: { id: { in: userIds } } });
-    await prisma.adminUser.deleteMany({
-      where: { email: { startsWith: ADMIN_EMAIL_PREFIX } },
-    });
     registeredExpertIds.length = 0;
 
     const keys = await redis.keys('mockpush:*');
@@ -270,6 +267,14 @@ describe('Уведомления доменных событий: деньги, 
 
   afterAll(async () => {
     await cleanup();
+    // adminUser (operatorAuth/financeAuth) НЕ в cleanup(): она вызывается в
+    // beforeEach перед КАЖДЫМ тестом, а обе строки создаются один раз в
+    // beforeAll — удаление их в cleanup() убирало бы сотрудников до первого
+    // же теста (финальное ревью E8a, п.7). Строки убираются только здесь,
+    // после всех тестов сьюта.
+    await prisma.adminUser.deleteMany({
+      where: { email: { startsWith: ADMIN_EMAIL_PREFIX } },
+    });
     await app.close();
   });
 

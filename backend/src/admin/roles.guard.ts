@@ -7,7 +7,13 @@ import { ADMIN_ROLES_KEY } from './roles.decorator';
 
 // Применяется ПОСЛЕ AdminJwtGuard: сверяет роли сотрудника (request.user.roles,
 // заполненные JwtStrategy.validate) с метаданными @Roles на маршруте.
-// - Нет @Roles на маршруте -> пропускает (доступ уже ограничен AdminJwtGuard).
+// - Нет @Roles ни на методе, ни на классе -> пропускает (доступ уже ограничен
+//   AdminJwtGuard). getAllAndOverride читает ОБА уровня (метод переопределяет
+//   класс) — @Roles на классе контроллера (естественный жест рядом с
+//   классовым @UseGuards) больше не игнорируется молча (финальное ревью E8a,
+//   п.3): раньше чтение только context.getHandler() значило, что классовый
+//   декоратор давал "нет метаданных" -> пропускает -> маршрут открывался
+//   любому сотруднику независимо от роли.
 // - Есть @Roles -> пропускает, если у сотрудника есть хотя бы одна из
 //   требуемых ролей ИЛИ роль SUPERADMIN.
 // - Иначе, включая случай отсутствия request.user/roles (AdminJwtGuard по
@@ -18,9 +24,9 @@ export class RolesGuard implements CanActivate {
   constructor(private reflector: Reflector) {}
 
   canActivate(context: ExecutionContext): boolean {
-    const requiredRoles = this.reflector.get<AdminRole[]>(
+    const requiredRoles = this.reflector.getAllAndOverride<AdminRole[]>(
       ADMIN_ROLES_KEY,
-      context.getHandler(),
+      [context.getHandler(), context.getClass()],
     );
     if (!requiredRoles || requiredRoles.length === 0) return true;
 

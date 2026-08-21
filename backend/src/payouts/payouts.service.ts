@@ -249,7 +249,7 @@ export class PayoutsService {
   async approve(payoutId: string, actorId: string): Promise<void> {
     const updated = await this.prisma.payout.updateMany({
       where: { id: payoutId, status: PayoutStatus.PENDING_REVIEW },
-      data: { status: PayoutStatus.PROCESSING, reviewedBy: 'admin' },
+      data: { status: PayoutStatus.PROCESSING, reviewedBy: actorId },
     });
     if (updated.count === 0) {
       await this.notPendingError(payoutId);
@@ -290,7 +290,7 @@ export class PayoutsService {
         data: {
           status: PayoutStatus.REJECTED,
           rejectReason: reason,
-          reviewedBy: 'admin',
+          reviewedBy: actorId,
         },
       });
       if (updated.count === 0) return null;

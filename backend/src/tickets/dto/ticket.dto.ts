@@ -51,6 +51,21 @@ export class TicketSummaryDto {
   updatedAt: Date;
 }
 
+// GET /v1/admin/tickets (финальное ревью E8a, п.8) — {items, total}, как в
+// GET /v1/admin/staff (StaffListDto) и в выплатах (AdminPayoutsListDto):
+// админка E8 пагинирует очередь и должна знать общее число страниц.
+// Пользовательский GET /v1/tickets НЕ трогаем — он маленький, без пагинации
+// в UI, и остаётся голым массивом (TicketSummaryDto[]).
+export class AdminTicketsListDto {
+  @ApiProperty({ type: [TicketSummaryDto] })
+  items: TicketSummaryDto[];
+
+  @ApiProperty({
+    description: 'Всего тикетов в выборке (независимо от страницы)',
+  })
+  total: number;
+}
+
 export class TicketMessageDto {
   @ApiProperty({ format: 'uuid' })
   id: string;

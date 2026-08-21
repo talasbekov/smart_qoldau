@@ -185,15 +185,17 @@ describe('Очередь тикетов, ответы и решение сотр
     );
 
     const list = await get('/v1/admin/tickets', support.token).expect(200);
-    const ids = (list.body as Array<{ id: string }>).map((t) => t.id);
+    const ids = (list.body.items as Array<{ id: string }>).map((t) => t.id);
     expect(ids).toContain(aId);
     expect(ids).not.toContain(bId);
+    expect(typeof list.body.total).toBe('number');
+    expect(list.body.total).toBeGreaterThanOrEqual(list.body.items.length);
 
     const foreignFilter = await get(
       '/v1/admin/tickets?team=FINANCE_CONTROL',
       support.token,
     ).expect(200);
-    expect(foreignFilter.body).toEqual([]);
+    expect(foreignFilter.body).toEqual({ items: [], total: 0 });
   });
 
   it('суперадмин видит тикеты всех команд без ограничения', async () => {
@@ -205,9 +207,10 @@ describe('Очередь тикетов, ответы и решение сотр
     );
 
     const list = await get('/v1/admin/tickets', superadmin.token).expect(200);
-    const ids = (list.body as Array<{ id: string }>).map((t) => t.id);
+    const ids = (list.body.items as Array<{ id: string }>).map((t) => t.id);
     expect(ids).toContain(aId);
     expect(ids).toContain(bId);
+    expect(list.body.total).toBeGreaterThanOrEqual(2);
   });
 
   it('сотрудник с несколькими ролями видит объединение своих команд, но не чужую', async () => {
@@ -220,7 +223,7 @@ describe('Очередь тикетов, ответы и решение сотр
     );
 
     const all = await get('/v1/admin/tickets', multi.token).expect(200);
-    const allIds = (all.body as Array<{ id: string }>).map((t) => t.id);
+    const allIds = (all.body.items as Array<{ id: string }>).map((t) => t.id);
     expect(allIds).toContain(aId);
     expect(allIds).toContain(bId);
     expect(allIds).not.toContain(cId);
@@ -230,15 +233,16 @@ describe('Очередь тикетов, ответы и решение сотр
       multi.token,
     ).expect(200);
     expect(
-      (onlySupport.body as Array<{ id: string }>).map((t) => t.id),
+      (onlySupport.body.items as Array<{ id: string }>).map((t) => t.id),
     ).toEqual([aId]);
+    expect(onlySupport.body.total).toBe(1);
 
     // QUALITY_TEAM не входит в роли этого сотрудника -> пустой список, не 403.
     const foreignFilter = await get(
       '/v1/admin/tickets?team=QUALITY_TEAM',
       multi.token,
     ).expect(200);
-    expect(foreignFilter.body).toEqual([]);
+    expect(foreignFilter.body).toEqual({ items: [], total: 0 });
   });
 
   it('карточка тикета: перепись + данные автора, audit ticket.viewed_by_staff', async () => {

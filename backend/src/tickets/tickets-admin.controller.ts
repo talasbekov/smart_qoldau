@@ -30,7 +30,7 @@ import {
 import { TicketsService } from './tickets.service';
 import { AdminListTicketsDto } from './dto/admin-list-tickets.dto';
 import { ReplyTicketDto } from './dto/reply-ticket.dto';
-import { AdminTicketDetailDto, TicketSummaryDto } from './dto/ticket.dto';
+import { AdminTicketDetailDto, AdminTicketsListDto } from './dto/ticket.dto';
 
 // Роли, открывающие доступ к очереди тикетов сотрудника (задача 8) —
 // профильные команды, на которые маршрутизируются тикеты (ticket-routing.ts).
@@ -57,11 +57,11 @@ export class TicketsAdminController {
     summary:
       'Очередь тикетов своих команд (SUPERADMIN — все команды без ограничения)',
   })
-  @ApiOkResponse({ type: TicketSummaryDto, isArray: true })
+  @ApiOkResponse({ type: AdminTicketsListDto })
   async list(
     @CurrentAdmin() admin: CurrentAdminPayload,
     @Query() query: AdminListTicketsDto,
-  ): Promise<TicketSummaryDto[]> {
+  ): Promise<AdminTicketsListDto> {
     return this.tickets.adminList(admin, query);
   }
 
@@ -88,6 +88,7 @@ export class TicketsAdminController {
       'Ответ сотрудника: первый ответ проставляет firstReplyAt и переводит NEW -> IN_PROGRESS (идемпотентно)',
   })
   @ApiParam({ name: 'id', format: 'uuid' })
+  @ApiOkResponse({ description: 'Ответ сохранён, тело ответа пустое' })
   @ApiNotFoundResponse({ description: 'TICKET_NOT_FOUND' })
   @ApiConflictResponse({ description: 'TICKET_ALREADY_RESOLVED' })
   async reply(
@@ -103,6 +104,7 @@ export class TicketsAdminController {
   @HttpCode(200)
   @ApiOperation({ summary: 'Решить тикет -> RESOLVED' })
   @ApiParam({ name: 'id', format: 'uuid' })
+  @ApiOkResponse({ description: 'Тикет решён, тело ответа пустое' })
   @ApiNotFoundResponse({ description: 'TICKET_NOT_FOUND' })
   @ApiConflictResponse({ description: 'TICKET_ALREADY_RESOLVED' })
   async resolve(

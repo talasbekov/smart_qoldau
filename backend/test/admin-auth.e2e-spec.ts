@@ -197,4 +197,23 @@ describe('Admin auth: вход сотрудника по email и паролю (
     expect(payload).not.toHaveProperty('roles');
     expect(payload.isGuest).toBe(true);
   });
+
+  // Финальное ревью E8a, п.5: JwtAuthGuard раньше принимал ЛЮБОЙ подписанный
+  // токен, включая токен сотрудника админки, на пользовательских маршрутах
+  // (confused deputy). GET /v1/tickets — маршрут задачи 8 (E8a), защищённый
+  // именно JwtAuthGuard (не OptionalJwtAuthGuard) — выбран как представитель.
+  it('админский JWT отклоняется пользовательским маршрутом (JwtAuthGuard) -> 403 FORBIDDEN', async () => {
+    const staff = await adminUser(
+      app,
+      ['SUPPORT_OPERATOR'],
+      uniqueEmail('confused-deputy'),
+    );
+
+    const res = await request(app.getHttpServer())
+      .get('/v1/tickets')
+      .set(...staff.authHeader)
+      .expect(403);
+
+    expect(res.body.error.code).toBe('FORBIDDEN');
+  });
 });

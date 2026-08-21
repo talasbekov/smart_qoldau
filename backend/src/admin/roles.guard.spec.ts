@@ -14,12 +14,26 @@ class DummyController {
   withoutRoles() {}
 }
 
+// Класс-пример с @Roles НА КЛАССЕ (естественный жест рядом с классовым
+// @UseGuards) — регрессионный кейс финального ревью E8a (п.3): раньше guard
+// читал метаданные только с context.getHandler() и молча пропускал такой
+// маршрут любому сотруднику.
+@Roles(AdminRole.FINANCE_CONTROL)
+class DummyControllerWithClassRoles {
+  noOwnRoles() {}
+
+  @Roles(AdminRole.SUPPORT_OPERATOR)
+  overridesClassRoles() {}
+}
+
 function buildContext(
   handler: (...args: unknown[]) => unknown,
   user?: Partial<JwtPayload>,
+  cls: new (...args: unknown[]) => unknown = DummyController,
 ): ExecutionContext {
   return {
     getHandler: () => handler,
+    getClass: () => cls,
     switchToHttp: () => ({
       getRequest: () => ({ user }),
     }),
@@ -96,6 +110,55 @@ describe('RolesGuard.canActivate', () => {
     const context = buildContext(
       DummyController.prototype.withRoles,
       undefined,
+    );
+
+    expect(() => guard.canActivate(context)).toThrow(HttpException);
+  });
+
+  it('@Roles на КЛАССЕ (без @Roles на методе): у сотрудника нет требуемой роли -> 403 ADMIN_FORBIDDEN, а не молчаливый пропуск', () => {
+    const guard = buildGuard();
+    const context = buildContext(
+      DummyControllerWithClassRoles.prototype.noOwnRoles,
+      { sub: 'staff-5', isGuest: false, isAdmin: true, roles: [] },
+      DummyControllerWithClassRoles,
+    );
+
+    expect(() => guard.canActivate(context)).toThrow(HttpException);
+    try {
+      guard.canActivate(context);
+      fail('ожидалось исключение');
+    } catch (e) {
+      expect((e as HttpException).getStatus()).toBe(403);
+    }
+  });
+
+  it('@Roles на классе: у сотрудника есть роль класса -> пропускает', () => {
+    const guard = buildGuard();
+    const context = buildContext(
+      DummyControllerWithClassRoles.prototype.noOwnRoles,
+      {
+        sub: 'staff-6',
+        isGuest: false,
+        isAdmin: true,
+        roles: [AdminRole.FINANCE_CONTROL],
+      },
+      DummyControllerWithClassRoles,
+    );
+
+    expect(guard.canActivate(context)).toBe(true);
+  });
+
+  it('@Roles на методе переопределяет @Roles на классе (getAllAndOverride): роль класса не пропускает метод со своими ролями', () => {
+    const guard = buildGuard();
+    const context = buildContext(
+      DummyControllerWithClassRoles.prototype.overridesClassRoles,
+      {
+        sub: 'staff-7',
+        isGuest: false,
+        isAdmin: true,
+        roles: [AdminRole.FINANCE_CONTROL],
+      },
+      DummyControllerWithClassRoles,
     );
 
     expect(() => guard.canActivate(context)).toThrow(HttpException);

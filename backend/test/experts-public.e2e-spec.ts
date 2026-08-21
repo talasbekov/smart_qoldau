@@ -76,9 +76,6 @@ describe('Experts public (e2e)', () => {
       where: { entityId: { in: [...userIds, ...expertIds] } },
     });
     await prisma.user.deleteMany({ where: { id: { in: userIds } } });
-    await prisma.adminUser.deleteMany({
-      where: { email: { startsWith: ADMIN_EMAIL_PREFIX } },
-    });
   }
 
   beforeAll(async () => {
@@ -99,6 +96,14 @@ describe('Experts public (e2e)', () => {
 
   afterAll(async () => {
     await cleanup();
+    // adminUser (operatorAuth) НЕ в cleanup(): она вызывается в beforeEach
+    // перед КАЖДЫМ тестом, а operatorAuth создаётся один раз в beforeAll —
+    // удаление его строки в cleanup() убирало бы сотрудника до первого же
+    // теста (финальное ревью E8a, п.7). Строка убирается только здесь, после
+    // всех тестов сьюта.
+    await prisma.adminUser.deleteMany({
+      where: { email: { startsWith: ADMIN_EMAIL_PREFIX } },
+    });
     await app.close();
   });
 

@@ -251,6 +251,10 @@ describe('Финконтроль выводов в админке (E5, зада�
     });
     expect(payout.status).toBe('PROCESSING');
     expect(payout.providerRefId).toBeTruthy();
+    // reviewedBy хранит id сотрудника, принявшего решение (домен финансового
+    // аудита выплаты), а не строковую заглушку — тот же actorId, что и в
+    // audit_log ниже.
+    expect(payout.reviewedBy).toBe(financeAuth.id);
     expect(await redis.get(`mockpayout:idem:payout:${payoutId}`)).toBeTruthy();
 
     const audit = await prisma.auditLog.findFirst({
@@ -290,6 +294,9 @@ describe('Финконтроль выводов в админке (E5, зада�
     });
     expect(payout.status).toBe('REJECTED');
     expect(payout.rejectReason).toBe('Подозрительная активность');
+    // reviewedBy — id сотрудника, отклонившего вывод, а не строковая
+    // заглушка (тот же actorId, что и в audit_log ниже).
+    expect(payout.reviewedBy).toBe(financeAuth.id);
     // Провайдер не вызывался.
     expect(payout.providerRefId).toBeNull();
     expect(await redis.get(`mockpayout:idem:payout:${payoutId}`)).toBeNull();
