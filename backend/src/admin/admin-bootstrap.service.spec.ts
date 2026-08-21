@@ -56,7 +56,7 @@ describe('AdminBootstrapService.seedIfEmpty', () => {
     const auditArg = audit.log.mock.calls[0][0];
     expect(auditArg).toEqual(
       expect.objectContaining({
-        actorType: 'system',
+        actorType: 'admin',
         entity: 'staff',
         transition: 'staff.created',
       }),

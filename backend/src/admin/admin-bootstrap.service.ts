@@ -42,7 +42,7 @@ export class AdminBootstrapService implements OnModuleInit {
     });
 
     await this.audit.log({
-      actorType: 'system',
+      actorType: 'admin',
       entity: 'staff',
       entityId: created.id,
       transition: 'staff.created',
