@@ -28,6 +28,7 @@ import { ReviewsModule } from './reviews/reviews.module';
 import { LedgerModule } from './ledger/ledger.module';
 import { PaymentsModule } from './payments/payments.module';
 import { PayoutsModule } from './payouts/payouts.module';
+import { DevicesModule } from './devices/devices.module';
 
 @Module({
   imports: [
@@ -58,6 +59,7 @@ import { PayoutsModule } from './payouts/payouts.module';
     LedgerModule,
     PaymentsModule,
     PayoutsModule,
+    DevicesModule,
   ],
   controllers: [AppController],
   providers: [AppService],

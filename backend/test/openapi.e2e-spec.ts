@@ -74,6 +74,9 @@ describe('OpenAPI (e2e)', () => {
       '/v1/admin/payouts',
       '/v1/admin/payouts/{id}/approve',
       '/v1/admin/payouts/{id}/reject',
+      '/v1/devices',
+      '/v1/devices/{token}',
+      '/v1/me/locale',
     ])
       expect(paths).toContain(p);
   });
