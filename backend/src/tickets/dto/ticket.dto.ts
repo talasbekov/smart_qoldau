@@ -1,5 +1,10 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { TicketCategory, TicketStatus, TicketTeam } from '@prisma/client';
+import {
+  TicketAuthorType,
+  TicketCategory,
+  TicketStatus,
+  TicketTeam,
+} from '@prisma/client';
 
 // Ответ на POST /v1/tickets. Сборка ТОЛЬКО явным перечислением полей —
 // authorType/authorUserId/contactEmail/contactPhone автору не возвращаются
@@ -80,4 +85,21 @@ export class TicketDetailDto extends TicketSummaryDto {
 
   @ApiProperty({ type: [TicketMessageDto] })
   messages: TicketMessageDto[];
+}
+
+// GET /v1/admin/tickets/:id (задача 8) — та же карточка, что и у автора,
+// плюс данные автора: сотруднику нужно знать, кто и как обратился (тип
+// автора и контакт), автору эти поля о себе самом не возвращаются.
+export class AdminTicketDetailDto extends TicketDetailDto {
+  @ApiProperty({ enum: TicketAuthorType })
+  authorType: TicketAuthorType;
+
+  @ApiProperty({ nullable: true, type: String })
+  authorUserId: string | null;
+
+  @ApiProperty({ nullable: true, type: String })
+  contactEmail: string | null;
+
+  @ApiProperty({ nullable: true, type: String })
+  contactPhone: string | null;
 }

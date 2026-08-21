@@ -1,15 +1,29 @@
 import { Injectable } from '@nestjs/common';
-import { Ticket, TicketAuthorType } from '@prisma/client';
+import {
+  AdminRole,
+  Prisma,
+  Ticket,
+  TicketAuthorType,
+  TicketStatus,
+} from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import { ClockService } from '../common/clock/clock.service';
 import { ExpertsService } from '../experts/experts.service';
 import { apiError } from '../common/filters/app-exception.filter';
 import { JwtPayload } from '../auth/jwt.strategy';
-import { CATEGORIES_BY_AUTHOR, routeCategory } from './ticket-routing';
+import { CurrentAdminPayload } from '../admin/current-admin.decorator';
+import {
+  CATEGORIES_BY_AUTHOR,
+  canAccessTicketTeam,
+  routeCategory,
+  staffTeams,
+} from './ticket-routing';
 import { CreateTicketDto } from './dto/create-ticket.dto';
 import { ListTicketsDto } from './dto/list-tickets.dto';
+import { AdminListTicketsDto } from './dto/admin-list-tickets.dto';
 import {
+  AdminTicketDetailDto,
   TicketCreatedDto,
   TicketDetailDto,
   TicketSummaryDto,
@@ -17,6 +31,10 @@ import {
 
 const DEFAULT_TAKE = 20;
 const MAX_TAKE = 100;
+
+type TicketWithMessages = Prisma.TicketGetPayload<{
+  include: { messages: true };
+}>;
 
 interface ResolvedAuthor {
   authorType: TicketAuthorType;
@@ -130,13 +148,174 @@ export class TicketsService {
       resolvedAt: ticket!.resolvedAt,
       relatedConsultationId: ticket!.relatedConsultationId,
       relatedPayoutId: ticket!.relatedPayoutId,
-      messages: ticket!.messages.map((m) => ({
-        id: m.id,
-        authorKind: m.authorKind,
-        body: m.body,
-        createdAt: m.createdAt,
-      })),
+      messages: this.toMessages(ticket!.messages),
     };
+  }
+
+  // GET /v1/admin/tickets?status&team&take&skip — очередь сотрудника (задача
+  // 8). SUPERADMIN видит все команды без ограничения; остальные — только
+  // тикеты своих команд (staffTeams по ролям сотрудника, объединение при
+  // нескольких ролях). Явный фильтр team за пределами своих команд -> пустой
+  // список (не 403 — очередь чужой команды просто пуста для этого сотрудника).
+  async adminList(
+    admin: CurrentAdminPayload,
+    filters: AdminListTicketsDto,
+  ): Promise<TicketSummaryDto[]> {
+    const take = Math.min(filters.take ?? DEFAULT_TAKE, MAX_TAKE);
+    const skip = filters.skip ?? 0;
+    const isSuperadmin = admin.roles.includes(AdminRole.SUPERADMIN);
+    const ownTeams = staffTeams(admin.roles);
+
+    const where: Prisma.TicketWhereInput = {};
+    if (filters.status) where.status = filters.status;
+
+    if (filters.team) {
+      if (!isSuperadmin && !ownTeams.includes(filters.team)) return [];
+      where.team = filters.team;
+    } else if (!isSuperadmin) {
+      where.team = { in: ownTeams };
+    }
+
+    const tickets = await this.prisma.ticket.findMany({
+      where,
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+      take,
+      skip,
+    });
+
+    return tickets.map((t) => this.toSummary(t));
+  }
+
+  // GET /v1/admin/tickets/:id — карточка сотрудника: та же переписка, что и
+  // у автора, плюс данные автора (authorType/authorUserId/contact*).
+  // Тикет чужой команды -> 404 TICKET_NOT_FOUND (не 403 — не раскрываем даже
+  // факт существования тикета вне доступных сотруднику команд). Каждый
+  // просмотр пишет audit ticket.viewed_by_staff.
+  async adminGet(
+    admin: CurrentAdminPayload,
+    id: string,
+  ): Promise<AdminTicketDetailDto> {
+    const ticket = await this.findAccessibleOrThrow(admin, id);
+
+    await this.audit.log({
+      actorType: 'admin',
+      actorId: admin.id,
+      entity: 'ticket',
+      entityId: ticket.id,
+      transition: 'ticket.viewed_by_staff',
+      payload: { ticketId: ticket.id, authorUserId: ticket.authorUserId },
+    });
+
+    return {
+      ...this.toSummary(ticket),
+      body: ticket.body,
+      firstReplyAt: ticket.firstReplyAt,
+      resolvedAt: ticket.resolvedAt,
+      relatedConsultationId: ticket.relatedConsultationId,
+      relatedPayoutId: ticket.relatedPayoutId,
+      authorType: ticket.authorType,
+      authorUserId: ticket.authorUserId,
+      contactEmail: ticket.contactEmail,
+      contactPhone: ticket.contactPhone,
+      messages: this.toMessages(ticket.messages),
+    };
+  }
+
+  // POST /v1/admin/tickets/:id/reply — сообщение сотрудника. Первый ответ
+  // проставляет firstReplyAt и переводит NEW -> IN_PROGRESS; повторные ответы
+  // идемпотентны — firstReplyAt НЕ сдвигается (условное ?? поверх уже
+  // сохранённого значения), IN_PROGRESS не откатывается назад. Тикет в
+  // RESOLVED -> 409 TICKET_ALREADY_RESOLVED (решённый тикет не переоткрывается
+  // ответом).
+  async reply(
+    admin: CurrentAdminPayload,
+    id: string,
+    body: string,
+  ): Promise<void> {
+    const ticket = await this.findAccessibleOrThrow(admin, id);
+    if (ticket.status === TicketStatus.RESOLVED)
+      apiError('TICKET_ALREADY_RESOLVED', 'Обращение уже решено', 409);
+
+    const now = this.clock.now();
+    const isFirstReply = ticket.firstReplyAt === null;
+
+    await this.prisma.$transaction([
+      this.prisma.ticketMessage.create({
+        data: {
+          ticketId: id,
+          authorKind: 'staff',
+          authorId: admin.id,
+          body,
+          createdAt: now,
+        },
+      }),
+      this.prisma.ticket.update({
+        where: { id },
+        data: {
+          status:
+            ticket.status === TicketStatus.NEW
+              ? TicketStatus.IN_PROGRESS
+              : ticket.status,
+          firstReplyAt: ticket.firstReplyAt ?? now,
+        },
+      }),
+    ]);
+
+    await this.audit.log({
+      actorType: 'admin',
+      actorId: admin.id,
+      entity: 'ticket',
+      entityId: id,
+      transition: 'ticket.replied',
+      payload: { firstReply: isFirstReply },
+    });
+  }
+
+  // POST /v1/admin/tickets/:id/resolve — решение тикета сотрудником.
+  // Повторный вызов на уже решённом тикете -> 409 TICKET_ALREADY_RESOLVED.
+  async resolve(admin: CurrentAdminPayload, id: string): Promise<void> {
+    const ticket = await this.findAccessibleOrThrow(admin, id);
+    if (ticket.status === TicketStatus.RESOLVED)
+      apiError('TICKET_ALREADY_RESOLVED', 'Обращение уже решено', 409);
+
+    await this.prisma.ticket.update({
+      where: { id },
+      data: { status: TicketStatus.RESOLVED, resolvedAt: this.clock.now() },
+    });
+
+    await this.audit.log({
+      actorType: 'admin',
+      actorId: admin.id,
+      entity: 'ticket',
+      entityId: id,
+      transition: 'ticket.resolved',
+    });
+  }
+
+  // Общая проверка для adminGet/reply/resolve: тикет не найден ИЛИ его
+  // команда недоступна сотруднику (не одна из его ролей и не SUPERADMIN) ->
+  // 404 TICKET_NOT_FOUND в обоих случаях — сотрудник не должен различать
+  // "тикета не существует" и "тикет есть, но не моей команды".
+  private async findAccessibleOrThrow(
+    admin: CurrentAdminPayload,
+    id: string,
+  ): Promise<TicketWithMessages> {
+    const ticket = await this.prisma.ticket.findUnique({
+      where: { id },
+      include: { messages: { orderBy: { createdAt: 'asc' } } },
+    });
+    if (!ticket || !canAccessTicketTeam(admin.roles, ticket.team))
+      apiError('TICKET_NOT_FOUND', 'Обращение не найдено', 404);
+    return ticket!;
+  }
+
+  private toMessages(messages: TicketWithMessages['messages']) {
+    return messages.map((m) => ({
+      id: m.id,
+      authorKind: m.authorKind,
+      body: m.body,
+      createdAt: m.createdAt,
+    }));
   }
 
   private toSummary(ticket: Ticket): TicketSummaryDto {

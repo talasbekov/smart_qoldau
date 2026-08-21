@@ -5,14 +5,18 @@ import { ClockModule } from '../common/clock/clock.module';
 import { ExpertsModule } from '../experts/experts.module';
 import { TicketsService } from './tickets.service';
 import { TicketsController } from './tickets.controller';
+import { TicketsAdminController } from './tickets-admin.controller';
 
 // JwtStrategy — провайдер AuthModule, регистрируется в passport глобально
 // при старте приложения (как и для остальных модулей с JwtAuthGuard —
 // ReviewsModule/PayoutsModule и т.д.), явный импорт AuthModule здесь не
-// нужен.
+// нужен. По той же причине не нужен явный импорт AdminModule для
+// AdminJwtGuard/RolesGuard в TicketsAdminController (задача 8) — оба guard'а
+// используют глобально зарегистрированную passport-стратегию 'jwt' и
+// Reflector из @nestjs/core (см. PayoutsModule/ReviewsModule).
 @Module({
   imports: [PrismaModule, AuditModule, ClockModule, ExpertsModule],
-  controllers: [TicketsController],
+  controllers: [TicketsController, TicketsAdminController],
   providers: [TicketsService],
   exports: [TicketsService],
 })
