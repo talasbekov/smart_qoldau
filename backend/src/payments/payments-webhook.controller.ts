@@ -9,7 +9,11 @@ import {
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { ConfigService } from '@nestjs/config';
 import { Request } from 'express';
-import { ConsultationPaymentStatus, PaymentStatus } from '@prisma/client';
+import {
+  ConsultationOutcome,
+  ConsultationPaymentStatus,
+  PaymentStatus,
+} from '@prisma/client';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
@@ -27,8 +31,11 @@ interface PaymentWebhookBody {
 // проверяется HMAC-подписью тела (PAYMENT_WEBHOOK_SECRET), не сессией
 // пользователя. rawBody обязателен — подпись считается по точным байтам
 // запроса (см. LivekitWebhookController, тот же паттерн). Дедуп повторных
-// доставок — insert ProviderEvent по providerEventId (P2002 -> уже
-// обработано, 200 no-op).
+// доставок — insert ProviderEvent по (kind, providerEventId) АТОМАРНО с
+// эффектом события: потреблённый до эффекта eventId навсегда съедал бы
+// денежное событие при транзиентном сбое эффекта. Событие без эффекта
+// (неизвестный providerHoldId, неизвестный type) НЕ потребляется — 200 без
+// записи, переигровка провайдера безвредна и может «догнать» гонку.
 @ApiTags('webhooks')
 @Controller('webhooks')
 export class PaymentsWebhookController {
@@ -70,15 +77,57 @@ export class PaymentsWebhookController {
       return;
     }
 
-    // Дедуп: первый insert по providerEventId побеждает, повторная доставка
-    // ловит P2002 -> 200 no-op (эффект уже применён при первой доставке).
+    if (body.type !== 'hold.voided_by_bank') {
+      return;
+    }
+
+    await this.handleHoldVoidedByBank(body);
+  }
+
+  // Банк сам снял истёкший холд (например, лимит времени удержания на
+  // стороне банка/провайдера истёк раньше нашего sweep-перехолда). Payment
+  // HELD -> FAILED; неизвестный providerHoldId -> 200 без эффекта (и без
+  // потребления eventId), не раскрываем существование записи.
+  private async handleHoldVoidedByBank(
+    body: PaymentWebhookBody,
+  ): Promise<void> {
+    const providerHoldId = body.providerHoldId;
+    if (!providerHoldId) return;
+
+    const payment = await this.prisma.payment.findFirst({
+      where: { providerHoldId, status: PaymentStatus.HELD },
+    });
+    if (!payment) return;
+
+    const consultation = await this.prisma.consultation.findUnique({
+      where: { id: payment.consultationId },
+      select: { outcome: true },
+    });
+
+    // Дедуп-запись и эффект — одна транзакция: create по (kind, eventId)
+    // первым стейтментом, его P2002 (повторная доставка) откатывает всё и
+    // мапится в 200 no-op.
     try {
-      await this.prisma.providerEvent.create({
-        data: {
-          providerEventId: body.eventId,
-          kind: 'payment',
-          payload: body as unknown as object,
-        },
+      await this.prisma.$transaction(async (tx) => {
+        await tx.providerEvent.create({
+          data: {
+            providerEventId: body.eventId,
+            kind: 'payment',
+            payload: body as unknown as object,
+          },
+        });
+        const result = await tx.payment.updateMany({
+          where: { id: payment.id, status: PaymentStatus.HELD },
+          data: {
+            status: PaymentStatus.FAILED,
+            failReason: 'Холд снят банком',
+          },
+        });
+        if (result.count === 0) return;
+        await tx.consultation.update({
+          where: { id: payment.consultationId },
+          data: { paymentStatus: ConsultationPaymentStatus.FAILED },
+        });
       });
     } catch (e) {
       if (e instanceof PrismaClientKnownRequestError && e.code === 'P2002') {
@@ -87,41 +136,18 @@ export class PaymentsWebhookController {
       throw e;
     }
 
-    if (body.type !== 'hold.voided_by_bank') {
-      return;
-    }
-
-    await this.handleHoldVoidedByBank(body.providerHoldId);
-  }
-
-  // Банк сам снял истёкший холд (например, лимит времени удержания на
-  // стороне банка/провайдера истёк раньше нашего sweep-перехолда). Payment
-  // HELD -> FAILED; неизвестный providerHoldId -> 200 без эффекта, не
-  // раскрываем существование записи.
-  private async handleHoldVoidedByBank(providerHoldId: string): Promise<void> {
-    if (!providerHoldId) return;
-
-    const payment = await this.prisma.payment.findFirst({
-      where: { providerHoldId, status: PaymentStatus.HELD },
-    });
-    if (!payment) return;
-
-    const result = await this.prisma.payment.updateMany({
-      where: { id: payment.id, status: PaymentStatus.HELD },
-      data: { status: PaymentStatus.FAILED, failReason: 'Холд снят банком' },
-    });
-    if (result.count === 0) return;
-
-    await this.prisma.consultation.update({
-      where: { id: payment.consultationId },
-      data: { paymentStatus: ConsultationPaymentStatus.FAILED },
-    });
-
+    // Услуга уже оказана (COMPLETED), а холд пропал — недособранная выручка,
+    // отдельная крошка для финконтроля (взыскание вручную); штатный случай —
+    // клиент просто заплатит заново (pay() разрешён после FAILED).
+    const afterCompletion =
+      consultation?.outcome === ConsultationOutcome.COMPLETED;
     await this.audit.log({
       actorType: 'system',
       entity: 'payment',
       entityId: payment.id,
-      transition: 'payment.hold_voided_by_bank',
+      transition: afterCompletion
+        ? 'payment.hold_voided_after_completion'
+        : 'payment.hold_voided_by_bank',
       payload: { consultationId: payment.consultationId, providerHoldId },
     });
 

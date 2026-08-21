@@ -382,12 +382,16 @@ model Payment {
   status           PaymentStatus @default(PENDING)
   providerHoldId   String?       @map("provider_hold_id")  // id операции у провайдера
   holdCreatedAt    DateTime?     @map("hold_created_at")   // для перехолда >5 дней
+  holdAttempts     Int           @default(0) @map("hold_attempts") // № попытки pay -> ключ идемпотентности hold
   reholdCount      Int           @default(0) @map("rehold_count")
   settleAttempts   Int           @default(0) @map("settle_attempts") // ретраи capture/void
+  lastSettleAttemptAt DateTime?  @map("last_settle_attempt_at") // интервал между ретраями settle
   failReason       String?       @map("fail_reason")
   createdAt        DateTime      @default(now()) @map("created_at")
   updatedAt        DateTime      @updatedAt @map("updated_at")
   @@index([status, holdCreatedAt])
+  @@index([providerHoldId])                  // поиск по вебхуку hold.voided_by_bank
+  @@index([expertId, status, updatedAt])     // earnings эксперта
   @@map("payments")
 }
 
@@ -428,14 +432,18 @@ model Payout {
   updatedAt       DateTime     @updatedAt @map("updated_at")
   @@index([expertId, createdAt])
   @@index([status])
+  @@index([providerRefId])                   // поиск по вебхуку payout.paid
   @@map("payouts")
 }
 
 model ProviderEvent {
   id              String   @id @default(uuid())
-  providerEventId String   @unique @map("provider_event_id") // дедуп повторных доставок
+  providerEventId String   @map("provider_event_id")
   kind            String                                     // 'payment' | 'payout'
   payload         Json
   createdAt       DateTime @default(now()) @map("created_at")
+  // Дедуп повторных доставок В ПРЕДЕЛАХ провайдера: eventId разных
+  // провайдеров могут совпадать, глобальный unique терял бы второе событие.
+  @@unique([kind, providerEventId])
   @@map("provider_events")
 }

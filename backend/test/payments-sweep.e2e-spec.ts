@@ -18,11 +18,32 @@ const PH_E1 = '+77086000001';
 const PH_E2 = '+77086000002';
 const PH_E3 = '+77086000003';
 const PH_E4 = '+77086000004';
+const PH_E5 = '+77086000005';
+const PH_E6 = '+77086000006';
+const PH_E7 = '+77086000007';
 const PH_C1 = '+77086000091';
 const PH_C2 = '+77086000092';
 const PH_C3 = '+77086000093';
 const PH_C4 = '+77086000094';
-const ALL_PHONES = [PH_E1, PH_E2, PH_E3, PH_E4, PH_C1, PH_C2, PH_C3, PH_C4];
+const PH_C5 = '+77086000095';
+const PH_C6 = '+77086000096';
+const PH_C7 = '+77086000097';
+const ALL_PHONES = [
+  PH_E1,
+  PH_E2,
+  PH_E3,
+  PH_E4,
+  PH_E5,
+  PH_E6,
+  PH_E7,
+  PH_C1,
+  PH_C2,
+  PH_C3,
+  PH_C4,
+  PH_C5,
+  PH_C6,
+  PH_C7,
+];
 
 const VISA_PAN = '4111111111111111';
 const WEBHOOK_SECRET =
@@ -301,6 +322,15 @@ describe('Sweep денег: ретраи settle, перехолд, вебхук�
     expect(stillHeld!.status).toBe('HELD');
     expect(stillHeld!.settleAttempts).toBeGreaterThanOrEqual(1);
 
+    // Интервал ретрая: sweep тикает каждую секунду, но повторная попытка
+    // settle той же записи разрешена не раньше чем через минуту — иначе
+    // 10-секундный сбой провайдера навсегда исчерпал бы лимит попыток.
+    await timer.sweep();
+    const gated = await prisma.payment.findUnique({
+      where: { consultationId },
+    });
+    expect(gated!.settleAttempts).toBe(stillHeld!.settleAttempts);
+
     // Восстанавливаем холд в Redis в исходном формате мока.
     await redis.set(
       `mockpay:hold:${providerHoldId}`,
@@ -314,6 +344,7 @@ describe('Sweep денег: ретраи settle, перехолд, вебхук�
       24 * 60 * 60,
     );
 
+    fakeClock.advance(61_000);
     await timer.sweep();
 
     const capturedPayment = await prisma.payment.findUnique({
@@ -351,7 +382,9 @@ describe('Sweep денег: ретраи settle, перехолд, вебхук�
       .send({ outcome: 'COMPLETED' })
       .expect(200);
 
+    // Между попытками — интервал ретрая (минута виртуального времени).
     for (let i = 0; i < 10; i++) {
+      fakeClock.advance(61_000);
       await timer.sweep();
     }
 
@@ -372,11 +405,142 @@ describe('Sweep денег: ретраи settle, перехолд, вебхук�
 
     // Дальнейшие sweep НЕ трогают эту запись — лимит достигнут, settle()
     // больше не вызывается для неё (settleAttempts не растёт дальше).
+    fakeClock.advance(61_000);
     await timer.sweep();
     const afterExtraSweep = await prisma.payment.findUnique({
       where: { consultationId },
     });
     expect(afterExtraSweep!.settleAttempts).toBe(10);
+  });
+
+  it('повторный pay после hold.voided_by_bank держит НОВЫЙ холд — ключ идемпотентности hold пооперационный, а не на консультацию', async () => {
+    const exp = await acceptingExpert(PH_E5);
+    const cli = await clientUser(PH_C5);
+    const cardId = await addCard(cli.accessToken, VISA_PAN);
+    const { consultationId } = await matchClientToExpert(cli, exp);
+    await payHeld(cli, consultationId, cardId);
+
+    const first = await prisma.payment.findUniqueOrThrow({
+      where: { consultationId },
+    });
+    const firstHoldId = first.providerHoldId!;
+
+    // Банк снял холд -> Payment FAILED.
+    const body = {
+      eventId: 'evt-sweep-repay-1',
+      type: 'hold.voided_by_bank',
+      providerHoldId: firstHoldId,
+    };
+    await request(app.getHttpServer())
+      .post('/v1/webhooks/payments')
+      .set('x-payment-signature', signWebhook(body))
+      .set('Content-Type', 'application/json')
+      .send(body)
+      .expect(200);
+    expect(
+      (await prisma.payment.findUniqueOrThrow({ where: { consultationId } }))
+        .status,
+    ).toBe('FAILED');
+
+    // Повторная оплата ДОЛЖНА создать новый холд: со статичным ключом
+    // hold:{consultationId} провайдер вернул бы из идемпотентного кэша
+    // старый (уже мёртвый в банке) холд — «оплачено» без резерва денег.
+    await payHeld(cli, consultationId, cardId);
+    const second = await prisma.payment.findUniqueOrThrow({
+      where: { consultationId },
+    });
+    expect(second.status).toBe('HELD');
+    expect(second.providerHoldId).not.toBe(firstHoldId);
+
+    // Новый холд работоспособен: исход COMPLETED капчурится.
+    await post(exp.accessToken, `/v1/consultations/${consultationId}/complete`)
+      .send({ outcome: 'COMPLETED' })
+      .expect(200);
+    expect(
+      (await prisma.payment.findUniqueOrThrow({ where: { consultationId } }))
+        .status,
+    ).toBe('CAPTURED');
+  });
+
+  it('перехолд не трогает удалённую карту: soft-deleted способ оплаты -> Payment FAILED + audit payment.rehold_failed', async () => {
+    const exp = await acceptingExpert(PH_E6);
+    const cli = await clientUser(PH_C6);
+    const cardId = await addCard(cli.accessToken, VISA_PAN);
+    const { consultationId } = await matchClientToExpert(cli, exp);
+    await payHeld(cli, consultationId, cardId);
+
+    // Клиент удалил карту (soft-delete) — согласия на новые холды больше нет.
+    await request(app.getHttpServer())
+      .delete(`/v1/payment-methods/${cardId}`)
+      .set('Authorization', `Bearer ${cli.accessToken}`)
+      .expect(204);
+
+    fakeClock.advance(5 * 24 * 60 * 60 * 1000 + 1000);
+    await timer.sweep();
+
+    const payment = await prisma.payment.findUniqueOrThrow({
+      where: { consultationId },
+    });
+    expect(payment.status).toBe('FAILED');
+    expect(payment.reholdCount).toBe(0);
+
+    const audit = await prisma.auditLog.findFirst({
+      where: {
+        entity: 'payment',
+        entityId: payment.id,
+        transition: 'payment.rehold_failed',
+      },
+    });
+    expect(audit).not.toBeNull();
+  });
+
+  it('hold.voided_by_bank по уже COMPLETED консультации -> отдельный audit payment.hold_voided_after_completion (недособранная выручка, ручной разбор)', async () => {
+    const exp = await acceptingExpert(PH_E7);
+    const cli = await clientUser(PH_C7);
+    const cardId = await addCard(cli.accessToken, VISA_PAN);
+    const { consultationId } = await matchClientToExpert(cli, exp);
+    await payHeld(cli, consultationId, cardId);
+
+    const payment = await prisma.payment.findUniqueOrThrow({
+      where: { consultationId },
+    });
+    const providerHoldId = payment.providerHoldId!;
+
+    // Ломаем capture -> после complete Payment остаётся HELD при
+    // COMPLETED-консультации (услуга оказана, деньги ещё не списаны).
+    await redis.del(`mockpay:hold:${providerHoldId}`);
+    await post(exp.accessToken, `/v1/consultations/${consultationId}/complete`)
+      .send({ outcome: 'COMPLETED' })
+      .expect(200);
+
+    const body = {
+      eventId: 'evt-sweep-voided-completed-1',
+      type: 'hold.voided_by_bank',
+      providerHoldId,
+    };
+    await request(app.getHttpServer())
+      .post('/v1/webhooks/payments')
+      .set('x-payment-signature', signWebhook(body))
+      .set('Content-Type', 'application/json')
+      .send(body)
+      .expect(200);
+
+    expect(
+      (await prisma.payment.findUniqueOrThrow({ where: { consultationId } }))
+        .status,
+    ).toBe('FAILED');
+
+    // Обычный hold_voided_by_bank — штатный случай (клиент заплатит заново);
+    // здесь же услуга УЖЕ оказана — нужна отдельная хлебная крошка для
+    // финконтроля (взыскание вручную).
+    const audit = await prisma.auditLog.findFirst({
+      where: {
+        entity: 'payment',
+        entityId: payment.id,
+        transition: 'payment.hold_voided_after_completion',
+      },
+    });
+    expect(audit).not.toBeNull();
   });
 
   it('перехолд Р-01: >5 дней без исхода -> новый providerHoldId, reholdCount 1, HELD; повторный sweep без advance — без изменений', async () => {

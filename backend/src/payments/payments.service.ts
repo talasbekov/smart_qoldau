@@ -94,24 +94,33 @@ export class PaymentsService {
       commissionTiyn,
     );
 
+    // Ключ идемпотентности — на ПОПЫТКУ оплаты (holdAttempts инкрементится в
+    // upsertPending), не на консультацию: после FAILED (например, банк снял
+    // холд вебхуком) повторный pay обязан создать НОВЫЙ холд, а статичный
+    // ключ вернул бы из идемпотентного кэша провайдера старый мёртвый.
+    // Повтор ТОЙ ЖЕ попытки (сетевой ретрай) ключ по-прежнему дедуплицирует.
     const result = await this.provider.hold({
-      idempotencyKey: `hold:${consultationId}`,
+      idempotencyKey: `hold:${payment.id}:${payment.holdAttempts}`,
       token: method!.providerToken,
       amountTiyn,
     });
 
     if (result.status === 'declined') {
-      await this.prisma.payment.update({
-        where: { id: payment.id },
-        data: {
-          status: PaymentStatus.FAILED,
-          failReason: result.declineReason ?? 'Банк отклонил операцию',
-        },
-      });
-      await this.prisma.consultation.update({
-        where: { id: consultationId },
-        data: { paymentStatus: ConsultationPaymentStatus.FAILED },
-      });
+      // Оба зеркала статуса — атомарно: упади процесс между ними,
+      // консультация навсегда осталась бы с paymentStatus PENDING.
+      await this.prisma.$transaction([
+        this.prisma.payment.update({
+          where: { id: payment.id },
+          data: {
+            status: PaymentStatus.FAILED,
+            failReason: result.declineReason ?? 'Банк отклонил операцию',
+          },
+        }),
+        this.prisma.consultation.update({
+          where: { id: consultationId },
+          data: { paymentStatus: ConsultationPaymentStatus.FAILED },
+        }),
+      ]);
 
       await this.audit.log({
         actorType: 'user',
@@ -143,18 +152,20 @@ export class PaymentsService {
     }
 
     const now = this.clock.now();
-    await this.prisma.payment.update({
-      where: { id: payment.id },
-      data: {
-        status: PaymentStatus.HELD,
-        providerHoldId: result.providerHoldId,
-        holdCreatedAt: now,
-      },
-    });
-    await this.prisma.consultation.update({
-      where: { id: consultationId },
-      data: { paymentStatus: ConsultationPaymentStatus.HELD },
-    });
+    await this.prisma.$transaction([
+      this.prisma.payment.update({
+        where: { id: payment.id },
+        data: {
+          status: PaymentStatus.HELD,
+          providerHoldId: result.providerHoldId,
+          holdCreatedAt: now,
+        },
+      }),
+      this.prisma.consultation.update({
+        where: { id: consultationId },
+        data: { paymentStatus: ConsultationPaymentStatus.HELD },
+      }),
+    ]);
 
     await this.audit.log({
       actorType: 'user',
@@ -180,7 +191,8 @@ export class PaymentsService {
   // upsert по consultationId (@unique): P2002 на create -> уже существует
   // (гонка/повтор), обновляем ту же строку в PENDING с новыми
   // paymentMethodId/amount/commission (повтор после FAILED — восстановление
-  // с новой картой той же записью).
+  // с новой картой той же записью). holdAttempts — номер попытки для ключа
+  // идемпотентности hold (см. pay()).
   private async upsertPending(
     consultationId: string,
     clientUserId: string,
@@ -199,19 +211,42 @@ export class PaymentsService {
           amountTiyn,
           commissionTiyn,
           status: PaymentStatus.PENDING,
+          holdAttempts: 1,
         },
       });
     } catch (e) {
       if (e instanceof PrismaClientKnownRequestError && e.code === 'P2002') {
-        return this.prisma.payment.update({
-          where: { consultationId },
+        // Гейт по статусу: параллельный pay, проигравший гонку УЖЕ
+        // захолдированной (или капчурнутой) записи, не должен сбрасывать её
+        // в PENDING с чужой картой — updateMany с фильтром вместо слепого
+        // update, count 0 в обеих ветках -> платёж уже в работе.
+        //
+        // holdAttempts инкрементится ТОЛЬКО на переходе FAILED -> PENDING
+        // (прошлый холд мёртв, нужен новый ключ); гонка двух pay по
+        // PENDING-строке сохраняет номер попытки — оба вызова идут к
+        // провайдеру с ОДНИМ ключом, и холд ставится ровно один раз.
+        const revived = await this.prisma.payment.updateMany({
+          where: { consultationId, status: PaymentStatus.FAILED },
           data: {
             paymentMethodId,
             amountTiyn,
             commissionTiyn,
             status: PaymentStatus.PENDING,
             failReason: null,
+            holdAttempts: { increment: 1 },
           },
+        });
+        if (revived.count === 0) {
+          const refreshed = await this.prisma.payment.updateMany({
+            where: { consultationId, status: PaymentStatus.PENDING },
+            data: { paymentMethodId, amountTiyn, commissionTiyn },
+          });
+          if (refreshed.count === 0) {
+            apiError('ALREADY_PAID', 'Консультация уже оплачена', 409);
+          }
+        }
+        return this.prisma.payment.findUniqueOrThrow({
+          where: { consultationId },
         });
       }
       throw e;
@@ -284,6 +319,19 @@ export class PaymentsService {
     }
 
     if (payment.status !== PaymentStatus.HELD) {
+      // PENDING на завершённой консультации = pay() оборвался между
+      // provider.hold и записью HELD (деньги могут быть заморожены у
+      // провайдера без следа у нас) — sweep такие записи не подбирает,
+      // оставляем хлебную крошку для ручного разбора.
+      if (payment.status === PaymentStatus.PENDING) {
+        await this.audit.log({
+          actorType: 'system',
+          entity: 'payment',
+          entityId: payment.id,
+          transition: 'payment.stuck_pending_on_settle',
+          payload: { consultationId },
+        });
+      }
       return;
     }
 
@@ -366,14 +414,19 @@ export class PaymentsService {
       providerHoldId: payment.providerHoldId!,
     });
 
-    await this.prisma.payment.update({
-      where: { id: payment.id },
-      data: { status: PaymentStatus.VOIDED },
-    });
-    await this.prisma.consultation.update({
-      where: { id: payment.consultationId },
-      data: { paymentStatus: ConsultationPaymentStatus.VOIDED },
-    });
+    // Атомарно, как в captureAndCredit: обрыв между двумя апдейтами оставил
+    // бы консультацию с paymentStatus HELD навсегда (settle() ранним
+    // return'ом на VOIDED зеркало не чинит).
+    await this.prisma.$transaction([
+      this.prisma.payment.update({
+        where: { id: payment.id },
+        data: { status: PaymentStatus.VOIDED },
+      }),
+      this.prisma.consultation.update({
+        where: { id: payment.consultationId },
+        data: { paymentStatus: ConsultationPaymentStatus.VOIDED },
+      }),
+    ]);
 
     await this.audit.log({
       actorType: 'system',
@@ -399,14 +452,15 @@ export class PaymentsService {
     const take = Math.min(filters.take ?? DEFAULT_TAKE, MAX_TAKE);
     const skip = filters.skip ?? 0;
 
-    const balanceTiyn = await this.ledger.balanceTiyn(expertAccount(expertId));
-
-    const payments = await this.prisma.payment.findMany({
-      where: { expertId, status: PaymentStatus.CAPTURED },
-      orderBy: { updatedAt: 'desc' },
-      take,
-      skip,
-    });
+    const [balanceTiyn, payments] = await Promise.all([
+      this.ledger.balanceTiyn(expertAccount(expertId)),
+      this.prisma.payment.findMany({
+        where: { expertId, status: PaymentStatus.CAPTURED },
+        orderBy: { updatedAt: 'desc' },
+        take,
+        skip,
+      }),
+    ]);
 
     return {
       balanceTiyn,

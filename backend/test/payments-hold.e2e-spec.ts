@@ -388,9 +388,13 @@ describe('Холд при оплате консультации (E5, задач�
     }
     expect(matchingHolds).toBe(1);
 
-    // Прямая проверка идемпотентности по ключу: mockpay:idem:hold:{id}
-    // должен указывать на тот же providerHoldId, что и запись Payment.
-    const idemValue = await redis.get(`mockpay:idem:hold:${consultationId}`);
+    // Прямая проверка идемпотентности по ключу попытки
+    // hold:{paymentId}:{holdAttempts}: оба параллельных pay шли с одним
+    // номером попытки, и ключ указывает на тот же providerHoldId, что и
+    // запись Payment.
+    const idemValue = await redis.get(
+      `mockpay:idem:hold:${payment!.id}:${payment!.holdAttempts}`,
+    );
     expect(idemValue).toBe(payment!.providerHoldId);
   });
 });

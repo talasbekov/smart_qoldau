@@ -13,6 +13,7 @@ import {
   expertAccount,
 } from '../src/ledger/ledger.service';
 import { SMS_PROVIDER_TOKEN, SmsProvider } from '../src/auth/sms/sms.provider';
+import { PayoutsService } from '../src/payouts/payouts.service';
 import { createApp } from './utils/create-app';
 import {
   registeredExpertUser,
@@ -342,6 +343,103 @@ describe('Выводы средств эксперта (E5, задача 7, Р-0
       .set('Content-Type', 'application/json')
       .send(unknown)
       .expect(200);
+
+    // Дедуп событий скоупится по провайдеру (kind): eventId платёжного
+    // провайдера, совпавший с payout-событием, не должен теряться.
+    await expect(
+      prisma.providerEvent.create({
+        data: {
+          providerEventId: 'evt-payout-e2e-paid-1',
+          kind: 'payment',
+          payload: {},
+        },
+      }),
+    ).resolves.toBeTruthy();
+  });
+
+  it('гонка вебхука с записью providerRefId: событие по ещё не известному ref НЕ потребляется — переигровка провайдера доводит до PAID', async () => {
+    const exp = await verifiedExpert(PH_E4);
+    await seedBalance(exp.expertId, 5_000_000);
+
+    const res = await post(exp.accessToken, '/v1/payouts')
+      .send({ amountTiyn: MIN_PAYOUT_TIYN, ...CARD })
+      .expect(201);
+    const payoutId = res.body.id as string;
+    const payout = await prisma.payout.findUniqueOrThrow({
+      where: { id: payoutId },
+    });
+    const providerRefId = payout.providerRefId!;
+
+    // Симулируем гонку: вебхук paid прилетел ДО того, как наш апдейт
+    // providerRefId закоммитился.
+    await prisma.payout.update({
+      where: { id: payoutId },
+      data: { providerRefId: null },
+    });
+
+    const body = {
+      eventId: 'evt-payout-e2e-race-1',
+      type: 'payout.paid',
+      providerRefId,
+    };
+    await request(app.getHttpServer())
+      .post('/v1/webhooks/payouts')
+      .set('x-payout-signature', signWebhook(body))
+      .set('Content-Type', 'application/json')
+      .send(body)
+      .expect(200);
+    // Эффекта нет, но и eventId НЕ потреблён.
+    expect(
+      (await prisma.payout.findUniqueOrThrow({ where: { id: payoutId } }))
+        .status,
+    ).toBe('PROCESSING');
+
+    // providerRefId дозаписался; провайдер переигрывает ТО ЖЕ событие.
+    await prisma.payout.update({
+      where: { id: payoutId },
+      data: { providerRefId },
+    });
+    await request(app.getHttpServer())
+      .post('/v1/webhooks/payouts')
+      .set('x-payout-signature', signWebhook(body))
+      .set('Content-Type', 'application/json')
+      .send(body)
+      .expect(200);
+    expect(
+      (await prisma.payout.findUniqueOrThrow({ where: { id: payoutId } }))
+        .status,
+    ).toBe('PAID');
+  });
+
+  it('застрявший PROCESSING без providerRefId (сбой после резерва) -> ретрай sweep дожимает отправку идемпотентным ключом', async () => {
+    const exp = await verifiedExpert(PH_E5);
+    await seedBalance(exp.expertId, 5_000_000);
+
+    const res = await post(exp.accessToken, '/v1/payouts')
+      .send({ amountTiyn: MIN_PAYOUT_TIYN, ...CARD })
+      .expect(201);
+    const payoutId = res.body.id as string;
+
+    // Симулируем обрыв между sendToCard и записью providerRefId.
+    await prisma.payout.update({
+      where: { id: payoutId },
+      data: { providerRefId: null },
+    });
+
+    const payoutsService = app.get(PayoutsService);
+    const processed = await payoutsService.retryStrandedSends();
+    expect(processed).toBe(1);
+
+    const repaired = await prisma.payout.findUniqueOrThrow({
+      where: { id: payoutId },
+    });
+    // Идемпотентный ключ payout:{id} вернул ТОТ ЖЕ refId, что и первый вызов.
+    expect(repaired.providerRefId).toBe(
+      await redis.get(`mockpayout:idem:payout:${payoutId}`),
+    );
+
+    // Повторный ретрай — кандидатов нет.
+    expect(await payoutsService.retryStrandedSends()).toBe(0);
   });
 
   it('два параллельных вывода на весь баланс -> ровно один прошёл (FOR UPDATE), баланс 0', async () => {

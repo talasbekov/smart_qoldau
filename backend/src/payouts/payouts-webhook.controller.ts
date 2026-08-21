@@ -30,8 +30,9 @@ interface PayoutWebhookBody {
 
 // БЕЗ auth-guard'ов — аутентичность по HMAC-подписи тела
 // (PAYOUT_WEBHOOK_SECRET), см. PaymentsWebhookController — тот же паттерн:
-// rawBody, дедуп ProviderEvent (P2002 -> 200 no-op), неизвестный
-// providerRefId -> 200 без эффекта.
+// rawBody; дедуп ProviderEvent по (kind, eventId) атомарно с эффектом
+// (P2002 -> 200 no-op); событие без эффекта — в т.ч. paid, обогнавший нашу
+// запись providerRefId, — НЕ потребляется: переигровка провайдера доведёт.
 @ApiTags('webhooks')
 @Controller('webhooks')
 export class PayoutsWebhookController {
@@ -74,32 +75,21 @@ export class PayoutsWebhookController {
       return;
     }
 
-    try {
-      await this.prisma.providerEvent.create({
-        data: {
-          providerEventId: body.eventId,
-          kind: 'payout',
-          payload: body as unknown as object,
-        },
-      });
-    } catch (e) {
-      if (e instanceof PrismaClientKnownRequestError && e.code === 'P2002') {
-        return;
-      }
-      throw e;
-    }
-
     if (body.type !== 'payout.paid') {
       return;
     }
 
-    await this.handlePayoutPaid(body.providerRefId);
+    await this.handlePayoutPaid(body);
   }
 
   // Провайдер подтвердил зачисление на карту: Payout PROCESSING -> PAID +
   // перекладка резерва payout:pending -> payout:sent (двойная запись,
-  // идемпотентна по (kind='payout_sent', refId=payoutId)).
-  private async handlePayoutPaid(providerRefId: string): Promise<void> {
+  // идемпотентна по (kind='payout_sent', refId=payoutId)). Дедуп-запись
+  // события — первым стейтментом ТОЙ ЖЕ транзакции: сбой эффекта не должен
+  // оставить eventId «потреблённым», иначе переигровка провайдера навсегда
+  // упрётся в no-op при застрявшем PROCESSING.
+  private async handlePayoutPaid(body: PayoutWebhookBody): Promise<void> {
+    const providerRefId = body.providerRefId;
     if (!providerRefId) return;
 
     const payout = await this.prisma.payout.findFirst({
@@ -107,25 +97,40 @@ export class PayoutsWebhookController {
     });
     if (!payout) return;
 
-    const result = await this.prisma.$transaction(async (tx) => {
-      const updated = await tx.payout.updateMany({
-        where: { id: payout.id, status: PayoutStatus.PROCESSING },
-        data: { status: PayoutStatus.PAID },
-      });
-      if (updated.count === 0) return false;
+    let applied = false;
+    try {
+      applied = await this.prisma.$transaction(async (tx) => {
+        await tx.providerEvent.create({
+          data: {
+            providerEventId: body.eventId,
+            kind: 'payout',
+            payload: body as unknown as object,
+          },
+        });
+        const updated = await tx.payout.updateMany({
+          where: { id: payout.id, status: PayoutStatus.PROCESSING },
+          data: { status: PayoutStatus.PAID },
+        });
+        if (updated.count === 0) return false;
 
-      await this.ledger.post(
-        'payout_sent',
-        payout.id,
-        [
-          { account: ACC_PAYOUT_PENDING, debitTiyn: payout.amountTiyn },
-          { account: ACC_PAYOUT_SENT, creditTiyn: payout.amountTiyn },
-        ],
-        tx,
-      );
-      return true;
-    });
-    if (!result) return;
+        await this.ledger.post(
+          'payout_sent',
+          payout.id,
+          [
+            { account: ACC_PAYOUT_PENDING, debitTiyn: payout.amountTiyn },
+            { account: ACC_PAYOUT_SENT, creditTiyn: payout.amountTiyn },
+          ],
+          tx,
+        );
+        return true;
+      });
+    } catch (e) {
+      if (e instanceof PrismaClientKnownRequestError && e.code === 'P2002') {
+        return;
+      }
+      throw e;
+    }
+    if (!applied) return;
 
     await this.audit.log({
       actorType: 'system',

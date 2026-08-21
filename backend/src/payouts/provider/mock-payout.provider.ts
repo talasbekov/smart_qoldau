@@ -3,7 +3,9 @@ import { randomUUID } from 'crypto';
 import { RedisService } from '../../redis/redis.service';
 import { PayoutProviderPort } from './payout-provider.port';
 
-const IDEM_TTL_SECONDS = 24 * 60 * 60;
+// 30 дней, как HOLD_TTL мок-провайдера платежей: ретрай застрявшей отправки
+// может прийти сильно позже первого вызова.
+const IDEM_TTL_SECONDS = 30 * 24 * 60 * 60;
 
 // Детерминированный мок payout-провайдера для dev/тестов (паттерн
 // MockPaymentProvider). Идемпотентность по mockpayout:idem:{key}: повторный

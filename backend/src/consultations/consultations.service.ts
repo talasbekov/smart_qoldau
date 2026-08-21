@@ -185,6 +185,21 @@ export class ConsultationsService {
     if (role !== 'expert')
       apiError('FORBIDDEN', 'Только эксперт может завершить консультацию', 403);
 
+    // Р-01: исход «клиент не пришёл» против собственных данных платформы
+    // (LiveKit зафиксировал подключение клиента) недоступен — 3 таких исхода
+    // закрыли бы клиенту автоподбор, и villainous-эксперт мог бы копить их
+    // на состоявшихся сессиях.
+    if (
+      outcome === ConsultationOutcome.CLIENT_NO_SHOW &&
+      consultation.clientJoinedAt !== null
+    ) {
+      apiError(
+        'INVALID_OUTCOME',
+        'Клиент подключался к сессии — исход CLIENT_NO_SHOW недоступен',
+        409,
+      );
+    }
+
     const now = this.clock.now();
     const result = await this.prisma.consultation.updateMany({
       where: { id: consultationId, status: ConsultationStatus.ACTIVE },
@@ -235,16 +250,26 @@ export class ConsultationsService {
   // Redis-счётчик злоупотреблений клиента (Р-01: no-show и отмены): INCR
   // (создаёт ключ при первом вызове) + EXPIRE только если TTL ещё не
   // установлен (ttl === -1) — идемпотентно относительно повторных
-  // инцидентов того же клиента внутри 30-дневного окна.
+  // инцидентов того же клиента внутри 30-дневного окна. Best-effort:
+  // вызывается ПОСЛЕ терминального перехода консультации, и сбой Redis не
+  // должен ронять остаток завершения (возврат эксперта в ACCEPTING, settle).
   private async incrementClientAbuse(clientUserId: string): Promise<void> {
-    const abuseKey = `abuse:client:${clientUserId}`;
-    const count = await this.redis.incr(abuseKey);
-    if (count === 1) {
-      await this.redis.expire(abuseKey, ABUSE_CLIENT_TTL_SECONDS);
-    } else {
-      const ttl = await this.redis.ttl(abuseKey);
-      if (ttl === -1)
+    try {
+      const abuseKey = `abuse:client:${clientUserId}`;
+      const count = await this.redis.incr(abuseKey);
+      if (count === 1) {
         await this.redis.expire(abuseKey, ABUSE_CLIENT_TTL_SECONDS);
+      } else {
+        const ttl = await this.redis.ttl(abuseKey);
+        if (ttl === -1)
+          await this.redis.expire(abuseKey, ABUSE_CLIENT_TTL_SECONDS);
+      }
+    } catch (e) {
+      this.logger.warn(
+        `abuse-счётчик клиента ${clientUserId} не обновлён: ${
+          e instanceof Error ? e.message : String(e)
+        }`,
+      );
     }
   }
 

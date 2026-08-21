@@ -17,6 +17,7 @@ import { EscalationService } from '../src/requests/escalation.service';
 import { EventsService } from '../src/ws/events.service';
 import { NoShowService } from '../src/consultations/no-show.service';
 import { SettleRetryService } from '../src/payments/settle-retry.service';
+import { PayoutsService } from '../src/payouts/payouts.service';
 import { createApp } from './utils/create-app';
 import { acceptingExpert as acceptingExpertHelper } from './utils/expert-helpers';
 import { clientUser as clientUserHelper } from './utils/client-helpers';
@@ -432,6 +433,7 @@ describe('Дедлайны офферов на Redis ZSET + sweep, виртуа�
     const eventsService = app.get(EventsService);
     const noShowService = app.get(NoShowService);
     const settleRetryService = app.get(SettleRetryService);
+    const payoutsService = app.get(PayoutsService);
     const restartedTimer = new OfferTimerService(
       redis,
       clock,
@@ -442,6 +444,7 @@ describe('Дедлайны офферов на Redis ZSET + sweep, виртуа�
       escalationService,
       noShowService,
       settleRetryService,
+      payoutsService,
     );
 
     fakeClock.advance(46_000);

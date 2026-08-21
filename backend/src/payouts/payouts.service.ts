@@ -154,6 +154,31 @@ export class PayoutsService {
     return this.toDto(result);
   }
 
+  // Ретрай застрявших отправок (вызывается из OfferTimerService.sweep):
+  // PROCESSING без providerRefId = сбой между коммитом резерва/статуса и
+  // sendToCard (или между sendToCard и записью refId). Резерв уже снят, и
+  // без дожима деньги эксперта висели бы в payout:pending навсегда: повторный
+  // approve вернёт 409, reject берёт только PENDING_REVIEW, а вебхук paid
+  // ищет по providerRefId. Ключ payout:{id} идемпотентен — гонка с ещё
+  // живым первым вызовом безопасна (провайдер вернёт тот же refId).
+  async retryStrandedSends(): Promise<number> {
+    const stranded = await this.prisma.payout.findMany({
+      where: { status: PayoutStatus.PROCESSING, providerRefId: null },
+      take: 50,
+    });
+
+    let processed = 0;
+    for (const payout of stranded) {
+      processed++;
+      try {
+        await this.sendToProvider(payout);
+      } catch {
+        // Провайдер всё ещё недоступен — следующий sweep попробует снова.
+      }
+    }
+    return processed;
+  }
+
   // Единственная точка вызова payout-провайдера — и для автоодобрения, и
   // для ручного approve финконтроля. Ключ payout:{id} идемпотентен: повтор
   // после сбоя записи providerRefId вернёт тот же refId.
@@ -172,10 +197,19 @@ export class PayoutsService {
   // GET /v1/admin/payouts?status=… — очередь финконтроля (по умолчанию
   // PENDING_REVIEW), старые сверху; monthTotalTiyn — сумма выводов эксперта
   // за текущий календарный месяц (кроме REJECTED), контекст для решения.
-  async adminList(status?: PayoutStatus): Promise<AdminPayoutsListDto> {
+  // Пагинация как в list(): без неё запрос по PAID/REJECTED отдавал бы всю
+  // историю выводов одним ответом.
+  async adminList(
+    status?: PayoutStatus,
+    filters: { take?: number; skip?: number } = {},
+  ): Promise<AdminPayoutsListDto> {
+    const take = Math.min(filters.take ?? DEFAULT_TAKE, MAX_TAKE);
+    const skip = filters.skip ?? 0;
     const payouts = await this.prisma.payout.findMany({
       where: { status: status ?? PayoutStatus.PENDING_REVIEW },
       orderBy: { createdAt: 'asc' },
+      take,
+      skip,
     });
 
     const expertIds = [...new Set(payouts.map((p) => p.expertId))];

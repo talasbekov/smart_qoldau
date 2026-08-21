@@ -12,7 +12,14 @@ import { PaymentsService } from './payments.service';
 import { PaymentProviderPort } from './provider/payment-provider.port';
 
 const SETTLE_MAX_ATTEMPTS = 10;
+// Интервал между ретраями settle одной записи: sweep тикает каждую секунду,
+// и без интервала 10-секундный сбой провайдера навсегда исчерпал бы лимит
+// попыток (10 × 60с даёт ~10 минут терпимости к сбою).
+const SETTLE_RETRY_INTERVAL_MS = 60_000;
 const REHOLD_AGE_MS = 5 * 24 * 60 * 60 * 1000; // 5 дней
+// Ограничение партии за тик: «застрявших» платежей единицы, а сотни — уже
+// признак инцидента, где важнее не зашибить провайдера лавиной ретраев.
+const SWEEP_BATCH = 100;
 
 // Sweep денег (E5, задача 6): два независимых прохода по «застрявшим»
 // платежам, вызывается из OfferTimerService.sweep() 6-м шагом (см. паттерн
@@ -66,26 +73,43 @@ export class SettleRetryService {
   }
 
   // Payment не хранит relation-поле к Consultation в schema.prisma (только
-  // скалярный consultationId) — join делаем вручную: сперва находим
-  // консультации с нужным статусом, затем платежи по их id.
+  // скалярный consultationId) — join делаем вручную, НАЧИНАЯ с платежей:
+  // HELD-кандидатов единицы и они индексированы по статусу, а выборка «всех
+  // завершённых консультаций» в IN-фильтр росла бы без предела и на большом
+  // объёме валила бы запрос каждый тик.
   private async sweepSettleRetries(): Promise<number> {
-    const doneConsultations = await this.prisma.consultation.findMany({
-      where: {
-        status: {
-          in: [ConsultationStatus.COMPLETED, ConsultationStatus.CANCELLED],
-        },
-      },
-      select: { id: true },
-    });
-    if (doneConsultations.length === 0) return 0;
-
-    const candidates = await this.prisma.payment.findMany({
+    const retryCutoff = new Date(
+      this.clock.now().getTime() - SETTLE_RETRY_INTERVAL_MS,
+    );
+    const heldPayments = await this.prisma.payment.findMany({
       where: {
         status: PaymentStatus.HELD,
         settleAttempts: { lt: SETTLE_MAX_ATTEMPTS },
-        consultationId: { in: doneConsultations.map((c) => c.id) },
+        OR: [
+          { lastSettleAttemptAt: null },
+          { lastSettleAttemptAt: { lte: retryCutoff } },
+        ],
       },
+      take: SWEEP_BATCH,
     });
+    if (heldPayments.length === 0) return 0;
+
+    const doneIds = new Set(
+      (
+        await this.prisma.consultation.findMany({
+          where: {
+            id: { in: heldPayments.map((p) => p.consultationId) },
+            status: {
+              in: [ConsultationStatus.COMPLETED, ConsultationStatus.CANCELLED],
+            },
+          },
+          select: { id: true },
+        })
+      ).map((c) => c.id),
+    );
+    const candidates = heldPayments.filter((p) =>
+      doneIds.has(p.consultationId),
+    );
 
     let processed = 0;
     for (const payment of candidates) {
@@ -126,7 +150,10 @@ export class SettleRetryService {
   ): Promise<void> {
     const updated = await this.prisma.payment.update({
       where: { id: paymentId },
-      data: { settleAttempts: { increment: 1 } },
+      data: {
+        settleAttempts: { increment: 1 },
+        lastSettleAttemptAt: this.clock.now(),
+      },
     });
     if (updated.settleAttempts >= SETTLE_MAX_ATTEMPTS) {
       await this.audit.log({
@@ -142,19 +169,32 @@ export class SettleRetryService {
   private async sweepRehold(): Promise<number> {
     const cutoff = new Date(this.clock.now().getTime() - REHOLD_AGE_MS);
 
-    const activeConsultations = await this.prisma.consultation.findMany({
-      where: { status: ConsultationStatus.ACTIVE },
-      select: { id: true },
-    });
-    if (activeConsultations.length === 0) return 0;
-
-    const candidates = await this.prisma.payment.findMany({
+    // Как и в sweepSettleRetries: сперва узкая индексированная выборка
+    // платежей (status, holdCreatedAt), затем точечная проверка их
+    // консультаций — не наоборот.
+    const agedPayments = await this.prisma.payment.findMany({
       where: {
         status: PaymentStatus.HELD,
         holdCreatedAt: { lte: cutoff },
-        consultationId: { in: activeConsultations.map((c) => c.id) },
       },
+      take: SWEEP_BATCH,
     });
+    if (agedPayments.length === 0) return 0;
+
+    const activeIds = new Set(
+      (
+        await this.prisma.consultation.findMany({
+          where: {
+            id: { in: agedPayments.map((p) => p.consultationId) },
+            status: ConsultationStatus.ACTIVE,
+          },
+          select: { id: true },
+        })
+      ).map((c) => c.id),
+    );
+    const candidates = agedPayments.filter((p) =>
+      activeIds.has(p.consultationId),
+    );
 
     let processed = 0;
     for (const payment of candidates) {
@@ -183,13 +223,13 @@ export class SettleRetryService {
     clientUserId: string;
     expertId: string;
   }): Promise<void> {
-    const method = await this.prisma.paymentMethod.findUnique({
-      where: { id: payment.paymentMethodId },
+    // Только живая карта: soft-deleted способ оплаты — отозванное согласие
+    // клиента, новый холд на него ставить нельзя (deletedAt-фильтр, как в
+    // pay()).
+    const method = await this.prisma.paymentMethod.findFirst({
+      where: { id: payment.paymentMethodId, deletedAt: null },
     });
     if (!method) {
-      // Карта была удалена (soft-delete не должен был случиться для
-      // используемого способа оплаты, но защищаемся): без токена перехолд
-      // невозможен — считаем это отказом.
       await this.failRehold(payment, 'Способ оплаты недоступен');
       return;
     }
@@ -247,14 +287,16 @@ export class SettleRetryService {
     },
     reason: string,
   ): Promise<void> {
-    await this.prisma.payment.update({
-      where: { id: payment.id },
-      data: { status: PaymentStatus.FAILED, failReason: reason },
-    });
-    await this.prisma.consultation.update({
-      where: { id: payment.consultationId },
-      data: { paymentStatus: ConsultationPaymentStatus.FAILED },
-    });
+    await this.prisma.$transaction([
+      this.prisma.payment.update({
+        where: { id: payment.id },
+        data: { status: PaymentStatus.FAILED, failReason: reason },
+      }),
+      this.prisma.consultation.update({
+        where: { id: payment.consultationId },
+        data: { paymentStatus: ConsultationPaymentStatus.FAILED },
+      }),
+    ]);
 
     await this.audit.log({
       actorType: 'system',

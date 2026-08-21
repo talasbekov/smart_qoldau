@@ -45,7 +45,10 @@ export class PayoutsAdminController {
   async list(
     @Query() query: ListAdminPayoutsDto,
   ): Promise<AdminPayoutsListDto> {
-    return this.payouts.adminList(query.status);
+    return this.payouts.adminList(query.status, {
+      take: query.take,
+      skip: query.skip,
+    });
   }
 
   @Post(':id/approve')
