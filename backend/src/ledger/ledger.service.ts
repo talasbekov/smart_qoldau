@@ -42,17 +42,21 @@ export class LedgerService {
     for (const e of entries) {
       const debit = e.debitTiyn ?? 0;
       const credit = e.creditTiyn ?? 0;
+
+      // Обе стороны — неотрицательные целые ВСЕГДА, не только доминирующая:
+      // иначе {debit: 200, credit: -100} проходит XOR-гейт и пишет
+      // отрицательный кредит в БД (баланс при этом может сойтись).
+      if (!Number.isInteger(debit) || debit < 0) {
+        throw new Error('LEDGER_UNBALANCED');
+      }
+      if (!Number.isInteger(credit) || credit < 0) {
+        throw new Error('LEDGER_UNBALANCED');
+      }
+
       const hasDebit = debit > 0;
       const hasCredit = credit > 0;
-
       if (hasDebit === hasCredit) {
         // оба нулевые или оба заданы -> нарушение "ровно одно из"
-        throw new Error('LEDGER_UNBALANCED');
-      }
-      if (hasDebit && (!Number.isInteger(debit) || debit <= 0)) {
-        throw new Error('LEDGER_UNBALANCED');
-      }
-      if (hasCredit && (!Number.isInteger(credit) || credit <= 0)) {
         throw new Error('LEDGER_UNBALANCED');
       }
 
@@ -65,6 +69,19 @@ export class LedgerService {
     }
 
     const db = tx ?? this.prisma;
+
+    // Идемпотентность проверяется ДО insert: внутри внешней prisma-транзакции
+    // упавший на P2002 insert абортирует postgres-транзакцию (25P02), и
+    // catch-ветка с findUnique была бы мертва — любой повторный settle,
+    // догнавший гонку, откатывал бы всю обвязку. Предварительный findUnique
+    // закрывает штатный повтор; остаточная гонка двух одновременных post с
+    // одним (kind, refId) по-прежнему ловится P2002 (вне транзакции — с
+    // восстановлением, внутри — откатом проигравшего, который добёрет
+    // существующую проводку на следующем ретрае).
+    const existing = await db.ledgerTransaction.findUnique({
+      where: { kind_refId: { kind, refId } },
+    });
+    if (existing) return existing;
 
     try {
       return await db.ledgerTransaction.create({
@@ -82,10 +99,10 @@ export class LedgerService {
       });
     } catch (e) {
       if (e instanceof PrismaClientKnownRequestError && e.code === 'P2002') {
-        const existing = await db.ledgerTransaction.findUnique({
+        const recovered = await db.ledgerTransaction.findUnique({
           where: { kind_refId: { kind, refId } },
         });
-        if (existing) return existing;
+        if (recovered) return recovered;
       }
       throw e;
     }

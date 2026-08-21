@@ -88,4 +88,21 @@ describe('LedgerService (юнит, валидация)', () => {
 
     expect(prisma.ledgerTransaction.create).not.toHaveBeenCalled();
   });
+
+  it('отрицательная сумма на недоминирующей стороне -> throw, ничего не записано', async () => {
+    const prisma = makePrismaMock();
+    const service = new LedgerService(prisma);
+
+    // debit 200 > 0 проходит XOR-гейт, credit -100 «не задан» для hasCredit,
+    // но суммы сходятся (200 == -100 + 300) — без явной проверки >= 0 обеих
+    // сторон отрицательный кредит утёк бы в БД.
+    await expect(
+      service.post('adjustment', 'adj-1', [
+        { account: 'acquirer:settlement', debitTiyn: 200, creditTiyn: -100 },
+        { account: 'expert:e1', creditTiyn: 300 },
+      ]),
+    ).rejects.toThrow('LEDGER_UNBALANCED');
+
+    expect(prisma.ledgerTransaction.create).not.toHaveBeenCalled();
+  });
 });
