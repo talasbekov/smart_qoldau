@@ -83,6 +83,8 @@ describe('OpenAPI (e2e)', () => {
       '/v1/notifications/{id}/ack',
       '/v1/admin/staff',
       '/v1/admin/staff/{id}',
+      '/v1/tickets',
+      '/v1/tickets/{id}',
     ])
       expect(paths).toContain(p);
   });

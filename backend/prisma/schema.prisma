@@ -513,3 +513,82 @@ model Notification {
   @@index([type, pushDeliveredAt, smsFallbackAt]) // выборка sweep-fallback
   @@map("notifications")
 }
+
+enum TicketStatus {
+  NEW
+  IN_PROGRESS
+  RESOLVED
+}
+
+enum TicketAuthorType {
+  CLIENT
+  EXPERT
+  GUEST
+}
+
+enum TicketCategory {
+  CONSULTATIONS
+  PAYMENT
+  PAYOUTS
+  TECHNICAL
+  VERIFICATION
+  SECURITY
+  CLIENT_QUESTION
+  ACCOUNT_DATA
+  OTHER
+}
+
+// Команда-исполнитель тикета (Р-23). Совпадает по значениям с
+// профильными ролями AdminRole (кроме SUPERADMIN) — очередь задачи 8
+// фильтрует тикеты по роли вошедшего сотрудника напрямую этим полем.
+enum TicketTeam {
+  SUPPORT_OPERATOR
+  VERIFICATION_OPERATOR
+  FINANCE_CONTROL
+  QUALITY_TEAM
+}
+
+// Обращение в поддержку (E8a, Р-23/БП-09). Автор — клиент/эксперт (по
+// User.expert) или гость (без токена, тогда обязателен contactEmail/Phone).
+// Категории раздельны по типу автора (см. ticket-routing.ts), маршрутизация
+// в team — тоже там, чистой функцией. body — текст исходного обращения;
+// дальнейшая переписка — TicketMessage. Без FK на users/consultations/payouts
+// (конвенция E3+): связь строкой, join вручную при необходимости.
+model Ticket {
+  id                    String           @id @default(uuid())
+  authorType            TicketAuthorType @map("author_type")
+  authorUserId          String?          @map("author_user_id")
+  contactEmail          String?          @map("contact_email")
+  contactPhone          String?          @map("contact_phone")
+  category              TicketCategory
+  subject               String
+  body                  String
+  status                TicketStatus     @default(NEW)
+  team                  TicketTeam
+  firstReplyAt          DateTime?        @map("first_reply_at")
+  resolvedAt            DateTime?        @map("resolved_at")
+  relatedConsultationId String?          @map("related_consultation_id")
+  relatedPayoutId       String?          @map("related_payout_id")
+  createdAt             DateTime         @default(now()) @map("created_at")
+  updatedAt             DateTime         @updatedAt @map("updated_at")
+  messages              TicketMessage[]
+  @@index([status, team, createdAt])
+  @@index([authorUserId, createdAt])
+  @@map("tickets")
+}
+
+// Сообщение переписки по тикету (ответ сотрудника/автора). authorKind:
+// 'user' | 'staff'; authorId — id User либо AdminUser в зависимости от
+// authorKind (без FK — разные таблицы). Пишет задача 8 (ответ сотрудника),
+// в задаче 7 таблица только создаётся и читается (пустая при создании тикета).
+model TicketMessage {
+  id         String   @id @default(uuid())
+  ticketId   String   @map("ticket_id")
+  ticket     Ticket   @relation(fields: [ticketId], references: [id])
+  authorKind String   @map("author_kind")
+  authorId   String?  @map("author_id")
+  body       String
+  createdAt  DateTime @default(now()) @map("created_at")
+  @@index([ticketId, createdAt])
+  @@map("ticket_messages")
+}
