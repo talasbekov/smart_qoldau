@@ -20,12 +20,24 @@ import { clientUser as clientUserHelper } from './utils/client-helpers';
 // с другими спеками.
 const PH_E1 = '+77096000001';
 const PH_E2 = '+77096000002';
+const PH_E3 = '+77096000003';
 const PH_C1 = '+77096000091';
 const PH_C2 = '+77096000092';
 const PH_C3 = '+77096000093';
 const PH_C4 = '+77096000094';
 const PH_C5 = '+77096000095';
-const ALL_PHONES = [PH_E1, PH_E2, PH_C1, PH_C2, PH_C3, PH_C4, PH_C5];
+const PH_C6 = '+77096000096';
+const ALL_PHONES = [
+  PH_E1,
+  PH_E2,
+  PH_E3,
+  PH_C1,
+  PH_C2,
+  PH_C3,
+  PH_C4,
+  PH_C5,
+  PH_C6,
+];
 
 const SMS_FALLBACK_TEXT = 'SmartQoldau: новая заявка, откройте приложение';
 
@@ -367,5 +379,66 @@ describe('Критичный пуш входящей заявки + SMS-fallback
       offerId: offers[0].offerId,
       requestId: r.body.id,
     });
+  });
+
+  it('оффер REVOKED (accept сиблинг-оффера того же broadcast) до fallback -> SMS нет, smsFallbackAt проставлен без SMS', async () => {
+    // Реальный доменный путь REVOKED (не ручной prisma.update): broadcast
+    // Р-16 — единственный случай в системе, когда у заявки одновременно
+    // больше одного PENDING-оффера (см. комментарий в EscalationService) —
+    // рассылает PENDING сразу ДВУМ regular-экспертам одной emergency-заявки;
+    // accept одного из них ревокирует PENDING остальных
+    // (RequestsService.revokeOtherPendingOffers), см. requests.service.ts.
+    const urgent = await acceptingExpert(PH_E1);
+    await prisma.expert.update({
+      where: { id: urgent.expertId },
+      data: { acceptsUrgent: true },
+    });
+    const regularA = await acceptingExpert(PH_E2);
+    const regularB = await acceptingExpert(PH_E3);
+    await registerDevice(regularB.accessToken, 'fb-tok-6');
+    const cli = await clientUser(PH_C6);
+
+    const r = await createRequest(cli.accessToken, { isEmergency: true });
+    ownRequestIds.push(r.body.id);
+    expect(await offersOf(urgent)).toHaveLength(1);
+
+    fakeClock.advance(21_000);
+    await timer.sweep(); // urgent TIMEOUT, urgent-пул пуст
+
+    fakeClock.advance(100_000); // итого 121с от создания -> broadcast
+    // presence протухает после >90с бездействия — освежаем перед sweep.
+    await presence.touch(urgent.expertId);
+    await presence.touch(regularA.expertId);
+    await presence.touch(regularB.expertId);
+    await timer.sweep();
+
+    const offersA = await offersOf(regularA);
+    const offersB = await offersOf(regularB);
+    expect(offersA).toHaveLength(1);
+    expect(offersB).toHaveLength(1);
+    ownOfferIds.push(offersA[0].offerId, offersB[0].offerId);
+
+    // regularA принимает свой оффер -> сиблинг-оффер regularB той же
+    // заявки ревокируется реальным доменным путём (не PENDING -> fallback
+    // не должен слать SMS).
+    await request(app.getHttpServer())
+      .post(`/v1/offers/${offersA[0].offerId}/accept`)
+      .set('Authorization', `Bearer ${regularA.accessToken}`)
+      .expect(200);
+
+    const revokedOffer = await prisma.requestCandidate.findUniqueOrThrow({
+      where: { id: offersB[0].offerId },
+    });
+    expect(revokedOffer.response).toBe('REVOKED');
+
+    // Notification regularB создана при broadcast (до accept regularA) и
+    // не подтверждена ack — fallback-окно 10с истекает уже ПОСЛЕ revoke.
+    fakeClock.advance(11_000);
+    await timer.sweep();
+
+    expect(fallbackSmsTo(PH_E3)).toHaveLength(0);
+
+    const notification = await offerNotificationOf(regularB.expertId);
+    expect(notification.smsFallbackAt).not.toBeNull();
   });
 });
