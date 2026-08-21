@@ -293,7 +293,7 @@ export class ReviewsService {
     const [reviews, grouped, expert] = await Promise.all([
       this.prisma.review.findMany({
         where: { expertId, status: ReviewStatus.PUBLISHED },
-        orderBy: { createdAt: 'desc' },
+        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
         take,
         skip,
         select: {

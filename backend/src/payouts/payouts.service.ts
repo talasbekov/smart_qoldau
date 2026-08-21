@@ -209,7 +209,7 @@ export class PayoutsService {
     const skip = filters.skip ?? 0;
     const payouts = await this.prisma.payout.findMany({
       where: { status: status ?? PayoutStatus.PENDING_REVIEW },
-      orderBy: { createdAt: 'asc' },
+      orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
       take,
       skip,
     });
@@ -363,7 +363,7 @@ export class PayoutsService {
 
     const payouts = await this.prisma.payout.findMany({
       where: { expertId },
-      orderBy: { createdAt: 'desc' },
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
       take,
       skip,
     });
