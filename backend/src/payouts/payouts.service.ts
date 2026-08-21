@@ -8,6 +8,7 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import { ClockService } from '../common/clock/clock.service';
+import { EventsService } from '../ws/events.service';
 import { apiError } from '../common/filters/app-exception.filter';
 import {
   ACC_PAYOUT_PENDING,
@@ -21,6 +22,7 @@ import { PayoutDto } from './dto/payout.dto';
 import { PayoutsListDto } from './dto/payouts-list.dto';
 import { BalanceDto } from './dto/balance.dto';
 import { ListPayoutsDto } from './dto/list-payouts.dto';
+import { AdminPayoutsListDto } from './dto/admin-payouts-list.dto';
 
 const MIN_PAYOUT_TIYN = 1_000_000; // 10 000 ₸ — минимум вывода (Р-06)
 const MONTHLY_AUTO_APPROVE_LIMIT_TIYN = 30_000_000; // 300 000 ₸/мес (Р-06)
@@ -38,6 +40,7 @@ export class PayoutsService {
     // карточная инфраструктура), сама выплата идёт через payout-провайдер.
     private paymentProvider: PaymentProviderPort,
     private payoutProvider: PayoutProviderPort,
+    private events: EventsService,
   ) {}
 
   // GET /v1/experts/me/balance. available == balance: резерв вывода
@@ -88,10 +91,7 @@ export class PayoutsService {
 
       // Календарный месяц по UTC — достаточно для лимита финконтроля;
       // граница месяца в таймзоне пользователя тут некритична.
-      const now = this.clock.now();
-      const monthStart = new Date(
-        Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1),
-      );
+      const monthStart = this.currentMonthStart();
       const monthAgg = await tx.payout.aggregate({
         where: {
           expertId: expert.id,
@@ -145,21 +145,163 @@ export class PayoutsService {
     // Провайдер вызывается ПОСЛЕ коммита резерва: сбой сети здесь оставит
     // Payout PROCESSING без providerRefId — деньги уже зарезервированы,
     // повторная отправка возможна идемпотентным ключом payout:{id}.
-    // PENDING_REVIEW провайдера не трогает — решение за финконтролем (Task 8).
+    // PENDING_REVIEW провайдера не трогает — решение за финконтролем.
     let result = created;
     if (autoApproved) {
-      const sent = await this.payoutProvider.sendToCard({
-        idempotencyKey: `payout:${created.id}`,
-        cardToken: created.cardToken,
-        amountTiyn: created.amountTiyn,
-      });
-      result = await this.prisma.payout.update({
-        where: { id: created.id },
-        data: { providerRefId: sent.providerRefId },
-      });
+      result = await this.sendToProvider(created);
     }
 
     return this.toDto(result);
+  }
+
+  // Единственная точка вызова payout-провайдера — и для автоодобрения, и
+  // для ручного approve финконтроля. Ключ payout:{id} идемпотентен: повтор
+  // после сбоя записи providerRefId вернёт тот же refId.
+  private async sendToProvider(payout: Payout): Promise<Payout> {
+    const sent = await this.payoutProvider.sendToCard({
+      idempotencyKey: `payout:${payout.id}`,
+      cardToken: payout.cardToken,
+      amountTiyn: payout.amountTiyn,
+    });
+    return this.prisma.payout.update({
+      where: { id: payout.id },
+      data: { providerRefId: sent.providerRefId },
+    });
+  }
+
+  // GET /v1/admin/payouts?status=… — очередь финконтроля (по умолчанию
+  // PENDING_REVIEW), старые сверху; monthTotalTiyn — сумма выводов эксперта
+  // за текущий календарный месяц (кроме REJECTED), контекст для решения.
+  async adminList(status?: PayoutStatus): Promise<AdminPayoutsListDto> {
+    const payouts = await this.prisma.payout.findMany({
+      where: { status: status ?? PayoutStatus.PENDING_REVIEW },
+      orderBy: { createdAt: 'asc' },
+    });
+
+    const expertIds = [...new Set(payouts.map((p) => p.expertId))];
+    const totals = expertIds.length
+      ? await this.prisma.payout.groupBy({
+          by: ['expertId'],
+          where: {
+            expertId: { in: expertIds },
+            status: { not: PayoutStatus.REJECTED },
+            createdAt: { gte: this.currentMonthStart() },
+          },
+          _sum: { amountTiyn: true },
+        })
+      : [];
+    const totalByExpert = new Map(
+      totals.map((t) => [t.expertId, t._sum.amountTiyn ?? 0]),
+    );
+
+    return {
+      items: payouts.map((p) => ({
+        id: p.id,
+        expertId: p.expertId,
+        amountTiyn: p.amountTiyn,
+        maskedPan: p.maskedPan,
+        holderName: p.holderName,
+        monthTotalTiyn: totalByExpert.get(p.expertId) ?? 0,
+        createdAt: p.createdAt,
+      })),
+    };
+  }
+
+  // POST /v1/admin/payouts/:id/approve — только из PENDING_REVIEW.
+  // updateMany со status-фильтром: два параллельных approve (или гонка с
+  // reject) — победит ровно один, второй получит 409.
+  async approve(payoutId: string): Promise<void> {
+    const updated = await this.prisma.payout.updateMany({
+      where: { id: payoutId, status: PayoutStatus.PENDING_REVIEW },
+      data: { status: PayoutStatus.PROCESSING, reviewedBy: 'admin' },
+    });
+    if (updated.count === 0) {
+      await this.notPendingError(payoutId);
+    }
+
+    const payout = await this.prisma.payout.findUniqueOrThrow({
+      where: { id: payoutId },
+    });
+
+    await this.audit.log({
+      actorType: 'admin',
+      entity: 'payout',
+      entityId: payoutId,
+      transition: 'payout.approved',
+      payload: { amountTiyn: payout.amountTiyn },
+    });
+
+    await this.sendToProvider(payout);
+
+    this.events.emitToExpert(payout.expertId, 'payout.updated', {
+      id: payoutId,
+      status: PayoutStatus.PROCESSING,
+    });
+  }
+
+  // POST /v1/admin/payouts/:id/reject {reason} — Р-06 «отклонение с
+  // причиной». Смена статуса и компенсирующая проводка (возврат резерва на
+  // баланс эксперта) атомарны.
+  async reject(payoutId: string, reason: string): Promise<void> {
+    const payout = await this.prisma.$transaction(async (tx) => {
+      const updated = await tx.payout.updateMany({
+        where: { id: payoutId, status: PayoutStatus.PENDING_REVIEW },
+        data: {
+          status: PayoutStatus.REJECTED,
+          rejectReason: reason,
+          reviewedBy: 'admin',
+        },
+      });
+      if (updated.count === 0) return null;
+
+      const p = await tx.payout.findUniqueOrThrow({
+        where: { id: payoutId },
+      });
+      await this.ledger.post(
+        'payout_reject',
+        payoutId,
+        [
+          { account: ACC_PAYOUT_PENDING, debitTiyn: p.amountTiyn },
+          { account: expertAccount(p.expertId), creditTiyn: p.amountTiyn },
+        ],
+        tx,
+      );
+      return p;
+    });
+    if (!payout) {
+      await this.notPendingError(payoutId);
+      return;
+    }
+
+    await this.audit.log({
+      actorType: 'admin',
+      entity: 'payout',
+      entityId: payoutId,
+      transition: 'payout.rejected',
+      payload: { amountTiyn: payout.amountTiyn, reason },
+    });
+
+    this.events.emitToExpert(payout.expertId, 'payout.updated', {
+      id: payoutId,
+      status: PayoutStatus.REJECTED,
+      rejectReason: reason,
+    });
+  }
+
+  private async notPendingError(payoutId: string): Promise<never> {
+    const exists = await this.prisma.payout.findUnique({
+      where: { id: payoutId },
+      select: { id: true },
+    });
+    if (!exists) {
+      apiError('PAYOUT_NOT_FOUND', 'Вывод не найден', 404);
+    }
+    apiError('PAYOUT_NOT_PENDING', 'Вывод не в очереди финконтроля', 409);
+  }
+
+  private currentMonthStart(): Date {
+    const now = this.clock.now();
+    return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
   }
 
   // GET /v1/payouts — свои выводы, новые сверху.

@@ -7,6 +7,7 @@ import { ExpertsModule } from '../experts/experts.module';
 import { PaymentsModule } from '../payments/payments.module';
 import { PayoutsService } from './payouts.service';
 import { PayoutsController } from './payouts.controller';
+import { PayoutsAdminController } from './payouts-admin.controller';
 import { PayoutsWebhookController } from './payouts-webhook.controller';
 import { PayoutProviderPort } from './provider/payout-provider.port';
 import { MockPayoutProvider } from './provider/mock-payout.provider';
@@ -23,7 +24,11 @@ import { MockPayoutProvider } from './provider/mock-payout.provider';
     ExpertsModule,
     PaymentsModule,
   ],
-  controllers: [PayoutsController, PayoutsWebhookController],
+  controllers: [
+    PayoutsController,
+    PayoutsAdminController,
+    PayoutsWebhookController,
+  ],
   providers: [
     PayoutsService,
     { provide: PayoutProviderPort, useClass: MockPayoutProvider },

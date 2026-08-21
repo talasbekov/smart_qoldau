@@ -10,6 +10,7 @@ import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import { ClockService } from '../common/clock/clock.service';
+import { RedisService } from '../redis/redis.service';
 import { MatchingService } from '../matching/matching.service';
 import { ExpertsService } from '../experts/experts.service';
 import { EventsService } from '../ws/events.service';
@@ -27,6 +28,9 @@ import {
 const EMERGENCY_DEADLINE_MS = 20_000;
 const NORMAL_DEADLINE_MS = 45_000;
 const HOTLINES = ['150', '103', '112'];
+// Р-01/Р-17: с этого числа отмен/no-show за 30 дней (счётчик abuse:client:*
+// ведёт ConsultationsService) автоподбор закрыт — только ручной выбор.
+const ABUSE_AUTO_MATCH_THRESHOLD = 3;
 
 // Маркерные ошибки транзакции claimOffer: проигравший count-гейт внутри
 // $transaction сигналит откат, снаружи мапится в прежние коды 409/410.
@@ -39,6 +43,7 @@ export class RequestsService {
     private prisma: PrismaService,
     private audit: AuditService,
     private clock: ClockService,
+    private redis: RedisService,
     private matching: MatchingService,
     private experts: ExpertsService,
     private events: EventsService,
@@ -55,6 +60,30 @@ export class RequestsService {
     clientUserId: string,
     dto: CreateRequestDto,
   ): Promise<RequestDto> {
+    // Abuse-гейт (Р-01/Р-17) ПЕРЕД созданием: автоподбор закрыт после 3+
+    // отмен/no-show за 30 дней; направленная заявка (expertId задан —
+    // ручной выбор из каталога) проходит всегда.
+    if (!dto.expertId) {
+      const abuseCount = Number(
+        (await this.redis.get(`abuse:client:${clientUserId}`)) ?? 0,
+      );
+      if (abuseCount >= ABUSE_AUTO_MATCH_THRESHOLD) {
+        await this.audit.log({
+          actorType: 'user',
+          actorId: clientUserId,
+          entity: 'request',
+          entityId: clientUserId,
+          transition: 'request.auto_match_blocked',
+          payload: { abuseCount },
+        });
+        apiError(
+          'AUTO_MATCH_DISABLED',
+          'Автоподбор временно недоступен, выберите специалиста из каталога вручную',
+          403,
+        );
+      }
+    }
+
     const active = await this.prisma.request.findFirst({
       where: { clientUserId, status: RequestStatus.SEARCHING },
     });
