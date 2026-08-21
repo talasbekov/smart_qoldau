@@ -201,6 +201,12 @@ export class ConsultationsService {
       (now.getTime() - consultation.startedAt.getTime()) / 60000,
     );
 
+    // Р-01: no-show клиента — такой же инцидент злоупотребления, как и
+    // отмена (лимит «3+ no-show/отмен за 30 дней» закрывает автоподбор).
+    if (outcome === ConsultationOutcome.CLIENT_NO_SHOW) {
+      await this.incrementClientAbuse(consultation.clientUserId);
+    }
+
     await this.returnExpertToAccepting(consultation.expertId);
 
     await this.audit.log({
@@ -226,11 +232,24 @@ export class ConsultationsService {
     return this.toExpertDto(updated);
   }
 
+  // Redis-счётчик злоупотреблений клиента (Р-01: no-show и отмены): INCR
+  // (создаёт ключ при первом вызове) + EXPIRE только если TTL ещё не
+  // установлен (ttl === -1) — идемпотентно относительно повторных
+  // инцидентов того же клиента внутри 30-дневного окна.
+  private async incrementClientAbuse(clientUserId: string): Promise<void> {
+    const abuseKey = `abuse:client:${clientUserId}`;
+    const count = await this.redis.incr(abuseKey);
+    if (count === 1) {
+      await this.redis.expire(abuseKey, ABUSE_CLIENT_TTL_SECONDS);
+    } else {
+      const ttl = await this.redis.ttl(abuseKey);
+      if (ttl === -1)
+        await this.redis.expire(abuseKey, ABUSE_CLIENT_TTL_SECONDS);
+    }
+  }
+
   // Клиент отменяет консультацию. Только ACTIVE -> 409 иначе; атомарный
-  // updateMany на защиту от гонки с complete() эксперта. Redis-счётчик
-  // злоупотреблений: INCR (создаёт ключ при первом вызове) + EXPIRE только
-  // если TTL ещё не установлен (ttl === -1) — идемпотентно относительно
-  // повторных отмен того же клиента внутри окна.
+  // updateMany на защиту от гонки с complete() эксперта.
   async cancel(
     consultationId: string,
     userSub: string,
@@ -258,15 +277,7 @@ export class ConsultationsService {
         409,
       );
 
-    const abuseKey = `abuse:client:${userSub}`;
-    const count = await this.redis.incr(abuseKey);
-    if (count === 1) {
-      await this.redis.expire(abuseKey, ABUSE_CLIENT_TTL_SECONDS);
-    } else {
-      const ttl = await this.redis.ttl(abuseKey);
-      if (ttl === -1)
-        await this.redis.expire(abuseKey, ABUSE_CLIENT_TTL_SECONDS);
-    }
+    await this.incrementClientAbuse(userSub);
 
     await this.returnExpertToAccepting(consultation.expertId);
 

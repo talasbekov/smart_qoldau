@@ -194,7 +194,7 @@ describe('Abuse-гейт автоподбора (E5, задача 8, Р-01/Р-17
     expect(directed.body.id).toBeTruthy();
   });
 
-  it('клиент с 2 отменами -> авто-заявка проходит', async () => {
+  it('клиент с 2 отменами -> авто-заявка проходит; + no-show (3-й инцидент, Р-01) -> автоподбор закрыт', async () => {
     const exp = await acceptingExpert(PH_E2);
     const cli = await clientUser(PH_C2);
 
@@ -202,9 +202,28 @@ describe('Abuse-гейт автоподбора (E5, задача 8, Р-01/Р-17
       await fullFlowWithCancel(cli, exp);
     }
 
-    const res = await post(cli.accessToken, '/v1/requests')
+    // 2 инцидента < 3 — автоподбор ещё работает; заявка сразу идёт в дело:
+    // эксперт принимает, клиент не приходит -> CLIENT_NO_SHOW (3-й инцидент).
+    await post(cli.accessToken, '/v1/requests')
       .send({ topicSlug: 'anxiety-stress', format: 'video' })
       .expect(201);
-    expect(res.body.id).toBeTruthy();
+    const offers = await get(exp.accessToken, '/v1/experts/me/offers').expect(
+      200,
+    );
+    const accepted = await post(
+      exp.accessToken,
+      `/v1/offers/${offers.body[0].offerId as string}/accept`,
+    ).expect(200);
+    await post(
+      exp.accessToken,
+      `/v1/consultations/${accepted.body.consultationId as string}/complete`,
+    )
+      .send({ outcome: 'CLIENT_NO_SHOW' })
+      .expect(200);
+
+    const blocked = await post(cli.accessToken, '/v1/requests')
+      .send({ topicSlug: 'anxiety-stress', format: 'video' })
+      .expect(403);
+    expect(blocked.body.error.code).toBe('AUTO_MATCH_DISABLED');
   });
 });

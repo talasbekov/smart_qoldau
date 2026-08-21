@@ -405,7 +405,7 @@ describe('Сквозной e2e денежного цикла (E5, задача 9
     );
   });
 
-  it('обратный цикл: холд -> advance(5 дней) -> перехолд -> CLIENT_NO_SHOW -> void, балансы нулевые; 3 отмены -> AUTO_MATCH_DISABLED, направленная заявка работает', async () => {
+  it('обратный цикл: холд -> advance(5 дней) -> перехолд -> CLIENT_NO_SHOW -> void, балансы нулевые; no-show + 2 отмены -> AUTO_MATCH_DISABLED, направленная заявка работает', async () => {
     const exp = await acceptingExpert(PH_E2);
     const cli = await clientUser(PH_C2);
     const cardId = await addCard(cli.accessToken);
@@ -465,9 +465,9 @@ describe('Сквозной e2e денежного цикла (E5, задача 9
       ]),
     );
 
-    // Р-01/Р-17: no-show клиенту не засчитан (решение эксперта), а вот три
-    // ОТМЕНЫ клиентом закрывают автоподбор.
-    for (let i = 0; i < 3; i++) {
+    // Р-01/Р-17: no-show выше — уже 1-й инцидент злоупотребления; ещё две
+    // отмены клиентом добирают лимит «3+ за 30 дней» — автоподбор закрыт.
+    for (let i = 0; i < 2; i++) {
       const cId = await matchClientToExpert(cli, exp);
       await post(cli.accessToken, `/v1/consultations/${cId}/cancel`).expect(
         200,
