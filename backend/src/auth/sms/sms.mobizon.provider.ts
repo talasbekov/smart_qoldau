@@ -13,6 +13,15 @@ interface MobizonResponse {
 // Боевой адаптер SMS-порта (долг эпика E1): Mobizon REST API.
 // Контракт: POST c apiKey/recipient/text в теле формы, recipient без "+";
 // code !== 0 в ответе -> ошибка отправки, сообщение берём из API.
+//
+// ДОПУЩЕНИЕ: бриф не уточняет, куда именно кладутся apiKey/recipient/text —
+// в query-строку URL или в тело POST-запроса. Здесь выбран POST body
+// (application/x-www-form-urlencoded) как документированный неэкзотичный
+// вариант, НЕ подтверждённый против боевого Mobizon API. Mobizon REST API
+// исторически поддерживает и передачу тех же параметров через query-строку
+// (даже при методе POST) — если боевой контракт окажется query-based,
+// потребуется точечная правка только тела send(). Проверить фактический
+// контракт перед первым включением SMS_PROVIDER=mobizon в проде.
 @Injectable()
 export class MobizonSmsProvider implements SmsProvider {
   private readonly logger = new Logger(MobizonSmsProvider.name);
@@ -37,7 +46,23 @@ export class MobizonSmsProvider implements SmsProvider {
       signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
     });
 
-    const data = (await response.json()) as MobizonResponse;
+    if (!response.ok) {
+      this.logger.error(
+        `Mobizon SMS: HTTP ${response.status} при отправке на ${recipient}`,
+      );
+      throw new Error(`Mobizon SMS: сервер вернул HTTP ${response.status}`);
+    }
+
+    let data: MobizonResponse;
+    try {
+      data = (await response.json()) as MobizonResponse;
+    } catch {
+      this.logger.error(
+        `Mobizon SMS: невалидный JSON в ответе при отправке на ${recipient}`,
+      );
+      throw new Error('Mobizon SMS: невалидный ответ API (не JSON)');
+    }
+
     if (data.code !== 0) {
       this.logger.error(
         `Mobizon SMS: отправка на ${recipient} не удалась (code=${data.code})`,
