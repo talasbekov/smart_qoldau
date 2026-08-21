@@ -42,12 +42,10 @@ const ALL_PHONES = [
   PH_C6,
 ];
 
-// X-Admin-Token остаётся только для /admin/payouts (задача 5 E8a, ещё не
-// переведена на роли); /admin/verification/* — через operatorAuth ниже
-// (задача 4 E8a, RolesGuard + VERIFICATION_OPERATOR): одноразовый сотрудник
-// спека, явный email со своим префиксом, чистится в cleanup().
-const ADMIN = { 'X-Admin-Token': 'dev-admin-token-0123456789abcdef' };
-const ADMIN_EMAIL_PREFIX = 'notifications-domain-e2e-operator-';
+// Оба сотрудника спека (задача 5 E8a: /admin/verification/* через
+// VERIFICATION_OPERATOR, /admin/payouts/* через FINANCE_CONTROL) —
+// одноразовые, с явным email под общим префиксом спека, чистятся в cleanup().
+const ADMIN_EMAIL_PREFIX = 'notifications-domain-e2e-';
 const VISA_PAN = '4111111111111111';
 const CARD = { pan: VISA_PAN, expiry: '12/28', holderName: 'Aigul S' };
 const PAYOUT_WEBHOOK_SECRET =
@@ -103,6 +101,7 @@ describe('Уведомления доменных событий: деньги, 
   let ledger: LedgerService;
   let timer: OfferTimerService;
   let operatorAuth: AdminAuth;
+  let financeAuth: AdminAuth;
   const registeredExpertIds: string[] = [];
   let seedCounter = 0;
 
@@ -255,7 +254,12 @@ describe('Уведомления доменных событий: деньги, 
     operatorAuth = await adminUser(
       app,
       [AdminRole.VERIFICATION_OPERATOR],
-      `${ADMIN_EMAIL_PREFIX}${Date.now()}@smartqoldau.kz`,
+      `${ADMIN_EMAIL_PREFIX}operator-${Date.now()}@smartqoldau.kz`,
+    );
+    financeAuth = await adminUser(
+      app,
+      [AdminRole.FINANCE_CONTROL],
+      `${ADMIN_EMAIL_PREFIX}finance-${Date.now()}@smartqoldau.kz`,
     );
   });
 
@@ -442,7 +446,7 @@ describe('Уведомления доменных событий: деньги, 
 
     await request(app.getHttpServer())
       .post(`/v1/admin/payouts/${payoutId}/reject`)
-      .set(ADMIN)
+      .set(...financeAuth.authHeader)
       .send({ reason: 'Подозрительная активность' })
       .expect(200);
 

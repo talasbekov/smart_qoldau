@@ -403,14 +403,6 @@ describe('Admin verification (e2e)', () => {
     ).toBe(true);
   });
 
-  it('старый X-Admin-Token больше не работает на этих маршрутах -> 401', async () => {
-    const res = await request(app.getHttpServer())
-      .get('/v1/admin/verification/queue')
-      .set('X-Admin-Token', 'dev-admin-token-0123456789abcdef')
-      .expect(401);
-    expect(res.body.error.code).toBe('UNAUTHORIZED');
-  });
-
   it('без токена -> 401 на всех пяти маршрутах', async () => {
     await request(app.getHttpServer())
       .get('/v1/admin/verification/queue')

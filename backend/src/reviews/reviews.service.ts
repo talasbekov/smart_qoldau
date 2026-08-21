@@ -248,7 +248,11 @@ export class ReviewsService {
   // и агрегатов), restore -> PUBLISHED (возврат в публичную выдачу и
   // агрегаты). В обоих случаях пересчёт в той же транзакции. Не-FLAGGED
   // отзыв -> 409 INVALID_STATE_TRANSITION.
-  async resolve(reviewId: string, dto: ResolveReviewDto): Promise<void> {
+  async resolve(
+    reviewId: string,
+    dto: ResolveReviewDto,
+    actorId: string,
+  ): Promise<void> {
     const review = await this.prisma.review.findUnique({
       where: { id: reviewId },
     });
@@ -274,6 +278,7 @@ export class ReviewsService {
 
     await this.audit.log({
       actorType: 'admin',
+      actorId,
       entity: 'review',
       entityId: reviewId,
       transition: dto.action === 'hide' ? 'review.hidden' : 'review.restored',
