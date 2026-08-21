@@ -140,18 +140,23 @@ describe('Уведомление автору об ответе поддержк
     return adminUser(app, roles, uniqueAdminEmail(tag));
   }
 
-  it('ответ сотрудника -> у автора in-app запись ticket.replied + push; текст ответа в уведомление не попадает', async () => {
+  it('ответ сотрудника -> у автора in-app запись ticket.replied + push; ни текст ответа, ни тема обращения в уведомление не попадают', async () => {
     const client = await loginClient();
     await addDevice(client.accessToken);
 
-    const ticketSubject = 'Не приходит SMS-код при входе';
+    // Узнаваемый маркер темы — тема тикета свободный пользовательский текст
+    // без модерации (до 200 символов) и на платформе психологической
+    // поддержки может быть чувствительной; она не должна утечь ни в title/
+    // body уведомления, ни в его data (data целиком уходит в push-payload —
+    // см. NotificationsService.dispatchOrThrow), ни в сам push.
+    const subjectMarker = 'МАРКЕР-ТЕМЫ-xyz789-не-приходит-sms-код-при-входе';
     const replyBody =
       'Проверили — код действительно не доставлялся оператором связи, повторно выслан вручную.';
 
     const created = await post('/v1/tickets', client.accessToken)
       .send({
         category: 'TECHNICAL',
-        subject: ticketSubject,
+        subject: subjectMarker,
         body: 'Прошу помочь, не могу войти без кода.',
       })
       .expect(201);
@@ -171,17 +176,25 @@ describe('Уведомление автору об ответе поддержк
       where: { userId: client.userId, type: 'ticket.replied' },
     });
     expect(stored.title).toBe('Ответ поддержки');
-    expect(stored.body).toBe(`По обращению «${ticketSubject}» есть ответ`);
+    expect(stored.body).toBe('По вашему обращению есть ответ');
+    expect(stored.title).not.toContain(subjectMarker);
+    expect(stored.body).not.toContain(subjectMarker);
     expect(stored.body).not.toContain(replyBody);
     expect((stored.data as any).ticketId).toBe(ticketId);
-    expect((stored.data as any).subject).toBe(ticketSubject);
+    expect((stored.data as any).subject).toBeUndefined();
+    // Полная сериализация data (то, что реально уходит в push-payload по
+    // ключам) — маркера темы нет нигде, не только в известных ключах.
+    expect(JSON.stringify(stored.data)).not.toContain(subjectMarker);
     expect(stored.pushSentAt).not.toBeNull();
 
     const sent = await pushSentTo(DEVICE_TOKEN);
     const push = sent.find((s) => s.data?.notificationId === stored.id);
     expect(push).toBeDefined();
     expect(push.title).toBe('Ответ поддержки');
+    expect(push.body).toBe('По вашему обращению есть ответ');
     expect(push.body).not.toContain(replyBody);
+    // Весь пуш целиком (title/body/data) — маркер темы отсутствует.
+    expect(JSON.stringify(push)).not.toContain(subjectMarker);
 
     // Ответная запись в переписке — реальный текст сотрудника остаётся в
     // приложении (тикет-детали), а не в уведомлении.

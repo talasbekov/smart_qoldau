@@ -11,6 +11,10 @@ import { StorageService } from '../storage/storage.service';
 import { PresenceService } from '../presence/presence.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { apiError } from '../common/filters/app-exception.filter';
+import {
+  RATING_THRESHOLD_AVG,
+  RATING_THRESHOLD_COUNT,
+} from '../common/rating-threshold';
 import { DecisionDto } from './dto/decision.dto';
 import { BlockExpertDto } from './dto/block.dto';
 import { QueueEntryDto } from './dto/queue.dto';
@@ -23,13 +27,6 @@ import { ExpertMeDto } from '../experts/dto/expert-me.dto';
 const REQUIRED_DOCUMENTS_COUNT = 4;
 const DEFAULT_TAKE = 20;
 const MAX_TAKE = 100;
-
-// Р-20: порог качества эксперта — зеркалит RATING_THRESHOLD_COUNT/AVG из
-// ReviewsService.checkRatingThreshold (там же вычисляются агрегаты и
-// пишется audit-флаг expert.rating_below_threshold). Задача 9 закрывает
-// пробел E4: раньше посмотреть очередь можно было только по audit_log.
-const RATING_THRESHOLD_COUNT = 20;
-const RATING_THRESHOLD_AVG = 4.0;
 
 @Injectable()
 export class VerificationService {

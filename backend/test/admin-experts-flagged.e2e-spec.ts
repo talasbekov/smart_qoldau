@@ -142,9 +142,13 @@ describe('Очередь экспертов ниже порога рейтинг
 
     const quality = await staffWithRoles([AdminRole.QUALITY_TEAM], 'quality');
 
-    const res = await get('/v1/admin/experts/flagged', quality.token).expect(
-      200,
-    );
+    // take=100 (максимум) — вся очередь одним запросом, дальше и полный
+    // список, и страницы сверяются с ним же (устойчиво к другим строкам
+    // ratingCount>=20, если они уже есть в общей тестовой БД).
+    const res = await get(
+      '/v1/admin/experts/flagged?take=100',
+      quality.token,
+    ).expect(200);
     const ids = (res.body as Array<{ id: string }>).map((e) => e.id);
 
     expect(ids).toContain(lowId);
@@ -165,22 +169,26 @@ describe('Очередь экспертов ниже порога рейтинг
     ).find((e) => e.id === lowId);
     expect(row).toMatchObject({ ratingAvg: 3.2, ratingCount: 22 });
 
-    // Пагинация: take=1 -> только самый низкий рейтинг; take=2&skip=1 ->
-    // пара с равным ratingAvg в порядке id asc.
+    // Пагинация take/skip: страница должна быть срезом ТОГО ЖЕ порядка, что
+    // и полная выдача (`ids`, уже проверенная выше) — сравниваем со срезом
+    // `ids`, а не с жёстко ожидаемым содержимым страницы. Устойчиво к другим
+    // ratingCount>=20 строкам в общей тестовой БД: даже если такая строка
+    // существует и попадает на эти позиции, срез всё равно обязан совпасть с
+    // тем, что вернул сам API на полном списке (паттерн ownIds выше).
     const page1 = await get(
       '/v1/admin/experts/flagged?take=1',
       quality.token,
     ).expect(200);
-    expect((page1.body as Array<{ id: string }>).map((e) => e.id)).toEqual([
-      lowId,
-    ]);
+    expect((page1.body as Array<{ id: string }>).map((e) => e.id)).toEqual(
+      ids.slice(0, 1),
+    );
 
     const page2 = await get(
       '/v1/admin/experts/flagged?take=2&skip=1',
       quality.token,
     ).expect(200);
     expect((page2.body as Array<{ id: string }>).map((e) => e.id)).toEqual(
-      expectedTieOrder,
+      ids.slice(1, 3),
     );
   });
 

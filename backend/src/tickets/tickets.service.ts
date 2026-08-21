@@ -274,13 +274,15 @@ export class TicketsService {
 
     // In-app + push (E9): dispatch() сам никогда не бросает (fire-and-forget) —
     // сбой шины уведомлений не откатывает уже сохранённый ответ сотрудника.
-    // Текст ответа в уведомление НЕ кладём (приватность, как в chat.message) —
-    // только subject тикета. У гостевого тикета (authorType GUEST)
+    // Ни текст ответа, ни subject тикета в уведомление НЕ кладём (ревью:
+    // subject — немодерируемый пользовательский текст, который на платформе
+    // психологической поддержки может быть чувствительным, а push рендерится
+    // на заблокированном экране) — только ticketId, чтобы открыть нужное
+    // обращение внутри приложения. У гостевого тикета (authorType GUEST)
     // authorUserId нет — уведомление не отправляется.
     if (ticket.authorUserId) {
       await this.notifications.dispatch(ticket.authorUserId, 'ticket.replied', {
         ticketId: id,
-        subject: ticket.subject,
       });
     }
   }

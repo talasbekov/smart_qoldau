@@ -12,6 +12,10 @@ import { AuditService } from '../audit/audit.service';
 import { ConsultationsService } from '../consultations/consultations.service';
 import { ExpertsService } from '../experts/experts.service';
 import { apiError } from '../common/filters/app-exception.filter';
+import {
+  RATING_THRESHOLD_AVG,
+  RATING_THRESHOLD_COUNT,
+} from '../common/rating-threshold';
 import { CreateReviewDto } from './dto/create-review.dto';
 import { ListExpertReviewsDto } from './dto/list-expert-reviews.dto';
 import { ExpertReviewsDto } from './dto/expert-reviews.dto';
@@ -23,15 +27,6 @@ import { FlaggedReviewDto } from './dto/flagged-review.dto';
 
 const DEFAULT_TAKE = 20;
 const MAX_TAKE = 100;
-
-// Р-20: порог качества эксперта. Решение по упрощению из брифа задачи 7:
-// audit-флаг фиксируется КАЖДЫЙ раз, когда после пересчёта агрегатов условие
-// (ratingCount >= 20 && ratingAvg < 4.0) выполняется — не только на пересечении
-// порога вниз. Это самая простая и предсказуемая реализация: даунстрим
-// (админ-панель задачи 8) может дедуплицировать по времени, если понадобится
-// не заваливать очередь повторными одинаковыми флагами.
-const RATING_THRESHOLD_COUNT = 20;
-const RATING_THRESHOLD_AVG = 4.0;
 
 @Injectable()
 export class ReviewsService {

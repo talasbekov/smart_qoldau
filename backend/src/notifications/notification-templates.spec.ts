@@ -30,18 +30,24 @@ describe('Шаблоны уведомлений (юнит, §5.8)', () => {
     expect(kz.body).toContain('12 750');
   });
 
-  it('подстановка {subject} работает: ticket.replied (E8a, задача 9), текст ответа в шаблон не попадает', () => {
+  it('ticket.replied (E8a, задача 9, ревью): фиксированный текст без подстановок — тема тикета в шаблон не попадает, даже если её передать в data', () => {
+    const leakedSubject = 'Секретная тема обращения, которая не должна утечь';
+
     const ru = renderTemplate('ticket.replied', 'ru', {
-      subject: 'Не приходит SMS-код',
+      subject: leakedSubject,
+      ticketId: 'ticket-1',
     });
     expect(ru.title).toBe('Ответ поддержки');
-    expect(ru.body).toContain('Не приходит SMS-код');
+    expect(ru.body).toBe('По вашему обращению есть ответ');
+    expect(ru.body).not.toContain(leakedSubject);
 
     const kz = renderTemplate('ticket.replied', 'kz', {
-      subject: 'Не приходит SMS-код',
+      subject: leakedSubject,
+      ticketId: 'ticket-1',
     });
-    expect(kz.body).toContain('Не приходит SMS-код');
+    expect(kz.body).not.toContain(leakedSubject);
     expect(kz.title).not.toBe(ru.title);
+    expect(kz.body).not.toBe(ru.body);
   });
 
   it('неизвестная локаль падает в ru', () => {
