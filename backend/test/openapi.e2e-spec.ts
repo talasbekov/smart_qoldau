@@ -34,11 +34,13 @@ describe('OpenAPI (e2e)', () => {
       '/v1/experts/me/documents/{type}',
       '/v1/experts/me/documents',
       '/v1/experts/me/documents/submit',
+      '/v1/admin/auth/login',
       '/v1/admin/verification/queue',
       '/v1/admin/verification/documents/{documentId}/decision',
       '/v1/admin/verification/{expertId}/decision',
       '/v1/admin/experts/{expertId}/block',
       '/v1/admin/experts/{expertId}/unblock',
+      '/v1/admin/experts/flagged',
       '/v1/requests',
       '/v1/requests/{id}',
       '/v1/requests/{id}/cancel',
@@ -80,6 +82,14 @@ describe('OpenAPI (e2e)', () => {
       '/v1/notifications',
       '/v1/notifications/read',
       '/v1/notifications/{id}/ack',
+      '/v1/admin/staff',
+      '/v1/admin/staff/{id}',
+      '/v1/tickets',
+      '/v1/tickets/{id}',
+      '/v1/admin/tickets',
+      '/v1/admin/tickets/{id}',
+      '/v1/admin/tickets/{id}/reply',
+      '/v1/admin/tickets/{id}/resolve',
     ])
       expect(paths).toContain(p);
   });

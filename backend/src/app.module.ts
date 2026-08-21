@@ -30,6 +30,8 @@ import { PaymentsModule } from './payments/payments.module';
 import { PayoutsModule } from './payouts/payouts.module';
 import { DevicesModule } from './devices/devices.module';
 import { NotificationsModule } from './notifications/notifications.module';
+import { AdminModule } from './admin/admin.module';
+import { TicketsModule } from './tickets/tickets.module';
 
 @Module({
   imports: [
@@ -62,6 +64,8 @@ import { NotificationsModule } from './notifications/notifications.module';
     PayoutsModule,
     DevicesModule,
     NotificationsModule,
+    AdminModule,
+    TicketsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

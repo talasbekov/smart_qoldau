@@ -246,10 +246,10 @@ export class PayoutsService {
   // POST /v1/admin/payouts/:id/approve — только из PENDING_REVIEW.
   // updateMany со status-фильтром: два параллельных approve (или гонка с
   // reject) — победит ровно один, второй получит 409.
-  async approve(payoutId: string): Promise<void> {
+  async approve(payoutId: string, actorId: string): Promise<void> {
     const updated = await this.prisma.payout.updateMany({
       where: { id: payoutId, status: PayoutStatus.PENDING_REVIEW },
-      data: { status: PayoutStatus.PROCESSING, reviewedBy: 'admin' },
+      data: { status: PayoutStatus.PROCESSING, reviewedBy: actorId },
     });
     if (updated.count === 0) {
       await this.notPendingError(payoutId);
@@ -261,6 +261,7 @@ export class PayoutsService {
 
     await this.audit.log({
       actorType: 'admin',
+      actorId,
       entity: 'payout',
       entityId: payoutId,
       transition: 'payout.approved',
@@ -278,14 +279,18 @@ export class PayoutsService {
   // POST /v1/admin/payouts/:id/reject {reason} — Р-06 «отклонение с
   // причиной». Смена статуса и компенсирующая проводка (возврат резерва на
   // баланс эксперта) атомарны.
-  async reject(payoutId: string, reason: string): Promise<void> {
+  async reject(
+    payoutId: string,
+    reason: string,
+    actorId: string,
+  ): Promise<void> {
     const payout = await this.prisma.$transaction(async (tx) => {
       const updated = await tx.payout.updateMany({
         where: { id: payoutId, status: PayoutStatus.PENDING_REVIEW },
         data: {
           status: PayoutStatus.REJECTED,
           rejectReason: reason,
-          reviewedBy: 'admin',
+          reviewedBy: actorId,
         },
       });
       if (updated.count === 0) return null;
@@ -311,6 +316,7 @@ export class PayoutsService {
 
     await this.audit.log({
       actorType: 'admin',
+      actorId,
       entity: 'payout',
       entityId: payoutId,
       transition: 'payout.rejected',

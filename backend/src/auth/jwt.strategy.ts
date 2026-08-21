@@ -1,11 +1,16 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PassportStrategy } from '@nestjs/passport';
+import { AdminRole } from '@prisma/client';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 
+// isAdmin/roles заполняются только для токенов сотрудников админки (E8a,
+// AdminAuthService.login) — пользовательские/гостевые токены их не несут.
 export interface JwtPayload {
   sub: string;
   isGuest: boolean;
+  isAdmin?: true;
+  roles?: AdminRole[];
 }
 
 @Injectable()
@@ -19,6 +24,9 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   }
 
   async validate(payload: JwtPayload): Promise<JwtPayload> {
-    return { sub: payload.sub, isGuest: payload.isGuest };
+    const result: JwtPayload = { sub: payload.sub, isGuest: payload.isGuest };
+    if (payload.isAdmin) result.isAdmin = payload.isAdmin;
+    if (payload.roles) result.roles = payload.roles;
+    return result;
   }
 }

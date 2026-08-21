@@ -5,11 +5,12 @@ import {
   HttpCode,
   Param,
   Post,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
-  ApiHeader,
+  ApiBearerAuth,
   ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
@@ -17,27 +18,34 @@ import {
   ApiTags,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
-import { Expert } from '@prisma/client';
+import { AdminRole, Expert } from '@prisma/client';
 import { VerificationService } from './verification.service';
-import { AdminTokenGuard } from './admin-token.guard';
+import { AdminJwtGuard } from '../admin/admin-jwt.guard';
+import { RolesGuard } from '../admin/roles.guard';
+import { Roles } from '../admin/roles.decorator';
+import {
+  CurrentAdmin,
+  CurrentAdminPayload,
+} from '../admin/current-admin.decorator';
 import { DecisionDto } from './dto/decision.dto';
 import { BlockExpertDto } from './dto/block.dto';
 import { QueueEntryDto } from './dto/queue.dto';
+import {
+  FlaggedExpertDto,
+  FlaggedExpertsQueryDto,
+} from './dto/flagged-experts.dto';
 import { ExpertMeDto } from '../experts/dto/expert-me.dto';
 
 @ApiTags('admin-verification')
-@ApiHeader({
-  name: 'X-Admin-Token',
-  description: 'Временный админ-токен до RBAC (эпик E8)',
-  required: true,
-})
-@UseGuards(AdminTokenGuard)
+@ApiBearerAuth()
+@UseGuards(AdminJwtGuard, RolesGuard)
 @ApiUnauthorizedResponse({ description: 'UNAUTHORIZED' })
 @Controller('admin')
 export class VerificationController {
   constructor(private verificationService: VerificationService) {}
 
   @Get('verification/queue')
+  @Roles(AdminRole.VERIFICATION_OPERATOR)
   @ApiOperation({ summary: 'Очередь экспертов на верификацию (PENDING)' })
   @ApiOkResponse({ type: QueueEntryDto, isArray: true })
   async queue(): Promise<QueueEntryDto[]> {
@@ -45,6 +53,7 @@ export class VerificationController {
   }
 
   @Post('verification/documents/:documentId/decision')
+  @Roles(AdminRole.VERIFICATION_OPERATOR)
   @HttpCode(200)
   @ApiOperation({ summary: 'Решение по документу: approve/reject' })
   @ApiParam({ name: 'documentId', format: 'uuid' })
@@ -54,11 +63,13 @@ export class VerificationController {
   async decideDocument(
     @Param('documentId') documentId: string,
     @Body() dto: DecisionDto,
+    @CurrentAdmin() admin: CurrentAdminPayload,
   ) {
-    return this.verificationService.decideDocument(documentId, dto);
+    return this.verificationService.decideDocument(documentId, dto, admin.id);
   }
 
   @Post('verification/:expertId/decision')
+  @Roles(AdminRole.VERIFICATION_OPERATOR)
   @HttpCode(200)
   @ApiOperation({ summary: 'Решение по анкете эксперта: approve/reject' })
   @ApiParam({ name: 'expertId', format: 'uuid' })
@@ -71,11 +82,13 @@ export class VerificationController {
   async decideExpert(
     @Param('expertId') expertId: string,
     @Body() dto: DecisionDto,
+    @CurrentAdmin() admin: CurrentAdminPayload,
   ): Promise<ExpertMeDto> {
-    return this.verificationService.decideExpert(expertId, dto);
+    return this.verificationService.decideExpert(expertId, dto, admin.id);
   }
 
   @Post('experts/:expertId/block')
+  @Roles(AdminRole.VERIFICATION_OPERATOR)
   @HttpCode(200)
   @ApiOperation({ summary: 'Заблокировать эксперта (Р-19)' })
   @ApiParam({ name: 'expertId', format: 'uuid' })
@@ -85,17 +98,40 @@ export class VerificationController {
   async block(
     @Param('expertId') expertId: string,
     @Body() dto: BlockExpertDto,
+    @CurrentAdmin() admin: CurrentAdminPayload,
   ): Promise<Expert> {
-    return this.verificationService.block(expertId, dto);
+    return this.verificationService.block(expertId, dto, admin.id);
   }
 
   @Post('experts/:expertId/unblock')
+  @Roles(AdminRole.VERIFICATION_OPERATOR)
   @HttpCode(200)
   @ApiOperation({ summary: 'Снять блокировку эксперта' })
   @ApiParam({ name: 'expertId', format: 'uuid' })
   @ApiOkResponse({ description: 'Блокировка снята' })
   @ApiNotFoundResponse({ description: 'EXPERT_NOT_FOUND' })
-  async unblock(@Param('expertId') expertId: string): Promise<Expert> {
-    return this.verificationService.unblock(expertId);
+  async unblock(
+    @Param('expertId') expertId: string,
+    @CurrentAdmin() admin: CurrentAdminPayload,
+  ): Promise<Expert> {
+    return this.verificationService.unblock(expertId, admin.id);
+  }
+
+  // Роль здесь — QUALITY_TEAM, а не VERIFICATION_OPERATOR (как у остальных
+  // методов контроллера): @Roles вешается на метод, смешение ролей в одном
+  // контроллере допустимо. Эндпоинт живёт рядом с block/unblock — все они
+  // операции над Expert под /admin/experts/*, отдельный контроллер/модуль
+  // ради одного GET был бы избыточен (задача 9).
+  @Get('experts/flagged')
+  @Roles(AdminRole.QUALITY_TEAM)
+  @ApiOperation({
+    summary:
+      'Очередь экспертов ниже порога рейтинга (Р-20): ratingCount >= 20 и ratingAvg < 4.0',
+  })
+  @ApiOkResponse({ type: FlaggedExpertDto, isArray: true })
+  async flaggedExperts(
+    @Query() query: FlaggedExpertsQueryDto,
+  ): Promise<FlaggedExpertDto[]> {
+    return this.verificationService.flaggedExperts(query);
   }
 }

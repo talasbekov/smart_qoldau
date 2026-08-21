@@ -469,6 +469,29 @@ model Device {
   @@map("devices")
 }
 
+enum AdminRole {
+  VERIFICATION_OPERATOR
+  SUPPORT_OPERATOR
+  QUALITY_TEAM
+  FINANCE_CONTROL
+  SUPERADMIN
+}
+
+// Сотрудник админки (E8a). Роли — плоский список без гранулярных
+// permissions: набор разрешённых действий для каждой роли задаётся кодом
+// (guards), не данными. Один сотрудник может иметь несколько ролей.
+model AdminUser {
+  id           String      @id @default(uuid())
+  email        String      @unique
+  passwordHash String      @map("password_hash")
+  roles        AdminRole[]
+  isActive     Boolean     @default(true) @map("is_active")
+  lastLoginAt  DateTime?   @map("last_login_at")
+  createdAt    DateTime    @default(now()) @map("created_at")
+  updatedAt    DateTime    @updatedAt @map("updated_at")
+  @@map("admin_users")
+}
+
 // In-app уведомление (E9, §5.8). title/body — снапшот шаблона по локали
 // получателя на момент dispatch. Поля доставки — данные метрики §11.6:
 // pushSentAt (шина отправила провайдеру), pushDeliveredAt (ack устройства),
@@ -489,4 +512,93 @@ model Notification {
   @@index([userId, readAt])
   @@index([type, pushDeliveredAt, smsFallbackAt]) // выборка sweep-fallback
   @@map("notifications")
+}
+
+enum TicketStatus {
+  NEW
+  IN_PROGRESS
+  RESOLVED
+}
+
+enum TicketAuthorType {
+  CLIENT
+  EXPERT
+  GUEST
+}
+
+enum TicketCategory {
+  CONSULTATIONS
+  PAYMENT
+  PAYOUTS
+  TECHNICAL
+  VERIFICATION
+  SECURITY
+  CLIENT_QUESTION
+  ACCOUNT_DATA
+  OTHER
+}
+
+// Команда-исполнитель тикета (Р-23). Совпадает по значениям с
+// профильными ролями AdminRole (кроме SUPERADMIN) — очередь задачи 8
+// фильтрует тикеты по роли вошедшего сотрудника напрямую этим полем.
+enum TicketTeam {
+  SUPPORT_OPERATOR
+  VERIFICATION_OPERATOR
+  FINANCE_CONTROL
+  QUALITY_TEAM
+}
+
+// Обращение в поддержку (E8a, Р-23/БП-09). Автор — клиент/эксперт (по
+// User.expert) или гость (без токена, тогда обязателен contactEmail/Phone).
+// Категории раздельны по типу автора (см. ticket-routing.ts), маршрутизация
+// в team — тоже там, чистой функцией. body — текст исходного обращения;
+// дальнейшая переписка — TicketMessage. Без FK на users/consultations/payouts
+// (конвенция E3+): связь строкой, join вручную при необходимости.
+model Ticket {
+  id                    String           @id @default(uuid())
+  authorType            TicketAuthorType @map("author_type")
+  authorUserId          String?          @map("author_user_id")
+  contactEmail          String?          @map("contact_email")
+  contactPhone          String?          @map("contact_phone")
+  category              TicketCategory
+  subject               String
+  body                  String
+  status                TicketStatus     @default(NEW)
+  team                  TicketTeam
+  firstReplyAt          DateTime?        @map("first_reply_at")
+  resolvedAt            DateTime?        @map("resolved_at")
+  relatedConsultationId String?          @map("related_consultation_id")
+  relatedPayoutId       String?          @map("related_payout_id")
+  // @default(now()) — страховка на случай записи мимо TicketsService;
+  // само значение TicketsService.create() ВСЕГДА проставляет явно через
+  // ClockService.now(), иначе виртуальное время в e2e не подчиняет момент
+  // создания тикета (урок E9).
+  createdAt             DateTime         @default(now()) @map("created_at")
+  updatedAt             DateTime         @updatedAt @map("updated_at")
+  messages              TicketMessage[]
+  // (team, status, createdAt), а не (status, team, createdAt): дефолтный
+  // запрос очереди GET /v1/admin/tickets (без фильтра status) —
+  // WHERE team IN (...) ORDER BY created_at DESC, id DESC — не содержит
+  // status в предикате вообще, поэтому status как ведущая колонка индекс не
+  // обслуживает (финальное ревью E8a, п.6). team ведущей колонкой обслуживает
+  // и «вся своя очередь», и «своя очередь + фильтр status».
+  @@index([team, status, createdAt])
+  @@index([authorUserId, createdAt])
+  @@map("tickets")
+}
+
+// Сообщение переписки по тикету (ответ сотрудника/автора). authorKind:
+// 'user' | 'staff'; authorId — id User либо AdminUser в зависимости от
+// authorKind (без FK — разные таблицы). Пишет задача 8 (ответ сотрудника),
+// в задаче 7 таблица только создаётся и читается (пустая при создании тикета).
+model TicketMessage {
+  id         String   @id @default(uuid())
+  ticketId   String   @map("ticket_id")
+  ticket     Ticket   @relation(fields: [ticketId], references: [id])
+  authorKind String   @map("author_kind")
+  authorId   String?  @map("author_id")
+  body       String
+  createdAt  DateTime @default(now()) @map("created_at")
+  @@index([ticketId, createdAt])
+  @@map("ticket_messages")
 }

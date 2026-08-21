@@ -8,8 +8,8 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import {
+  ApiBearerAuth,
   ApiConflictResponse,
-  ApiHeader,
   ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
@@ -17,24 +17,28 @@ import {
   ApiTags,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
+import { AdminRole } from '@prisma/client';
 import { ReviewsService } from './reviews.service';
-import { AdminTokenGuard } from '../verification/admin-token.guard';
+import { AdminJwtGuard } from '../admin/admin-jwt.guard';
+import { RolesGuard } from '../admin/roles.guard';
+import { Roles } from '../admin/roles.decorator';
+import {
+  CurrentAdmin,
+  CurrentAdminPayload,
+} from '../admin/current-admin.decorator';
 import { FlaggedReviewDto } from './dto/flagged-review.dto';
 import { ResolveReviewDto } from './dto/resolve-review.dto';
 
 @ApiTags('admin-reviews')
-@ApiHeader({
-  name: 'X-Admin-Token',
-  description: 'Временный админ-токен до RBAC (эпик E8)',
-  required: true,
-})
-@UseGuards(AdminTokenGuard)
+@ApiBearerAuth()
+@UseGuards(AdminJwtGuard, RolesGuard)
 @ApiUnauthorizedResponse({ description: 'UNAUTHORIZED' })
 @Controller('admin/reviews')
 export class ReviewsAdminController {
   constructor(private reviews: ReviewsService) {}
 
   @Get('flagged')
+  @Roles(AdminRole.QUALITY_TEAM)
   @ApiOperation({
     summary:
       'Очередь FLAGGED-отзывов на модерацию (админ видит всё, включая privateText)',
@@ -45,6 +49,7 @@ export class ReviewsAdminController {
   }
 
   @Post(':id/resolve')
+  @Roles(AdminRole.QUALITY_TEAM)
   @HttpCode(200)
   @ApiOperation({
     summary:
@@ -57,7 +62,8 @@ export class ReviewsAdminController {
   async resolve(
     @Param('id') id: string,
     @Body() dto: ResolveReviewDto,
+    @CurrentAdmin() admin: CurrentAdminPayload,
   ): Promise<void> {
-    await this.reviews.resolve(id, dto);
+    await this.reviews.resolve(id, dto, admin.id);
   }
 }

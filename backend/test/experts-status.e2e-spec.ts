@@ -5,9 +5,13 @@ import { AppModule } from '../src/app.module';
 import { PrismaService } from '../src/prisma/prisma.service';
 import { RedisService } from '../src/redis/redis.service';
 import { SMS_PROVIDER_TOKEN, SmsProvider } from '../src/auth/sms/sms.provider';
+import { AdminRole } from '@prisma/client';
 import { createApp } from './utils/create-app';
+import { AdminAuth, adminUser } from './utils/admin-helpers';
 
-const ADMIN = { 'X-Admin-Token': 'dev-admin-token-0123456789abcdef' };
+// Одноразовый сотрудник спека (не общая фикстура) — явный email со своим
+// префиксом, чистится в cleanup() ниже (см. замечание ревью задачи 4).
+const ADMIN_EMAIL_PREFIX = 'experts-status-e2e-operator-';
 
 // Номера спека задачи 6 (E2), не пересекаются с другими спеками.
 const PHONE_S1 = '+77074000001';
@@ -41,6 +45,7 @@ describe('Experts work-status + presence (e2e)', () => {
   let app: INestApplication;
   let prisma: PrismaService;
   let redis: RedisService;
+  let operatorAuth: AdminAuth;
   const registeredExpertIds: string[] = [];
 
   async function cleanup() {
@@ -81,12 +86,25 @@ describe('Experts work-status + presence (e2e)', () => {
     );
     prisma = app.get(PrismaService);
     redis = app.get(RedisService);
+    operatorAuth = await adminUser(
+      app,
+      [AdminRole.VERIFICATION_OPERATOR],
+      `${ADMIN_EMAIL_PREFIX}${Date.now()}@smartqoldau.kz`,
+    );
   });
 
   beforeEach(() => cleanup());
 
   afterAll(async () => {
     await cleanup();
+    // adminUser (operatorAuth) НЕ в cleanup(): она вызывается в beforeEach
+    // перед КАЖДЫМ тестом, а operatorAuth создаётся один раз в beforeAll —
+    // удаление его строки в cleanup() убирало бы сотрудника до первого же
+    // теста (финальное ревью E8a, п.7). Строка убирается только здесь, после
+    // всех тестов сьюта.
+    await prisma.adminUser.deleteMany({
+      where: { email: { startsWith: ADMIN_EMAIL_PREFIX } },
+    });
     await app.close();
   });
 
@@ -146,13 +164,13 @@ describe('Experts work-status + presence (e2e)', () => {
     for (const id of docIds) {
       await request(app.getHttpServer())
         .post(`/v1/admin/verification/documents/${id}/decision`)
-        .set(ADMIN)
+        .set(...operatorAuth.authHeader)
         .send({ approve: true })
         .expect(200);
     }
     await request(app.getHttpServer())
       .post(`/v1/admin/verification/${expertId}/decision`)
-      .set(ADMIN)
+      .set(...operatorAuth.authHeader)
       .send({ approve: true })
       .expect(200);
 
@@ -200,7 +218,7 @@ describe('Experts work-status + presence (e2e)', () => {
     const { expertId } = await acceptingExpert(PHONE_S3);
     await request(app.getHttpServer())
       .post(`/v1/admin/experts/${expertId}/block`)
-      .set(ADMIN)
+      .set(...operatorAuth.authHeader)
       .send({ reason: 'test' })
       .expect(200);
     expect(await redis.sismember('experts:available', expertId)).toBe(0);

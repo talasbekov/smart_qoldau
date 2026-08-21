@@ -4,11 +4,10 @@ import { StorageModule } from '../storage/storage.module';
 import { NotificationsModule } from '../notifications/notifications.module';
 import { VerificationController } from './verification.controller';
 import { VerificationService } from './verification.service';
-import { AdminTokenGuard } from './admin-token.guard';
 
 @Module({
   imports: [AuditModule, StorageModule, NotificationsModule],
   controllers: [VerificationController],
-  providers: [VerificationService, AdminTokenGuard],
+  providers: [VerificationService],
 })
 export class VerificationModule {}

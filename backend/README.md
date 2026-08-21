@@ -58,6 +58,11 @@ $ npm run test:e2e
 $ npm run test:cov
 ```
 
+`npm run test:e2e` connects to the test database on port 5433 by default
+(`postgresql://sq:sq@localhost:5433/smartqoldau_test`, started via
+`infra/docker-compose.dev.yml`), not the dev database on 5432. Set `DATABASE_URL`
+explicitly (as CI does) to override the default.
+
 ## Deployment
 
 When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.

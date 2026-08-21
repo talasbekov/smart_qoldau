@@ -5,9 +5,13 @@ import { AppModule } from '../src/app.module';
 import { PrismaService } from '../src/prisma/prisma.service';
 import { RedisService } from '../src/redis/redis.service';
 import { SMS_PROVIDER_TOKEN, SmsProvider } from '../src/auth/sms/sms.provider';
+import { AdminRole } from '@prisma/client';
 import { createApp } from './utils/create-app';
+import { AdminAuth, adminUser } from './utils/admin-helpers';
 
-const ADMIN = { 'X-Admin-Token': 'dev-admin-token-0123456789abcdef' };
+// Одноразовый сотрудник спека (не общая фикстура) — явный email со своим
+// префиксом, чистится в cleanup() ниже (см. замечание ревью задачи 4).
+const ADMIN_EMAIL_PREFIX = 'expert-lifecycle-e2e-operator-';
 
 // Номера спека задачи 9 (E2, сквозной lifecycle), не пересекаются с другими спеками.
 const PHONE_L1 = '+77079000001';
@@ -57,6 +61,7 @@ describe('Expert lifecycle e2e (сквозной сценарий, задача 
   let app: INestApplication;
   let prisma: PrismaService;
   let redis: RedisService;
+  let operatorAuth: AdminAuth;
   const registeredExpertIds: string[] = [];
 
   async function cleanup() {
@@ -100,12 +105,25 @@ describe('Expert lifecycle e2e (сквозной сценарий, задача 
     );
     prisma = app.get(PrismaService);
     redis = app.get(RedisService);
+    operatorAuth = await adminUser(
+      app,
+      [AdminRole.VERIFICATION_OPERATOR],
+      `${ADMIN_EMAIL_PREFIX}${Date.now()}@smartqoldau.kz`,
+    );
   });
 
   beforeEach(() => cleanup());
 
   afterAll(async () => {
     await cleanup();
+    // adminUser (operatorAuth) НЕ в cleanup(): она вызывается в beforeEach
+    // перед КАЖДЫМ тестом, а operatorAuth создаётся один раз в beforeAll —
+    // удаление его строки в cleanup() убирало бы сотрудника до первого же
+    // теста (финальное ревью E8a, п.7). Строка убирается только здесь, после
+    // всех тестов сьюта.
+    await prisma.adminUser.deleteMany({
+      where: { email: { startsWith: ADMIN_EMAIL_PREFIX } },
+    });
     await app.close();
   });
 
@@ -155,7 +173,7 @@ describe('Expert lifecycle e2e (сквозной сценарий, задача 
     for (const doc of docs) {
       await request(app.getHttpServer())
         .post(`/v1/admin/verification/documents/${doc.id}/decision`)
-        .set(ADMIN)
+        .set(...operatorAuth.authHeader)
         .send({ approve: true })
         .expect(200);
     }
@@ -165,7 +183,7 @@ describe('Expert lifecycle e2e (сквозной сценарий, задача 
   async function adminApproveExpert(expertId: string) {
     return request(app.getHttpServer())
       .post(`/v1/admin/verification/${expertId}/decision`)
-      .set(ADMIN)
+      .set(...operatorAuth.authHeader)
       .send({ approve: true })
       .expect(200);
   }
@@ -240,7 +258,7 @@ describe('Expert lifecycle e2e (сквозной сценарий, задача 
 
     const rejected = await request(app.getHttpServer())
       .post(`/v1/admin/verification/documents/${identityDoc.id}/decision`)
-      .set(ADMIN)
+      .set(...operatorAuth.authHeader)
       .send({ approve: false, comment: 'Скан нечитаем' })
       .expect(200);
     expect(rejected.body).toBeDefined();

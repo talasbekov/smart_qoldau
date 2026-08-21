@@ -38,12 +38,15 @@ describe('VerificationService.block — устойчивость к сбою Red
     );
 
     // Блокировка в БД сохранилась и вернулась админу несмотря на сбой Redis.
-    await expect(service.block(EXPERT_ID, { reason: 'test' })).resolves.toEqual(
-      updated,
-    );
+    await expect(
+      service.block(EXPERT_ID, { reason: 'test' }, 'admin-staff-1'),
+    ).resolves.toEqual(updated);
     expect(prisma.expert.update).toHaveBeenCalled();
     expect(audit.log).toHaveBeenCalledWith(
-      expect.objectContaining({ transition: 'expert.blocked' }),
+      expect.objectContaining({
+        transition: 'expert.blocked',
+        actorId: 'admin-staff-1',
+      }),
     );
   });
 });

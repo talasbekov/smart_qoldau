@@ -1,5 +1,6 @@
 import { Test } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
+import { AdminRole } from '@prisma/client';
 import request from 'supertest';
 import { createHmac } from 'crypto';
 import { AppModule } from '../src/app.module';
@@ -10,6 +11,7 @@ import { LedgerService, expertAccount } from '../src/ledger/ledger.service';
 import { OfferTimerService } from '../src/requests/offer-timer.service';
 import { SMS_PROVIDER_TOKEN, SmsProvider } from '../src/auth/sms/sms.provider';
 import { createApp } from './utils/create-app';
+import { AdminAuth, adminUser } from './utils/admin-helpers';
 import {
   registeredExpertUser,
   acceptingExpert as acceptingExpertHelper,
@@ -40,7 +42,10 @@ const ALL_PHONES = [
   PH_C6,
 ];
 
-const ADMIN = { 'X-Admin-Token': 'dev-admin-token-0123456789abcdef' };
+// Оба сотрудника спека (задача 5 E8a: /admin/verification/* через
+// VERIFICATION_OPERATOR, /admin/payouts/* через FINANCE_CONTROL) —
+// одноразовые, с явным email под общим префиксом спека, чистятся в cleanup().
+const ADMIN_EMAIL_PREFIX = 'notifications-domain-e2e-';
 const VISA_PAN = '4111111111111111';
 const CARD = { pan: VISA_PAN, expiry: '12/28', holderName: 'Aigul S' };
 const PAYOUT_WEBHOOK_SECRET =
@@ -95,6 +100,8 @@ describe('Уведомления доменных событий: деньги, 
   let redis: RedisService;
   let ledger: LedgerService;
   let timer: OfferTimerService;
+  let operatorAuth: AdminAuth;
+  let financeAuth: AdminAuth;
   const registeredExpertIds: string[] = [];
   let seedCounter = 0;
 
@@ -241,6 +248,16 @@ describe('Уведомления доменных событий: деньги, 
     redis = app.get(RedisService);
     ledger = app.get(LedgerService);
     timer = app.get(OfferTimerService);
+    operatorAuth = await adminUser(
+      app,
+      [AdminRole.VERIFICATION_OPERATOR],
+      `${ADMIN_EMAIL_PREFIX}operator-${Date.now()}@smartqoldau.kz`,
+    );
+    financeAuth = await adminUser(
+      app,
+      [AdminRole.FINANCE_CONTROL],
+      `${ADMIN_EMAIL_PREFIX}finance-${Date.now()}@smartqoldau.kz`,
+    );
   });
 
   beforeEach(async () => {
@@ -250,6 +267,14 @@ describe('Уведомления доменных событий: деньги, 
 
   afterAll(async () => {
     await cleanup();
+    // adminUser (operatorAuth/financeAuth) НЕ в cleanup(): она вызывается в
+    // beforeEach перед КАЖДЫМ тестом, а обе строки создаются один раз в
+    // beforeAll — удаление их в cleanup() убирало бы сотрудников до первого
+    // же теста (финальное ревью E8a, п.7). Строки убираются только здесь,
+    // после всех тестов сьюта.
+    await prisma.adminUser.deleteMany({
+      where: { email: { startsWith: ADMIN_EMAIL_PREFIX } },
+    });
     await app.close();
   });
 
@@ -426,7 +451,7 @@ describe('Уведомления доменных событий: деньги, 
 
     await request(app.getHttpServer())
       .post(`/v1/admin/payouts/${payoutId}/reject`)
-      .set(ADMIN)
+      .set(...financeAuth.authHeader)
       .send({ reason: 'Подозрительная активность' })
       .expect(200);
 
@@ -461,21 +486,21 @@ describe('Уведомления доменных событий: деньги, 
 
     const queue = await request(app.getHttpServer())
       .get('/v1/admin/verification/queue')
-      .set(ADMIN)
+      .set(...operatorAuth.authHeader)
       .expect(200);
     const entry = queue.body.find((e: any) => e.id === registered.expertId);
     const docIds: string[] = entry.documents.map((d: any) => d.id);
     for (const id of docIds) {
       await request(app.getHttpServer())
         .post(`/v1/admin/verification/documents/${id}/decision`)
-        .set(ADMIN)
+        .set(...operatorAuth.authHeader)
         .send({ approve: true })
         .expect(200);
     }
 
     await request(app.getHttpServer())
       .post(`/v1/admin/verification/${registered.expertId}/decision`)
-      .set(ADMIN)
+      .set(...operatorAuth.authHeader)
       .send({ approve: true })
       .expect(200);
 

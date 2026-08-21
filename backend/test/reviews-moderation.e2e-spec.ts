@@ -1,5 +1,6 @@
 import { Test } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
+import { AdminRole } from '@prisma/client';
 import request from 'supertest';
 import { AppModule } from '../src/app.module';
 import { PrismaService } from '../src/prisma/prisma.service';
@@ -11,7 +12,11 @@ import {
   registeredExpertUser,
   putScheduleAlwaysOn,
 } from './utils/expert-helpers';
-import { clientUser as clientUserHelper } from './utils/client-helpers';
+import {
+  clientUser as clientUserHelper,
+  guestClient,
+} from './utils/client-helpers';
+import { adminUser, AdminAuth } from './utils/admin-helpers';
 
 // Номера спека задачи 8 (E4): ответы эксперта, жалобы, админ-модерация.
 // Не пересекаются с задачей 7 (+7708400000[1-9]/1[01]/1[00-02]).
@@ -22,6 +27,7 @@ const PH_E4 = '+77085000004';
 const PH_E5 = '+77085000005';
 const PH_E6 = '+77085000006';
 const PH_E7 = '+77085000007';
+const PH_E8 = '+77085000009';
 const PH_ESTRANGER = '+77085000008';
 const PH_C1 = '+77085000091';
 const PH_C2 = '+77085000092';
@@ -30,6 +36,7 @@ const PH_C4 = '+77085000094';
 const PH_C5 = '+77085000095';
 const PH_C6 = '+77085000096';
 const PH_C7 = '+77085000097';
+const PH_C8 = '+77085000098';
 const ALL_PHONES = [
   PH_E1,
   PH_E2,
@@ -38,6 +45,7 @@ const ALL_PHONES = [
   PH_E5,
   PH_E6,
   PH_E7,
+  PH_E8,
   PH_ESTRANGER,
   PH_C1,
   PH_C2,
@@ -46,9 +54,20 @@ const ALL_PHONES = [
   PH_C5,
   PH_C6,
   PH_C7,
+  PH_C8,
 ];
 
-const ADMIN = { 'X-Admin-Token': 'dev-admin-token-0123456789abcdef' };
+// Префикс-метка этого спека (E8a, задача 5): admin_users и гостевые
+// устройства могут содержать строки от прошлых прогонов — спек не
+// предполагает пустоты этих таблиц и убирает только свои строки.
+const ADMIN_EMAIL_PREFIX = 'reviews-moderation-e2e-';
+const GUEST_DEVICE_PREFIX = 'reviews-moderation-e2e-guest-';
+const DUMMY_ID = '00000000-0000-0000-0000-000000000000';
+
+let adminEmailSeq = 0;
+function uniqueAdminEmail(tag: string): string {
+  return `${ADMIN_EMAIL_PREFIX}${tag}-${Date.now()}-${adminEmailSeq++}@smartqoldau.kz`;
+}
 
 let lastCode = '';
 
@@ -165,7 +184,28 @@ describe('Ответы эксперта, жалобы, админ-модерац
     await prisma.user.deleteMany({ where: { id: { in: userIds } } });
     registeredExpertIds.length = 0;
     clientUserIds.length = 0;
+
+    const guests = await prisma.user.findMany({
+      where: { deviceId: { startsWith: GUEST_DEVICE_PREFIX } },
+      select: { id: true },
+    });
+    const guestIds = guests.map((u) => u.id);
+    if (guestIds.length) {
+      await prisma.refreshToken.deleteMany({
+        where: { userId: { in: guestIds } },
+      });
+      await prisma.auditLog.deleteMany({
+        where: { entityId: { in: guestIds } },
+      });
+      await prisma.user.deleteMany({ where: { id: { in: guestIds } } });
+    }
+
+    await prisma.adminUser.deleteMany({
+      where: { email: { startsWith: ADMIN_EMAIL_PREFIX } },
+    });
   }
+
+  let qualityAuth: AdminAuth;
 
   beforeAll(async () => {
     app = await createApp(
@@ -182,6 +222,11 @@ describe('Ответы эксперта, жалобы, админ-модерац
   beforeEach(async () => {
     fakeClock.current = new Date('2026-08-20T05:00:00Z');
     await cleanup();
+    qualityAuth = await adminUser(
+      app,
+      [AdminRole.QUALITY_TEAM],
+      uniqueAdminEmail('quality'),
+    );
   });
 
   afterAll(async () => {
@@ -361,7 +406,7 @@ describe('Ответы эксперта, жалобы, админ-модерац
 
     const flaggedList = await request(app.getHttpServer())
       .get('/v1/admin/reviews/flagged')
-      .set(ADMIN)
+      .set(...qualityAuth.authHeader)
       .expect(200);
     const flagged = flaggedList.body.find(
       (r: { id: string }) => r.id === reviewId,
@@ -373,7 +418,7 @@ describe('Ответы эксперта, жалобы, админ-модерац
 
     await request(app.getHttpServer())
       .post(`/v1/admin/reviews/${reviewId}/resolve`)
-      .set(ADMIN)
+      .set(...qualityAuth.authHeader)
       .send({ action: 'restore', comment: 'Отзыв корректен' })
       .expect(200);
 
@@ -391,6 +436,7 @@ describe('Ответы эксперта, жалобы, админ-модерац
     expect(auditRestored!.payload).toMatchObject({
       comment: 'Отзыв корректен',
     });
+    expect(auditRestored!.actorId).toBe(qualityAuth.id);
   });
 
   it('админ: hide оставляет отзыв скрытым, агрегаты без него; privateText только в админ-выдаче', async () => {
@@ -404,7 +450,7 @@ describe('Ответы эксперта, жалобы, админ-модерац
 
     await request(app.getHttpServer())
       .post(`/v1/admin/reviews/${reviewId}/resolve`)
-      .set(ADMIN)
+      .set(...qualityAuth.authHeader)
       .send({ action: 'hide', comment: 'Подтверждено нарушение' })
       .expect(200);
 
@@ -427,6 +473,7 @@ describe('Ответы эксперта, жалобы, админ-модерац
     expect(auditHidden!.payload).toMatchObject({
       comment: 'Подтверждено нарушение',
     });
+    expect(auditHidden!.actorId).toBe(qualityAuth.id);
   });
 
   it('resolve не-FLAGGED отзыва -> 409 INVALID_STATE_TRANSITION', async () => {
@@ -436,7 +483,7 @@ describe('Ответы эксперта, жалобы, админ-модерац
 
     const res = await request(app.getHttpServer())
       .post(`/v1/admin/reviews/${reviewId}/resolve`)
-      .set(ADMIN)
+      .set(...qualityAuth.authHeader)
       .send({ action: 'hide' })
       .expect(409);
     expect(res.body.error.code).toBe('INVALID_STATE_TRANSITION');
@@ -447,8 +494,86 @@ describe('Ответы эксперта, жалобы, админ-модерац
       .get('/v1/admin/reviews/flagged')
       .expect(401);
     await request(app.getHttpServer())
-      .post('/v1/admin/reviews/00000000-0000-0000-0000-000000000000/resolve')
+      .post(`/v1/admin/reviews/${DUMMY_ID}/resolve`)
       .send({ action: 'hide' })
       .expect(401);
+  });
+
+  it('токен клиента (не сотрудника админки) -> 403 ADMIN_FORBIDDEN на обоих маршрутах', async () => {
+    const deviceId = `${GUEST_DEVICE_PREFIX}${Date.now()}`;
+    const client = await guestClient(app, deviceId);
+    const clientAuth: [string, string] = [
+      'Authorization',
+      `Bearer ${client.accessToken}`,
+    ];
+
+    const cases: Array<[string, string]> = [
+      ['get', '/v1/admin/reviews/flagged'],
+      ['post', `/v1/admin/reviews/${DUMMY_ID}/resolve`],
+    ];
+    for (const [method, url] of cases) {
+      const res = await (request(app.getHttpServer()) as any)
+        [method](url)
+        .set(...clientAuth)
+        .send({ action: 'hide' })
+        .expect(403);
+      expect(res.body.error.code).toBe('ADMIN_FORBIDDEN');
+    }
+  });
+
+  it('роль FINANCE_CONTROL (без QUALITY_TEAM) -> 403 ADMIN_FORBIDDEN на обоих маршрутах', async () => {
+    const finance = await adminUser(
+      app,
+      [AdminRole.FINANCE_CONTROL],
+      uniqueAdminEmail('finance'),
+    );
+
+    const cases: Array<[string, string]> = [
+      ['get', '/v1/admin/reviews/flagged'],
+      ['post', `/v1/admin/reviews/${DUMMY_ID}/resolve`],
+    ];
+    for (const [method, url] of cases) {
+      const res = await (request(app.getHttpServer()) as any)
+        [method](url)
+        .set(...finance.authHeader)
+        .send({ action: 'hide' })
+        .expect(403);
+      expect(res.body.error.code).toBe('ADMIN_FORBIDDEN');
+    }
+  });
+
+  it('роль SUPERADMIN проходит на resolve без роли QUALITY_TEAM, actorId в audit — id суперадмина', async () => {
+    const superadmin = await adminUser(
+      app,
+      [AdminRole.SUPERADMIN],
+      uniqueAdminEmail('superadmin'),
+    );
+    const exp = await acceptingExpert(PH_E8);
+    const cli = await clientUser(PH_C8);
+    const reviewId = await matchAndReview(cli, exp, 2);
+
+    await post(exp.accessToken, `/v1/reviews/${reviewId}/complaint`)
+      .send({ text: 'Жалоба на отзыв' })
+      .expect(200);
+
+    await request(app.getHttpServer())
+      .get('/v1/admin/reviews/flagged')
+      .set(...superadmin.authHeader)
+      .expect(200);
+
+    await request(app.getHttpServer())
+      .post(`/v1/admin/reviews/${reviewId}/resolve`)
+      .set(...superadmin.authHeader)
+      .send({ action: 'restore' })
+      .expect(200);
+
+    const audit = await prisma.auditLog.findFirst({
+      where: {
+        entity: 'review',
+        entityId: reviewId,
+        transition: 'review.restored',
+      },
+    });
+    expect(audit?.actorId).toBe(superadmin.id);
   });
 });

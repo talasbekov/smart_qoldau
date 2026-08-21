@@ -11,12 +11,22 @@ import { StorageService } from '../storage/storage.service';
 import { PresenceService } from '../presence/presence.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { apiError } from '../common/filters/app-exception.filter';
+import {
+  RATING_THRESHOLD_AVG,
+  RATING_THRESHOLD_COUNT,
+} from '../common/rating-threshold';
 import { DecisionDto } from './dto/decision.dto';
 import { BlockExpertDto } from './dto/block.dto';
 import { QueueEntryDto } from './dto/queue.dto';
+import {
+  FlaggedExpertDto,
+  FlaggedExpertsQueryDto,
+} from './dto/flagged-experts.dto';
 import { ExpertMeDto } from '../experts/dto/expert-me.dto';
 
 const REQUIRED_DOCUMENTS_COUNT = 4;
+const DEFAULT_TAKE = 20;
+const MAX_TAKE = 100;
 
 @Injectable()
 export class VerificationService {
@@ -56,6 +66,7 @@ export class VerificationService {
   async decideDocument(
     documentId: string,
     dto: DecisionDto,
+    actorId: string,
   ): Promise<{ id: string; status: DocumentStatus }> {
     if (!dto.approve && !dto.comment)
       apiError(
@@ -96,7 +107,7 @@ export class VerificationService {
 
     await this.audit.log({
       actorType: 'admin',
-      actorId: null,
+      actorId,
       entity: 'expert',
       entityId: doc.expertId,
       transition: dto.approve
@@ -108,7 +119,11 @@ export class VerificationService {
     return { id: documentId, status };
   }
 
-  async decideExpert(expertId: string, dto: DecisionDto): Promise<ExpertMeDto> {
+  async decideExpert(
+    expertId: string,
+    dto: DecisionDto,
+    actorId: string,
+  ): Promise<ExpertMeDto> {
     if (!dto.approve && !dto.comment)
       apiError(
         'VALIDATION_FAILED',
@@ -149,7 +164,7 @@ export class VerificationService {
 
     await this.audit.log({
       actorType: 'admin',
-      actorId: null,
+      actorId,
       entity: 'expert',
       entityId: expertId,
       transition: dto.approve
@@ -170,7 +185,11 @@ export class VerificationService {
     return this.toMeDto(updated);
   }
 
-  async block(expertId: string, dto: BlockExpertDto): Promise<Expert> {
+  async block(
+    expertId: string,
+    dto: BlockExpertDto,
+    actorId: string,
+  ): Promise<Expert> {
     const expert = await this.prisma.expert.findUnique({
       where: { id: expertId },
     });
@@ -203,7 +222,7 @@ export class VerificationService {
 
     await this.audit.log({
       actorType: 'admin',
-      actorId: null,
+      actorId,
       entity: 'expert',
       entityId: expertId,
       transition: 'expert.blocked',
@@ -213,7 +232,7 @@ export class VerificationService {
     return updated;
   }
 
-  async unblock(expertId: string): Promise<Expert> {
+  async unblock(expertId: string, actorId: string): Promise<Expert> {
     const expert = await this.prisma.expert.findUnique({
       where: { id: expertId },
     });
@@ -226,13 +245,43 @@ export class VerificationService {
 
     await this.audit.log({
       actorType: 'admin',
-      actorId: null,
+      actorId,
       entity: 'expert',
       entityId: expertId,
       transition: 'expert.unblocked',
     });
 
     return updated;
+  }
+
+  // GET /v1/admin/experts/flagged (Р-20, задача 9): эксперты с
+  // ratingCount >= 20 И ratingAvg < 4.0 — та же пара условий, что
+  // ReviewsService.checkRatingThreshold пишет в audit после каждого
+  // пересчёта агрегатов. Сортировка по возрастанию рейтинга — худшие
+  // сначала; вторичный ключ id — при равном ratingAvg у нескольких
+  // экспертов порядок должен быть детерминирован между страницами (тот же
+  // паттерн, что TicketsService.adminList/NotificationsService.list).
+  async flaggedExperts(
+    filters: FlaggedExpertsQueryDto,
+  ): Promise<FlaggedExpertDto[]> {
+    const take = Math.min(filters.take ?? DEFAULT_TAKE, MAX_TAKE);
+    const skip = filters.skip ?? 0;
+
+    return this.prisma.expert.findMany({
+      where: {
+        ratingCount: { gte: RATING_THRESHOLD_COUNT },
+        ratingAvg: { lt: RATING_THRESHOLD_AVG },
+      },
+      orderBy: [{ ratingAvg: 'asc' }, { id: 'asc' }],
+      take,
+      skip,
+      select: {
+        id: true,
+        displayName: true,
+        ratingAvg: true,
+        ratingCount: true,
+      },
+    });
   }
 
   private toMeDto(

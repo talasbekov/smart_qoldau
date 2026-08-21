@@ -1,5 +1,6 @@
 import { Test } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
+import { AdminRole } from '@prisma/client';
 import request from 'supertest';
 import { AppModule } from '../src/app.module';
 import { PrismaService } from '../src/prisma/prisma.service';
@@ -14,6 +15,8 @@ import {
 import { SMS_PROVIDER_TOKEN, SmsProvider } from '../src/auth/sms/sms.provider';
 import { createApp } from './utils/create-app';
 import { verifiedExpert as verifiedExpertHelper } from './utils/expert-helpers';
+import { adminUser, AdminAuth } from './utils/admin-helpers';
+import { guestClient } from './utils/client-helpers';
 
 // Номера спека задачи 8 (E5, финконтроль), не пересекаются с другими спеками.
 const PH_E1 = '+77090000001';
@@ -23,7 +26,18 @@ const PH_E4 = '+77090000004';
 const PH_E5 = '+77090000005';
 const ALL_PHONES = [PH_E1, PH_E2, PH_E3, PH_E4, PH_E5];
 
-const ADMIN = { 'X-Admin-Token': 'dev-admin-token-0123456789abcdef' };
+// Префикс-метка этого спека (E8a, задача 5): admin_users и гостевые
+// устройства могут содержать строки от прошлых прогонов — спек не
+// предполагает пустоты этих таблиц и убирает только свои строки.
+const ADMIN_EMAIL_PREFIX = 'payouts-admin-e2e-';
+const GUEST_DEVICE_PREFIX = 'payouts-admin-e2e-guest-';
+const DUMMY_ID = '00000000-0000-0000-0000-000000000000';
+
+let adminEmailSeq = 0;
+function uniqueAdminEmail(tag: string): string {
+  return `${ADMIN_EMAIL_PREFIX}${tag}-${Date.now()}-${adminEmailSeq++}@smartqoldau.kz`;
+}
+
 const CARD = {
   pan: '4111111111111111',
   expiry: '12/28',
@@ -131,9 +145,30 @@ describe('Финконтроль выводов в админке (E5, зада�
     });
     await prisma.user.deleteMany({ where: { id: { in: userIds } } });
 
+    const guests = await prisma.user.findMany({
+      where: { deviceId: { startsWith: GUEST_DEVICE_PREFIX } },
+      select: { id: true },
+    });
+    const guestIds = guests.map((u) => u.id);
+    if (guestIds.length) {
+      await prisma.refreshToken.deleteMany({
+        where: { userId: { in: guestIds } },
+      });
+      await prisma.auditLog.deleteMany({
+        where: { entityId: { in: guestIds } },
+      });
+      await prisma.user.deleteMany({ where: { id: { in: guestIds } } });
+    }
+
+    await prisma.adminUser.deleteMany({
+      where: { email: { startsWith: ADMIN_EMAIL_PREFIX } },
+    });
+
     const keys = await redis.keys('mockpayout:*');
     if (keys.length) await redis.del(...keys);
   }
+
+  let financeAuth: AdminAuth;
 
   beforeAll(async () => {
     app = await createApp(
@@ -146,7 +181,14 @@ describe('Финконтроль выводов в админке (E5, зада�
     ledger = app.get(LedgerService);
   });
 
-  beforeEach(() => cleanup());
+  beforeEach(async () => {
+    await cleanup();
+    financeAuth = await adminUser(
+      app,
+      [AdminRole.FINANCE_CONTROL],
+      uniqueAdminEmail('finance'),
+    );
+  });
 
   afterAll(async () => {
     await cleanup();
@@ -182,7 +224,7 @@ describe('Финконтроль выводов в админке (E5, зада�
 
     const queue = await request(app.getHttpServer())
       .get('/v1/admin/payouts?status=PENDING_REVIEW')
-      .set(ADMIN)
+      .set(...financeAuth.authHeader)
       .expect(200);
     const item = queue.body.items.find((p: any) => p.id === payoutId);
     expect(item).toMatchObject({
@@ -201,7 +243,7 @@ describe('Финконтроль выводов в админке (E5, зада�
 
     await request(app.getHttpServer())
       .post(`/v1/admin/payouts/${payoutId}/approve`)
-      .set(ADMIN)
+      .set(...financeAuth.authHeader)
       .expect(200);
 
     const payout = await prisma.payout.findUniqueOrThrow({
@@ -209,6 +251,10 @@ describe('Финконтроль выводов в админке (E5, зада�
     });
     expect(payout.status).toBe('PROCESSING');
     expect(payout.providerRefId).toBeTruthy();
+    // reviewedBy хранит id сотрудника, принявшего решение (домен финансового
+    // аудита выплаты), а не строковую заглушку — тот же actorId, что и в
+    // audit_log ниже.
+    expect(payout.reviewedBy).toBe(financeAuth.id);
     expect(await redis.get(`mockpayout:idem:payout:${payoutId}`)).toBeTruthy();
 
     const audit = await prisma.auditLog.findFirst({
@@ -219,6 +265,7 @@ describe('Финконтроль выводов в админке (E5, зада�
       },
     });
     expect(audit).toBeTruthy();
+    expect(audit!.actorId).toBe(financeAuth.id);
   });
 
   it('reject с причиной -> REJECTED, компенсирующая проводка вернула баланс; reject без причины -> 400', async () => {
@@ -231,14 +278,14 @@ describe('Финконтроль выводов в админке (E5, зада�
 
     const noReason = await request(app.getHttpServer())
       .post(`/v1/admin/payouts/${payoutId}/reject`)
-      .set(ADMIN)
+      .set(...financeAuth.authHeader)
       .send({})
       .expect(400);
     expect(noReason.body.error.code).toBe('VALIDATION_FAILED');
 
     await request(app.getHttpServer())
       .post(`/v1/admin/payouts/${payoutId}/reject`)
-      .set(ADMIN)
+      .set(...financeAuth.authHeader)
       .send({ reason: 'Подозрительная активность' })
       .expect(200);
 
@@ -247,6 +294,9 @@ describe('Финконтроль выводов в админке (E5, зада�
     });
     expect(payout.status).toBe('REJECTED');
     expect(payout.rejectReason).toBe('Подозрительная активность');
+    // reviewedBy — id сотрудника, отклонившего вывод, а не строковая
+    // заглушка (тот же actorId, что и в audit_log ниже).
+    expect(payout.reviewedBy).toBe(financeAuth.id);
     // Провайдер не вызывался.
     expect(payout.providerRefId).toBeNull();
     expect(await redis.get(`mockpayout:idem:payout:${payoutId}`)).toBeNull();
@@ -267,6 +317,7 @@ describe('Финконтроль выводов в админке (E5, зада�
     expect(audit?.payload).toMatchObject({
       reason: 'Подозрительная активность',
     });
+    expect(audit?.actorId).toBe(financeAuth.id);
   });
 
   it('approve/reject не из PENDING_REVIEW -> 409', async () => {
@@ -281,15 +332,96 @@ describe('Финконтроль выводов в админке (E5, зада�
 
     const approve = await request(app.getHttpServer())
       .post(`/v1/admin/payouts/${payoutId}/approve`)
-      .set(ADMIN)
+      .set(...financeAuth.authHeader)
       .expect(409);
     expect(approve.body.error.code).toBe('PAYOUT_NOT_PENDING');
 
     const reject = await request(app.getHttpServer())
       .post(`/v1/admin/payouts/${payoutId}/reject`)
-      .set(ADMIN)
+      .set(...financeAuth.authHeader)
       .send({ reason: 'Поздно' })
       .expect(409);
     expect(reject.body.error.code).toBe('PAYOUT_NOT_PENDING');
+  });
+
+  it('без токена -> 401 на всех трёх маршрутах', async () => {
+    await request(app.getHttpServer())
+      .get('/v1/admin/payouts?status=PENDING_REVIEW')
+      .expect(401);
+    await request(app.getHttpServer())
+      .post(`/v1/admin/payouts/${DUMMY_ID}/approve`)
+      .expect(401);
+    await request(app.getHttpServer())
+      .post(`/v1/admin/payouts/${DUMMY_ID}/reject`)
+      .send({ reason: 'x' })
+      .expect(401);
+  });
+
+  it('токен клиента (не сотрудника админки) -> 403 ADMIN_FORBIDDEN на всех трёх маршрутах', async () => {
+    const deviceId = `${GUEST_DEVICE_PREFIX}${Date.now()}`;
+    const client = await guestClient(app, deviceId);
+    const clientAuth: [string, string] = [
+      'Authorization',
+      `Bearer ${client.accessToken}`,
+    ];
+
+    const cases: Array<[string, string]> = [
+      ['get', '/v1/admin/payouts?status=PENDING_REVIEW'],
+      ['post', `/v1/admin/payouts/${DUMMY_ID}/approve`],
+      ['post', `/v1/admin/payouts/${DUMMY_ID}/reject`],
+    ];
+    for (const [method, url] of cases) {
+      const res = await (request(app.getHttpServer()) as any)
+        [method](url)
+        .set(...clientAuth)
+        .send({ reason: 'x' })
+        .expect(403);
+      expect(res.body.error.code).toBe('ADMIN_FORBIDDEN');
+    }
+  });
+
+  it('роль QUALITY_TEAM (без FINANCE_CONTROL) -> 403 ADMIN_FORBIDDEN на всех трёх маршрутах', async () => {
+    const quality = await adminUser(
+      app,
+      [AdminRole.QUALITY_TEAM],
+      uniqueAdminEmail('quality'),
+    );
+
+    const cases: Array<[string, string]> = [
+      ['get', '/v1/admin/payouts?status=PENDING_REVIEW'],
+      ['post', `/v1/admin/payouts/${DUMMY_ID}/approve`],
+      ['post', `/v1/admin/payouts/${DUMMY_ID}/reject`],
+    ];
+    for (const [method, url] of cases) {
+      const res = await (request(app.getHttpServer()) as any)
+        [method](url)
+        .set(...quality.authHeader)
+        .send({ reason: 'x' })
+        .expect(403);
+      expect(res.body.error.code).toBe('ADMIN_FORBIDDEN');
+    }
+  });
+
+  it('роль SUPERADMIN проходит на approve без роли FINANCE_CONTROL, actorId в audit — id суперадмина', async () => {
+    const superadmin = await adminUser(
+      app,
+      [AdminRole.SUPERADMIN],
+      uniqueAdminEmail('superadmin'),
+    );
+    const { payoutId } = await pendingReviewPayout(PH_E5);
+
+    await request(app.getHttpServer())
+      .post(`/v1/admin/payouts/${payoutId}/approve`)
+      .set(...superadmin.authHeader)
+      .expect(200);
+
+    const audit = await prisma.auditLog.findFirst({
+      where: {
+        entity: 'payout',
+        entityId: payoutId,
+        transition: 'payout.approved',
+      },
+    });
+    expect(audit?.actorId).toBe(superadmin.id);
   });
 });

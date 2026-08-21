@@ -1,5 +1,6 @@
 import { Test } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
+import { AdminRole } from '@prisma/client';
 import request from 'supertest';
 import { AppModule } from '../src/app.module';
 import { PrismaService } from '../src/prisma/prisma.service';
@@ -7,8 +8,11 @@ import { SMS_PROVIDER_TOKEN, SmsProvider } from '../src/auth/sms/sms.provider';
 import { createApp } from './utils/create-app';
 import { clientUser, guestClient } from './utils/client-helpers';
 import { acceptingExpert, verifiedExpert } from './utils/expert-helpers';
+import { AdminAuth, adminUser } from './utils/admin-helpers';
 
-const ADMIN = { 'X-Admin-Token': 'dev-admin-token-0123456789abcdef' };
+// Одноразовый сотрудник спека (не общая фикстура) — явный email со своим
+// префиксом, чистится в cleanup() ниже (см. замечание ревью задачи 4).
+const ADMIN_EMAIL_PREFIX = 'favorites-e2e-operator-';
 
 // Номера/deviceId спека задачи 8 (E3, Избранное), не пересекаются с другими
 // спеками.
@@ -34,6 +38,7 @@ function codeGetter() {
 describe('Favorites (e2e)', () => {
   let app: INestApplication;
   let prisma: PrismaService;
+  let operatorAuth: AdminAuth;
 
   async function cleanup() {
     // Гостевой клиент спека не имеет телефона — ищем и по deviceId.
@@ -86,6 +91,11 @@ describe('Favorites (e2e)', () => {
         .useClass(FakeSmsProvider),
     );
     prisma = app.get(PrismaService);
+    operatorAuth = await adminUser(
+      app,
+      [AdminRole.VERIFICATION_OPERATOR],
+      `${ADMIN_EMAIL_PREFIX}${Date.now()}@smartqoldau.kz`,
+    );
   });
 
   // Финальная чистка обязательна: спек создаёт ACCEPTING-экспертов с
@@ -93,6 +103,14 @@ describe('Favorites (e2e)', () => {
   // офферы в следующих сьютах (requests-flow и др.).
   afterAll(async () => {
     await cleanup();
+    // adminUser (operatorAuth) НЕ в cleanup(): она вызывается в beforeEach
+    // перед КАЖДЫМ тестом, а operatorAuth создаётся один раз в beforeAll —
+    // удаление его строки в cleanup() убирало бы сотрудника до первого же
+    // теста (финальное ревью E8a, п.7). Строка убирается только здесь, после
+    // всех тестов сьюта.
+    await prisma.adminUser.deleteMany({
+      where: { email: { startsWith: ADMIN_EMAIL_PREFIX } },
+    });
     await app.close();
   });
 
@@ -202,7 +220,7 @@ describe('Favorites (e2e)', () => {
       // Arrange: блокируем эксперта
       await request(app.getHttpServer())
         .post(`/v1/admin/experts/${expertId}/block`)
-        .set(ADMIN)
+        .set(...operatorAuth.authHeader)
         .send({ reason: 'Тестовая блокировка' })
         .expect(200);
 
@@ -371,7 +389,7 @@ describe('Favorites (e2e)', () => {
       // Arrange: блокируем эксперта
       await request(app.getHttpServer())
         .post(`/v1/admin/experts/${expertId}/block`)
-        .set(ADMIN)
+        .set(...operatorAuth.authHeader)
         .send({ reason: 'Тестовая блокировка' })
         .expect(200);
 
