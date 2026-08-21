@@ -1,6 +1,8 @@
 import { Test } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import request from 'supertest';
+import jwt from 'jsonwebtoken';
 import { AppModule } from '../src/app.module';
 import { PrismaService } from '../src/prisma/prisma.service';
 import { SMS_PROVIDER_TOKEN, SmsProvider } from '../src/auth/sms/sms.provider';
@@ -202,6 +204,62 @@ describe('Создание обращения в поддержку (E8a, зад
     });
     expect(audit?.actorType).toBe('system');
     expect(audit?.actorId).toBeNull();
+  });
+
+  it('OptionalJwtAuthGuard: без Authorization -> гость; невалидный/просроченный токен -> 401 (НЕ тихий откат к гостю)', async () => {
+    // Ветка 1: заголовка Authorization нет вовсе -> запрос гостевой, тикет
+    // создаётся с authorType GUEST (как и в тесте "гость с email" выше —
+    // здесь дублируем узко под guard, чтобы обе ветки были в одном месте).
+    const noHeader = await post('/v1/tickets')
+      .send({
+        category: 'OTHER',
+        subject: 'Без заголовка Authorization',
+        body: 'Гостевая ветка OptionalJwtAuthGuard',
+        contactEmail: GUEST_EMAIL,
+      })
+      .expect(201);
+    createdTicketIds.push(noHeader.body.id);
+    const storedGuest = await prisma.ticket.findUniqueOrThrow({
+      where: { id: noHeader.body.id },
+    });
+    expect(storedGuest.authorType).toBe('GUEST');
+
+    // Ветка 2: заголовок есть, но токен не является валидным JWT -> 401, не
+    // гостевой тикет.
+    const malformed = await post('/v1/tickets', 'not-a-valid-jwt-token')
+      .send({
+        category: 'OTHER',
+        subject: 'Битый токен',
+        body: 'Не должен создать тикет',
+      })
+      .expect(401);
+    expect(malformed.body.error.code).toBe('UNAUTHORIZED');
+
+    // Ветка 3: заголовок есть, токен корректно подписан, но просрочен ->
+    // 401, не гостевой тикет.
+    const secret = app.get(ConfigService).get<string>('JWT_SECRET')!;
+    const expiredToken = jwt.sign(
+      {
+        sub: 'irrelevant-user-id',
+        isGuest: false,
+        exp: Math.floor(Date.now() / 1000) - 60,
+      },
+      secret,
+    );
+    const expired = await post('/v1/tickets', expiredToken)
+      .send({
+        category: 'OTHER',
+        subject: 'Просроченный токен',
+        body: 'Не должен создать тикет',
+      })
+      .expect(401);
+    expect(expired.body.error.code).toBe('UNAUTHORIZED');
+
+    // Ни один из двух отказов не должен был протечь в БД тикетом.
+    const leaked = await prisma.ticket.findFirst({
+      where: { subject: { in: ['Битый токен', 'Просроченный токен'] } },
+    });
+    expect(leaked).toBeNull();
   });
 
   it('клиент с категорией VERIFICATION -> 400 TICKET_CATEGORY_NOT_ALLOWED', async () => {

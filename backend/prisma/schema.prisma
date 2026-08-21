@@ -569,6 +569,10 @@ model Ticket {
   resolvedAt            DateTime?        @map("resolved_at")
   relatedConsultationId String?          @map("related_consultation_id")
   relatedPayoutId       String?          @map("related_payout_id")
+  // @default(now()) — страховка на случай записи мимо TicketsService;
+  // само значение TicketsService.create() ВСЕГДА проставляет явно через
+  // ClockService.now(), иначе виртуальное время в e2e не подчиняет момент
+  // создания тикета (урок E9).
   createdAt             DateTime         @default(now()) @map("created_at")
   updatedAt             DateTime         @updatedAt @map("updated_at")
   messages              TicketMessage[]
