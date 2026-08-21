@@ -3,6 +3,7 @@ import { PrismaModule } from '../prisma/prisma.module';
 import { AuditModule } from '../audit/audit.module';
 import { ClockModule } from '../common/clock/clock.module';
 import { ExpertsModule } from '../experts/experts.module';
+import { NotificationsModule } from '../notifications/notifications.module';
 import { TicketsService } from './tickets.service';
 import { TicketsController } from './tickets.controller';
 import { TicketsAdminController } from './tickets-admin.controller';
@@ -14,8 +15,16 @@ import { TicketsAdminController } from './tickets-admin.controller';
 // AdminJwtGuard/RolesGuard в TicketsAdminController (задача 8) — оба guard'а
 // используют глобально зарегистрированную passport-стратегию 'jwt' и
 // Reflector из @nestjs/core (см. PayoutsModule/ReviewsModule).
+// NotificationsModule — dispatch() уведомления ticket.replied автору после
+// ответа сотрудника (задача 9, см. TicketsService.reply).
 @Module({
-  imports: [PrismaModule, AuditModule, ClockModule, ExpertsModule],
+  imports: [
+    PrismaModule,
+    AuditModule,
+    ClockModule,
+    ExpertsModule,
+    NotificationsModule,
+  ],
   controllers: [TicketsController, TicketsAdminController],
   providers: [TicketsService],
   exports: [TicketsService],

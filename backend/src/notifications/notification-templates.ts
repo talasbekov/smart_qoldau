@@ -15,6 +15,7 @@ export const NOTIFICATION_TYPES = [
   'verification.approved',
   'verification.rejected',
   'chat.message',
+  'ticket.replied',
 ] as const;
 
 export type NotificationType = (typeof NOTIFICATION_TYPES)[number];
@@ -98,6 +99,19 @@ const TEMPLATES: Record<
   'chat.message': {
     ru: { title: 'Новое сообщение', body: 'Откройте чат консультации' },
     kz: { title: 'Жаңа хабарлама', body: 'Консультация чатын ашыңыз' },
+  },
+  // E8a, задача 9: ответ сотрудника поддержки на тикет автора. Текст ответа
+  // в уведомление НЕ кладём (PII/приватность, как в chat.message) — только
+  // тема обращения ({subject}), полный ответ открывается в приложении.
+  'ticket.replied': {
+    ru: {
+      title: 'Ответ поддержки',
+      body: 'По обращению «{subject}» есть ответ',
+    },
+    kz: {
+      title: 'Қолдау қызметінің жауабы',
+      body: '«{subject}» өтініші бойынша жауап бар',
+    },
   },
 };
 

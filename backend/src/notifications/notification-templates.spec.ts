@@ -30,6 +30,20 @@ describe('Шаблоны уведомлений (юнит, §5.8)', () => {
     expect(kz.body).toContain('12 750');
   });
 
+  it('подстановка {subject} работает: ticket.replied (E8a, задача 9), текст ответа в шаблон не попадает', () => {
+    const ru = renderTemplate('ticket.replied', 'ru', {
+      subject: 'Не приходит SMS-код',
+    });
+    expect(ru.title).toBe('Ответ поддержки');
+    expect(ru.body).toContain('Не приходит SMS-код');
+
+    const kz = renderTemplate('ticket.replied', 'kz', {
+      subject: 'Не приходит SMS-код',
+    });
+    expect(kz.body).toContain('Не приходит SMS-код');
+    expect(kz.title).not.toBe(ru.title);
+  });
+
   it('неизвестная локаль падает в ru', () => {
     const fallback = renderTemplate('offer.incoming', 'en' as never, {});
     const ru = renderTemplate('offer.incoming', 'ru', {});

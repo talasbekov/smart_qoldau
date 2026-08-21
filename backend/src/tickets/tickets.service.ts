@@ -10,6 +10,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import { ClockService } from '../common/clock/clock.service';
 import { ExpertsService } from '../experts/experts.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import { apiError } from '../common/filters/app-exception.filter';
 import { JwtPayload } from '../auth/jwt.strategy';
 import { CurrentAdminPayload } from '../admin/current-admin.decorator';
@@ -50,6 +51,7 @@ export class TicketsService {
     private audit: AuditService,
     private clock: ClockService,
     private experts: ExpertsService,
+    private notifications: NotificationsService,
   ) {}
 
   // POST /v1/tickets. JWT необязателен (OptionalJwtAuthGuard):
@@ -269,6 +271,18 @@ export class TicketsService {
       transition: 'ticket.replied',
       payload: { firstReply: isFirstReply },
     });
+
+    // In-app + push (E9): dispatch() сам никогда не бросает (fire-and-forget) —
+    // сбой шины уведомлений не откатывает уже сохранённый ответ сотрудника.
+    // Текст ответа в уведомление НЕ кладём (приватность, как в chat.message) —
+    // только subject тикета. У гостевого тикета (authorType GUEST)
+    // authorUserId нет — уведомление не отправляется.
+    if (ticket.authorUserId) {
+      await this.notifications.dispatch(ticket.authorUserId, 'ticket.replied', {
+        ticketId: id,
+        subject: ticket.subject,
+      });
+    }
   }
 
   // POST /v1/admin/tickets/:id/resolve — решение тикета сотрудником.

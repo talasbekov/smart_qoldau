@@ -5,6 +5,7 @@ import {
   HttpCode,
   Param,
   Post,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import {
@@ -29,6 +30,10 @@ import {
 import { DecisionDto } from './dto/decision.dto';
 import { BlockExpertDto } from './dto/block.dto';
 import { QueueEntryDto } from './dto/queue.dto';
+import {
+  FlaggedExpertDto,
+  FlaggedExpertsQueryDto,
+} from './dto/flagged-experts.dto';
 import { ExpertMeDto } from '../experts/dto/expert-me.dto';
 
 @ApiTags('admin-verification')
@@ -110,5 +115,23 @@ export class VerificationController {
     @CurrentAdmin() admin: CurrentAdminPayload,
   ): Promise<Expert> {
     return this.verificationService.unblock(expertId, admin.id);
+  }
+
+  // Роль здесь — QUALITY_TEAM, а не VERIFICATION_OPERATOR (как у остальных
+  // методов контроллера): @Roles вешается на метод, смешение ролей в одном
+  // контроллере допустимо. Эндпоинт живёт рядом с block/unblock — все они
+  // операции над Expert под /admin/experts/*, отдельный контроллер/модуль
+  // ради одного GET был бы избыточен (задача 9).
+  @Get('experts/flagged')
+  @Roles(AdminRole.QUALITY_TEAM)
+  @ApiOperation({
+    summary:
+      'Очередь экспертов ниже порога рейтинга (Р-20): ratingCount >= 20 и ratingAvg < 4.0',
+  })
+  @ApiOkResponse({ type: FlaggedExpertDto, isArray: true })
+  async flaggedExperts(
+    @Query() query: FlaggedExpertsQueryDto,
+  ): Promise<FlaggedExpertDto[]> {
+    return this.verificationService.flaggedExperts(query);
   }
 }

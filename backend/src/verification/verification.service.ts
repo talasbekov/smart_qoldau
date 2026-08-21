@@ -14,9 +14,22 @@ import { apiError } from '../common/filters/app-exception.filter';
 import { DecisionDto } from './dto/decision.dto';
 import { BlockExpertDto } from './dto/block.dto';
 import { QueueEntryDto } from './dto/queue.dto';
+import {
+  FlaggedExpertDto,
+  FlaggedExpertsQueryDto,
+} from './dto/flagged-experts.dto';
 import { ExpertMeDto } from '../experts/dto/expert-me.dto';
 
 const REQUIRED_DOCUMENTS_COUNT = 4;
+const DEFAULT_TAKE = 20;
+const MAX_TAKE = 100;
+
+// Р-20: порог качества эксперта — зеркалит RATING_THRESHOLD_COUNT/AVG из
+// ReviewsService.checkRatingThreshold (там же вычисляются агрегаты и
+// пишется audit-флаг expert.rating_below_threshold). Задача 9 закрывает
+// пробел E4: раньше посмотреть очередь можно было только по audit_log.
+const RATING_THRESHOLD_COUNT = 20;
+const RATING_THRESHOLD_AVG = 4.0;
 
 @Injectable()
 export class VerificationService {
@@ -242,6 +255,36 @@ export class VerificationService {
     });
 
     return updated;
+  }
+
+  // GET /v1/admin/experts/flagged (Р-20, задача 9): эксперты с
+  // ratingCount >= 20 И ratingAvg < 4.0 — та же пара условий, что
+  // ReviewsService.checkRatingThreshold пишет в audit после каждого
+  // пересчёта агрегатов. Сортировка по возрастанию рейтинга — худшие
+  // сначала; вторичный ключ id — при равном ratingAvg у нескольких
+  // экспертов порядок должен быть детерминирован между страницами (тот же
+  // паттерн, что TicketsService.adminList/NotificationsService.list).
+  async flaggedExperts(
+    filters: FlaggedExpertsQueryDto,
+  ): Promise<FlaggedExpertDto[]> {
+    const take = Math.min(filters.take ?? DEFAULT_TAKE, MAX_TAKE);
+    const skip = filters.skip ?? 0;
+
+    return this.prisma.expert.findMany({
+      where: {
+        ratingCount: { gte: RATING_THRESHOLD_COUNT },
+        ratingAvg: { lt: RATING_THRESHOLD_AVG },
+      },
+      orderBy: [{ ratingAvg: 'asc' }, { id: 'asc' }],
+      take,
+      skip,
+      select: {
+        id: true,
+        displayName: true,
+        ratingAvg: true,
+        ratingCount: true,
+      },
+    });
   }
 
   private toMeDto(

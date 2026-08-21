@@ -40,6 +40,7 @@ describe('OpenAPI (e2e)', () => {
       '/v1/admin/verification/{expertId}/decision',
       '/v1/admin/experts/{expertId}/block',
       '/v1/admin/experts/{expertId}/unblock',
+      '/v1/admin/experts/flagged',
       '/v1/requests',
       '/v1/requests/{id}',
       '/v1/requests/{id}/cancel',
