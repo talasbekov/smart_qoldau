@@ -1,6 +1,7 @@
 import {
   CRITICAL_TYPES,
   NOTIFICATION_TYPES,
+  formatTenge,
   renderTemplate,
 } from './notification-templates';
 
@@ -37,5 +38,13 @@ describe('Шаблоны уведомлений (юнит, §5.8)', () => {
 
   it('критичный тип ровно один — offer.incoming', () => {
     expect([...CRITICAL_TYPES]).toEqual(['offer.incoming']);
+  });
+
+  it('formatTenge (E9, задача 6): тиын -> тенге с пробелом-разделителем разрядов', () => {
+    expect(formatTenge(339150)).toBe('3 392'); // 3391.5 -> округление вверх
+    expect(formatTenge(1_000_000)).toBe('10 000');
+    expect(formatTenge(31_000_000)).toBe('310 000');
+    expect(formatTenge(50000)).toBe('500');
+    expect(formatTenge(0)).toBe('0');
   });
 });

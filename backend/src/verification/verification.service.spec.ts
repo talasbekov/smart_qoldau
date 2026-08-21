@@ -5,6 +5,7 @@ import { AuditService } from '../audit/audit.service';
 import { StorageService } from '../storage/storage.service';
 import { RedisService } from '../redis/redis.service';
 import { ClockService } from '../common/clock/clock.service';
+import { NotificationsService } from '../notifications/notifications.service';
 
 const EXPERT_ID = 'exp-block-resilience-test';
 
@@ -27,11 +28,13 @@ describe('VerificationService.block — устойчивость к сбою Red
       .spyOn(presence, 'setUnavailable')
       .mockRejectedValue(new Error('redis down'));
 
+    const notifications = { dispatch: jest.fn() };
     const service = new VerificationService(
       prisma as unknown as PrismaService,
       audit as unknown as AuditService,
       {} as StorageService,
       presence,
+      notifications as unknown as NotificationsService,
     );
 
     // Блокировка в БД сохранилась и вернулась админу несмотря на сбой Redis.

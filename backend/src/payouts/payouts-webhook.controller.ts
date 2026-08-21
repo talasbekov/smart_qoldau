@@ -21,6 +21,8 @@ import {
   ACC_PAYOUT_SENT,
   LedgerService,
 } from '../ledger/ledger.service';
+import { NotificationsService } from '../notifications/notifications.service';
+import { formatTenge } from '../notifications/notification-templates';
 
 interface PayoutWebhookBody {
   eventId: string;
@@ -42,6 +44,7 @@ export class PayoutsWebhookController {
     private events: EventsService,
     private config: ConfigService,
     private ledger: LedgerService,
+    private notifications: NotificationsService,
   ) {}
 
   @Post('payouts')
@@ -145,5 +148,21 @@ export class PayoutsWebhookController {
       id: payout.id,
       status: PayoutStatus.PAID,
     });
+
+    // In-app + push (E9, задача 6): dispatch() сам никогда не бросает
+    // (fire-and-forget) — сбой шины уведомлений не откатывает уже
+    // зафиксированную выплату.
+    const expertUser = await this.prisma.expert.findUnique({
+      where: { id: payout.expertId },
+      select: { userId: true },
+    });
+    if (expertUser) {
+      await this.notifications.dispatch(expertUser.userId, 'payout.paid', {
+        amountTiyn: payout.amountTiyn,
+        amountTenge: formatTenge(payout.amountTiyn),
+        maskedPan: payout.maskedPan,
+        status: PayoutStatus.PAID,
+      });
+    }
   }
 }

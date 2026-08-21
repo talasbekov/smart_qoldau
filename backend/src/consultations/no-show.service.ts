@@ -4,6 +4,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import { ClockService } from '../common/clock/clock.service';
 import { EventsService } from '../ws/events.service';
+import { NotificationsService } from '../notifications/notifications.service';
 
 const NO_SHOW_THRESHOLD_MS = 180_000;
 
@@ -24,6 +25,7 @@ export class NoShowService {
     private audit: AuditService,
     private clock: ClockService,
     private events: EventsService,
+    private notifications: NotificationsService,
   ) {}
 
   async sweep(): Promise<void> {
@@ -38,6 +40,14 @@ export class NoShowService {
         noShowNotifiedAt: null,
       },
     });
+
+    // Пакетный lookup userId по expertId (E9, задача 6) — одним запросом на
+    // всю пачку sweep-кандидатов, как в escalation.service.ts (задача 5).
+    const expertUsers = await this.prisma.expert.findMany({
+      where: { id: { in: candidates.map((c) => c.expertId) } },
+      select: { id: true, userId: true },
+    });
+    const userIdByExpertId = new Map(expertUsers.map((e) => [e.id, e.userId]));
 
     for (const consultation of candidates) {
       const now = this.clock.now();
@@ -61,6 +71,16 @@ export class NoShowService {
         'consultation.client_no_show_hint',
         { consultationId: consultation.id },
       );
+
+      // In-app + push (E9, задача 6): dispatch() сам никогда не бросает
+      // (fire-and-forget) — сбой шины уведомлений не откатывает уже
+      // проставленный noShowNotifiedAt.
+      const userId = userIdByExpertId.get(consultation.expertId);
+      if (userId) {
+        await this.notifications.dispatch(userId, 'consultation.no_show_hint', {
+          consultationId: consultation.id,
+        });
+      }
     }
   }
 }

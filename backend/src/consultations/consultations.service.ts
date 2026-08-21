@@ -16,6 +16,7 @@ import { ExpertsService } from '../experts/experts.service';
 import { EventsService } from '../ws/events.service';
 import { RedisService } from '../redis/redis.service';
 import { MessageCipher } from '../chat/message-cipher';
+import { NotificationsService } from '../notifications/notifications.service';
 import { apiError } from '../common/filters/app-exception.filter';
 import { ListConsultationsDto } from './dto/list-consultations.dto';
 import { ConsultationClientDto } from './dto/consultation-client.dto';
@@ -43,6 +44,7 @@ export class ConsultationsService {
     private events: EventsService,
     private redis: RedisService,
     private cipher: MessageCipher,
+    private notifications: NotificationsService,
     @Inject(forwardRef(() => PaymentsService))
     private payments: PaymentsService,
   ) {}
@@ -319,6 +321,21 @@ export class ConsultationsService {
       ConsultationStatus.CANCELLED,
       ConsultationOutcome.CLIENT_CANCELLED,
     );
+
+    // Уведомление эксперту (E9, задача 6): dispatch() сам никогда не бросает
+    // (fire-and-forget) — сбой шины уведомлений не откатывает уже
+    // зафиксированную отмену.
+    const expertUser = await this.prisma.expert.findUnique({
+      where: { id: consultation.expertId },
+      select: { userId: true },
+    });
+    if (expertUser) {
+      await this.notifications.dispatch(
+        expertUser.userId,
+        'consultation.cancelled',
+        { consultationId },
+      );
+    }
 
     await this.settleSafely(consultationId);
 

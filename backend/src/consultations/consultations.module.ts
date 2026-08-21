@@ -7,6 +7,7 @@ import { ExpertsModule } from '../experts/experts.module';
 import { RedisModule } from '../redis/redis.module';
 import { ChatModule } from '../chat/chat.module';
 import { PaymentsModule } from '../payments/payments.module';
+import { NotificationsModule } from '../notifications/notifications.module';
 import { ConsultationsService } from './consultations.service';
 import { ConsultationsController } from './consultations.controller';
 import { NotesController } from './notes.controller';
@@ -34,6 +35,7 @@ import { NoShowService } from './no-show.service';
     RedisModule,
     forwardRef(() => ChatModule),
     forwardRef(() => PaymentsModule),
+    NotificationsModule,
   ],
   controllers: [ConsultationsController, NotesController],
   providers: [ConsultationsService, NoShowService],

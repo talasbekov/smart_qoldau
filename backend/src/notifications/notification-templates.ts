@@ -101,6 +101,16 @@ const TEMPLATES: Record<
   },
 };
 
+// Тенге из тиын для текста уведомления (E9, задача 6: earning.credited,
+// payout.paid) — сумма всегда целое число тиын, конвертация в тенге может
+// дать половину (комиссия 15% от нечётной суммы), поэтому округляем до
+// целого тенге. Разделитель разрядов — обычный пробел (НЕ non-breaking
+// space из Intl.NumberFormat/toLocaleString).
+export function formatTenge(amountTiyn: number): string {
+  const tenge = Math.round(amountTiyn / 100);
+  return tenge.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+}
+
 // Подстановка {key} из data; неизвестная локаль падает в ru.
 export function renderTemplate(
   type: NotificationType,

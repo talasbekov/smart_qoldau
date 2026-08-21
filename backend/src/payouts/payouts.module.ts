@@ -5,6 +5,7 @@ import { AuditModule } from '../audit/audit.module';
 import { ClockModule } from '../common/clock/clock.module';
 import { ExpertsModule } from '../experts/experts.module';
 import { PaymentsModule } from '../payments/payments.module';
+import { NotificationsModule } from '../notifications/notifications.module';
 import { PayoutsService } from './payouts.service';
 import { PayoutsController } from './payouts.controller';
 import { PayoutsAdminController } from './payouts-admin.controller';
@@ -23,6 +24,7 @@ import { MockPayoutProvider } from './provider/mock-payout.provider';
     ClockModule,
     ExpertsModule,
     PaymentsModule,
+    NotificationsModule,
   ],
   controllers: [
     PayoutsController,
