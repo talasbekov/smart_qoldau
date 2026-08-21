@@ -34,6 +34,7 @@ describe('OpenAPI (e2e)', () => {
       '/v1/experts/me/documents/{type}',
       '/v1/experts/me/documents',
       '/v1/experts/me/documents/submit',
+      '/v1/admin/auth/login',
       '/v1/admin/verification/queue',
       '/v1/admin/verification/documents/{documentId}/decision',
       '/v1/admin/verification/{expertId}/decision',
