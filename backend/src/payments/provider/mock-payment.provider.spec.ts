@@ -218,6 +218,65 @@ describe('MockPaymentProvider (юнит)', () => {
       ).rejects.toThrow(ConflictException);
     });
 
+    it('идемпотентность: повторный capture с тем же ключом -> {status: captured} без ошибки', async () => {
+      const redis = makeRedisMock();
+      const provider = new MockPaymentProvider(redis);
+      const { token } = await provider.tokenizeCard({
+        pan: VISA_PAN,
+        expiry: '12/28',
+        holderName: 'Ivan Petrov',
+      });
+      const { providerHoldId } = await provider.hold({
+        idempotencyKey: 'idem-cap-retry',
+        token,
+        amountTiyn: 100000,
+      });
+
+      const first = await provider.capture({
+        idempotencyKey: 'idem-cap-retry-capture',
+        providerHoldId,
+        amountTiyn: 100000,
+      });
+      expect(first.status).toBe('captured');
+
+      // Повтор с тем же ключом — сценарий ретрая settle после сбоя нашей
+      // БД-транзакции: холд уже 'captured', но по ключу — no-op с тем же
+      // успешным результатом, а не ConflictException.
+      const second = await provider.capture({
+        idempotencyKey: 'idem-cap-retry-capture',
+        providerHoldId,
+        amountTiyn: 100000,
+      });
+      expect(second.status).toBe('captured');
+    });
+
+    it('идемпотентность: повторный void с тем же ключом -> {status: voided} без ошибки', async () => {
+      const redis = makeRedisMock();
+      const provider = new MockPaymentProvider(redis);
+      const { token } = await provider.tokenizeCard({
+        pan: VISA_PAN,
+        expiry: '12/28',
+        holderName: 'Ivan Petrov',
+      });
+      const { providerHoldId } = await provider.hold({
+        idempotencyKey: 'idem-void-retry',
+        token,
+        amountTiyn: 100000,
+      });
+
+      const first = await provider.void({
+        idempotencyKey: 'idem-void-retry-void',
+        providerHoldId,
+      });
+      expect(first.status).toBe('voided');
+
+      const second = await provider.void({
+        idempotencyKey: 'idem-void-retry-void',
+        providerHoldId,
+      });
+      expect(second.status).toBe('voided');
+    });
+
     it('capture после void -> throw', async () => {
       const redis = makeRedisMock();
       const provider = new MockPaymentProvider(redis);

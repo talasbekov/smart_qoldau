@@ -129,11 +129,26 @@ export class MockPaymentProvider extends PaymentProviderPort {
     return { providerHoldId, status: 'held' };
   }
 
+  // Идемпотентность по idempotencyKey (глобальное ограничение плана E5:
+  // «повторный вызов с тем же ключом у провайдера — no-op с тем же
+  // результатом»): успешный capture записывает mockpay:idem:{key} ->
+  // повтор с тем же ключом возвращает {status:'captured'} БЕЗ
+  // ConflictException. Критично для ретрая settle/sweep: если провайдерский
+  // вызов успел пройти, а наша БД-транзакция после него упала, Payment
+  // остаётся HELD и повторный settle снова зовёт capture — без дедупликации
+  // по ключу он навсегда упирался бы в ConflictException (холд уже не
+  // 'held'). Чужой/несуществующий холд без записанного idem-ключа —
+  // по-прежнему throw (переход состояния действительно невозможен).
   async capture(input: {
     idempotencyKey: string;
     providerHoldId: string;
     amountTiyn: number;
   }): Promise<{ status: 'captured' }> {
+    const idemDone = await this.redis.get(this.idemKey(input.idempotencyKey));
+    if (idemDone) {
+      return { status: 'captured' };
+    }
+
     const raw = await this.redis.get(this.holdKey(input.providerHoldId));
     if (!raw) {
       throw new ConflictException('Холд не найден');
@@ -151,13 +166,26 @@ export class MockPaymentProvider extends PaymentProviderPort {
       'EX',
       HOLD_TTL_SECONDS,
     );
+    await this.redis.set(
+      this.idemKey(input.idempotencyKey),
+      input.providerHoldId,
+      'EX',
+      HOLD_TTL_SECONDS,
+    );
     return { status: 'captured' };
   }
 
+  // Идемпотентность void по idempotencyKey — симметрично capture (см.
+  // комментарий выше).
   async void(input: {
     idempotencyKey: string;
     providerHoldId: string;
   }): Promise<{ status: 'voided' }> {
+    const idemDone = await this.redis.get(this.idemKey(input.idempotencyKey));
+    if (idemDone) {
+      return { status: 'voided' };
+    }
+
     const raw = await this.redis.get(this.holdKey(input.providerHoldId));
     if (!raw) {
       throw new ConflictException('Холд не найден');
@@ -172,6 +200,12 @@ export class MockPaymentProvider extends PaymentProviderPort {
     await this.redis.set(
       this.holdKey(input.providerHoldId),
       JSON.stringify(record),
+      'EX',
+      HOLD_TTL_SECONDS,
+    );
+    await this.redis.set(
+      this.idemKey(input.idempotencyKey),
+      input.providerHoldId,
       'EX',
       HOLD_TTL_SECONDS,
     );

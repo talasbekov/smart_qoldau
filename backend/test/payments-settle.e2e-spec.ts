@@ -6,6 +6,7 @@ import { PrismaService } from '../src/prisma/prisma.service';
 import { RedisService } from '../src/redis/redis.service';
 import { PresenceService } from '../src/presence/presence.service';
 import { LedgerService, expertAccount } from '../src/ledger/ledger.service';
+import { PaymentsService } from '../src/payments/payments.service';
 import { SMS_PROVIDER_TOKEN, SmsProvider } from '../src/auth/sms/sms.provider';
 import { createApp } from './utils/create-app';
 import { acceptingExpert as acceptingExpertHelper } from './utils/expert-helpers';
@@ -68,6 +69,7 @@ describe('Settle по исходу консультации (E5, задача 5,
   let prisma: PrismaService;
   let redis: RedisService;
   let ledger: LedgerService;
+  let paymentsService: PaymentsService;
   const registeredExpertIds: string[] = [];
 
   async function cleanup() {
@@ -183,6 +185,7 @@ describe('Settle по исходу консультации (E5, задача 5,
     prisma = app.get(PrismaService);
     redis = app.get(RedisService);
     ledger = app.get(LedgerService);
+    paymentsService = app.get(PaymentsService);
     app.get(PresenceService);
   });
 
@@ -369,6 +372,21 @@ describe('Settle по исходу консультации (E5, задача 5,
       where: { id: consultationId },
     });
     expect(consultation!.paymentStatus).toBe('VOIDED');
+
+    // Прямой повторный settle() после VOIDED — no-op: статус не меняется,
+    // ledger по-прежнему пуст, баланс эксперта 0.
+    await paymentsService.settle(consultationId);
+
+    const paymentAfter = await prisma.payment.findUnique({
+      where: { consultationId },
+    });
+    expect(paymentAfter!.status).toBe('VOIDED');
+    const txCount = await prisma.ledgerTransaction.count({
+      where: { refId: payment!.id },
+    });
+    expect(txCount).toBe(0);
+    const balance = await ledger.balanceTiyn(expertAccount(exp.expertId));
+    expect(balance).toBe(0);
   });
 
   it('complete без оплаты -> COMPLETED без денег, audit payment.missing_on_completion, баланс 0', async () => {
@@ -432,6 +450,33 @@ describe('Settle по исходу консультации (E5, задача 5,
       expertAccount(exp.expertId),
     );
     expect(balanceAfterSecond).toBe(339150);
+
+    // Прямой повторный settle() (повторный /complete отсекается 409 ДО
+    // settle — HTTP-путём идемпотентность settle не проверить): после
+    // CAPTURED повторный вызов — no-op, баланс и число ledger-транзакций
+    // не меняются.
+    const payment = await prisma.payment.findUnique({
+      where: { consultationId },
+    });
+    const txCountBefore = await prisma.ledgerTransaction.count({
+      where: { kind: 'capture', refId: payment!.id },
+    });
+    expect(txCountBefore).toBe(1);
+
+    await paymentsService.settle(consultationId);
+
+    const balanceAfterDirect = await ledger.balanceTiyn(
+      expertAccount(exp.expertId),
+    );
+    expect(balanceAfterDirect).toBe(339150);
+    const txCountAfter = await prisma.ledgerTransaction.count({
+      where: { kind: 'capture', refId: payment!.id },
+    });
+    expect(txCountAfter).toBe(1);
+    const paymentAfter = await prisma.payment.findUnique({
+      where: { consultationId },
+    });
+    expect(paymentAfter!.status).toBe('CAPTURED');
   });
 
   it('невалидный outcome в complete -> 400 VALIDATION_FAILED', async () => {
