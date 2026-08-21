@@ -22,6 +22,20 @@ export class EventsService {
     this.safeEmit(`expert:${expertId}`, event, payload);
   }
 
+  // Есть ли у пользователя хотя бы один живой WS-сокет (комната user:{id}).
+  // Нужно чат-пушу (E9): онлайн-получатель видит сообщение в чате, пуш —
+  // только офлайновому. Best-effort: при недоступном сервере считаем
+  // офлайн (пуш лишний раз лучше, чем пропущенное сообщение).
+  isUserConnected(userId: string): boolean {
+    try {
+      if (!this.server) return false;
+      const room = this.server.sockets.adapter.rooms.get(`user:${userId}`);
+      return !!room && room.size > 0;
+    } catch {
+      return false;
+    }
+  }
+
   private safeEmit(room: string, event: string, payload: unknown): void {
     try {
       if (!this.server) return;
