@@ -9,6 +9,7 @@ import { SMS_PROVIDER_TOKEN, SmsProvider } from '../src/auth/sms/sms.provider';
 import { createApp } from './utils/create-app';
 import { registeredExpertUser } from './utils/expert-helpers';
 import { clientUser } from './utils/client-helpers';
+import { adminUser } from './utils/admin-helpers';
 
 // Номера спека задачи 7 (E8a): модель тикетов и создание обращения. Диапазон
 // +77088xxxxxx свободен (не пересекается с другими спеками — см. grep по
@@ -19,6 +20,11 @@ const PH_EXPERT_A = '+77088000003';
 const ALL_PHONES = [PH_CLIENT_A, PH_CLIENT_B, PH_EXPERT_A];
 
 const GUEST_EMAIL = 'guest-ticket-e2e-task7@example.com';
+
+// Префикс-метка одноразовых admin_users этого спека (финальное ревью E8a,
+// п.5 продолжение) — убирается в cleanup() тем же паттерном, что и остальные
+// одноразовые сущности спека.
+const ADMIN_EMAIL_PREFIX = 'tickets-create-e2e-admin-';
 
 let lastCode = '';
 
@@ -81,6 +87,12 @@ describe('Создание обращения в поддержку (E8a, зад
     });
     await prisma.smsCode.deleteMany({ where: { phone: { in: ALL_PHONES } } });
     await prisma.user.deleteMany({ where: { id: { in: userIds } } });
+    // Одноразовые admin_users (созданы внутри отдельного теста, не в
+    // beforeAll — в отличие от пяти спеков из финального ревью E8a п.7, тут
+    // нет живущей весь сьют operatorAuth, поэтому чистка в cleanup() безопасна.
+    await prisma.adminUser.deleteMany({
+      where: { email: { startsWith: ADMIN_EMAIL_PREFIX } },
+    });
     createdTicketIds.length = 0;
   }
 
@@ -258,6 +270,33 @@ describe('Создание обращения в поддержку (E8a, зад
     // Ни один из двух отказов не должен был протечь в БД тикетом.
     const leaked = await prisma.ticket.findFirst({
       where: { subject: { in: ['Битый токен', 'Просроченный токен'] } },
+    });
+    expect(leaked).toBeNull();
+  });
+
+  // Финальное ревью E8a, п.5 (продолжение): OptionalJwtAuthGuard раньше
+  // принимал ЛЮБОЙ валидный токен, включая токен сотрудника админки, и молча
+  // создавал тикет как CLIENT/EXPERT с authorUserId, указывающим на
+  // несуществующего пользователя (id из admin_users) — в обход контакта,
+  // обязательного для гостя.
+  it('OptionalJwtAuthGuard: админский токен -> 403 FORBIDDEN, тикет НЕ создан', async () => {
+    const staff = await adminUser(
+      app,
+      ['SUPPORT_OPERATOR'],
+      `${ADMIN_EMAIL_PREFIX}${Date.now()}@smartqoldau.kz`,
+    );
+
+    const res = await post('/v1/tickets', staff.token)
+      .send({
+        category: 'OTHER',
+        subject: 'Тикет от имени сотрудника',
+        body: 'Не должен создаться — это админский токен на пользовательском маршруте',
+      })
+      .expect(403);
+    expect(res.body.error.code).toBe('FORBIDDEN');
+
+    const leaked = await prisma.ticket.findFirst({
+      where: { subject: 'Тикет от имени сотрудника' },
     });
     expect(leaked).toBeNull();
   });
