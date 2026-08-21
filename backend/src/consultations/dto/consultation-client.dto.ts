@@ -1,5 +1,9 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { ConsultationOutcome, ConsultationStatus } from '@prisma/client';
+import {
+  ConsultationOutcome,
+  ConsultationPaymentStatus,
+  ConsultationStatus,
+} from '@prisma/client';
 import { ExpertPublicDto } from '../../experts/dto/expert-public.dto';
 
 // Вид консультации со стороны клиента. Без clientCode/topicSlug (клиенту не
@@ -32,6 +36,9 @@ export class ConsultationClientDto {
 
   @ApiProperty()
   plannedDurationMin: number;
+
+  @ApiProperty({ enum: ConsultationPaymentStatus })
+  paymentStatus: ConsultationPaymentStatus;
 
   @ApiProperty({ type: ExpertPublicDto })
   expert: ExpertPublicDto;

@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { forwardRef, Inject, Injectable, Logger } from '@nestjs/common';
 import {
   Consultation,
   ConsultationOutcome,
@@ -21,6 +21,7 @@ import { ListConsultationsDto } from './dto/list-consultations.dto';
 import { ConsultationClientDto } from './dto/consultation-client.dto';
 import { ConsultationExpertDto } from './dto/consultation-expert.dto';
 import { ExpertNoteDto } from './dto/expert-note.dto';
+import { PaymentsService } from '../payments/payments.service';
 
 const ABUSE_CLIENT_TTL_SECONDS = 30 * 24 * 3600;
 
@@ -42,6 +43,8 @@ export class ConsultationsService {
     private events: EventsService,
     private redis: RedisService,
     private cipher: MessageCipher,
+    @Inject(forwardRef(() => PaymentsService))
+    private payments: PaymentsService,
   ) {}
 
   // Вызывается из RequestsService.claimOffer ВНУТРИ транзакции матча (tx),
@@ -182,6 +185,21 @@ export class ConsultationsService {
     if (role !== 'expert')
       apiError('FORBIDDEN', 'Только эксперт может завершить консультацию', 403);
 
+    // Р-01: исход «клиент не пришёл» против собственных данных платформы
+    // (LiveKit зафиксировал подключение клиента) недоступен — 3 таких исхода
+    // закрыли бы клиенту автоподбор, и villainous-эксперт мог бы копить их
+    // на состоявшихся сессиях.
+    if (
+      outcome === ConsultationOutcome.CLIENT_NO_SHOW &&
+      consultation.clientJoinedAt !== null
+    ) {
+      apiError(
+        'INVALID_OUTCOME',
+        'Клиент подключался к сессии — исход CLIENT_NO_SHOW недоступен',
+        409,
+      );
+    }
+
     const now = this.clock.now();
     const result = await this.prisma.consultation.updateMany({
       where: { id: consultationId, status: ConsultationStatus.ACTIVE },
@@ -197,6 +215,12 @@ export class ConsultationsService {
     const durationMin = Math.round(
       (now.getTime() - consultation.startedAt.getTime()) / 60000,
     );
+
+    // Р-01: no-show клиента — такой же инцидент злоупотребления, как и
+    // отмена (лимит «3+ no-show/отмен за 30 дней» закрывает автоподбор).
+    if (outcome === ConsultationOutcome.CLIENT_NO_SHOW) {
+      await this.incrementClientAbuse(consultation.clientUserId);
+    }
 
     await this.returnExpertToAccepting(consultation.expertId);
 
@@ -215,17 +239,42 @@ export class ConsultationsService {
       outcome,
     );
 
+    await this.settleSafely(consultationId);
+
     const updated = await this.prisma.consultation.findUniqueOrThrow({
       where: { id: consultationId },
     });
     return this.toExpertDto(updated);
   }
 
+  // Redis-счётчик злоупотреблений клиента (Р-01: no-show и отмены): INCR
+  // (создаёт ключ при первом вызове) + EXPIRE только если TTL ещё не
+  // установлен (ttl === -1) — идемпотентно относительно повторных
+  // инцидентов того же клиента внутри 30-дневного окна. Best-effort:
+  // вызывается ПОСЛЕ терминального перехода консультации, и сбой Redis не
+  // должен ронять остаток завершения (возврат эксперта в ACCEPTING, settle).
+  private async incrementClientAbuse(clientUserId: string): Promise<void> {
+    try {
+      const abuseKey = `abuse:client:${clientUserId}`;
+      const count = await this.redis.incr(abuseKey);
+      if (count === 1) {
+        await this.redis.expire(abuseKey, ABUSE_CLIENT_TTL_SECONDS);
+      } else {
+        const ttl = await this.redis.ttl(abuseKey);
+        if (ttl === -1)
+          await this.redis.expire(abuseKey, ABUSE_CLIENT_TTL_SECONDS);
+      }
+    } catch (e) {
+      this.logger.warn(
+        `abuse-счётчик клиента ${clientUserId} не обновлён: ${
+          e instanceof Error ? e.message : String(e)
+        }`,
+      );
+    }
+  }
+
   // Клиент отменяет консультацию. Только ACTIVE -> 409 иначе; атомарный
-  // updateMany на защиту от гонки с complete() эксперта. Redis-счётчик
-  // злоупотреблений: INCR (создаёт ключ при первом вызове) + EXPIRE только
-  // если TTL ещё не установлен (ttl === -1) — идемпотентно относительно
-  // повторных отмен того же клиента внутри окна.
+  // updateMany на защиту от гонки с complete() эксперта.
   async cancel(
     consultationId: string,
     userSub: string,
@@ -253,15 +302,7 @@ export class ConsultationsService {
         409,
       );
 
-    const abuseKey = `abuse:client:${userSub}`;
-    const count = await this.redis.incr(abuseKey);
-    if (count === 1) {
-      await this.redis.expire(abuseKey, ABUSE_CLIENT_TTL_SECONDS);
-    } else {
-      const ttl = await this.redis.ttl(abuseKey);
-      if (ttl === -1)
-        await this.redis.expire(abuseKey, ABUSE_CLIENT_TTL_SECONDS);
-    }
+    await this.incrementClientAbuse(userSub);
 
     await this.returnExpertToAccepting(consultation.expertId);
 
@@ -279,10 +320,35 @@ export class ConsultationsService {
       ConsultationOutcome.CLIENT_CANCELLED,
     );
 
+    await this.settleSafely(consultationId);
+
     const updated = await this.prisma.consultation.findUniqueOrThrow({
       where: { id: consultationId },
     });
     return this.toClientDto(updated);
+  }
+
+  // Settle платежа (capture/void по исходу) ПОСЛЕ фиксации исхода
+  // консультации, вне транзакции исхода. Сбой — лог + audit
+  // payment.settle_failed, ретрай ЗДЕСЬ не делается (ретраит sweep-джоба,
+  // Task 6); исход консультации НИКОГДА не откатывается из-за денег.
+  private async settleSafely(consultationId: string): Promise<void> {
+    try {
+      await this.payments.settle(consultationId);
+    } catch (e) {
+      const message = e instanceof Error ? e.message : String(e);
+      this.logger.error(
+        `settle failed for consultation ${consultationId}: ${message}`,
+        e instanceof Error ? e.stack : undefined,
+      );
+      await this.audit.log({
+        actorType: 'system',
+        entity: 'payment',
+        entityId: consultationId,
+        transition: 'payment.settle_failed',
+        payload: { consultationId, error: message },
+      });
+    }
   }
 
   // Паттерн компенсации: эксперт возвращается ACCEPTING+presence, ТОЛЬКО
@@ -443,6 +509,7 @@ export class ConsultationsService {
       endedAt: consultation.endedAt,
       priceTiyn: consultation.priceTiyn,
       plannedDurationMin: consultation.plannedDurationMin,
+      paymentStatus: consultation.paymentStatus,
       expert: this.experts.toPublicDto(expert),
     };
   }
@@ -467,6 +534,7 @@ export class ConsultationsService {
       topicSlug: topic.slug,
       priceTiyn: consultation.priceTiyn,
       plannedDurationMin: consultation.plannedDurationMin,
+      paymentStatus: consultation.paymentStatus,
     };
   }
 

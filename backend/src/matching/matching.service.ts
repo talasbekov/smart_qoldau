@@ -48,6 +48,11 @@ export class MatchingService {
         ...(urgentOnly ? { acceptsUrgent: true } : {}),
       },
       select: { id: true },
+      // Детерминизм финальной ничьей: sort() ниже стабилен, поэтому при
+      // равных score и todayCount порядок кандидатов = порядок этой выборки.
+      // Без orderBy Postgres отдаёт произвольный порядок кучи — оффер при
+      // ничьей уходил случайному из равных экспертов.
+      orderBy: { createdAt: 'asc' },
     });
 
     const now = this.clock.now();

@@ -62,6 +62,18 @@ describe('OpenAPI (e2e)', () => {
       '/v1/experts/{id}/reviews',
       '/v1/admin/reviews/flagged',
       '/v1/admin/reviews/{id}/resolve',
+      '/v1/payment-methods',
+      '/v1/payment-methods/{id}',
+      '/v1/consultations/{id}/pay',
+      '/v1/consultations/{id}/payment',
+      '/v1/experts/me/earnings',
+      '/v1/webhooks/payments',
+      '/v1/experts/me/balance',
+      '/v1/payouts',
+      '/v1/webhooks/payouts',
+      '/v1/admin/payouts',
+      '/v1/admin/payouts/{id}/approve',
+      '/v1/admin/payouts/{id}/reject',
     ])
       expect(paths).toContain(p);
   });

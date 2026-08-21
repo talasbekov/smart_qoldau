@@ -14,6 +14,8 @@ import { RequestsService } from './requests.service';
 import { EscalationService } from './escalation.service';
 import { EventsService } from '../ws/events.service';
 import { NoShowService } from '../consultations/no-show.service';
+import { SettleRetryService } from '../payments/settle-retry.service';
+import { PayoutsService } from '../payouts/payouts.service';
 
 export const OFFERS_DEADLINES_KEY = 'offers:deadlines';
 export const REQUESTS_RESCAN_KEY = 'requests:rescan';
@@ -43,6 +45,8 @@ export class OfferTimerService implements OfferTimerRegistry {
     @Inject(forwardRef(() => EscalationService))
     private escalation: EscalationService,
     private noShow: NoShowService,
+    private settleRetry: SettleRetryService,
+    private payouts: PayoutsService,
   ) {}
 
   async schedule(offerId: string, deadlineAt: Date): Promise<void> {
@@ -81,6 +85,11 @@ export class OfferTimerService implements OfferTimerRegistry {
   //   5) no-show хинт (NoShowService, E4 Task 5): ACTIVE audio/video
   //      консультации без clientJoinedAt спустя 180с после старта ->
   //      уведомление эксперта (решение за ним — complete CLIENT_NO_SHOW).
+  //   6) sweep денег (SettleRetryService, E5 Task 6): ретраи settle для
+  //      Payment HELD, застрявших после сбоя provider-вызова, и перехолд
+  //      Р-01 для Payment HELD старше 5 дней без исхода.
+  //   7) ретрай отправки выводов (PayoutsService, E5): Payout PROCESSING
+  //      без providerRefId — сбой между резервом и sendToCard.
   // Возвращает число обработанных истёкших офферов (шаг 1).
   // Каждый шаг изолирован собственным try/catch: сбой одного (например,
   // транзиентная ошибка Redis в рескане) не блокирует остальные.
@@ -110,6 +119,16 @@ export class OfferTimerService implements OfferTimerRegistry {
       await this.noShow.sweep();
     } catch (e) {
       this.logStepError('noShow', e);
+    }
+    try {
+      await this.settleRetry.sweep();
+    } catch (e) {
+      this.logStepError('settleRetry', e);
+    }
+    try {
+      await this.payouts.retryStrandedSends();
+    } catch (e) {
+      this.logStepError('payoutRetry', e);
     }
     return processed;
   }

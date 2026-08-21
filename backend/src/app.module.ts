@@ -25,6 +25,9 @@ import { ConsultationsModule } from './consultations/consultations.module';
 import { ChatModule } from './chat/chat.module';
 import { MediaModule } from './media/media.module';
 import { ReviewsModule } from './reviews/reviews.module';
+import { LedgerModule } from './ledger/ledger.module';
+import { PaymentsModule } from './payments/payments.module';
+import { PayoutsModule } from './payouts/payouts.module';
 
 @Module({
   imports: [
@@ -52,6 +55,9 @@ import { ReviewsModule } from './reviews/reviews.module';
     ChatModule,
     MediaModule,
     ReviewsModule,
+    LedgerModule,
+    PaymentsModule,
+    PayoutsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

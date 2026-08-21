@@ -16,4 +16,7 @@ export const envValidationSchema = Joi.object({
   LIVEKIT_API_KEY: Joi.string().required(),
   LIVEKIT_API_SECRET: Joi.string().required(),
   LIVEKIT_URL: Joi.string().uri().default('ws://localhost:7880'),
+  PAYMENT_PROVIDER: Joi.string().valid('mock').default('mock'),
+  PAYMENT_WEBHOOK_SECRET: Joi.string().min(32).required(),
+  PAYOUT_WEBHOOK_SECRET: Joi.string().min(32).required(),
 });

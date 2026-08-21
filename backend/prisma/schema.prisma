@@ -252,6 +252,29 @@ enum ConsultationStatus {
   CANCELLED
 }
 
+enum PaymentStatus {
+  PENDING      // создан, холд запрошен у провайдера
+  HELD         // холд подтверждён
+  CAPTURED     // списано (исход COMPLETED)
+  VOIDED       // холд отменён (возврат клиенту)
+  FAILED       // провайдер отклонил (банк отказал)
+}
+
+enum ConsultationPaymentStatus {
+  UNPAID
+  HELD
+  CAPTURED
+  VOIDED
+  FAILED
+}
+
+enum PayoutStatus {
+  PENDING_REVIEW // очередь финконтроля (>лимита автоодобрения)
+  PROCESSING     // одобрен (авто или вручную), отправлен провайдеру
+  PAID           // провайдер подтвердил зачисление
+  REJECTED       // отклонён финконтролем (с причиной)
+}
+
 enum ConsultationOutcome {
   COMPLETED
   CLIENT_NO_SHOW
@@ -281,6 +304,7 @@ model Consultation {
   priceTiyn          Int                 @map("price_tiyn")           // снапшот цены эксперта
   plannedDurationMin Int                 @default(50) @map("planned_duration_min")
   status             ConsultationStatus  @default(ACTIVE)
+  paymentStatus      ConsultationPaymentStatus @default(UNPAID) @map("payment_status")
   outcome            ConsultationOutcome?
   startedAt          DateTime            @map("started_at")
   endedAt            DateTime?           @map("ended_at")
@@ -330,4 +354,96 @@ model Review {
   createdAt      DateTime     @default(now()) @map("created_at")
   @@index([expertId, status])
   @@map("reviews")
+}
+
+// Как в E3/E4: без FK на users/experts/consultations — связь строкой.
+model PaymentMethod {
+  id            String   @id @default(uuid())
+  userId        String   @map("user_id")
+  providerToken String   @map("provider_token")   // токен карты у провайдера, PAN не храним
+  maskedPan     String   @map("masked_pan")       // "**** 4521"
+  brand         String                            // 'visa' | 'mastercard' | ...
+  holderName    String   @map("holder_name")
+  deletedAt     DateTime? @map("deleted_at")      // soft-delete: история платежей ссылается
+  createdAt     DateTime @default(now()) @map("created_at")
+  @@index([userId])
+  @@map("payment_methods")
+}
+
+model Payment {
+  id               String        @id @default(uuid())
+  consultationId   String        @unique @map("consultation_id")
+  clientUserId     String        @map("client_user_id")
+  expertId         String        @map("expert_id")
+  paymentMethodId  String        @map("payment_method_id")
+  amountTiyn       Int           @map("amount_tiyn")       // полная цена (снапшот priceTiyn)
+  discountTiyn     Int           @default(0) @map("discount_tiyn") // Premium Р-03 — E12, пока 0
+  commissionTiyn   Int           @map("commission_tiyn")   // Math.round(amount*0.15), фиксируется при capture
+  status           PaymentStatus @default(PENDING)
+  providerHoldId   String?       @map("provider_hold_id")  // id операции у провайдера
+  holdCreatedAt    DateTime?     @map("hold_created_at")   // для перехолда >5 дней
+  holdAttempts     Int           @default(0) @map("hold_attempts") // № попытки pay -> ключ идемпотентности hold
+  reholdCount      Int           @default(0) @map("rehold_count")
+  settleAttempts   Int           @default(0) @map("settle_attempts") // ретраи capture/void
+  lastSettleAttemptAt DateTime?  @map("last_settle_attempt_at") // интервал между ретраями settle
+  failReason       String?       @map("fail_reason")
+  createdAt        DateTime      @default(now()) @map("created_at")
+  updatedAt        DateTime      @updatedAt @map("updated_at")
+  @@index([status, holdCreatedAt])
+  @@index([providerHoldId])                  // поиск по вебхуку hold.voided_by_bank
+  @@index([expertId, status, updatedAt])     // earnings эксперта
+  @@map("payments")
+}
+
+model LedgerTransaction {
+  id        String        @id @default(uuid())
+  kind      String        // 'capture' | 'payout_reserve' | 'payout_sent' | 'payout_reject' | 'adjustment'
+  refId     String        @map("ref_id")     // paymentId | payoutId
+  createdAt DateTime      @default(now()) @map("created_at")
+  entries   LedgerEntry[]
+  @@unique([kind, refId])                    // идемпотентность проводок
+  @@map("ledger_transactions")
+}
+
+model LedgerEntry {
+  id            String            @id @default(uuid())
+  transactionId String            @map("transaction_id")
+  transaction   LedgerTransaction @relation(fields: [transactionId], references: [id])
+  account       String            // 'expert:{id}' | 'platform:commission' | 'acquirer:settlement' | 'payout:pending' | 'payout:sent'
+  debitTiyn     Int               @default(0) @map("debit_tiyn")   // ровно одно из debit/credit > 0
+  creditTiyn    Int               @default(0) @map("credit_tiyn")
+  createdAt     DateTime          @default(now()) @map("created_at")
+  @@index([account, createdAt])
+  @@map("ledger_entries")
+}
+
+model Payout {
+  id              String       @id @default(uuid())
+  expertId        String       @map("expert_id")
+  amountTiyn      Int          @map("amount_tiyn")
+  maskedPan       String       @map("masked_pan")     // карта вывода (снапшот)
+  holderName      String       @map("holder_name")
+  cardToken       String       @map("card_token")     // токен карты вывода у payout-провайдера
+  status          PayoutStatus
+  rejectReason    String?      @map("reject_reason")
+  providerRefId   String?      @map("provider_ref_id")
+  reviewedBy      String?      @map("reviewed_by")    // 'auto' | админ
+  createdAt       DateTime     @default(now()) @map("created_at")
+  updatedAt       DateTime     @updatedAt @map("updated_at")
+  @@index([expertId, createdAt])
+  @@index([status])
+  @@index([providerRefId])                   // поиск по вебхуку payout.paid
+  @@map("payouts")
+}
+
+model ProviderEvent {
+  id              String   @id @default(uuid())
+  providerEventId String   @map("provider_event_id")
+  kind            String                                     // 'payment' | 'payout'
+  payload         Json
+  createdAt       DateTime @default(now()) @map("created_at")
+  // Дедуп повторных доставок В ПРЕДЕЛАХ провайдера: eventId разных
+  // провайдеров могут совпадать, глобальный unique терял бы второе событие.
+  @@unique([kind, providerEventId])
+  @@map("provider_events")
 }

@@ -6,6 +6,7 @@ import { PresenceModule } from '../presence/presence.module';
 import { ExpertsModule } from '../experts/experts.module';
 import { RedisModule } from '../redis/redis.module';
 import { ChatModule } from '../chat/chat.module';
+import { PaymentsModule } from '../payments/payments.module';
 import { ConsultationsService } from './consultations.service';
 import { ConsultationsController } from './consultations.controller';
 import { NotesController } from './notes.controller';
@@ -18,6 +19,11 @@ import { NoShowService } from './no-show.service';
 // импортирует ChatModule -> ConsultationsModule — явный импорт здесь создал
 // бы цикл WsModule -> ChatModule -> ConsultationsModule -> WsModule.
 // EventsService доступен через глобальный контейнер без импорта.
+// PaymentsModule — forwardRef в обе стороны: PaymentsModule импортирует
+// ConsultationsModule (resolveParticipant для pay/getStatus),
+// ConsultationsService вызывает PaymentsService.settle() из complete/cancel
+// (Task 5) — классический цикл двух доменных модулей, разрешается через
+// forwardRef с обеих сторон.
 @Module({
   imports: [
     PrismaModule,
@@ -27,6 +33,7 @@ import { NoShowService } from './no-show.service';
     ExpertsModule,
     RedisModule,
     forwardRef(() => ChatModule),
+    forwardRef(() => PaymentsModule),
   ],
   controllers: [ConsultationsController, NotesController],
   providers: [ConsultationsService, NoShowService],

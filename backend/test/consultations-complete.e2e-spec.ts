@@ -465,4 +465,36 @@ describe('Завершение консультации, no-show 3 мин, от�
     });
     expect(row.noShowNotifiedAt).toBeNull();
   });
+
+  it('CLIENT_NO_SHOW при подключавшемся клиенте (clientJoinedAt проставлен) -> 409 INVALID_OUTCOME, консультация остаётся ACTIVE', async () => {
+    const exp = await acceptingExpert(PH_E3);
+    const cli = await clientUser(PH_C3);
+    const { consultationId } = await matchClientToExpert(cli, exp);
+
+    // Сервер сам зафиксировал присутствие клиента (LiveKit-вебхук) — исход
+    // «клиент не пришёл» противоречит собственным данным платформы, а 3
+    // таких исхода закрыли бы клиенту автоподбор (Р-01).
+    await prisma.consultation.update({
+      where: { id: consultationId },
+      data: { clientJoinedAt: fakeClock.now() },
+    });
+
+    const res = await post(
+      exp.accessToken,
+      `/v1/consultations/${consultationId}/complete`,
+    )
+      .send({ outcome: 'CLIENT_NO_SHOW' })
+      .expect(409);
+    expect(res.body.error.code).toBe('INVALID_OUTCOME');
+
+    const row = await prisma.consultation.findUniqueOrThrow({
+      where: { id: consultationId },
+    });
+    expect(row.status).toBe('ACTIVE');
+
+    // Другие исходы по-прежнему доступны.
+    await post(exp.accessToken, `/v1/consultations/${consultationId}/complete`)
+      .send({ outcome: 'COMPLETED' })
+      .expect(200);
+  });
 });
