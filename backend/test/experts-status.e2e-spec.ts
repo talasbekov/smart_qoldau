@@ -6,8 +6,7 @@ import { PrismaService } from '../src/prisma/prisma.service';
 import { RedisService } from '../src/redis/redis.service';
 import { SMS_PROVIDER_TOKEN, SmsProvider } from '../src/auth/sms/sms.provider';
 import { createApp } from './utils/create-app';
-
-const ADMIN = { 'X-Admin-Token': 'dev-admin-token-0123456789abcdef' };
+import { AdminAuth, verificationOperatorAuth } from './utils/admin-helpers';
 
 // Номера спека задачи 6 (E2), не пересекаются с другими спеками.
 const PHONE_S1 = '+77074000001';
@@ -41,6 +40,7 @@ describe('Experts work-status + presence (e2e)', () => {
   let app: INestApplication;
   let prisma: PrismaService;
   let redis: RedisService;
+  let operatorAuth: AdminAuth;
   const registeredExpertIds: string[] = [];
 
   async function cleanup() {
@@ -81,6 +81,7 @@ describe('Experts work-status + presence (e2e)', () => {
     );
     prisma = app.get(PrismaService);
     redis = app.get(RedisService);
+    operatorAuth = await verificationOperatorAuth(app);
   });
 
   beforeEach(() => cleanup());
@@ -146,13 +147,13 @@ describe('Experts work-status + presence (e2e)', () => {
     for (const id of docIds) {
       await request(app.getHttpServer())
         .post(`/v1/admin/verification/documents/${id}/decision`)
-        .set(ADMIN)
+        .set(...operatorAuth.authHeader)
         .send({ approve: true })
         .expect(200);
     }
     await request(app.getHttpServer())
       .post(`/v1/admin/verification/${expertId}/decision`)
-      .set(ADMIN)
+      .set(...operatorAuth.authHeader)
       .send({ approve: true })
       .expect(200);
 
@@ -200,7 +201,7 @@ describe('Experts work-status + presence (e2e)', () => {
     const { expertId } = await acceptingExpert(PHONE_S3);
     await request(app.getHttpServer())
       .post(`/v1/admin/experts/${expertId}/block`)
-      .set(ADMIN)
+      .set(...operatorAuth.authHeader)
       .send({ reason: 'test' })
       .expect(200);
     expect(await redis.sismember('experts:available', expertId)).toBe(0);

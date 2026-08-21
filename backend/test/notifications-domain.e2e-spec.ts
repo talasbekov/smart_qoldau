@@ -10,6 +10,7 @@ import { LedgerService, expertAccount } from '../src/ledger/ledger.service';
 import { OfferTimerService } from '../src/requests/offer-timer.service';
 import { SMS_PROVIDER_TOKEN, SmsProvider } from '../src/auth/sms/sms.provider';
 import { createApp } from './utils/create-app';
+import { AdminAuth, verificationOperatorAuth } from './utils/admin-helpers';
 import {
   registeredExpertUser,
   acceptingExpert as acceptingExpertHelper,
@@ -40,6 +41,9 @@ const ALL_PHONES = [
   PH_C6,
 ];
 
+// X-Admin-Token остаётся только для /admin/payouts (задача 5 E8a, ещё не
+// переведена на роли); /admin/verification/* — через operatorAuth ниже
+// (задача 4 E8a, RolesGuard + VERIFICATION_OPERATOR).
 const ADMIN = { 'X-Admin-Token': 'dev-admin-token-0123456789abcdef' };
 const VISA_PAN = '4111111111111111';
 const CARD = { pan: VISA_PAN, expiry: '12/28', holderName: 'Aigul S' };
@@ -95,6 +99,7 @@ describe('Уведомления доменных событий: деньги, 
   let redis: RedisService;
   let ledger: LedgerService;
   let timer: OfferTimerService;
+  let operatorAuth: AdminAuth;
   const registeredExpertIds: string[] = [];
   let seedCounter = 0;
 
@@ -241,6 +246,7 @@ describe('Уведомления доменных событий: деньги, 
     redis = app.get(RedisService);
     ledger = app.get(LedgerService);
     timer = app.get(OfferTimerService);
+    operatorAuth = await verificationOperatorAuth(app);
   });
 
   beforeEach(async () => {
@@ -461,21 +467,21 @@ describe('Уведомления доменных событий: деньги, 
 
     const queue = await request(app.getHttpServer())
       .get('/v1/admin/verification/queue')
-      .set(ADMIN)
+      .set(...operatorAuth.authHeader)
       .expect(200);
     const entry = queue.body.find((e: any) => e.id === registered.expertId);
     const docIds: string[] = entry.documents.map((d: any) => d.id);
     for (const id of docIds) {
       await request(app.getHttpServer())
         .post(`/v1/admin/verification/documents/${id}/decision`)
-        .set(ADMIN)
+        .set(...operatorAuth.authHeader)
         .send({ approve: true })
         .expect(200);
     }
 
     await request(app.getHttpServer())
       .post(`/v1/admin/verification/${registered.expertId}/decision`)
-      .set(ADMIN)
+      .set(...operatorAuth.authHeader)
       .send({ approve: true })
       .expect(200);
 

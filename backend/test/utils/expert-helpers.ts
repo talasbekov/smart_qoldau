@@ -1,7 +1,20 @@
 import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
+import { AdminAuth, verificationOperatorAuth } from './admin-helpers';
 
-const ADMIN = { 'X-Admin-Token': 'dev-admin-token-0123456789abcdef' };
+// Кэш авторизации фикстур-оператора верификации по приложению (E8a, задача
+// 4): verifiedExpert() вызывается многократно за один прогон спека — не
+// логинимся заново на каждый вызов.
+const operatorAuthCache = new WeakMap<INestApplication, Promise<AdminAuth>>();
+
+function operatorAuth(app: INestApplication): Promise<AdminAuth> {
+  let cached = operatorAuthCache.get(app);
+  if (!cached) {
+    cached = verificationOperatorAuth(app);
+    operatorAuthCache.set(app, cached);
+  }
+  return cached;
+}
 
 const DOC_TYPES = ['IDENTITY', 'DIPLOMA', 'CERTIFICATES', 'QUALIFICATION'];
 
@@ -108,9 +121,11 @@ export async function verifiedExpert(
     .set('Authorization', `Bearer ${accessToken}`)
     .expect(200);
 
+  const { authHeader } = await operatorAuth(app);
+
   const queue = await request(app.getHttpServer())
     .get('/v1/admin/verification/queue')
-    .set(ADMIN)
+    .set(...authHeader)
     .expect(200);
   const entry = queue.body.find((e: any) => e.id === expertId);
   const docIds: string[] = entry.documents.map((d: any) => d.id);
@@ -118,13 +133,13 @@ export async function verifiedExpert(
   for (const id of docIds) {
     await request(app.getHttpServer())
       .post(`/v1/admin/verification/documents/${id}/decision`)
-      .set(ADMIN)
+      .set(...authHeader)
       .send({ approve: true })
       .expect(200);
   }
   await request(app.getHttpServer())
     .post(`/v1/admin/verification/${expertId}/decision`)
-    .set(ADMIN)
+    .set(...authHeader)
     .send({ approve: true })
     .expect(200);
 

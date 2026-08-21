@@ -7,8 +7,7 @@ import { SMS_PROVIDER_TOKEN, SmsProvider } from '../src/auth/sms/sms.provider';
 import { createApp } from './utils/create-app';
 import { clientUser, guestClient } from './utils/client-helpers';
 import { acceptingExpert, verifiedExpert } from './utils/expert-helpers';
-
-const ADMIN = { 'X-Admin-Token': 'dev-admin-token-0123456789abcdef' };
+import { AdminAuth, verificationOperatorAuth } from './utils/admin-helpers';
 
 // Номера/deviceId спека задачи 8 (E3, Избранное), не пересекаются с другими
 // спеками.
@@ -34,6 +33,7 @@ function codeGetter() {
 describe('Favorites (e2e)', () => {
   let app: INestApplication;
   let prisma: PrismaService;
+  let operatorAuth: AdminAuth;
 
   async function cleanup() {
     // Гостевой клиент спека не имеет телефона — ищем и по deviceId.
@@ -86,6 +86,7 @@ describe('Favorites (e2e)', () => {
         .useClass(FakeSmsProvider),
     );
     prisma = app.get(PrismaService);
+    operatorAuth = await verificationOperatorAuth(app);
   });
 
   // Финальная чистка обязательна: спек создаёт ACCEPTING-экспертов с
@@ -202,7 +203,7 @@ describe('Favorites (e2e)', () => {
       // Arrange: блокируем эксперта
       await request(app.getHttpServer())
         .post(`/v1/admin/experts/${expertId}/block`)
-        .set(ADMIN)
+        .set(...operatorAuth.authHeader)
         .send({ reason: 'Тестовая блокировка' })
         .expect(200);
 
@@ -371,7 +372,7 @@ describe('Favorites (e2e)', () => {
       // Arrange: блокируем эксперта
       await request(app.getHttpServer())
         .post(`/v1/admin/experts/${expertId}/block`)
-        .set(ADMIN)
+        .set(...operatorAuth.authHeader)
         .send({ reason: 'Тестовая блокировка' })
         .expect(200);
 

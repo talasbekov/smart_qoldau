@@ -56,6 +56,7 @@ export class VerificationService {
   async decideDocument(
     documentId: string,
     dto: DecisionDto,
+    actorId: string,
   ): Promise<{ id: string; status: DocumentStatus }> {
     if (!dto.approve && !dto.comment)
       apiError(
@@ -96,7 +97,7 @@ export class VerificationService {
 
     await this.audit.log({
       actorType: 'admin',
-      actorId: null,
+      actorId,
       entity: 'expert',
       entityId: doc.expertId,
       transition: dto.approve
@@ -108,7 +109,11 @@ export class VerificationService {
     return { id: documentId, status };
   }
 
-  async decideExpert(expertId: string, dto: DecisionDto): Promise<ExpertMeDto> {
+  async decideExpert(
+    expertId: string,
+    dto: DecisionDto,
+    actorId: string,
+  ): Promise<ExpertMeDto> {
     if (!dto.approve && !dto.comment)
       apiError(
         'VALIDATION_FAILED',
@@ -149,7 +154,7 @@ export class VerificationService {
 
     await this.audit.log({
       actorType: 'admin',
-      actorId: null,
+      actorId,
       entity: 'expert',
       entityId: expertId,
       transition: dto.approve
@@ -170,7 +175,11 @@ export class VerificationService {
     return this.toMeDto(updated);
   }
 
-  async block(expertId: string, dto: BlockExpertDto): Promise<Expert> {
+  async block(
+    expertId: string,
+    dto: BlockExpertDto,
+    actorId: string,
+  ): Promise<Expert> {
     const expert = await this.prisma.expert.findUnique({
       where: { id: expertId },
     });
@@ -203,7 +212,7 @@ export class VerificationService {
 
     await this.audit.log({
       actorType: 'admin',
-      actorId: null,
+      actorId,
       entity: 'expert',
       entityId: expertId,
       transition: 'expert.blocked',
@@ -213,7 +222,7 @@ export class VerificationService {
     return updated;
   }
 
-  async unblock(expertId: string): Promise<Expert> {
+  async unblock(expertId: string, actorId: string): Promise<Expert> {
     const expert = await this.prisma.expert.findUnique({
       where: { id: expertId },
     });
@@ -226,7 +235,7 @@ export class VerificationService {
 
     await this.audit.log({
       actorType: 'admin',
-      actorId: null,
+      actorId,
       entity: 'expert',
       entityId: expertId,
       transition: 'expert.unblocked',

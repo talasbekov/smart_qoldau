@@ -1,12 +1,13 @@
 import { Test } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
+import { AdminRole } from '@prisma/client';
 import request from 'supertest';
 import { AppModule } from '../src/app.module';
 import { PrismaService } from '../src/prisma/prisma.service';
 import { SMS_PROVIDER_TOKEN, SmsProvider } from '../src/auth/sms/sms.provider';
 import { createApp } from './utils/create-app';
-
-const ADMIN = { 'X-Admin-Token': 'dev-admin-token-0123456789abcdef' };
+import { adminUser, AdminAuth } from './utils/admin-helpers';
+import { guestClient } from './utils/client-helpers';
 
 // Номера спека задачи 5 (E2), не пересекаются с другими спеками.
 const PHONE_V1 = '+77073000001';
@@ -15,7 +16,28 @@ const PHONE_V3 = '+77073000003';
 const PHONE_V4 = '+77073000004';
 const PHONE_V5 = '+77073000005';
 const PHONE_V6 = '+77073000006';
-const ALL_PHONES = [PHONE_V1, PHONE_V2, PHONE_V3, PHONE_V4, PHONE_V5, PHONE_V6];
+const PHONE_V7 = '+77073000007';
+const ALL_PHONES = [
+  PHONE_V1,
+  PHONE_V2,
+  PHONE_V3,
+  PHONE_V4,
+  PHONE_V5,
+  PHONE_V6,
+  PHONE_V7,
+];
+
+// Префикс-метка этого спека (E8a, задача 4): admin_users и гостевые
+// устройства могут содержать строки от прошлых прогонов — спек не
+// предполагает пустоты этих таблиц и убирает только свои строки.
+const ADMIN_EMAIL_PREFIX = 'admin-verification-e2e-';
+const GUEST_DEVICE_PREFIX = 'admin-verification-e2e-guest-';
+const DUMMY_ID = '00000000-0000-0000-0000-000000000000';
+
+let adminEmailSeq = 0;
+function uniqueAdminEmail(tag: string): string {
+  return `${ADMIN_EMAIL_PREFIX}${tag}-${Date.now()}-${adminEmailSeq++}@smartqoldau.kz`;
+}
 
 let lastCode = '';
 
@@ -42,6 +64,7 @@ const DOC_TYPES = ['IDENTITY', 'DIPLOMA', 'CERTIFICATES', 'QUALIFICATION'];
 describe('Admin verification (e2e)', () => {
   let app: INestApplication;
   let prisma: PrismaService;
+  let verificationOperator: AdminAuth;
 
   async function cleanup() {
     const users = await prisma.user.findMany({
@@ -65,10 +88,30 @@ describe('Admin verification (e2e)', () => {
       where: { userId: { in: userIds } },
     });
     await prisma.smsCode.deleteMany({ where: { phone: { in: ALL_PHONES } } });
+
+    const guests = await prisma.user.findMany({
+      where: { deviceId: { startsWith: GUEST_DEVICE_PREFIX } },
+      select: { id: true },
+    });
+    const guestIds = guests.map((u) => u.id);
+    if (guestIds.length) {
+      await prisma.refreshToken.deleteMany({
+        where: { userId: { in: guestIds } },
+      });
+      await prisma.auditLog.deleteMany({
+        where: { entityId: { in: guestIds } },
+      });
+      await prisma.user.deleteMany({ where: { id: { in: guestIds } } });
+    }
+
     await prisma.auditLog.deleteMany({
       where: { entityId: { in: [...userIds, ...expertIds] } },
     });
     await prisma.user.deleteMany({ where: { id: { in: userIds } } });
+
+    await prisma.adminUser.deleteMany({
+      where: { email: { startsWith: ADMIN_EMAIL_PREFIX } },
+    });
   }
 
   beforeAll(async () => {
@@ -80,12 +123,25 @@ describe('Admin verification (e2e)', () => {
     prisma = app.get(PrismaService);
   });
 
-  beforeEach(() => cleanup());
+  beforeEach(async () => {
+    await cleanup();
+    verificationOperator = await adminUser(
+      app,
+      [AdminRole.VERIFICATION_OPERATOR],
+      uniqueAdminEmail('operator'),
+    );
+  });
 
   afterAll(async () => {
     await cleanup();
     await app.close();
   });
+
+  function asOperator(method: 'get' | 'post', url: string) {
+    return (request(app.getHttpServer()) as any)
+      [method](url)
+      .set(...verificationOperator.authHeader);
+  }
 
   async function registeredUser(phone: string) {
     await request(app.getHttpServer())
@@ -140,15 +196,17 @@ describe('Admin verification (e2e)', () => {
   async function verifiedExpert(phone: string) {
     const result = await submittedExpert(phone);
     for (const id of result.docIds) {
-      await request(app.getHttpServer())
-        .post(`/v1/admin/verification/documents/${id}/decision`)
-        .set(ADMIN)
+      await asOperator(
+        'post',
+        `/v1/admin/verification/documents/${id}/decision`,
+      )
         .send({ approve: true })
         .expect(200);
     }
-    await request(app.getHttpServer())
-      .post(`/v1/admin/verification/${result.expertId}/decision`)
-      .set(ADMIN)
+    await asOperator(
+      'post',
+      `/v1/admin/verification/${result.expertId}/decision`,
+    )
       .send({ approve: true })
       .expect(200);
     return result;
@@ -160,10 +218,9 @@ describe('Admin verification (e2e)', () => {
       .expect(401);
 
     const { expertId } = await submittedExpert(PHONE_V1);
-    const res = await request(app.getHttpServer())
-      .get('/v1/admin/verification/queue')
-      .set(ADMIN)
-      .expect(200);
+    const res = await asOperator('get', '/v1/admin/verification/queue').expect(
+      200,
+    );
     const entry = res.body.find((e: any) => e.id === expertId);
     expect(entry).toBeDefined();
     expect(entry.documents).toHaveLength(4);
@@ -172,17 +229,19 @@ describe('Admin verification (e2e)', () => {
     expect(entry.userId).toBeUndefined();
   });
 
-  it('approve всех документов + approve эксперта -> VERIFIED; audit-цепочка записана', async () => {
+  it('approve всех документов + approve эксперта -> VERIFIED; audit-цепочка записана с actorId сотрудника', async () => {
     const { expertId, docIds } = await submittedExpert(PHONE_V2);
     for (const id of docIds)
-      await request(app.getHttpServer())
-        .post(`/v1/admin/verification/documents/${id}/decision`)
-        .set(ADMIN)
+      await asOperator(
+        'post',
+        `/v1/admin/verification/documents/${id}/decision`,
+      )
         .send({ approve: true })
         .expect(200);
-    const res = await request(app.getHttpServer())
-      .post(`/v1/admin/verification/${expertId}/decision`)
-      .set(ADMIN)
+    const res = await asOperator(
+      'post',
+      `/v1/admin/verification/${expertId}/decision`,
+    )
       .send({ approve: true })
       .expect(200);
     expect(res.body.verificationStatus).toBe('VERIFIED');
@@ -198,42 +257,47 @@ describe('Admin verification (e2e)', () => {
         a.transition === 'expert.verified',
     );
     expect(adminEntries.every((a) => a.actorType === 'admin')).toBe(true);
+    expect(
+      adminEntries.every((a) => a.actorId === verificationOperator.id),
+    ).toBe(true);
   });
 
   it('approve эксперта при неполном approve документов -> 400 DOCUMENTS_INCOMPLETE', async () => {
     const { expertId, docIds } = await submittedExpert(PHONE_V3);
     for (const id of docIds.slice(0, 3))
-      await request(app.getHttpServer())
-        .post(`/v1/admin/verification/documents/${id}/decision`)
-        .set(ADMIN)
+      await asOperator(
+        'post',
+        `/v1/admin/verification/documents/${id}/decision`,
+      )
         .send({ approve: true })
         .expect(200);
-    const res = await request(app.getHttpServer())
-      .post(`/v1/admin/verification/${expertId}/decision`)
-      .set(ADMIN)
+    const res = await asOperator(
+      'post',
+      `/v1/admin/verification/${expertId}/decision`,
+    )
       .send({ approve: true })
       .expect(400);
     expect(res.body.error.code).toBe('DOCUMENTS_INCOMPLETE');
   });
 
-  it('reject эксперта -> назад в DRAFT, comment обязателен', async () => {
+  it('reject эксперта -> назад в DRAFT, comment обязателен, actorId в audit — id сотрудника', async () => {
     const { expertId, docIds } = await submittedExpert(PHONE_V4);
     for (const id of docIds)
-      await request(app.getHttpServer())
-        .post(`/v1/admin/verification/documents/${id}/decision`)
-        .set(ADMIN)
+      await asOperator(
+        'post',
+        `/v1/admin/verification/documents/${id}/decision`,
+      )
         .send({ approve: true })
         .expect(200);
 
-    await request(app.getHttpServer())
-      .post(`/v1/admin/verification/${expertId}/decision`)
-      .set(ADMIN)
+    await asOperator('post', `/v1/admin/verification/${expertId}/decision`)
       .send({ approve: false })
       .expect(400);
 
-    const res = await request(app.getHttpServer())
-      .post(`/v1/admin/verification/${expertId}/decision`)
-      .set(ADMIN)
+    const res = await asOperator(
+      'post',
+      `/v1/admin/verification/${expertId}/decision`,
+    )
       .send({ approve: false, comment: 'Недостаточно данных' })
       .expect(200);
     expect(res.body.verificationStatus).toBe('DRAFT');
@@ -246,19 +310,22 @@ describe('Admin verification (e2e)', () => {
       },
     });
     expect(audit).toHaveLength(1);
+    expect(audit[0].actorId).toBe(verificationOperator.id);
   });
 
   it('reject документа: comment обязателен; статус REUPLOAD_REQUIRED; у VERIFIED профиль не падает (Р-18)', async () => {
     const { expertId, docIds } = await verifiedExpert(PHONE_V5);
-    await request(app.getHttpServer())
-      .post(`/v1/admin/verification/documents/${docIds[0]}/decision`)
-      .set(ADMIN)
+    await asOperator(
+      'post',
+      `/v1/admin/verification/documents/${docIds[0]}/decision`,
+    )
       .send({ approve: false })
       .expect(400); // без comment
 
-    await request(app.getHttpServer())
-      .post(`/v1/admin/verification/documents/${docIds[0]}/decision`)
-      .set(ADMIN)
+    await asOperator(
+      'post',
+      `/v1/admin/verification/documents/${docIds[0]}/decision`,
+    )
       .send({ approve: false, comment: 'Скан нечитаем' })
       .expect(200);
 
@@ -274,9 +341,10 @@ describe('Admin verification (e2e)', () => {
 
   it('reject документа у PENDING-эксперта возвращает эксперта в DRAFT', async () => {
     const { expertId, docIds } = await submittedExpert(PHONE_V6);
-    await request(app.getHttpServer())
-      .post(`/v1/admin/verification/documents/${docIds[0]}/decision`)
-      .set(ADMIN)
+    await asOperator(
+      'post',
+      `/v1/admin/verification/documents/${docIds[0]}/decision`,
+    )
       .send({ approve: false, comment: 'Плохое качество' })
       .expect(200);
 
@@ -288,18 +356,14 @@ describe('Admin verification (e2e)', () => {
     expect(doc!.status).toBe('REUPLOAD_REQUIRED');
   });
 
-  it('block требует reason, ставит isBlocked и NOT_ACCEPTING; идемпотентен; unblock снимает', async () => {
+  it('block требует reason, ставит isBlocked и NOT_ACCEPTING; идемпотентен; unblock снимает; actorId в audit — id сотрудника', async () => {
     const { expertId } = await verifiedExpert(PHONE_V1);
 
-    await request(app.getHttpServer())
-      .post(`/v1/admin/experts/${expertId}/block`)
-      .set(ADMIN)
+    await asOperator('post', `/v1/admin/experts/${expertId}/block`)
       .send({})
       .expect(400);
 
-    await request(app.getHttpServer())
-      .post(`/v1/admin/experts/${expertId}/block`)
-      .set(ADMIN)
+    await asOperator('post', `/v1/admin/experts/${expertId}/block`)
       .send({ reason: 'Жалобы на этику' })
       .expect(200);
 
@@ -309,9 +373,7 @@ describe('Admin verification (e2e)', () => {
     expect(blocked!.workStatus).toBe('NOT_ACCEPTING');
 
     // Повторный block обновляет reason (идемпотентность).
-    await request(app.getHttpServer())
-      .post(`/v1/admin/experts/${expertId}/block`)
-      .set(ADMIN)
+    await asOperator('post', `/v1/admin/experts/${expertId}/block`)
       .send({ reason: 'Повторная жалоба' })
       .expect(200);
     const reBlocked = await prisma.expert.findUnique({
@@ -319,10 +381,9 @@ describe('Admin verification (e2e)', () => {
     });
     expect(reBlocked!.blockedReason).toBe('Повторная жалоба');
 
-    await request(app.getHttpServer())
-      .post(`/v1/admin/experts/${expertId}/unblock`)
-      .set(ADMIN)
-      .expect(200);
+    await asOperator('post', `/v1/admin/experts/${expertId}/unblock`).expect(
+      200,
+    );
     const unblocked = await prisma.expert.findUnique({
       where: { id: expertId },
     });
@@ -334,12 +395,114 @@ describe('Admin verification (e2e)', () => {
     expect(audit.map((a) => a.transition)).toEqual(
       expect.arrayContaining(['expert.blocked', 'expert.unblocked']),
     );
+    const blockEntries = audit.filter((a) =>
+      ['expert.blocked', 'expert.unblocked'].includes(a.transition),
+    );
+    expect(
+      blockEntries.every((a) => a.actorId === verificationOperator.id),
+    ).toBe(true);
   });
 
-  it('неверный X-Admin-Token -> 401', async () => {
+  it('старый X-Admin-Token больше не работает на этих маршрутах -> 401', async () => {
+    const res = await request(app.getHttpServer())
+      .get('/v1/admin/verification/queue')
+      .set('X-Admin-Token', 'dev-admin-token-0123456789abcdef')
+      .expect(401);
+    expect(res.body.error.code).toBe('UNAUTHORIZED');
+  });
+
+  it('без токена -> 401 на всех пяти маршрутах', async () => {
     await request(app.getHttpServer())
       .get('/v1/admin/verification/queue')
-      .set('X-Admin-Token', 'wrong-token')
       .expect(401);
+    await request(app.getHttpServer())
+      .post(`/v1/admin/verification/documents/${DUMMY_ID}/decision`)
+      .send({ approve: true })
+      .expect(401);
+    await request(app.getHttpServer())
+      .post(`/v1/admin/verification/${DUMMY_ID}/decision`)
+      .send({ approve: true })
+      .expect(401);
+    await request(app.getHttpServer())
+      .post(`/v1/admin/experts/${DUMMY_ID}/block`)
+      .send({ reason: 'x' })
+      .expect(401);
+    await request(app.getHttpServer())
+      .post(`/v1/admin/experts/${DUMMY_ID}/unblock`)
+      .expect(401);
+  });
+
+  it('токен клиента (не сотрудника админки) -> 403 ADMIN_FORBIDDEN на всех пяти маршрутах', async () => {
+    const deviceId = `${GUEST_DEVICE_PREFIX}${Date.now()}`;
+    const client = await guestClient(app, deviceId);
+    const clientAuth: [string, string] = [
+      'Authorization',
+      `Bearer ${client.accessToken}`,
+    ];
+
+    const cases: Array<[string, string]> = [
+      ['get', '/v1/admin/verification/queue'],
+      ['post', `/v1/admin/verification/documents/${DUMMY_ID}/decision`],
+      ['post', `/v1/admin/verification/${DUMMY_ID}/decision`],
+      ['post', `/v1/admin/experts/${DUMMY_ID}/block`],
+      ['post', `/v1/admin/experts/${DUMMY_ID}/unblock`],
+    ];
+    for (const [method, url] of cases) {
+      const res = await (request(app.getHttpServer()) as any)
+        [method](url)
+        .set(...clientAuth)
+        .send({ approve: true, reason: 'x' })
+        .expect(403);
+      expect(res.body.error.code).toBe('ADMIN_FORBIDDEN');
+    }
+  });
+
+  it('роль FINANCE_CONTROL (без VERIFICATION_OPERATOR) -> 403 ADMIN_FORBIDDEN на всех пяти маршрутах', async () => {
+    const finance = await adminUser(
+      app,
+      [AdminRole.FINANCE_CONTROL],
+      uniqueAdminEmail('finance'),
+    );
+
+    const cases: Array<[string, string]> = [
+      ['get', '/v1/admin/verification/queue'],
+      ['post', `/v1/admin/verification/documents/${DUMMY_ID}/decision`],
+      ['post', `/v1/admin/verification/${DUMMY_ID}/decision`],
+      ['post', `/v1/admin/experts/${DUMMY_ID}/block`],
+      ['post', `/v1/admin/experts/${DUMMY_ID}/unblock`],
+    ];
+    for (const [method, url] of cases) {
+      const res = await (request(app.getHttpServer()) as any)
+        [method](url)
+        .set(...finance.authHeader)
+        .send({ approve: true, reason: 'x' })
+        .expect(403);
+      expect(res.body.error.code).toBe('ADMIN_FORBIDDEN');
+    }
+  });
+
+  it('роль SUPERADMIN проходит на очередь, block и unblock без роли VERIFICATION_OPERATOR', async () => {
+    const superadmin = await adminUser(
+      app,
+      [AdminRole.SUPERADMIN],
+      uniqueAdminEmail('superadmin'),
+    );
+    const { expertId } = await verifiedExpert(PHONE_V7);
+
+    await request(app.getHttpServer())
+      .get('/v1/admin/verification/queue')
+      .set(...superadmin.authHeader)
+      .expect(200);
+
+    await request(app.getHttpServer())
+      .post(`/v1/admin/experts/${expertId}/block`)
+      .set(...superadmin.authHeader)
+      .send({ reason: 'SUPERADMIN test' })
+      .expect(200);
+
+    await request(app.getHttpServer())
+      .post(`/v1/admin/experts/${expertId}/unblock`)
+      .set(...superadmin.authHeader)
+      .expect(200);
   });
 });

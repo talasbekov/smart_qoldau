@@ -6,8 +6,7 @@ import { PrismaService } from '../src/prisma/prisma.service';
 import { RedisService } from '../src/redis/redis.service';
 import { SMS_PROVIDER_TOKEN, SmsProvider } from '../src/auth/sms/sms.provider';
 import { createApp } from './utils/create-app';
-
-const ADMIN = { 'X-Admin-Token': 'dev-admin-token-0123456789abcdef' };
+import { AdminAuth, verificationOperatorAuth } from './utils/admin-helpers';
 
 // Номера спека задачи 9 (E2, сквозной lifecycle), не пересекаются с другими спеками.
 const PHONE_L1 = '+77079000001';
@@ -57,6 +56,7 @@ describe('Expert lifecycle e2e (сквозной сценарий, задача 
   let app: INestApplication;
   let prisma: PrismaService;
   let redis: RedisService;
+  let operatorAuth: AdminAuth;
   const registeredExpertIds: string[] = [];
 
   async function cleanup() {
@@ -100,6 +100,7 @@ describe('Expert lifecycle e2e (сквозной сценарий, задача 
     );
     prisma = app.get(PrismaService);
     redis = app.get(RedisService);
+    operatorAuth = await verificationOperatorAuth(app);
   });
 
   beforeEach(() => cleanup());
@@ -155,7 +156,7 @@ describe('Expert lifecycle e2e (сквозной сценарий, задача 
     for (const doc of docs) {
       await request(app.getHttpServer())
         .post(`/v1/admin/verification/documents/${doc.id}/decision`)
-        .set(ADMIN)
+        .set(...operatorAuth.authHeader)
         .send({ approve: true })
         .expect(200);
     }
@@ -165,7 +166,7 @@ describe('Expert lifecycle e2e (сквозной сценарий, задача 
   async function adminApproveExpert(expertId: string) {
     return request(app.getHttpServer())
       .post(`/v1/admin/verification/${expertId}/decision`)
-      .set(ADMIN)
+      .set(...operatorAuth.authHeader)
       .send({ approve: true })
       .expect(200);
   }
@@ -240,7 +241,7 @@ describe('Expert lifecycle e2e (сквозной сценарий, задача 
 
     const rejected = await request(app.getHttpServer())
       .post(`/v1/admin/verification/documents/${identityDoc.id}/decision`)
-      .set(ADMIN)
+      .set(...operatorAuth.authHeader)
       .send({ approve: false, comment: 'Скан нечитаем' })
       .expect(200);
     expect(rejected.body).toBeDefined();

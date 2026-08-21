@@ -5,8 +5,7 @@ import { AppModule } from '../src/app.module';
 import { PrismaService } from '../src/prisma/prisma.service';
 import { SMS_PROVIDER_TOKEN, SmsProvider } from '../src/auth/sms/sms.provider';
 import { createApp } from './utils/create-app';
-
-const ADMIN = { 'X-Admin-Token': 'dev-admin-token-0123456789abcdef' };
+import { AdminAuth, verificationOperatorAuth } from './utils/admin-helpers';
 
 // Номера спека задачи 8 (E2), не пересекаются с другими спеками.
 const PHONE_P1 = '+77074000001';
@@ -44,6 +43,7 @@ function makeDto(overrides: Partial<Record<string, unknown>> = {}) {
 describe('Experts public (e2e)', () => {
   let app: INestApplication;
   let prisma: PrismaService;
+  let operatorAuth: AdminAuth;
 
   async function cleanup() {
     const users = await prisma.user.findMany({
@@ -80,6 +80,7 @@ describe('Experts public (e2e)', () => {
         .useClass(FakeSmsProvider),
     );
     prisma = app.get(PrismaService);
+    operatorAuth = await verificationOperatorAuth(app);
   });
 
   beforeEach(() => cleanup());
@@ -161,13 +162,13 @@ describe('Experts public (e2e)', () => {
     for (const id of result.docIds) {
       await request(app.getHttpServer())
         .post(`/v1/admin/verification/documents/${id}/decision`)
-        .set(ADMIN)
+        .set(...operatorAuth.authHeader)
         .send({ approve: true })
         .expect(200);
     }
     await request(app.getHttpServer())
       .post(`/v1/admin/verification/${result.expertId}/decision`)
-      .set(ADMIN)
+      .set(...operatorAuth.authHeader)
       .send({ approve: true })
       .expect(200);
     return result;
@@ -176,7 +177,7 @@ describe('Experts public (e2e)', () => {
   async function blockExpert(expertId: string) {
     await request(app.getHttpServer())
       .post(`/v1/admin/experts/${expertId}/block`)
-      .set(ADMIN)
+      .set(...operatorAuth.authHeader)
       .send({ reason: 'Жалобы' })
       .expect(200);
   }
