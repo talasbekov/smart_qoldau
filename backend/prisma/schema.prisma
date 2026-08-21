@@ -447,3 +447,46 @@ model ProviderEvent {
   @@unique([kind, providerEventId])
   @@map("provider_events")
 }
+
+enum DevicePlatform {
+  ios
+  android
+}
+
+// Push-токен устройства (E9). Токен уникален ГЛОБАЛЬНО: повторная
+// регистрация тем же токеном другим пользователем — перепривязка (телефон
+// сменил аккаунт), делается upsert'ом в DevicesService, не вторым create.
+// Без FK на users (конвенция E3+): связь строкой, join вручную.
+model Device {
+  id        String         @id @default(uuid())
+  userId    String         @map("user_id")
+  platform  DevicePlatform
+  token     String         @unique
+  locale    String         @default("ru") // локаль устройства на момент регистрации
+  createdAt DateTime       @default(now()) @map("created_at")
+  updatedAt DateTime       @updatedAt @map("updated_at")
+  @@index([userId])
+  @@map("devices")
+}
+
+// In-app уведомление (E9, §5.8). title/body — снапшот шаблона по локали
+// получателя на момент dispatch. Поля доставки — данные метрики §11.6:
+// pushSentAt (шина отправила провайдеру), pushDeliveredAt (ack устройства),
+// smsFallbackAt (SMS-добивка критичного пуша), readAt (прочитано в центре).
+model Notification {
+  id              String    @id @default(uuid())
+  userId          String    @map("user_id")
+  type            String
+  title           String
+  body            String
+  data            Json
+  pushSentAt      DateTime? @map("push_sent_at")
+  pushDeliveredAt DateTime? @map("push_delivered_at")
+  smsFallbackAt   DateTime? @map("sms_fallback_at")
+  readAt          DateTime? @map("read_at")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  @@index([userId, createdAt])
+  @@index([userId, readAt])
+  @@index([type, pushDeliveredAt, smsFallbackAt]) // выборка sweep-fallback
+  @@map("notifications")
+}

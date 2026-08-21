@@ -1,4 +1,4 @@
-import { Inject, Injectable, forwardRef } from '@nestjs/common';
+import { Inject, Injectable, Logger, forwardRef } from '@nestjs/common';
 import { CandidateResponse, RequestStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
@@ -9,6 +9,7 @@ import {
   OfferTimerRegistry,
 } from './offer-timer.registry';
 import { EventsService } from '../ws/events.service';
+import { NotificationsService } from '../notifications/notifications.service';
 
 const HOTLINES = ['150', '103', '112'];
 
@@ -35,12 +36,15 @@ const CALLBACK_AGE_MS = 300_000;
 // request_candidates_pending_per_expert_uq в schema.prisma).
 @Injectable()
 export class EscalationService {
+  private readonly logger = new Logger(EscalationService.name);
+
   constructor(
     private prisma: PrismaService,
     private audit: AuditService,
     private clock: ClockService,
     private matching: MatchingService,
     private events: EventsService,
+    private notifications: NotificationsService,
     @Inject(forwardRef(() => OFFER_TIMER_REGISTRY))
     private offerTimer: OfferTimerRegistry,
   ) {}
@@ -146,6 +150,14 @@ export class EscalationService {
       }
     }
 
+    // Пакетный lookup userId по expertId для критичного пуша (E9, задача
+    // 5) — одним запросом на всю пачку broadcast-офферов, а не по одному.
+    const expertUsers = await this.prisma.expert.findMany({
+      where: { id: { in: createdOffers.map((o) => o.expertId) } },
+      select: { id: true, userId: true },
+    });
+    const userIdByExpertId = new Map(expertUsers.map((e) => [e.id, e.userId]));
+
     const createdOfferIds = createdOffers.map((o) => o.id);
     for (const offer of createdOffers) {
       await this.offerTimer.schedule(offer.id, deadlineAt);
@@ -157,6 +169,21 @@ export class EscalationService {
         clientCode,
         deadlineAt,
       });
+
+      // Критичный пуш эксперту — как в обычном offerToNext (fire-and-forget,
+      // dispatch() сам никогда не бросает). Батч-резолв userId выше (одним
+      // запросом на всю пачку) — per-item dispatchToExpert тут дал бы N+1.
+      const userId = userIdByExpertId.get(offer.expertId);
+      if (userId) {
+        await this.notifications.dispatch(userId, 'offer.incoming', {
+          offerId: offer.id,
+          requestId,
+        });
+      } else {
+        this.logger.warn(
+          `broadcast offer.incoming: эксперт ${offer.expertId} не резолвится в userId, пуш не отправлен`,
+        );
+      }
     }
 
     await this.audit.log({

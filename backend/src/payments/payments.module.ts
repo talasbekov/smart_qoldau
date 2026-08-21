@@ -5,6 +5,7 @@ import { AuditModule } from '../audit/audit.module';
 import { ClockModule } from '../common/clock/clock.module';
 import { ConsultationsModule } from '../consultations/consultations.module';
 import { ExpertsModule } from '../experts/experts.module';
+import { NotificationsModule } from '../notifications/notifications.module';
 import { PaymentMethodsController } from './payment-methods.controller';
 import { PaymentMethodsService } from './payment-methods.service';
 import { PaymentsController } from './payments.controller';
@@ -30,6 +31,7 @@ import { PaymentsWebhookController } from './payments-webhook.controller';
     ClockModule,
     forwardRef(() => ConsultationsModule),
     ExpertsModule,
+    NotificationsModule,
   ],
   controllers: [
     PaymentMethodsController,

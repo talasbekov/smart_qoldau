@@ -9,6 +9,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import { StorageService } from '../storage/storage.service';
 import { PresenceService } from '../presence/presence.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import { apiError } from '../common/filters/app-exception.filter';
 import { DecisionDto } from './dto/decision.dto';
 import { BlockExpertDto } from './dto/block.dto';
@@ -26,6 +27,7 @@ export class VerificationService {
     private audit: AuditService,
     private storage: StorageService,
     private presence: PresenceService,
+    private notifications: NotificationsService,
   ) {}
 
   async queue(): Promise<QueueEntryDto[]> {
@@ -155,6 +157,15 @@ export class VerificationService {
         : 'expert.verification_rejected',
       payload: dto.approve ? undefined : { comment: dto.comment },
     });
+
+    // In-app + push (E9, задача 6): dispatch() сам никогда не бросает
+    // (fire-and-forget) — сбой шины уведомлений не откатывает уже
+    // зафиксированное решение.
+    await this.notifications.dispatch(
+      updated.userId,
+      dto.approve ? 'verification.approved' : 'verification.rejected',
+      { status: newStatus },
+    );
 
     return this.toMeDto(updated);
   }

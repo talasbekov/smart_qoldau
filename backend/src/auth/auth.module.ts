@@ -6,8 +6,9 @@ import { AuditModule } from '../audit/audit.module';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { JwtStrategy } from './jwt.strategy';
-import { SMS_PROVIDER_TOKEN } from './sms/sms.provider';
+import { SMS_PROVIDER_TOKEN, SmsProvider } from './sms/sms.provider';
 import { SmsDevProvider } from './sms/sms.dev.provider';
+import { MobizonSmsProvider } from './sms/sms.mobizon.provider';
 
 @Module({
   imports: [
@@ -30,7 +31,19 @@ import { SmsDevProvider } from './sms/sms.dev.provider';
   providers: [
     AuthService,
     JwtStrategy,
-    { provide: SMS_PROVIDER_TOKEN, useClass: SmsDevProvider },
+    {
+      provide: SMS_PROVIDER_TOKEN,
+      // Фабрика по SMS_PROVIDER: 'mobizon' -> боевой адаптер (долг E1),
+      // иначе -> dev-провайдер (лог вместо реальной отправки).
+      useFactory: (config: ConfigService): SmsProvider =>
+        config.get<string>('SMS_PROVIDER') === 'mobizon'
+          ? new MobizonSmsProvider(config)
+          : new SmsDevProvider(),
+      inject: [ConfigService],
+    },
   ],
+  // SMS_PROVIDER_TOKEN нужен и вне auth — SMS-fallback критичных
+  // уведомлений (E9, задача 5) шлёт добивку тем же портом/провайдером.
+  exports: [SMS_PROVIDER_TOKEN],
 })
 export class AuthModule {}

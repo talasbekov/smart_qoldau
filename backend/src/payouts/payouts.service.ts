@@ -16,6 +16,7 @@ import {
   LedgerService,
 } from '../ledger/ledger.service';
 import { PaymentProviderPort } from '../payments/provider/payment-provider.port';
+import { NotificationsService } from '../notifications/notifications.service';
 import { PayoutProviderPort } from './provider/payout-provider.port';
 import { RequestPayoutDto } from './dto/request-payout.dto';
 import { PayoutDto } from './dto/payout.dto';
@@ -41,6 +42,7 @@ export class PayoutsService {
     private paymentProvider: PaymentProviderPort,
     private payoutProvider: PayoutProviderPort,
     private events: EventsService,
+    private notifications: NotificationsService,
   ) {}
 
   // GET /v1/experts/me/balance. available == balance: резерв вывода
@@ -207,7 +209,7 @@ export class PayoutsService {
     const skip = filters.skip ?? 0;
     const payouts = await this.prisma.payout.findMany({
       where: { status: status ?? PayoutStatus.PENDING_REVIEW },
-      orderBy: { createdAt: 'asc' },
+      orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
       take,
       skip,
     });
@@ -320,6 +322,19 @@ export class PayoutsService {
       status: PayoutStatus.REJECTED,
       rejectReason: reason,
     });
+
+    // In-app + push (E9, задача 6): dispatchToExpert сам никогда не бросает
+    // (fire-and-forget) — сбой шины уведомлений не откатывает уже
+    // зафиксированный отказ и компенсирующую проводку.
+    await this.notifications.dispatchToExpert(
+      payout.expertId,
+      'payout.rejected',
+      {
+        reason,
+        amountTiyn: payout.amountTiyn,
+        status: PayoutStatus.REJECTED,
+      },
+    );
   }
 
   private async notPendingError(payoutId: string): Promise<never> {
@@ -348,7 +363,7 @@ export class PayoutsService {
 
     const payouts = await this.prisma.payout.findMany({
       where: { expertId },
-      orderBy: { createdAt: 'desc' },
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
       take,
       skip,
     });

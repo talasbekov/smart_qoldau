@@ -16,6 +16,7 @@ import { EventsService } from '../ws/events.service';
 import { NoShowService } from '../consultations/no-show.service';
 import { SettleRetryService } from '../payments/settle-retry.service';
 import { PayoutsService } from '../payouts/payouts.service';
+import { OfferPushFallbackService } from '../notifications/offer-push-fallback.service';
 
 export const OFFERS_DEADLINES_KEY = 'offers:deadlines';
 export const REQUESTS_RESCAN_KEY = 'requests:rescan';
@@ -47,6 +48,7 @@ export class OfferTimerService implements OfferTimerRegistry {
     private noShow: NoShowService,
     private settleRetry: SettleRetryService,
     private payouts: PayoutsService,
+    private offerPushFallback: OfferPushFallbackService,
   ) {}
 
   async schedule(offerId: string, deadlineAt: Date): Promise<void> {
@@ -90,6 +92,10 @@ export class OfferTimerService implements OfferTimerRegistry {
   //      Р-01 для Payment HELD старше 5 дней без исхода.
   //   7) ретрай отправки выводов (PayoutsService, E5): Payout PROCESSING
   //      без providerRefId — сбой между резервом и sendToCard.
+  //   8) SMS-fallback критичного пуша (OfferPushFallbackService, E9 Task 5):
+  //      offer.incoming без ack (pushDeliveredAt) спустя 10с -> ровно одно
+  //      SMS эксперту, если оффер по data.offerId ещё PENDING; иначе (уже
+  //      принят/отклонён/просрочен/отозван) — smsFallbackAt без SMS.
   // Возвращает число обработанных истёкших офферов (шаг 1).
   // Каждый шаг изолирован собственным try/catch: сбой одного (например,
   // транзиентная ошибка Redis в рескане) не блокирует остальные.
@@ -129,6 +135,11 @@ export class OfferTimerService implements OfferTimerRegistry {
       await this.payouts.retryStrandedSends();
     } catch (e) {
       this.logStepError('payoutRetry', e);
+    }
+    try {
+      await this.offerPushFallback.sweep();
+    } catch (e) {
+      this.logStepError('offerPushFallback', e);
     }
     return processed;
   }

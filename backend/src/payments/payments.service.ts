@@ -18,6 +18,8 @@ import {
   expertAccount,
   LedgerService,
 } from '../ledger/ledger.service';
+import { NotificationsService } from '../notifications/notifications.service';
+import { formatTenge } from '../notifications/notification-templates';
 import { PaymentProviderPort } from './provider/payment-provider.port';
 import { PayResultDto } from './dto/pay-result.dto';
 import { PaymentStatusDto } from './dto/payment-status.dto';
@@ -40,6 +42,7 @@ export class PaymentsService {
     private consultations: ConsultationsService,
     private provider: PaymentProviderPort,
     private ledger: LedgerService,
+    private notifications: NotificationsService,
   ) {}
 
   // POST /v1/consultations/:id/pay — только клиент-участник ACTIVE-
@@ -397,6 +400,14 @@ export class PaymentsService {
     this.events.emitToExpert(expertId, 'earning.credited', {
       consultationId: payment.consultationId,
       amountTiyn: netTiyn,
+    });
+
+    // Уведомление эксперту (E9, задача 6): dispatchToExpert сам никогда не
+    // бросает (fire-and-forget) — сбой шины уведомлений не откатывает уже
+    // зафиксированное начисление.
+    await this.notifications.dispatchToExpert(expertId, 'earning.credited', {
+      amountTiyn: netTiyn,
+      amountTenge: formatTenge(netTiyn),
     });
   }
 
