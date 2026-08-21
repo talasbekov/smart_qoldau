@@ -234,17 +234,25 @@ export class TicketsService {
   // проставляет firstReplyAt и переводит NEW -> IN_PROGRESS; повторные ответы
   // идемпотентны — firstReplyAt НЕ сдвигается, IN_PROGRESS не откатывается
   // назад. Тикет в RESOLVED -> 409 TICKET_ALREADY_RESOLVED (решённый тикет не
-  // переоткрывается ответом).
+  // переоткрывается ответом, сообщение не создаётся).
   //
-  // firstReplyAt/status проставляются условным updateMany (фильтр
-  // firstReplyAt: null), а не безусловной записью прочитанного выше
-  // ticket.firstReplyAt (финальное ревью E8a, п.4): при check-then-act два
-  // сотрудника, одновременно первыми ответившие в один NEW-тикет, оба видели
-  // бы firstReplyAt === null и оба писали бы СВОЙ now — победила бы
-  // транзакция с более поздним commit'ом, искажая метрику первой реакции.
-  // Условный апдейт гарантирует, что запись выигрывает ровно один вызов (тот
-  // же паттерн "victory by count", что approve()/reject() в
-  // payouts.service.ts).
+  // firstReplyAt/status проставляются условным updateMany с ДВУМЯ условиями
+  // в WHERE — firstReplyAt: null И status: not RESOLVED (финальное ревью
+  // E8a, п.4, вторая волна): одного firstReplyAt: null было недостаточно —
+  // если resolve() коммитится между предварительной проверкой ниже и этим
+  // updateMany, апдейт всё ещё видел бы firstReplyAt: null и откатывал бы
+  // status обратно в IN_PROGRESS поверх уже проставленного resolvedAt,
+  // оставляя недостижимую по стейт-машине комбинацию. count === 0 теперь
+  // двусмыслен: либо firstReplyAt уже стоит (легитимный повторный ответ),
+  // либо тикет успели решить конкурентно (должно дать 409). Разводим ПОСЛЕ
+  // updateMany обычным чтением статуса — это НЕ гонка: Postgres блокирует
+  // наш UPDATE, пока не закоммитится любая конкурентная транзакция над той
+  // же строкой (в т.ч. resolve()), и переоценивает WHERE против её
+  // результата — так что к моменту, когда updateMany вернул count, любое
+  // конкурентное изменение уже видно. RESOLVED к тому же терминален (нет
+  // перехода назад), поэтому и обратной гонки на этом чтении быть не может.
+  // Тот же паттерн "victory by count", что approve()/reject() в
+  // payouts.service.ts и resolve() ниже.
   async reply(
     admin: CurrentAdminPayload,
     id: string,
@@ -256,8 +264,27 @@ export class TicketsService {
 
     const now = this.clock.now();
 
-    const [, firstReplyUpdate] = await this.prisma.$transaction([
-      this.prisma.ticketMessage.create({
+    const isFirstReply = await this.prisma.$transaction(async (tx) => {
+      const firstReply = await tx.ticket.updateMany({
+        where: {
+          id,
+          status: { not: TicketStatus.RESOLVED },
+          firstReplyAt: null,
+        },
+        data: { status: TicketStatus.IN_PROGRESS, firstReplyAt: now },
+      });
+
+      if (firstReply.count === 0) {
+        const current = await tx.ticket.findUniqueOrThrow({
+          where: { id },
+          select: { status: true },
+        });
+        if (current.status === TicketStatus.RESOLVED) {
+          apiError('TICKET_ALREADY_RESOLVED', 'Обращение уже решено', 409);
+        }
+      }
+
+      await tx.ticketMessage.create({
         data: {
           ticketId: id,
           authorKind: 'staff',
@@ -265,13 +292,10 @@ export class TicketsService {
           body,
           createdAt: now,
         },
-      }),
-      this.prisma.ticket.updateMany({
-        where: { id, firstReplyAt: null },
-        data: { status: TicketStatus.IN_PROGRESS, firstReplyAt: now },
-      }),
-    ]);
-    const isFirstReply = firstReplyUpdate.count > 0;
+      });
+
+      return firstReply.count > 0;
+    });
 
     await this.audit.log({
       actorType: 'admin',
