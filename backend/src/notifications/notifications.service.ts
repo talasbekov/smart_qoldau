@@ -3,7 +3,9 @@ import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { ClockService } from '../common/clock/clock.service';
 import { EventsService } from '../ws/events.service';
+import { apiError } from '../common/filters/app-exception.filter';
 import { PushProviderPort } from './provider/push-provider.port';
+import { NotificationsListDto } from './dto/notifications-list.dto';
 import {
   CRITICAL_TYPES,
   NotificationLocale,
@@ -109,6 +111,70 @@ export class NotificationsService {
         where: { id: notification.id },
         data: { pushSentAt: this.clock.now() },
       });
+    }
+  }
+
+  // GET /v1/notifications — свои, новые сверху; unreadCount — по всем
+  // страницам (бейдж центра).
+  async list(
+    userId: string,
+    filters: { take?: number; skip?: number },
+  ): Promise<NotificationsListDto> {
+    const take = Math.min(filters.take ?? 20, 100);
+    const skip = filters.skip ?? 0;
+
+    const [items, unreadCount] = await Promise.all([
+      this.prisma.notification.findMany({
+        where: { userId },
+        orderBy: { createdAt: 'desc' },
+        take,
+        skip,
+      }),
+      this.prisma.notification.count({ where: { userId, readAt: null } }),
+    ]);
+
+    return {
+      items: items.map((n) => ({
+        id: n.id,
+        type: n.type,
+        title: n.title,
+        body: n.body,
+        data: n.data,
+        readAt: n.readAt,
+        createdAt: n.createdAt,
+      })),
+      unreadCount,
+    };
+  }
+
+  // POST /v1/notifications/read — без ids прочитать все свои; чужие id в
+  // списке просто не матчатся фильтром userId (не раскрываем 404-ом).
+  async markRead(userId: string, ids?: string[]): Promise<void> {
+    await this.prisma.notification.updateMany({
+      where: {
+        userId,
+        readAt: null,
+        ...(ids && ids.length ? { id: { in: ids } } : {}),
+      },
+      data: { readAt: this.clock.now() },
+    });
+  }
+
+  // POST /v1/notifications/:id/ack — устройство подтверждает доставку пуша.
+  // Первый ack фиксирует pushDeliveredAt (метрика §11.6), повтор — no-op.
+  async ack(userId: string, notificationId: string): Promise<void> {
+    const updated = await this.prisma.notification.updateMany({
+      where: { id: notificationId, userId, pushDeliveredAt: null },
+      data: { pushDeliveredAt: this.clock.now() },
+    });
+    if (updated.count === 0) {
+      const exists = await this.prisma.notification.findFirst({
+        where: { id: notificationId, userId },
+        select: { id: true },
+      });
+      if (!exists) {
+        apiError('NOTIFICATION_NOT_FOUND', 'Уведомление не найдено', 404);
+      }
     }
   }
 }

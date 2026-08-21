@@ -77,6 +77,9 @@ describe('OpenAPI (e2e)', () => {
       '/v1/devices',
       '/v1/devices/{token}',
       '/v1/me/locale',
+      '/v1/notifications',
+      '/v1/notifications/read',
+      '/v1/notifications/{id}/ack',
     ])
       expect(paths).toContain(p);
   });
