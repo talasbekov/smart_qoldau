@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { Server } from 'socket.io';
+import { Namespace, Server } from 'socket.io';
 
 // Тонкая обёртка над socket.io Server: комнаты user:{userId} и
 // expert:{expertId} (см. EventsGateway.handleConnection). Все эмиты —
@@ -26,10 +26,17 @@ export class EventsService {
   // Нужно чат-пушу (E9): онлайн-получатель видит сообщение в чате, пуш —
   // только офлайновому. Best-effort: при недоступном сервере считаем
   // офлайн (пуш лишний раз лучше, чем пропущенное сообщение).
+  // this.server — рантайм это Namespace ('/ws', см. EventsGateway), а не
+  // корневой Server: adapter лежит прямо на неймспейсе (namespace.adapter —
+  // свойство Adapter), НЕ под namespace.sockets (там Map<SocketId, Socket>
+  // без .adapter) и не как у Server (там adapter() — метод смены класса
+  // адаптера, не инстанс). Поле типизировано как Server (см. setServer) —
+  // приводим к Namespace ради .adapter.rooms.
   isUserConnected(userId: string): boolean {
     try {
       if (!this.server) return false;
-      const room = this.server.sockets.adapter.rooms.get(`user:${userId}`);
+      const namespace = this.server as unknown as Namespace;
+      const room = namespace.adapter.rooms.get(`user:${userId}`);
       return !!room && room.size > 0;
     } catch {
       return false;

@@ -11,9 +11,12 @@ import {
 } from '@nestjs/websockets';
 import { HttpException } from '@nestjs/common';
 import { Server, Socket } from 'socket.io';
+import { Consultation } from '@prisma/client';
 import { ExpertsService } from '../experts/experts.service';
 import { EventsService } from './events.service';
-import { ChatService } from '../chat/chat.service';
+import { ChatService, SenderRole } from '../chat/chat.service';
+import { PrismaService } from '../prisma/prisma.service';
+import { NotificationsService } from '../notifications/notifications.service';
 
 interface JwtPayload {
   sub: string;
@@ -53,6 +56,8 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection {
     private experts: ExpertsService,
     private events: EventsService,
     private chat: ChatService,
+    private prisma: PrismaService,
+    private notifications: NotificationsService,
   ) {}
 
   afterInit(server: Server): void {
@@ -128,6 +133,12 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection {
         'chat.message',
         message,
       );
+
+      // Чат-пуш офлайн-получателю (E9, задача 7): сообщение уже сохранено и
+      // разослано выше — pushOfflineRecipient сама глотает свои ошибки
+      // (как dispatch()), сбой push-логики никогда не всплывёт в
+      // client.emit('chat.error') отправителю.
+      await this.pushOfflineRecipient(resolved.consultation, resolved.role);
     } catch (e) {
       const code =
         e instanceof HttpException
@@ -163,5 +174,44 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection {
     } catch {
       // не участник/консультация не найдена -> молча игнор
     }
+  }
+
+  // Получатель — вторая сторона диалога относительно отправителя (role).
+  // Офлайн (нет живого сокета в комнате user:{id}) -> dispatch chat.message
+  // без текста сообщения, только consultationId для диплинка. Онлайн ->
+  // ничего не шлём (центр не дублирует живой чат). notifications.dispatch()
+  // сам никогда не бросает; try/catch здесь — на случай сбоя резолва
+  // получателя (expert.findUnique), чтобы он тоже не всплыл в
+  // client.emit('chat.error') вызывающего handleChatSend.
+  private async pushOfflineRecipient(
+    consultation: Consultation,
+    senderRole: SenderRole,
+  ): Promise<void> {
+    try {
+      const recipientUserId =
+        senderRole === 'client'
+          ? await this.expertUserId(consultation.expertId)
+          : consultation.clientUserId;
+      if (recipientUserId && !this.events.isUserConnected(recipientUserId)) {
+        await this.notifications.dispatch(recipientUserId, 'chat.message', {
+          consultationId: consultation.id,
+        });
+      }
+    } catch (e) {
+      this.logger.error(
+        `chat push для консультации ${consultation.id} не отправлен: ${
+          e instanceof Error ? e.message : String(e)
+        }`,
+        e instanceof Error ? e.stack : undefined,
+      );
+    }
+  }
+
+  private async expertUserId(expertId: string): Promise<string | null> {
+    const expert = await this.prisma.expert.findUnique({
+      where: { id: expertId },
+      select: { userId: true },
+    });
+    return expert?.userId ?? null;
   }
 }
