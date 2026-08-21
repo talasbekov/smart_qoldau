@@ -5,6 +5,8 @@ import { AuditModule } from '../audit/audit.module';
 import { AdminBootstrapService } from './admin-bootstrap.service';
 import { AdminAuthController } from './admin-auth.controller';
 import { AdminAuthService } from './admin-auth.service';
+import { AdminStaffController } from './admin-staff.controller';
+import { AdminStaffService } from './admin-staff.service';
 
 @Module({
   imports: [
@@ -25,7 +27,7 @@ import { AdminAuthService } from './admin-auth.service';
       }),
     }),
   ],
-  controllers: [AdminAuthController],
-  providers: [AdminBootstrapService, AdminAuthService],
+  controllers: [AdminAuthController, AdminStaffController],
+  providers: [AdminBootstrapService, AdminAuthService, AdminStaffService],
 })
 export class AdminModule {}
