@@ -27,6 +27,7 @@ import { MediaModule } from './media/media.module';
 import { ReviewsModule } from './reviews/reviews.module';
 import { LedgerModule } from './ledger/ledger.module';
 import { PaymentsModule } from './payments/payments.module';
+import { PayoutsModule } from './payouts/payouts.module';
 
 @Module({
   imports: [
@@ -56,6 +57,7 @@ import { PaymentsModule } from './payments/payments.module';
     ReviewsModule,
     LedgerModule,
     PaymentsModule,
+    PayoutsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
