@@ -1,5 +1,6 @@
 import { Test } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
+import { AdminRole } from '@prisma/client';
 import request from 'supertest';
 import { createHmac } from 'crypto';
 import { AppModule } from '../src/app.module';
@@ -10,7 +11,7 @@ import { LedgerService, expertAccount } from '../src/ledger/ledger.service';
 import { OfferTimerService } from '../src/requests/offer-timer.service';
 import { SMS_PROVIDER_TOKEN, SmsProvider } from '../src/auth/sms/sms.provider';
 import { createApp } from './utils/create-app';
-import { AdminAuth, verificationOperatorAuth } from './utils/admin-helpers';
+import { AdminAuth, adminUser } from './utils/admin-helpers';
 import {
   registeredExpertUser,
   acceptingExpert as acceptingExpertHelper,
@@ -43,8 +44,10 @@ const ALL_PHONES = [
 
 // X-Admin-Token остаётся только для /admin/payouts (задача 5 E8a, ещё не
 // переведена на роли); /admin/verification/* — через operatorAuth ниже
-// (задача 4 E8a, RolesGuard + VERIFICATION_OPERATOR).
+// (задача 4 E8a, RolesGuard + VERIFICATION_OPERATOR): одноразовый сотрудник
+// спека, явный email со своим префиксом, чистится в cleanup().
 const ADMIN = { 'X-Admin-Token': 'dev-admin-token-0123456789abcdef' };
+const ADMIN_EMAIL_PREFIX = 'notifications-domain-e2e-operator-';
 const VISA_PAN = '4111111111111111';
 const CARD = { pan: VISA_PAN, expiry: '12/28', holderName: 'Aigul S' };
 const PAYOUT_WEBHOOK_SECRET =
@@ -226,6 +229,9 @@ describe('Уведомления доменных событий: деньги, 
       where: { entityId: { in: [...userIds, ...expertIds] } },
     });
     await prisma.user.deleteMany({ where: { id: { in: userIds } } });
+    await prisma.adminUser.deleteMany({
+      where: { email: { startsWith: ADMIN_EMAIL_PREFIX } },
+    });
     registeredExpertIds.length = 0;
 
     const keys = await redis.keys('mockpush:*');
@@ -246,7 +252,11 @@ describe('Уведомления доменных событий: деньги, 
     redis = app.get(RedisService);
     ledger = app.get(LedgerService);
     timer = app.get(OfferTimerService);
-    operatorAuth = await verificationOperatorAuth(app);
+    operatorAuth = await adminUser(
+      app,
+      [AdminRole.VERIFICATION_OPERATOR],
+      `${ADMIN_EMAIL_PREFIX}${Date.now()}@smartqoldau.kz`,
+    );
   });
 
   beforeEach(async () => {

@@ -1,5 +1,6 @@
 import { Test } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
+import { AdminRole } from '@prisma/client';
 import request from 'supertest';
 import { AppModule } from '../src/app.module';
 import { PrismaService } from '../src/prisma/prisma.service';
@@ -7,7 +8,11 @@ import { SMS_PROVIDER_TOKEN, SmsProvider } from '../src/auth/sms/sms.provider';
 import { createApp } from './utils/create-app';
 import { clientUser, guestClient } from './utils/client-helpers';
 import { acceptingExpert, verifiedExpert } from './utils/expert-helpers';
-import { AdminAuth, verificationOperatorAuth } from './utils/admin-helpers';
+import { AdminAuth, adminUser } from './utils/admin-helpers';
+
+// Одноразовый сотрудник спека (не общая фикстура) — явный email со своим
+// префиксом, чистится в cleanup() ниже (см. замечание ревью задачи 4).
+const ADMIN_EMAIL_PREFIX = 'favorites-e2e-operator-';
 
 // Номера/deviceId спека задачи 8 (E3, Избранное), не пересекаются с другими
 // спеками.
@@ -77,6 +82,9 @@ describe('Favorites (e2e)', () => {
       where: { entityId: { in: [...userIds, ...expertIds] } },
     });
     await prisma.user.deleteMany({ where: { id: { in: userIds } } });
+    await prisma.adminUser.deleteMany({
+      where: { email: { startsWith: ADMIN_EMAIL_PREFIX } },
+    });
   }
 
   beforeAll(async () => {
@@ -86,7 +94,11 @@ describe('Favorites (e2e)', () => {
         .useClass(FakeSmsProvider),
     );
     prisma = app.get(PrismaService);
-    operatorAuth = await verificationOperatorAuth(app);
+    operatorAuth = await adminUser(
+      app,
+      [AdminRole.VERIFICATION_OPERATOR],
+      `${ADMIN_EMAIL_PREFIX}${Date.now()}@smartqoldau.kz`,
+    );
   });
 
   // Финальная чистка обязательна: спек создаёт ACCEPTING-экспертов с

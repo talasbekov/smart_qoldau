@@ -14,10 +14,31 @@ export interface AdminAuth {
 
 let seq = 0;
 
+// Логинит уже существующего (id, email, известный пароль) сотрудника через
+// POST /v1/admin/auth/login и собирает AdminAuth. Общая часть adminUser() и
+// verificationOperatorAuth() — единственное, чем они отличаются, это как
+// строка admin_users создаётся (create разовой vs upsert фикстуры).
+async function loginAndBuildAuth(
+  app: INestApplication,
+  id: string,
+  email: string,
+  password: string,
+): Promise<AdminAuth> {
+  const res = await request(app.getHttpServer())
+    .post('/v1/admin/auth/login')
+    .send({ email, password })
+    .expect(200);
+
+  const token = res.body.accessToken as string;
+  return { id, token, authHeader: ['Authorization', `Bearer ${token}`] };
+}
+
 // Создаёт сотрудника напрямую через Prisma (bcrypt-хеш пароля) и логинит его
 // через POST /v1/admin/auth/login. email по умолчанию уникален (метка +
 // timestamp + счётчик), чтобы не конфликтовать со строками admin_users,
 // оставшимися в тестовой БД от прошлых прогонов (см. progress.md, задача 1).
+// Одноразовая строка — вызывающий спек обязан передать явный email со своим
+// префиксом и убрать её в собственном cleanup().
 export async function adminUser(
   app: INestApplication,
   roles: AdminRole[],
@@ -33,27 +54,19 @@ export async function adminUser(
     data: { email: resolvedEmail, passwordHash, roles },
   });
 
-  const res = await request(app.getHttpServer())
-    .post('/v1/admin/auth/login')
-    .send({ email: resolvedEmail, password })
-    .expect(200);
-
-  const token = res.body.accessToken as string;
-  return {
-    id: created.id,
-    token,
-    authHeader: ['Authorization', `Bearer ${token}`],
-  };
+  return loginAndBuildAuth(app, created.id, resolvedEmail, password);
 }
 
 const FIXTURE_OPERATOR_EMAIL =
   'e2e-fixture-verification-operator@smartqoldau.kz';
 const FIXTURE_OPERATOR_PASSWORD = 'e2e-fixture-operator-password-0123456789';
 
-// Общий фикстур-сотрудник с ролью VERIFICATION_OPERATOR для e2e-хелперов,
-// которые сами не владеют жизненным циклом спека (test/utils/expert-helpers.ts
-// и другие спеки, для которых верификация — лишь шаг подготовки данных, а не
-// предмет теста; сами тесты роли/доступа живут в admin-verification.e2e-spec.ts).
+// Общий фикстур-сотрудник с ролью VERIFICATION_OPERATOR — ТОЛЬКО для
+// test/utils/expert-helpers.ts: это низкоуровневый хелпер без своего
+// жизненного цикла спека, от которого транзитивно зависят ~26 e2e-спеков, не
+// владеющих его admin-строкой. Для любого спека, у которого ЕСТЬ собственный
+// cleanup()/afterAll (т.е. почти везде), используй adminUser() с явным email
+// и убирай строку в cleanup() спека — см. admin-verification.e2e-spec.ts.
 // В отличие от adminUser() строка НЕ одноразовая: upsert по фиксированному
 // email, без накопления мусора в admin_users между прогонами.
 export async function verificationOperatorAuth(
@@ -75,18 +88,10 @@ export async function verificationOperatorAuth(
     update: { passwordHash, roles: ['VERIFICATION_OPERATOR'], isActive: true },
   });
 
-  const res = await request(app.getHttpServer())
-    .post('/v1/admin/auth/login')
-    .send({
-      email: FIXTURE_OPERATOR_EMAIL,
-      password: FIXTURE_OPERATOR_PASSWORD,
-    })
-    .expect(200);
-
-  const token = res.body.accessToken as string;
-  return {
-    id: admin.id,
-    token,
-    authHeader: ['Authorization', `Bearer ${token}`],
-  };
+  return loginAndBuildAuth(
+    app,
+    admin.id,
+    FIXTURE_OPERATOR_EMAIL,
+    FIXTURE_OPERATOR_PASSWORD,
+  );
 }

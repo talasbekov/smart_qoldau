@@ -5,8 +5,13 @@ import { AppModule } from '../src/app.module';
 import { PrismaService } from '../src/prisma/prisma.service';
 import { RedisService } from '../src/redis/redis.service';
 import { SMS_PROVIDER_TOKEN, SmsProvider } from '../src/auth/sms/sms.provider';
+import { AdminRole } from '@prisma/client';
 import { createApp } from './utils/create-app';
-import { AdminAuth, verificationOperatorAuth } from './utils/admin-helpers';
+import { AdminAuth, adminUser } from './utils/admin-helpers';
+
+// Одноразовый сотрудник спека (не общая фикстура) — явный email со своим
+// префиксом, чистится в cleanup() ниже (см. замечание ревью задачи 4).
+const ADMIN_EMAIL_PREFIX = 'expert-lifecycle-e2e-operator-';
 
 // Номера спека задачи 9 (E2, сквозной lifecycle), не пересекаются с другими спеками.
 const PHONE_L1 = '+77079000001';
@@ -90,6 +95,9 @@ describe('Expert lifecycle e2e (сквозной сценарий, задача 
       where: { entityId: { in: [...userIds, ...expertIds] } },
     });
     await prisma.user.deleteMany({ where: { id: { in: userIds } } });
+    await prisma.adminUser.deleteMany({
+      where: { email: { startsWith: ADMIN_EMAIL_PREFIX } },
+    });
   }
 
   beforeAll(async () => {
@@ -100,7 +108,11 @@ describe('Expert lifecycle e2e (сквозной сценарий, задача 
     );
     prisma = app.get(PrismaService);
     redis = app.get(RedisService);
-    operatorAuth = await verificationOperatorAuth(app);
+    operatorAuth = await adminUser(
+      app,
+      [AdminRole.VERIFICATION_OPERATOR],
+      `${ADMIN_EMAIL_PREFIX}${Date.now()}@smartqoldau.kz`,
+    );
   });
 
   beforeEach(() => cleanup());
