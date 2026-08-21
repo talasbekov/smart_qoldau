@@ -64,6 +64,11 @@ export class NotificationsService {
         title,
         body,
         data: data as Prisma.InputJsonValue,
+        // Явно из ClockService (а не @default(now()) БД) — иначе 10с-окно
+        // SMS-fallback (OfferPushFallbackService, задача 5) не подчиняется
+        // виртуальному времени в e2e (тот же паттерн, что и Request.createdAt
+        // в RequestsService.create()).
+        createdAt: this.clock.now(),
       },
     });
 

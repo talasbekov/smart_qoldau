@@ -15,6 +15,7 @@ import { MatchingService } from '../matching/matching.service';
 import { ExpertsService } from '../experts/experts.service';
 import { EventsService } from '../ws/events.service';
 import { ConsultationsService } from '../consultations/consultations.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import { apiError } from '../common/filters/app-exception.filter';
 import { CreateRequestDto } from './dto/create-request.dto';
 import { RequestDto } from './dto/request.dto';
@@ -48,6 +49,7 @@ export class RequestsService {
     private experts: ExpertsService,
     private events: EventsService,
     private consultations: ConsultationsService,
+    private notifications: NotificationsService,
     @Inject(forwardRef(() => OFFER_TIMER_REGISTRY))
     private offerTimer: OfferTimerRegistry,
   ) {}
@@ -278,6 +280,21 @@ export class RequestsService {
       clientCode: request.clientCode,
       deadlineAt,
     });
+
+    // Критичный пуш эксперту (E9, задача 5): дублирует WS 'offer.new'
+    // отдельным каналом (push + in-app центр + SMS-fallback 10с без ack).
+    // dispatch() сам никогда не бросает (fire-and-forget) — сбой шины
+    // уведомлений не откатывает уже созданный оффер.
+    const expertUser = await this.prisma.expert.findUnique({
+      where: { id: nextExpertId },
+      select: { userId: true },
+    });
+    if (expertUser) {
+      await this.notifications.dispatch(expertUser.userId, 'offer.incoming', {
+        offerId: offer.id,
+        requestId,
+      });
+    }
 
     return true;
   }

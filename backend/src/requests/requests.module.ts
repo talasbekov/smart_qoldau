@@ -9,6 +9,7 @@ import { WsModule } from '../ws/ws.module';
 import { ConsultationsModule } from '../consultations/consultations.module';
 import { PaymentsModule } from '../payments/payments.module';
 import { PayoutsModule } from '../payouts/payouts.module';
+import { NotificationsModule } from '../notifications/notifications.module';
 import { RequestsService } from './requests.service';
 import { RequestsController } from './requests.controller';
 import { OffersController } from './offers.controller';
@@ -28,6 +29,7 @@ import { EscalationService } from './escalation.service';
     ConsultationsModule,
     PaymentsModule,
     PayoutsModule,
+    NotificationsModule,
   ],
   controllers: [RequestsController, OffersController],
   providers: [

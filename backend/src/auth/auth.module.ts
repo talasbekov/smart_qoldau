@@ -32,5 +32,8 @@ import { SmsDevProvider } from './sms/sms.dev.provider';
     JwtStrategy,
     { provide: SMS_PROVIDER_TOKEN, useClass: SmsDevProvider },
   ],
+  // SMS_PROVIDER_TOKEN нужен и вне auth — SMS-fallback критичных
+  // уведомлений (E9, задача 5) шлёт добивку тем же портом/провайдером.
+  exports: [SMS_PROVIDER_TOKEN],
 })
 export class AuthModule {}
