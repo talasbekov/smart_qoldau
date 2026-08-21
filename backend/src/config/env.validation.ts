@@ -17,6 +17,11 @@ export const envValidationSchema = Joi.object({
   S3_SECRET_KEY: Joi.string().required(),
   S3_BUCKET_DOCUMENTS: Joi.string().default('expert-documents'),
   ADMIN_API_TOKEN: Joi.string().min(24).required(),
+  // Опциональны: заданы оба — при пустой таблице admin_users сид создаст
+  // первого суперадмина (AdminBootstrapService). Не заданы — сид просто
+  // пропускается, боевой деплой без сида законен.
+  ADMIN_BOOTSTRAP_EMAIL: Joi.string().email().optional(),
+  ADMIN_BOOTSTRAP_PASSWORD: Joi.string().min(12).optional(),
   CHAT_ENCRYPTION_KEY: Joi.string().hex().length(64).required(),
   LIVEKIT_API_KEY: Joi.string().required(),
   LIVEKIT_API_SECRET: Joi.string().required(),

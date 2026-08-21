@@ -469,6 +469,29 @@ model Device {
   @@map("devices")
 }
 
+enum AdminRole {
+  VERIFICATION_OPERATOR
+  SUPPORT_OPERATOR
+  QUALITY_TEAM
+  FINANCE_CONTROL
+  SUPERADMIN
+}
+
+// Сотрудник админки (E8a). Роли — плоский список без гранулярных
+// permissions: набор разрешённых действий для каждой роли задаётся кодом
+// (guards), не данными. Один сотрудник может иметь несколько ролей.
+model AdminUser {
+  id           String      @id @default(uuid())
+  email        String      @unique
+  passwordHash String      @map("password_hash")
+  roles        AdminRole[]
+  isActive     Boolean     @default(true) @map("is_active")
+  lastLoginAt  DateTime?   @map("last_login_at")
+  createdAt    DateTime    @default(now()) @map("created_at")
+  updatedAt    DateTime    @updatedAt @map("updated_at")
+  @@map("admin_users")
+}
+
 // In-app уведомление (E9, §5.8). title/body — снапшот шаблона по локали
 // получателя на момент dispatch. Поля доставки — данные метрики §11.6:
 // pushSentAt (шина отправила провайдеру), pushDeliveredAt (ack устройства),
