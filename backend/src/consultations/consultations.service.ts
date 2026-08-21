@@ -322,20 +322,14 @@ export class ConsultationsService {
       ConsultationOutcome.CLIENT_CANCELLED,
     );
 
-    // Уведомление эксперту (E9, задача 6): dispatch() сам никогда не бросает
-    // (fire-and-forget) — сбой шины уведомлений не откатывает уже
+    // Уведомление эксперту (E9, задача 6): dispatchToExpert сам никогда не
+    // бросает (fire-and-forget) — сбой шины уведомлений не откатывает уже
     // зафиксированную отмену.
-    const expertUser = await this.prisma.expert.findUnique({
-      where: { id: consultation.expertId },
-      select: { userId: true },
-    });
-    if (expertUser) {
-      await this.notifications.dispatch(
-        expertUser.userId,
-        'consultation.cancelled',
-        { consultationId },
-      );
-    }
+    await this.notifications.dispatchToExpert(
+      consultation.expertId,
+      'consultation.cancelled',
+      { consultationId },
+    );
 
     await this.settleSafely(consultationId);
 

@@ -74,12 +74,18 @@ export class NoShowService {
 
       // In-app + push (E9, задача 6): dispatch() сам никогда не бросает
       // (fire-and-forget) — сбой шины уведомлений не откатывает уже
-      // проставленный noShowNotifiedAt.
+      // проставленный noShowNotifiedAt. Батч-резолв userId выше (одним
+      // запросом на всю пачку sweep-кандидатов) — per-item dispatchToExpert
+      // тут дал бы N+1.
       const userId = userIdByExpertId.get(consultation.expertId);
       if (userId) {
         await this.notifications.dispatch(userId, 'consultation.no_show_hint', {
           consultationId: consultation.id,
         });
+      } else {
+        this.logger.warn(
+          `consultation.no_show_hint: эксперт ${consultation.expertId} не резолвится в userId, пуш не отправлен`,
+        );
       }
     }
   }

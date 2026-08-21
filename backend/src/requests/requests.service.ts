@@ -283,18 +283,12 @@ export class RequestsService {
 
     // Критичный пуш эксперту (E9, задача 5): дублирует WS 'offer.new'
     // отдельным каналом (push + in-app центр + SMS-fallback 10с без ack).
-    // dispatch() сам никогда не бросает (fire-and-forget) — сбой шины
+    // dispatchToExpert сам никогда не бросает (fire-and-forget) — сбой шины
     // уведомлений не откатывает уже созданный оффер.
-    const expertUser = await this.prisma.expert.findUnique({
-      where: { id: nextExpertId },
-      select: { userId: true },
+    await this.notifications.dispatchToExpert(nextExpertId, 'offer.incoming', {
+      offerId: offer.id,
+      requestId,
     });
-    if (expertUser) {
-      await this.notifications.dispatch(expertUser.userId, 'offer.incoming', {
-        offerId: offer.id,
-        requestId,
-      });
-    }
 
     return true;
   }

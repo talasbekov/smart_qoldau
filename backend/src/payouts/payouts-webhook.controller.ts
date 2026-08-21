@@ -149,20 +149,14 @@ export class PayoutsWebhookController {
       status: PayoutStatus.PAID,
     });
 
-    // In-app + push (E9, задача 6): dispatch() сам никогда не бросает
+    // In-app + push (E9, задача 6): dispatchToExpert сам никогда не бросает
     // (fire-and-forget) — сбой шины уведомлений не откатывает уже
     // зафиксированную выплату.
-    const expertUser = await this.prisma.expert.findUnique({
-      where: { id: payout.expertId },
-      select: { userId: true },
+    await this.notifications.dispatchToExpert(payout.expertId, 'payout.paid', {
+      amountTiyn: payout.amountTiyn,
+      amountTenge: formatTenge(payout.amountTiyn),
+      maskedPan: payout.maskedPan,
+      status: PayoutStatus.PAID,
     });
-    if (expertUser) {
-      await this.notifications.dispatch(expertUser.userId, 'payout.paid', {
-        amountTiyn: payout.amountTiyn,
-        amountTenge: formatTenge(payout.amountTiyn),
-        maskedPan: payout.maskedPan,
-        status: PayoutStatus.PAID,
-      });
-    }
   }
 }

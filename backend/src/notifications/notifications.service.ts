@@ -119,6 +119,41 @@ export class NotificationsService {
     }
   }
 
+  // Диспатч эксперту по Expert.id: резолвит Expert.userId и зовёт dispatch.
+  // Снимает дублирование паттерна «findUnique(expert) -> if (userId)
+  // dispatch(...)», раньше повторённого по точкам вызова БЕЗ лога в ветке
+  // «эксперт не резолвится» — пропавший критичный пуш не оставлял следа.
+  // Fire-and-forget как и dispatch(): никогда не бросает (резолв userId
+  // обёрнут try/catch), сбой резолва или канала — только warn в лог.
+  async dispatchToExpert(
+    expertId: string,
+    type: NotificationType,
+    data: Record<string, unknown> = {},
+  ): Promise<void> {
+    let userId: string | undefined;
+    try {
+      const expert = await this.prisma.expert.findUnique({
+        where: { id: expertId },
+        select: { userId: true },
+      });
+      userId = expert?.userId;
+    } catch (e) {
+      this.logger.warn(
+        `dispatchToExpert: резолв userId эксперта ${expertId} для ${type} не удался: ${
+          e instanceof Error ? e.message : String(e)
+        }`,
+      );
+      return;
+    }
+    if (!userId) {
+      this.logger.warn(
+        `dispatchToExpert: эксперт ${expertId} не найден, уведомление ${type} не отправлено`,
+      );
+      return;
+    }
+    await this.dispatch(userId, type, data);
+  }
+
   // GET /v1/notifications — свои, новые сверху; unreadCount — по всем
   // страницам (бейдж центра).
   async list(
@@ -131,7 +166,12 @@ export class NotificationsService {
     const [items, unreadCount] = await Promise.all([
       this.prisma.notification.findMany({
         where: { userId },
-        orderBy: { createdAt: 'desc' },
+        // Вторичный ключ id — createdAt (ClockService.now(), мс-разрешение)
+        // может совпасть у нескольких записей при плотном диспатче
+        // (broadcast Р-16 подряд по N экспертам): без тай-брейкера
+        // skip/take по неполному ORDER BY недетерминированы между
+        // страницами — запись может исчезнуть или задвоиться.
+        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
         take,
         skip,
       }),

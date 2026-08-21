@@ -323,21 +323,18 @@ export class PayoutsService {
       rejectReason: reason,
     });
 
-    // In-app + push (E9, задача 6): dispatch() сам никогда не бросает
+    // In-app + push (E9, задача 6): dispatchToExpert сам никогда не бросает
     // (fire-and-forget) — сбой шины уведомлений не откатывает уже
     // зафиксированный отказ и компенсирующую проводку.
-    const expertUser = await this.prisma.expert.findUnique({
-      where: { id: payout.expertId },
-      select: { userId: true },
-    });
-    if (expertUser) {
-      await this.notifications.dispatch(expertUser.userId, 'payout.rejected', {
+    await this.notifications.dispatchToExpert(
+      payout.expertId,
+      'payout.rejected',
+      {
         reason,
-        rejectReason: reason,
         amountTiyn: payout.amountTiyn,
         status: PayoutStatus.REJECTED,
-      });
-    }
+      },
+    );
   }
 
   private async notPendingError(payoutId: string): Promise<never> {

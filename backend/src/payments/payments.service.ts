@@ -402,19 +402,13 @@ export class PaymentsService {
       amountTiyn: netTiyn,
     });
 
-    // Уведомление эксперту (E9, задача 6): dispatch() сам никогда не бросает
-    // (fire-and-forget) — сбой шины уведомлений не откатывает уже
+    // Уведомление эксперту (E9, задача 6): dispatchToExpert сам никогда не
+    // бросает (fire-and-forget) — сбой шины уведомлений не откатывает уже
     // зафиксированное начисление.
-    const expertUser = await this.prisma.expert.findUnique({
-      where: { id: expertId },
-      select: { userId: true },
+    await this.notifications.dispatchToExpert(expertId, 'earning.credited', {
+      amountTiyn: netTiyn,
+      amountTenge: formatTenge(netTiyn),
     });
-    if (expertUser) {
-      await this.notifications.dispatch(expertUser.userId, 'earning.credited', {
-        amountTiyn: netTiyn,
-        amountTenge: formatTenge(netTiyn),
-      });
-    }
   }
 
   private async voidAndRelease(

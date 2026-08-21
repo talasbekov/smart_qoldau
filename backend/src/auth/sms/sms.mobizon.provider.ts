@@ -56,9 +56,14 @@ export class MobizonSmsProvider implements SmsProvider {
     let data: MobizonResponse;
     try {
       data = (await response.json()) as MobizonResponse;
-    } catch {
+    } catch (e) {
+      // Логируем исходную ошибку парсинга для инцидент-разбора в проде —
+      // но НЕ apiKey (в теле ответа/ошибке парсинга его и так нет: apiKey
+      // уходит только в запрос, response.json() парсит ответ сервера).
       this.logger.error(
-        `Mobizon SMS: невалидный JSON в ответе при отправке на ${recipient}`,
+        `Mobizon SMS: невалидный JSON в ответе при отправке на ${recipient}: ${
+          e instanceof Error ? e.message : String(e)
+        }`,
       );
       throw new Error('Mobizon SMS: невалидный ответ API (не JSON)');
     }

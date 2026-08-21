@@ -11,8 +11,15 @@ describe('MobizonSmsProvider (юнит)', () => {
     return new MobizonSmsProvider(config);
   }
 
+  // global.fetch переопределяется присваиванием (не jest.spyOn) —
+  // jest.restoreAllMocks() его не восстанавливает. Без явного restore мок
+  // одного теста «протекает» в следующие сьюты, выполняющиеся в этом же
+  // Node-процессе (jest workerIdleMemoryLimit/шаринг воркеров).
+  const originalFetch = global.fetch;
+
   afterEach(() => {
     jest.restoreAllMocks();
+    global.fetch = originalFetch;
   });
 
   it('успешный ответ {code:0} -> resolve', async () => {

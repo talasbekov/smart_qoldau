@@ -1,4 +1,4 @@
-import { Inject, Injectable, forwardRef } from '@nestjs/common';
+import { Inject, Injectable, Logger, forwardRef } from '@nestjs/common';
 import { CandidateResponse, RequestStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
@@ -36,6 +36,8 @@ const CALLBACK_AGE_MS = 300_000;
 // request_candidates_pending_per_expert_uq в schema.prisma).
 @Injectable()
 export class EscalationService {
+  private readonly logger = new Logger(EscalationService.name);
+
   constructor(
     private prisma: PrismaService,
     private audit: AuditService,
@@ -169,13 +171,18 @@ export class EscalationService {
       });
 
       // Критичный пуш эксперту — как в обычном offerToNext (fire-and-forget,
-      // dispatch() сам никогда не бросает).
+      // dispatch() сам никогда не бросает). Батч-резолв userId выше (одним
+      // запросом на всю пачку) — per-item dispatchToExpert тут дал бы N+1.
       const userId = userIdByExpertId.get(offer.expertId);
       if (userId) {
         await this.notifications.dispatch(userId, 'offer.incoming', {
           offerId: offer.id,
           requestId,
         });
+      } else {
+        this.logger.warn(
+          `broadcast offer.incoming: эксперт ${offer.expertId} не резолвится в userId, пуш не отправлен`,
+        );
       }
     }
 
