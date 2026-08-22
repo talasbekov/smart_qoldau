@@ -358,8 +358,24 @@
   "@homeTopicsTitle": {
     "description": "Заголовок над сеткой тем консультаций на главном экране"
   },
+  "homeTopicsSubtitle": "или расскажите, что именно беспокоит",
+  "@homeTopicsSubtitle": {
+    "description": "Пояснение под заголовком над сеткой тем консультаций на главном экране (прототип 07-home.png)"
+  },
   "homeActiveConsultationTitle": "Активная консультация",
   "@homeActiveConsultationTitle": {
     "description": "Заголовок баннера активной консультации на главном экране"
+  },
+  "homeEmergencyNoticeTitle": "Экстренная ситуация",
+  "@homeEmergencyNoticeTitle": {
+    "description": "Заголовок информационной панели об экстренной ситуации на главном экране (прототип 07-home.png, ТЗ §4.3)"
+  },
+  "homeEmergencyNoticeBody": "У нас есть специалисты, готовые подключиться в приоритетном порядке прямо сейчас",
+  "@homeEmergencyNoticeBody": {
+    "description": "Текст информационной панели об экстренной ситуации на главном экране"
+  },
+  "emergencyDisclaimerText": "Платформа не заменяет экстренные службы. Если жизни или здоровью угрожает опасность, звоните напрямую:",
+  "@emergencyDisclaimerText": {
+    "description": "Локализованный текст SqEmergencyDisclaimer.disclaimerText (ТЗ §4.3) — виджет из packages/shared не может зависеть от l10n приложения, значение передаётся явно"
   }
 }

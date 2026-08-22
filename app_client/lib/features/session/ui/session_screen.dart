@@ -22,6 +22,11 @@ class SessionScreen extends StatelessWidget {
     final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       backgroundColor: SqColors.background,
+      // См. комментарий в `TopicScreen` — открывается через `context.push`
+      // с главной (баннер активной консультации), поэтому нуждается в той
+      // же стрелке возврата, что и остальные заглушки. Ревью раунда 1
+      // задачи 7.
+      appBar: AppBar(),
       body: Center(
         child: SqEmptyState(
           icon: Icons.construction_outlined,

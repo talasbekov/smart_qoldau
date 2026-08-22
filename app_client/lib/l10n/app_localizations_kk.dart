@@ -285,5 +285,19 @@ class AppLocalizationsKk extends AppLocalizations {
   String get homeTopicsTitle => 'Біз мына мәселелермен көмектесеміз:';
 
   @override
+  String get homeTopicsSubtitle => 'немесе сізді нақты не мазалайтынын айтыңыз';
+
+  @override
   String get homeActiveConsultationTitle => 'Белсенді кеңес';
+
+  @override
+  String get homeEmergencyNoticeTitle => 'Төтенше жағдай';
+
+  @override
+  String get homeEmergencyNoticeBody =>
+      'Бізде дәл қазір басымдық тәртібімен қосыла алатын мамандар бар';
+
+  @override
+  String get emergencyDisclaimerText =>
+      'Платформа шұғыл қызметтерді алмастырмайды. Егер өмірге немесе денсаулыққа қауіп төнсе, тікелей хабарласыңыз:';
 }

@@ -286,5 +286,19 @@ class AppLocalizationsRu extends AppLocalizations {
   String get homeTopicsTitle => 'Мы поможем вам с:';
 
   @override
+  String get homeTopicsSubtitle => 'или расскажите, что именно беспокоит';
+
+  @override
   String get homeActiveConsultationTitle => 'Активная консультация';
+
+  @override
+  String get homeEmergencyNoticeTitle => 'Экстренная ситуация';
+
+  @override
+  String get homeEmergencyNoticeBody =>
+      'У нас есть специалисты, готовые подключиться в приоритетном порядке прямо сейчас';
+
+  @override
+  String get emergencyDisclaimerText =>
+      'Платформа не заменяет экстренные службы. Если жизни или здоровью угрожает опасность, звоните напрямую:';
 }

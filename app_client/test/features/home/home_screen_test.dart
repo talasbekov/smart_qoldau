@@ -130,6 +130,36 @@ void main() {
         reason: 'тема ${topic.slug} должна быть отрисована',
       );
     }
+
+    // Ревью раунда 1 задачи 7: сверка с прототипом `07-home.png` была
+    // сделана только ради одного поля (счётчик онлайна) — эти два элемента
+    // из того же прототипа изначально были пропущены.
+    final l10n = AppLocalizations.of(
+      tester.element(find.byType(HomeScreen)),
+    )!;
+    expect(find.text(l10n.homeTopicsSubtitle), findsOneWidget);
+
+    // Панель ниже сетки из 12 тем не помещается в высоту тестового
+    // вьюпорта — `ListView` строит только видимые (плюс небольшой запас)
+    // элементы своих слайверов, поэтому её нужно сначала докрутить, а не
+    // просто искать в дереве.
+    await tester.scrollUntilVisible(
+      find.byKey(const Key('sq-home-emergency-notice')),
+      300,
+      // `.first`: и внешний `ListView` `_HomeContent`, и вложенный (хоть и
+      // нескролящийся сам по себе — `NeverScrollableScrollPhysics`)
+      // `GridView` темы оборачиваются в собственный `Scrollable`, поэтому
+      // `find.byType(Scrollable)` без уточнения находит два совпадения.
+      // Внешний идёт первым в порядке обхода дерева.
+      scrollable: find.byType(Scrollable).first,
+    );
+    expect(
+      find.byKey(const Key('sq-home-emergency-notice')),
+      findsOneWidget,
+      reason:
+          'информационная панель "Экстренная ситуация" — требование ТЗ §4.3, '
+          'не украшение прототипа',
+    );
   });
 
   testWidgets(
@@ -218,8 +248,15 @@ void main() {
         tester.element(find.byType(HomeScreen)),
       )!;
       expect(find.text(l10n.errorNetwork), findsOneWidget);
+      // Кнопка «Повторить» обязана быть локализована через `l10n.actionRetry`
+      // (ревью раунда 1 задачи 7: `SqErrorView.retryLabel` больше не зашит
+      // строкой внутри пакета `shared`) — искать её по русскому литералу
+      // напрямую здесь неверно: тестовое окружение без явного `locale:`
+      // резолвится в первый поддерживаемый язык (`kk`, см.
+      // `AppLocalizations.supportedLocales`), а не в русский.
+      expect(find.text(l10n.actionRetry), findsOneWidget);
 
-      await tester.tap(find.text('Повторить'));
+      await tester.tap(find.text(l10n.actionRetry));
       await tester.pumpAndSettle();
 
       expect(find.byType(SqErrorView), findsNothing);
@@ -241,7 +278,10 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byType(SqErrorView), findsOneWidget);
-      expect(find.text('Повторить'), findsOneWidget);
+      final l10n = AppLocalizations.of(
+        tester.element(find.byType(HomeScreen)),
+      )!;
+      expect(find.text(l10n.actionRetry), findsOneWidget);
     },
   );
 

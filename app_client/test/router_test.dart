@@ -1,11 +1,13 @@
 // Тесты редирект-гарда `sqRouter`: таблица состояние×флаги → путь (Step 1
-// брифа задачи 7, 6 случаев), плюс переключение вкладок `ShellRoute` и два
-// «золотых пути» — вход гостем и вход по телефону/SMS-коду с экрана
-// `/welcome` — доказывающие, что редирект реально срабатывает ПОСЛЕ смены
-// состояния `AuthController` (через `refreshListenable`), а не только на
-// старте, и что имитационный (`Navigator.push`) поток `PhoneScreen`/
-// `CodeScreen` поверх декларативной страницы `/welcome` не ломает
-// последующий редирект `go_router`.
+// брифа задачи 7, 6 случаев), плюс переключение вкладок `StatefulShellRoute`
+// (включая системный "назад" внутри неё — ревью раунда 1) и два «золотых
+// пути» — вход гостем и вход по телефону/SMS-коду с экрана `/welcome` —
+// доказывающие, что редирект реально срабатывает ПОСЛЕ смены состояния
+// `AuthController` (через `refreshListenable`), а не только на старте, и что
+// имитационный (`Navigator.push`) поток `PhoneScreen`/`CodeScreen` поверх
+// декларативной страницы `/welcome` не ломает последующий редирект
+// `go_router`. Плюс тест на стрелку возврата у заглушек `/topic`/`/session`
+// (тоже ревью раунда 1).
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -26,6 +28,7 @@ import 'package:app_client/features/home/ui/home_screen.dart';
 import 'package:app_client/features/onboarding/state/onboarding_flags.dart';
 import 'package:app_client/features/onboarding/ui/slides_screen.dart';
 import 'package:app_client/features/profile/ui/profile_screen.dart';
+import 'package:app_client/features/topic/ui/topic_screen.dart';
 import 'package:app_client/l10n/app_localizations.dart';
 import 'package:app_client/router.dart';
 
@@ -228,7 +231,7 @@ void main() {
     );
   });
 
-  group('ShellRoute — переключение вкладок нижней навигации', () {
+  group('StatefulShellRoute — переключение вкладок нижней навигации', () {
     testWidgets('тапы по вкладкам показывают соответствующий экран', (
       tester,
     ) async {
@@ -424,6 +427,94 @@ void main() {
 
         expect(router.routeInformationProvider.value.uri.path, RoutePaths.home);
         expect(find.byType(HomeScreen), findsOneWidget);
+      },
+    );
+  });
+
+  group('заглушки /topic и /session — возврат назад (ревью раунда 1)', () {
+    testWidgets(
+      'AppBar заглушки темы даёт стрелку назад, тап возвращает на /home',
+      (tester) async {
+        final container = await _fixedContainer(
+          authState: AuthGuest(_guestUser()),
+        );
+        addTearDown(container.dispose);
+        await _resolvedPath(tester, container);
+        expect(find.byType(HomeScreen), findsOneWidget);
+
+        await tester.tap(find.byKey(const Key('sq-topic-topic-0')));
+        await tester.pumpAndSettle();
+
+        expect(find.byType(TopicScreen), findsOneWidget);
+        expect(find.byType(HomeScreen), findsNothing);
+
+        // `TopicScreen`/`SessionScreen` открываются через `context.push` с
+        // главной — до ревью раунда 1 у них не было `AppBar`, и вернуться
+        // можно было только системным жестом. `BackButton` появляется у
+        // `AppBar` автоматически, когда `Navigator.canPop(context)` истинно
+        // (см. `AppBar._getEffectiveLeading` в Flutter SDK) — то есть сам
+        // факт его присутствия доказывает, что `AppBar()` добавлен.
+        final backButton = find.byType(BackButton);
+        expect(
+          backButton,
+          findsOneWidget,
+          reason:
+              'у TopicScreen должен быть AppBar со стрелкой назад — экран '
+              'открывается через context.push, системный жест единственным '
+              'способом возврата быть не должен',
+        );
+        await tester.tap(backButton);
+        await tester.pumpAndSettle();
+
+        expect(find.byType(HomeScreen), findsOneWidget);
+        expect(find.byType(TopicScreen), findsNothing);
+      },
+    );
+  });
+
+  group('нижняя навигация — системный "назад" внутри StatefulShellRoute', () {
+    testWidgets(
+      'с вкладки "Каталог" системный back возвращает на "Главная", а не '
+      'выходит из приложения',
+      (tester) async {
+        final container = await _fixedContainer(
+          authState: AuthGuest(_guestUser()),
+        );
+        addTearDown(container.dispose);
+        await _resolvedPath(tester, container);
+        expect(find.byType(HomeScreen), findsOneWidget);
+
+        await tester.tap(find.byKey(const Key('sq-nav-catalog')));
+        await tester.pumpAndSettle();
+        expect(find.byType(CatalogScreen), findsOneWidget);
+
+        // `tester.binding.handlePopRoute()` — штатный способ теста
+        // симулировать системную кнопку «назад» (Android), не завязанный на
+        // конкретный Navigator в дереве: он дублирует то, что платформенный
+        // канал `SystemChannels.navigation` шлёт приложению по факту нажатия
+        // аппаратной кнопки. При `ShellRoute` (один общий Navigator на все
+        // вкладки, версия ДО этого раунда правок) это проваливалось сквозь
+        // приложение — `PopScope` внутри `AppShell` перехватывает такой
+        // вызов и переключает на вкладку «Главная», а не отдаёт его
+        // `SystemNavigator.pop()`.
+        final popped = await tester.binding.handlePopRoute();
+        await tester.pumpAndSettle();
+
+        expect(
+          popped,
+          isTrue,
+          reason:
+              '`PopScope` на вкладке обязан сам обработать системный back, '
+              'не отдавая его дальше на выход из приложения',
+        );
+        expect(
+          find.byType(HomeScreen),
+          findsOneWidget,
+          reason:
+              'назад с пустой вкладки "Каталог" обязан вернуть на "Главная", '
+              'а не провалиться сквозь приложение',
+        );
+        expect(find.byType(CatalogScreen), findsNothing);
       },
     );
   });

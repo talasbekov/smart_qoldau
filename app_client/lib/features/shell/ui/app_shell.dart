@@ -1,76 +1,86 @@
 /// Оболочка нижней навигации из четырёх вкладок: Главная, Каталог,
-/// Консультации, Профиль (см. `router.dart`, `ShellRoute`).
+/// Консультации, Профиль (см. `router.dart`, `StatefulShellRoute
+/// .indexedStack`).
 library;
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../core/route_paths.dart';
 import '../../../l10n/app_localizations.dart';
 
-const _tabs = [
-  RoutePaths.home,
-  RoutePaths.catalog,
-  RoutePaths.consultations,
-  RoutePaths.profile,
-];
-
-/// Общий каркас четырёх вкладок `ShellRoute`.
+/// Общий каркас четырёх вкладок `StatefulShellRoute.indexedStack`.
 ///
-/// [location] — текущий совпавший путь (`GoRouterState.matchedLocation` из
-/// `ShellRoute.builder`), передаётся явно параметром, а не читается через
-/// `GoRouterState.of(context)` внутри виджета — так `AppShell` остаётся
-/// тривиально тестируемым без настоящего роутера в дереве, а вызывающая
-/// сторона (`router.dart`) и так уже держит `state` под рукой.
+/// Использует `StatefulShellRoute` (а не более простой `ShellRoute` из
+/// первой версии этого файла), потому что у `ShellRoute` только один общий
+/// `Navigator` на все вкладки — `context.go('/catalog')` полностью заменял
+/// стек, и системная кнопка «назад» с пустой вкладки проваливалась сквозь
+/// приложение (выход, а не переход на «Главная»). `StatefulShellRoute
+/// .indexedStack` держит СВОЙ `Navigator` на каждую вкладку — задачи 16/17/19
+/// смогут строить внутреннюю навигацию (каталог → карточка специалиста) без
+/// повторного переписывания оболочки. Ревью раунда 1 задачи 7 эпика E6.
 class AppShell extends StatelessWidget {
-  const AppShell({super.key, required this.location, required this.child});
+  const AppShell({super.key, required this.navigationShell});
 
-  final String location;
-  final Widget child;
+  final StatefulNavigationShell navigationShell;
 
-  int get _currentIndex {
-    final index = _tabs.indexOf(location);
-    return index < 0 ? 0 : index;
+  void _onDestinationSelected(int index) {
+    // `initialLocation: true` при повторном тапе по уже открытой вкладке —
+    // стандартный приём `go_router`: сбрасывает стек ЭТОЙ вкладки на её
+    // корневой маршрут, а не просто переключает `IndexedStack` без эффекта.
+    navigationShell.goBranch(
+      index,
+      initialLocation: index == navigationShell.currentIndex,
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
 
-    return Scaffold(
-      body: child,
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _currentIndex,
-        onDestinationSelected: (index) {
-          if (index == _currentIndex) return;
-          context.go(_tabs[index]);
-        },
-        destinations: [
-          NavigationDestination(
-            key: const Key('sq-nav-home'),
-            icon: const Icon(Icons.home_outlined),
-            selectedIcon: const Icon(Icons.home),
-            label: l10n.navHome,
-          ),
-          NavigationDestination(
-            key: const Key('sq-nav-catalog'),
-            icon: const Icon(Icons.grid_view_outlined),
-            selectedIcon: const Icon(Icons.grid_view),
-            label: l10n.navCatalog,
-          ),
-          NavigationDestination(
-            key: const Key('sq-nav-consultations'),
-            icon: const Icon(Icons.forum_outlined),
-            selectedIcon: const Icon(Icons.forum),
-            label: l10n.navConsultations,
-          ),
-          NavigationDestination(
-            key: const Key('sq-nav-profile'),
-            icon: const Icon(Icons.person_outline),
-            selectedIcon: const Icon(Icons.person),
-            label: l10n.navProfile,
-          ),
-        ],
+    return PopScope(
+      // На «Главной» (индекс 0) системный «назад» ведёт себя как обычно
+      // (выход из приложения, если стека нет). На любой другой вкладке —
+      // сначала возвращает на «Главную», а не выходит из приложения; если у
+      // вкладки есть собственная глубина (появится в задачах 16/17/19), её
+      // Navigator обработает «назад» САМ, раньше, чем дойдёт до этого
+      // `PopScope` — сюда попадают только уже опустевшие вкладки.
+      canPop: navigationShell.currentIndex == 0,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        navigationShell.goBranch(0);
+      },
+      child: Scaffold(
+        body: navigationShell,
+        bottomNavigationBar: NavigationBar(
+          selectedIndex: navigationShell.currentIndex,
+          onDestinationSelected: _onDestinationSelected,
+          destinations: [
+            NavigationDestination(
+              key: const Key('sq-nav-home'),
+              icon: const Icon(Icons.home_outlined),
+              selectedIcon: const Icon(Icons.home),
+              label: l10n.navHome,
+            ),
+            NavigationDestination(
+              key: const Key('sq-nav-catalog'),
+              icon: const Icon(Icons.grid_view_outlined),
+              selectedIcon: const Icon(Icons.grid_view),
+              label: l10n.navCatalog,
+            ),
+            NavigationDestination(
+              key: const Key('sq-nav-consultations'),
+              icon: const Icon(Icons.forum_outlined),
+              selectedIcon: const Icon(Icons.forum),
+              label: l10n.navConsultations,
+            ),
+            NavigationDestination(
+              key: const Key('sq-nav-profile'),
+              icon: const Icon(Icons.person_outline),
+              selectedIcon: const Icon(Icons.person),
+              label: l10n.navProfile,
+            ),
+          ],
+        ),
       ),
     );
   }

@@ -13,6 +13,7 @@ import '../../../core/route_paths.dart';
 import '../../../l10n/app_localizations.dart';
 import '../state/home_controller.dart';
 import 'active_consultation_banner.dart';
+import 'emergency_situation_notice.dart';
 import 'topic_grid.dart';
 
 class HomeScreen extends ConsumerWidget {
@@ -50,6 +51,7 @@ class HomeScreen extends ConsumerWidget {
                     : l10n.errorGeneric,
                 onRetry: () =>
                     ref.read(homeControllerProvider.notifier).retry(),
+                retryLabel: l10n.actionRetry,
               ),
             ),
           ),
@@ -92,6 +94,11 @@ class _HomeContent extends StatelessWidget {
         ],
         const SizedBox(height: SqSpacing.l),
         Text(l10n.homeTopicsTitle, style: SqTypography.h2),
+        const SizedBox(height: SqSpacing.xs),
+        Text(
+          l10n.homeTopicsSubtitle,
+          style: SqTypography.body.copyWith(color: SqColors.textSecondary),
+        ),
         const SizedBox(height: SqSpacing.m),
         TopicGrid(
           topics: state.topics,
@@ -103,7 +110,9 @@ class _HomeContent extends StatelessWidget {
           ),
         ),
         const SizedBox(height: SqSpacing.l),
-        const SqEmergencyDisclaimer(),
+        const EmergencySituationNotice(),
+        const SizedBox(height: SqSpacing.l),
+        SqEmergencyDisclaimer(disclaimerText: l10n.emergencyDisclaimerText),
       ],
     );
   }

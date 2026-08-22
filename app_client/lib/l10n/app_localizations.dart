@@ -620,11 +620,35 @@ abstract class AppLocalizations {
   /// **'Мы поможем вам с:'**
   String get homeTopicsTitle;
 
+  /// Пояснение под заголовком над сеткой тем консультаций на главном экране (прототип 07-home.png)
+  ///
+  /// In ru, this message translates to:
+  /// **'или расскажите, что именно беспокоит'**
+  String get homeTopicsSubtitle;
+
   /// Заголовок баннера активной консультации на главном экране
   ///
   /// In ru, this message translates to:
   /// **'Активная консультация'**
   String get homeActiveConsultationTitle;
+
+  /// Заголовок информационной панели об экстренной ситуации на главном экране (прототип 07-home.png, ТЗ §4.3)
+  ///
+  /// In ru, this message translates to:
+  /// **'Экстренная ситуация'**
+  String get homeEmergencyNoticeTitle;
+
+  /// Текст информационной панели об экстренной ситуации на главном экране
+  ///
+  /// In ru, this message translates to:
+  /// **'У нас есть специалисты, готовые подключиться в приоритетном порядке прямо сейчас'**
+  String get homeEmergencyNoticeBody;
+
+  /// Локализованный текст SqEmergencyDisclaimer.disclaimerText (ТЗ §4.3) — виджет из packages/shared не может зависеть от l10n приложения, значение передаётся явно
+  ///
+  /// In ru, this message translates to:
+  /// **'Платформа не заменяет экстренные службы. Если жизни или здоровью угрожает опасность, звоните напрямую:'**
+  String get emergencyDisclaimerText;
 }
 
 class _AppLocalizationsDelegate

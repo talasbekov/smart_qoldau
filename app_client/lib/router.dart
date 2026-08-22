@@ -58,7 +58,7 @@ class _AuthRefreshNotifier extends ChangeNotifier {
 /// Редирект-гард сессии — таблица дословно из брифа задачи 7:
 /// `AuthUnknown` → `/splash`; `AuthAnonymous` → `/welcome`; авторизован и
 /// `!seenSlides` → `/onboarding`; авторизован и `!askedPermissions` →
-/// `/permissions`; иначе вход в `ShellRoute` (и любой другой
+/// `/permissions`; иначе вход в `StatefulShellRoute` (и любой другой
 /// зарегистрированный маршрут вне [_gatedPaths]) разрешён без редиректа.
 ///
 /// Читает состояние через `ref.read`, а не `ref.watch`: эту функцию
@@ -136,25 +136,41 @@ GoRouter sqRouter(Ref ref) {
         builder: (context, state) =>
             SessionScreen(consultationId: state.pathParameters['id']!),
       ),
-      ShellRoute(
-        builder: (context, state, child) =>
-            AppShell(location: state.matchedLocation, child: child),
-        routes: [
-          GoRoute(
-            path: RoutePaths.home,
-            builder: (context, state) => const HomeScreen(),
+      StatefulShellRoute.indexedStack(
+        builder: (context, state, navigationShell) =>
+            AppShell(navigationShell: navigationShell),
+        branches: [
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: RoutePaths.home,
+                builder: (context, state) => const HomeScreen(),
+              ),
+            ],
           ),
-          GoRoute(
-            path: RoutePaths.catalog,
-            builder: (context, state) => const CatalogScreen(),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: RoutePaths.catalog,
+                builder: (context, state) => const CatalogScreen(),
+              ),
+            ],
           ),
-          GoRoute(
-            path: RoutePaths.consultations,
-            builder: (context, state) => const ConsultationsScreen(),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: RoutePaths.consultations,
+                builder: (context, state) => const ConsultationsScreen(),
+              ),
+            ],
           ),
-          GoRoute(
-            path: RoutePaths.profile,
-            builder: (context, state) => const ProfileScreen(),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: RoutePaths.profile,
+                builder: (context, state) => const ProfileScreen(),
+              ),
+            ],
           ),
         ],
       ),

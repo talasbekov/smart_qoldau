@@ -87,5 +87,9 @@
   "homeEmergencyCta": "Маған қазір көмек керек",
   "homeEmergencyCtaSubtitle": "Қосылудың орташа уақыты — 2 минутқа дейін",
   "homeTopicsTitle": "Біз мына мәселелермен көмектесеміз:",
-  "homeActiveConsultationTitle": "Белсенді кеңес"
+  "homeTopicsSubtitle": "немесе сізді нақты не мазалайтынын айтыңыз",
+  "homeActiveConsultationTitle": "Белсенді кеңес",
+  "homeEmergencyNoticeTitle": "Төтенше жағдай",
+  "homeEmergencyNoticeBody": "Бізде дәл қазір басымдық тәртібімен қосыла алатын мамандар бар",
+  "emergencyDisclaimerText": "Платформа шұғыл қызметтерді алмастырмайды. Егер өмірге немесе денсаулыққа қауіп төнсе, тікелей хабарласыңыз:"
 }

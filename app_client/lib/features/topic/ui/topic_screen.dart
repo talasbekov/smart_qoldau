@@ -23,6 +23,13 @@ class TopicScreen extends StatelessWidget {
     final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       backgroundColor: SqColors.background,
+      // Открывается через `context.push` с главной (плитка темы) — без
+      // `AppBar` стрелка возврата отсутствовала бы вовсе (остался бы только
+      // системный жест), в отличие от остальных заглушек того же коммита
+      // (`CatalogScreen`, `ConsultationsScreen`, `ProfileScreen`,
+      // `EmergencyScreen`), у которых `AppBar` уже есть. Ревью раунда 1
+      // задачи 7.
+      appBar: AppBar(),
       body: Center(
         child: SqEmptyState(
           icon: Icons.construction_outlined,

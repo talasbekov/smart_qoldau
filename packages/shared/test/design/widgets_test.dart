@@ -388,6 +388,26 @@ void main() {
       expect(retried, 1);
     });
 
+    testWidgets(
+      'uses a custom retryLabel when the caller needs localization '
+      '(shared cannot depend on an app l10n, so retryLabel is the way an '
+      'app-specific translation reaches this button)',
+      (tester) async {
+        await tester.pumpWidget(
+          _wrap(
+            SqErrorView(
+              text: 'Қате шықты',
+              onRetry: () {},
+              retryLabel: 'Қайталау',
+            ),
+          ),
+        );
+
+        expect(find.text('Қайталау'), findsOneWidget);
+        expect(find.text('Повторить'), findsNothing);
+      },
+    );
+
     testWidgets('hides the retry action when onRetry is null', (tester) async {
       await tester.pumpWidget(_wrap(const SqErrorView(text: 'Ошибка')));
       expect(find.text('Повторить'), findsNothing);
@@ -414,6 +434,30 @@ void main() {
       expect(find.textContaining('102'), findsOneWidget);
       expect(find.textContaining('103'), findsOneWidget);
     });
+
+    testWidgets(
+      'uses a custom disclaimerText when the caller needs localization '
+      '(shared cannot depend on an app l10n, so disclaimerText is the way '
+      'an app-specific translation reaches this text)',
+      (tester) async {
+        await tester.pumpWidget(
+          _wrap(
+            const SqEmergencyDisclaimer(
+              disclaimerText: 'Платформа шұғыл қызметтерді алмастырмайды.',
+            ),
+          ),
+        );
+
+        expect(
+          find.text('Платформа шұғыл қызметтерді алмастырмайды.'),
+          findsOneWidget,
+        );
+        expect(
+          find.textContaining('Платформа не заменяет экстренные службы'),
+          findsNothing,
+        );
+      },
+    );
 
     testWidgets('invokes the matching callback per emergency number', (
       tester,
