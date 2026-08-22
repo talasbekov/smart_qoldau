@@ -1,0 +1,13 @@
+{
+  "@@locale": "kk",
+  "appTitle": "SmartQoldau",
+  "actionContinue": "Жалғастыру",
+  "actionCancel": "Бас тарту",
+  "actionRetry": "Қайталау",
+  "actionClose": "Жабу",
+  "actionDone": "Дайын",
+  "actionBack": "Артқа",
+  "languageRussian": "Орысша",
+  "languageKazakh": "Қазақша",
+  "errorGeneric": "Бірдеңе дұрыс болмады"
+}

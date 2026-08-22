@@ -38,6 +38,11 @@ dependencies:
   # Общий пакет монорепо: API-клиент, модели и дизайн-система (E6).
   shared:
     path: ../packages/shared
+  flutter_localizations:
+    sdk: flutter
+  intl: 0.20.3
+  flutter_riverpod: ^2.6.1
+  shared_preferences: ^2.5.5
 
 dev_dependencies:
   flutter_test:
@@ -55,6 +60,10 @@ dev_dependencies:
 
 # The following section is specific to Flutter packages.
 flutter:
+
+  # Генерирует AppLocalizations из l10n/*.arb по конфигурации l10n.yaml
+  # (ru/kz локализация, задача 3 эпика E6).
+  generate: true
 
   # The following line ensures that the Material Icons font is
   # included with your application, so that you can use the icons in

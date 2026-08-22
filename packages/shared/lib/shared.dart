@@ -18,6 +18,7 @@ export 'design/widgets/error_view.dart';
 export 'design/widgets/loader.dart';
 export 'design/widgets/rating_stars.dart';
 export 'design/widgets/text_field.dart';
+export 'format/locale.dart';
 export 'format/money.dart';
 
 const String sharedPackageMarker = 'smartqoldau-shared';

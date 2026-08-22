@@ -1,0 +1,43 @@
+{
+  "@@locale": "ru",
+  "appTitle": "SmartQoldau",
+  "@appTitle": {
+    "description": "Название приложения — заголовок окна/задачи ОС"
+  },
+  "actionContinue": "Продолжить",
+  "@actionContinue": {
+    "description": "Кнопка перехода к следующему шагу"
+  },
+  "actionCancel": "Отмена",
+  "@actionCancel": {
+    "description": "Кнопка отмены текущего действия"
+  },
+  "actionRetry": "Повторить",
+  "@actionRetry": {
+    "description": "Кнопка повторной попытки после ошибки"
+  },
+  "actionClose": "Закрыть",
+  "@actionClose": {
+    "description": "Кнопка закрытия диалога или экрана"
+  },
+  "actionDone": "Готово",
+  "@actionDone": {
+    "description": "Кнопка завершения шага или сценария"
+  },
+  "actionBack": "Назад",
+  "@actionBack": {
+    "description": "Кнопка возврата на предыдущий экран"
+  },
+  "languageRussian": "Русский",
+  "@languageRussian": {
+    "description": "Название русского языка в переключателе языка интерфейса"
+  },
+  "languageKazakh": "Қазақша",
+  "@languageKazakh": {
+    "description": "Название казахского языка в переключателе языка интерфейса"
+  },
+  "errorGeneric": "Что-то пошло не так",
+  "@errorGeneric": {
+    "description": "Текст-заглушка для непредвиденной ошибки без более точного объяснения"
+  }
+}
