@@ -40,6 +40,23 @@ class _ThrowingPermissionService implements PermissionService {
   }
 }
 
+/// [PermissionService], у которого падает ТОЛЬКО запрос микрофона —
+/// камера и уведомления отрабатывают штатно. Нужен, чтобы доказать, что
+/// три запроса идут независимо: сбой одного не должен отменять остальные
+/// два (раньше все три шли последовательными `await` внутри одного
+/// `try` — сбой первого обрывал цепочку целиком).
+class _PartiallyThrowingPermissionService implements PermissionService {
+  final List<SqPermission> requested = [];
+
+  @override
+  Future<void> request(SqPermission permission) async {
+    requested.add(permission);
+    if (permission == SqPermission.microphone) {
+      throw Exception('microphone request failed');
+    }
+  }
+}
+
 /// [OnboardingFlags], у которого `setAskedPermissions` зависает до тех
 /// пор, пока тест сам не откроет [gate] — нужен, чтобы поймать состояние
 /// экрана СЕРЕДИНЕ операции «Позже» (аналог `_DelayedOnboardingFlags` в
@@ -190,6 +207,53 @@ void main() {
       );
       expect(laterButton.onPressed, isNotNull);
       expect(allowButton.loading, isFalse);
+    },
+  );
+
+  testWidgets(
+    'сбой запроса микрофона не отменяет запросы камеры и уведомлений — все три независимы',
+    (tester) async {
+      final prefs = await _prefs();
+      final service = _PartiallyThrowingPermissionService();
+      var finished = false;
+
+      await tester.pumpWidget(
+        _wrap(
+          PermissionsScreen(onFinished: () => finished = true),
+          prefs,
+          service,
+        ),
+      );
+
+      final l10n = AppLocalizations.of(
+        tester.element(find.byType(PermissionsScreen)),
+      )!;
+      await tester.tap(find.text(l10n.actionAllow));
+      await tester.pumpAndSettle();
+
+      expect(tester.takeException(), isNull);
+      expect(
+        service.requested,
+        [
+          SqPermission.microphone,
+          SqPermission.camera,
+          SqPermission.notifications,
+        ],
+        reason: 'камера и уведомления должны быть запрошены, даже если микрофон упал первым',
+      );
+      expect(
+        find.widgetWithText(SnackBar, l10n.errorGeneric),
+        findsOneWidget,
+        reason: 'ровно один SnackBar на сбой, а не по одному на каждый запрос',
+      );
+
+      expect(OnboardingFlags(prefs).askedPermissions, isTrue);
+      expect(finished, isTrue);
+
+      final allowButton = tester.widget<SqButton>(_allowButtonKey);
+      final laterButton = tester.widget<SqButton>(_laterButtonKey);
+      expect(allowButton.onPressed, isNotNull);
+      expect(laterButton.onPressed, isNotNull);
     },
   );
 

@@ -82,26 +82,35 @@ class _PermissionsScreenState extends ConsumerState<PermissionsScreen> {
     setState(() => _requesting = true);
     try {
       final service = ref.read(permissionServiceProvider);
-      try {
-        await service.request(SqPermission.microphone);
-        await service.request(SqPermission.camera);
-        await service.request(SqPermission.notifications);
-      } on ApiException catch (e, stack) {
-        debugPrint(
-          'PermissionsScreen: запрос разрешений вернул ApiException '
-          '(${e.code}): $e\n$stack',
-        );
-        if (mounted) _showSnackBar(errorText(context, e));
-      } catch (error, stack) {
-        debugPrint(
-          'PermissionsScreen: запрос разрешений не удался: $error\n$stack',
-        );
-        if (mounted) _showSnackBar(AppLocalizations.of(context)!.errorGeneric);
-      }
+      final error = await _requestAll(service);
+      if (error != null) _showFailureSnackBar(error);
       await _finish();
     } finally {
       if (mounted) setState(() => _requesting = false);
     }
+  }
+
+  /// Запрашивает [SqPermission.microphone]/`.camera`/`.notifications`
+  /// НЕЗАВИСИМО друг от друга: сбой самого механизма запроса одного из них
+  /// не должен отменять оставшиеся два (до этого разделения все три шли
+  /// последовательными `await` внутри одного `try` — сбой на первом же
+  /// обрывал цепочку, и пользователь, тапнувший «Разрешить», не получал ни
+  /// одного из трёх разрешений вместо потенциальных двух). Возвращает
+  /// первую пойманную ошибку, если таковая была, — по ней [_allow] покажет
+  /// ровно один `SnackBar`, а не по одному на каждый сбойный запрос.
+  Future<Object?> _requestAll(PermissionService service) async {
+    Object? firstError;
+    for (final permission in SqPermission.values) {
+      try {
+        await service.request(permission);
+      } catch (error, stack) {
+        debugPrint(
+          'PermissionsScreen: запрос $permission не удался: $error\n$stack',
+        );
+        firstError ??= error;
+      }
+    }
+    return firstError;
   }
 
   /// Тот же guard и та же гарантия сброса флага, что в [_allow] — «Позже»
@@ -117,8 +126,15 @@ class _PermissionsScreenState extends ConsumerState<PermissionsScreen> {
     }
   }
 
-  void _showSnackBar(String message) {
+  /// Единственное место, где экран трогает `context` после `await` —
+  /// `mounted` проверяется прямо здесь, а не дублируется ещё и на месте
+  /// вызова: сообщение (через `errorText` для `ApiException`, иначе общий
+  /// `l10n.errorGeneric`) строится тут же, а не заранее в [_allow].
+  void _showFailureSnackBar(Object error) {
     if (!mounted) return;
+    final message = error is ApiException
+        ? errorText(context, error)
+        : AppLocalizations.of(context)!.errorGeneric;
     ScaffoldMessenger.of(context)
         .showSnackBar(SnackBar(content: Text(message)));
   }
