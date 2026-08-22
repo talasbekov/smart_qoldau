@@ -9,9 +9,13 @@ import 'analytics_event.dart';
 import 'analytics_port.dart';
 
 class PostHogAnalytics implements AnalyticsPort {
+  // Именованные параметры публичные, а поля приватные, поэтому
+  // `this._dio` здесь невозможен — присваиваем в списке инициализации.
+  // ignore_for_file: prefer_initializing_formals
   PostHogAnalytics({required Dio dio, required String apiKey})
     : _dio = dio,
       _apiKey = apiKey;
+
 
   final Dio _dio;
   final String _apiKey;
