@@ -125,3 +125,67 @@ extension SessionFormatWire on SessionFormat {
         SessionFormat.video => 'video',
       };
 }
+
+/// Статус обращения в поддержку (`TicketStatus` Prisma-enum бэкенда, см.
+/// `backend/prisma/schema.prisma`).
+enum TicketStatus {
+  @JsonValue('NEW')
+  new_,
+  @JsonValue('IN_PROGRESS')
+  inProgress,
+  @JsonValue('RESOLVED')
+  resolved,
+}
+
+/// Категория обращения в поддержку (`TicketCategory` Prisma-enum бэкенда).
+/// Допустимое подмножество зависит от типа автора (клиент/гость vs
+/// эксперт) — это бэкенд проверяет сам при создании обращения
+/// (`CATEGORIES_BY_AUTHOR` в `backend/src/tickets/ticket-routing.ts`),
+/// модель тут просто перечисляет весь домен значений.
+enum TicketCategory {
+  @JsonValue('CONSULTATIONS')
+  consultations,
+  @JsonValue('PAYMENT')
+  payment,
+  @JsonValue('PAYOUTS')
+  payouts,
+  @JsonValue('TECHNICAL')
+  technical,
+  @JsonValue('VERIFICATION')
+  verification,
+  @JsonValue('SECURITY')
+  security,
+  @JsonValue('CLIENT_QUESTION')
+  clientQuestion,
+  @JsonValue('ACCOUNT_DATA')
+  accountData,
+  @JsonValue('OTHER')
+  other,
+}
+
+/// Команда-исполнитель, которой маршрутизировано обращение (`TicketTeam`
+/// Prisma-enum бэкенда).
+enum TicketTeam {
+  @JsonValue('SUPPORT_OPERATOR')
+  supportOperator,
+  @JsonValue('VERIFICATION_OPERATOR')
+  verificationOperator,
+  @JsonValue('FINANCE_CONTROL')
+  financeControl,
+  @JsonValue('QUALITY_TEAM')
+  qualityTeam,
+}
+
+/// Автор одного сообщения переписки обращения (`TicketMessageDto.authorKind`
+/// бэкенда). В отличие от `TicketStatus`/`TicketCategory`/`TicketTeam`, у
+/// бэкенда это не настоящий Prisma-enum — колонка `ticket_messages.author_kind`
+/// типа `String` с доменом `'user'|'staff'`, провалидированным только на
+/// уровне DTO (`@ApiProperty({enum: ['user', 'staff']})`). Модели клиента
+/// это не мешает — типобезопасный Dart-enum нужен независимо от того, как
+/// домен закреплён на бэкенде.
+enum TicketAuthorKind {
+  @JsonValue('user')
+  user,
+  @JsonValue('staff')
+  staff,
+}

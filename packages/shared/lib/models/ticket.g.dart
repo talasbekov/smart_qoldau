@@ -9,10 +9,10 @@ part of 'ticket.dart';
 _TicketSummary _$TicketSummaryFromJson(Map<String, dynamic> json) =>
     _TicketSummary(
       id: json['id'] as String,
-      category: json['category'] as String,
+      category: $enumDecode(_$TicketCategoryEnumMap, json['category']),
       subject: json['subject'] as String,
-      status: json['status'] as String,
-      team: json['team'] as String,
+      status: $enumDecode(_$TicketStatusEnumMap, json['status']),
+      team: $enumDecode(_$TicketTeamEnumMap, json['team']),
       createdAt: DateTime.parse(json['createdAt'] as String),
       updatedAt: DateTime.parse(json['updatedAt'] as String),
     );
@@ -20,21 +20,46 @@ _TicketSummary _$TicketSummaryFromJson(Map<String, dynamic> json) =>
 Map<String, dynamic> _$TicketSummaryToJson(_TicketSummary instance) =>
     <String, dynamic>{
       'id': instance.id,
-      'category': instance.category,
+      'category': _$TicketCategoryEnumMap[instance.category]!,
       'subject': instance.subject,
-      'status': instance.status,
-      'team': instance.team,
+      'status': _$TicketStatusEnumMap[instance.status]!,
+      'team': _$TicketTeamEnumMap[instance.team]!,
       'createdAt': instance.createdAt.toIso8601String(),
       'updatedAt': instance.updatedAt.toIso8601String(),
     };
 
+const _$TicketCategoryEnumMap = {
+  TicketCategory.consultations: 'CONSULTATIONS',
+  TicketCategory.payment: 'PAYMENT',
+  TicketCategory.payouts: 'PAYOUTS',
+  TicketCategory.technical: 'TECHNICAL',
+  TicketCategory.verification: 'VERIFICATION',
+  TicketCategory.security: 'SECURITY',
+  TicketCategory.clientQuestion: 'CLIENT_QUESTION',
+  TicketCategory.accountData: 'ACCOUNT_DATA',
+  TicketCategory.other: 'OTHER',
+};
+
+const _$TicketStatusEnumMap = {
+  TicketStatus.new_: 'NEW',
+  TicketStatus.inProgress: 'IN_PROGRESS',
+  TicketStatus.resolved: 'RESOLVED',
+};
+
+const _$TicketTeamEnumMap = {
+  TicketTeam.supportOperator: 'SUPPORT_OPERATOR',
+  TicketTeam.verificationOperator: 'VERIFICATION_OPERATOR',
+  TicketTeam.financeControl: 'FINANCE_CONTROL',
+  TicketTeam.qualityTeam: 'QUALITY_TEAM',
+};
+
 _TicketDetail _$TicketDetailFromJson(Map<String, dynamic> json) =>
     _TicketDetail(
       id: json['id'] as String,
-      category: json['category'] as String,
+      category: $enumDecode(_$TicketCategoryEnumMap, json['category']),
       subject: json['subject'] as String,
-      status: json['status'] as String,
-      team: json['team'] as String,
+      status: $enumDecode(_$TicketStatusEnumMap, json['status']),
+      team: $enumDecode(_$TicketTeamEnumMap, json['team']),
       createdAt: DateTime.parse(json['createdAt'] as String),
       updatedAt: DateTime.parse(json['updatedAt'] as String),
       body: json['body'] as String,
@@ -54,10 +79,10 @@ _TicketDetail _$TicketDetailFromJson(Map<String, dynamic> json) =>
 Map<String, dynamic> _$TicketDetailToJson(_TicketDetail instance) =>
     <String, dynamic>{
       'id': instance.id,
-      'category': instance.category,
+      'category': _$TicketCategoryEnumMap[instance.category]!,
       'subject': instance.subject,
-      'status': instance.status,
-      'team': instance.team,
+      'status': _$TicketStatusEnumMap[instance.status]!,
+      'team': _$TicketTeamEnumMap[instance.team]!,
       'createdAt': instance.createdAt.toIso8601String(),
       'updatedAt': instance.updatedAt.toIso8601String(),
       'body': instance.body,
@@ -71,7 +96,7 @@ Map<String, dynamic> _$TicketDetailToJson(_TicketDetail instance) =>
 _TicketMessage _$TicketMessageFromJson(Map<String, dynamic> json) =>
     _TicketMessage(
       id: json['id'] as String,
-      authorKind: json['authorKind'] as String,
+      authorKind: $enumDecode(_$TicketAuthorKindEnumMap, json['authorKind']),
       body: json['body'] as String,
       createdAt: DateTime.parse(json['createdAt'] as String),
     );
@@ -79,7 +104,12 @@ _TicketMessage _$TicketMessageFromJson(Map<String, dynamic> json) =>
 Map<String, dynamic> _$TicketMessageToJson(_TicketMessage instance) =>
     <String, dynamic>{
       'id': instance.id,
-      'authorKind': instance.authorKind,
+      'authorKind': _$TicketAuthorKindEnumMap[instance.authorKind]!,
       'body': instance.body,
       'createdAt': instance.createdAt.toIso8601String(),
     };
+
+const _$TicketAuthorKindEnumMap = {
+  TicketAuthorKind.user: 'user',
+  TicketAuthorKind.staff: 'staff',
+};

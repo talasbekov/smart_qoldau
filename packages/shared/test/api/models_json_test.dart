@@ -186,14 +186,14 @@ void main() {
       final ticket = TicketDetail.fromJson(json);
 
       expect(ticket.id, 't1a2b3c4-d5e6-4f70-8899-aabbccddeeff');
-      expect(ticket.category, 'TECHNICAL');
-      expect(ticket.status, 'IN_PROGRESS');
-      expect(ticket.team, 'SUPPORT_OPERATOR');
+      expect(ticket.category, TicketCategory.technical);
+      expect(ticket.status, TicketStatus.inProgress);
+      expect(ticket.team, TicketTeam.supportOperator);
       expect(ticket.resolvedAt, isNull);
       expect(ticket.relatedPayoutId, isNull);
       expect(ticket.messages, hasLength(2));
-      expect(ticket.messages.first.authorKind, 'user');
-      expect(ticket.messages.last.authorKind, 'staff');
+      expect(ticket.messages.first.authorKind, TicketAuthorKind.user);
+      expect(ticket.messages.last.authorKind, TicketAuthorKind.staff);
       expect(ticket.toJson(), json);
     });
   });
@@ -219,6 +219,61 @@ void main() {
       expect(expert.experience, ExperienceLevel.moreThanTen);
       expect(expert.toJson()['experience'], 'MORE_THAN_TEN');
     });
+
+    test('TicketStatus enum values map to the backend Prisma enum literally', () {
+      expect(_ticketWithStatus(TicketStatus.new_).toJson()['status'], 'NEW');
+      expect(
+        _ticketWithStatus(TicketStatus.inProgress).toJson()['status'],
+        'IN_PROGRESS',
+      );
+      expect(
+        _ticketWithStatus(TicketStatus.resolved).toJson()['status'],
+        'RESOLVED',
+      );
+    });
+
+    test('TicketCategory enum values map to the backend Prisma enum literally', () {
+      const expected = {
+        TicketCategory.consultations: 'CONSULTATIONS',
+        TicketCategory.payment: 'PAYMENT',
+        TicketCategory.payouts: 'PAYOUTS',
+        TicketCategory.technical: 'TECHNICAL',
+        TicketCategory.verification: 'VERIFICATION',
+        TicketCategory.security: 'SECURITY',
+        TicketCategory.clientQuestion: 'CLIENT_QUESTION',
+        TicketCategory.accountData: 'ACCOUNT_DATA',
+        TicketCategory.other: 'OTHER',
+      };
+      for (final entry in expected.entries) {
+        expect(
+          _ticketWithCategory(entry.key).toJson()['category'],
+          entry.value,
+        );
+      }
+    });
+
+    test('TicketTeam enum values map to the backend Prisma enum literally', () {
+      const expected = {
+        TicketTeam.supportOperator: 'SUPPORT_OPERATOR',
+        TicketTeam.verificationOperator: 'VERIFICATION_OPERATOR',
+        TicketTeam.financeControl: 'FINANCE_CONTROL',
+        TicketTeam.qualityTeam: 'QUALITY_TEAM',
+      };
+      for (final entry in expected.entries) {
+        expect(_ticketWithTeam(entry.key).toJson()['team'], entry.value);
+      }
+    });
+
+    test('TicketAuthorKind enum values map to the lowercase backend strings', () {
+      expect(
+        _messageWithAuthorKind(TicketAuthorKind.user).toJson()['authorKind'],
+        'user',
+      );
+      expect(
+        _messageWithAuthorKind(TicketAuthorKind.staff).toJson()['authorKind'],
+        'staff',
+      );
+    });
   });
 }
 
@@ -227,4 +282,42 @@ MatchRequest request(RequestStatus status) => MatchRequest(
       status: status,
       isEmergency: false,
       clientCode: 1,
+    );
+
+TicketSummary _ticketWithStatus(TicketStatus status) => TicketSummary(
+      id: 't1',
+      category: TicketCategory.other,
+      subject: 's',
+      status: status,
+      team: TicketTeam.supportOperator,
+      createdAt: DateTime.utc(2026, 1, 1),
+      updatedAt: DateTime.utc(2026, 1, 1),
+    );
+
+TicketSummary _ticketWithCategory(TicketCategory category) => TicketSummary(
+      id: 't1',
+      category: category,
+      subject: 's',
+      status: TicketStatus.new_,
+      team: TicketTeam.supportOperator,
+      createdAt: DateTime.utc(2026, 1, 1),
+      updatedAt: DateTime.utc(2026, 1, 1),
+    );
+
+TicketSummary _ticketWithTeam(TicketTeam team) => TicketSummary(
+      id: 't1',
+      category: TicketCategory.other,
+      subject: 's',
+      status: TicketStatus.new_,
+      team: team,
+      createdAt: DateTime.utc(2026, 1, 1),
+      updatedAt: DateTime.utc(2026, 1, 1),
+    );
+
+TicketMessage _messageWithAuthorKind(TicketAuthorKind authorKind) =>
+    TicketMessage(
+      id: 'm1',
+      authorKind: authorKind,
+      body: 'b',
+      createdAt: DateTime.utc(2026, 1, 1),
     );

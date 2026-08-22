@@ -31,23 +31,24 @@ const _retriedAfterRefreshKey = 'sqAuthRetriedAfterRefresh';
 /// рефреша ([_refreshInFlight]) — single-flight: пока первый рефреш не
 /// завершился, второй его не дублирует, а ждёт тот же `Future`.
 class AuthInterceptor extends Interceptor {
-  AuthInterceptor(this._read, this._write, this._onLogout);
+  /// Создаёт интерцептор и сразу же подключает его к [dio] —
+  /// конструирование и подключение намеренно не разделены отдельным
+  /// методом (раньше был `attach(dio)`). Раздельные шаги можно забыть
+  /// выполнить: интерцептор создаётся, `onRequest` как будто бы работает
+  /// (если создать его по ошибке ещё раз и подставлять токен вручную), но
+  /// `onError` никогда не вызывается — 401 тихо проходит мимо без рефреша,
+  /// без ошибки и без предупреждения. Конструктор, который сам себя
+  /// регистрирует в `dio.interceptors`, эту ошибку делает невозможной.
+  AuthInterceptor(this._dio, this._read, this._write, this._onLogout) {
+    _dio.interceptors.add(this);
+  }
 
+  final Dio _dio;
   final TokenReader _read;
   final TokenWriter _write;
   final Future<void> Function() _onLogout;
 
-  Dio? _dio;
   Future<Tokens>? _refreshInFlight;
-
-  /// Прикрепляет интерцептор к [dio] и запоминает клиент — он нужен, чтобы
-  /// самому вызвать `/auth/refresh` и повторить исходный запрос тем же
-  /// адаптером (в частности, мок-адаптером в тестах), а не поднимать для
-  /// этого отдельный сетевой стек.
-  void attach(Dio dio) {
-    _dio = dio;
-    dio.interceptors.add(this);
-  }
 
   @override
   void onRequest(
@@ -66,24 +67,23 @@ class AuthInterceptor extends Interceptor {
     final options = err.requestOptions;
     final isAuthPath = options.path.startsWith('/auth/');
     final alreadyRetried = options.extra[_retriedAfterRefreshKey] == true;
-    final dio = _dio;
 
-    if (isAuthPath || alreadyRetried || dio == null || err.response?.statusCode != 401) {
+    if (isAuthPath || alreadyRetried || err.response?.statusCode != 401) {
       handler.next(err);
       return;
     }
 
+    // Два независимых шага с разными последствиями провала — намеренно два
+    // отдельных try/catch, а не один общий:
+    // 1. Рефреш не удался -> сессия действительно мертва -> onLogout и
+    //    единый синтетический ApiException('UNAUTHORIZED').
+    // 2. Рефреш удался, но повтор исходного запроса упал по СВОЕЙ причине
+    //    (403 на конкретный ресурс, 500, обрыв сети) -> сессия рабочая,
+    //    разлогинивать не за что — наружу должна уйти НАСТОЯЩАЯ ошибка
+    //    этого запроса, а не выдуманная UNAUTHORIZED.
+    final Tokens tokens;
     try {
-      final tokens = await _refresh(dio);
-      final retryOptions = options.copyWith(
-        headers: {
-          ...options.headers,
-          'Authorization': 'Bearer ${tokens.accessToken}',
-        },
-        extra: {...options.extra, _retriedAfterRefreshKey: true},
-      );
-      final response = await dio.fetch<dynamic>(retryOptions);
-      handler.resolve(response);
+      tokens = await _refresh(_dio);
     } catch (_) {
       await _onLogout();
       handler.reject(
@@ -96,6 +96,21 @@ class AuthInterceptor extends Interceptor {
           ),
         ),
       );
+      return;
+    }
+
+    final retryOptions = options.copyWith(
+      headers: {
+        ...options.headers,
+        'Authorization': 'Bearer ${tokens.accessToken}',
+      },
+      extra: {...options.extra, _retriedAfterRefreshKey: true},
+    );
+    try {
+      final response = await _dio.fetch<dynamic>(retryOptions);
+      handler.resolve(response);
+    } on DioException catch (retryError) {
+      handler.next(retryError);
     }
   }
 

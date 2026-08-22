@@ -8,11 +8,22 @@ import 'api_exception.dart';
 abstract class SqApiBase {
   Dio get dio;
 
-  /// Выполняет [action]; любая [DioException] превращается в
-  /// [ApiException]. Если ошибка уже нормализована выше по цепочке (см.
-  /// `AuthInterceptor`, который кладёт готовый [ApiException] в
-  /// `DioException.error` при провале рефреша), она используется как есть —
-  /// не заворачивается повторно.
+  /// Выполняет [action]; любая ошибка превращается в [ApiException] — это
+  /// контракт `SqApi`, на который опираются все последующие задачи (никакого
+  /// сырого `DioException`/`TypeError` наружу).
+  ///
+  /// - [DioException] превращается через [ApiException.fromDioError]. Если
+  ///   она уже нормализована выше по цепочке (см. `AuthInterceptor`, который
+  ///   кладёт готовый [ApiException] в `DioException.error` при провале
+  ///   рефреша), используется как есть — не заворачивается повторно.
+  /// - Уже брошенный [ApiException] (в принципе не должен возникать внутри
+  ///   [action] иначе как через `DioException.error`, но на всякий случай)
+  ///   пробрасывается как есть, а не заворачивается ещё раз.
+  /// - Любое другое исключение — например `TypeError` из сгенерированного
+  ///   `fromJson`, если бэкенд вернул 200 с телом неожиданной формы —
+  ///   заворачивается в [ApiErrorCode.internal]. Без этой ветки ошибка
+  ///   разбора успешного ответа проходила бы мимо контракта сырым
+  ///   Dart-исключением.
   Future<T> guard<T>(Future<T> Function() action) async {
     try {
       return await action();
@@ -22,6 +33,15 @@ abstract class SqApiBase {
         throw error;
       }
       throw ApiException.fromDioError(e);
+    } on ApiException {
+      rethrow;
+    } catch (e) {
+      throw ApiException(
+        ApiErrorCode.internal,
+        'Не удалось обработать ответ сервера',
+        0,
+        e,
+      );
     }
   }
 }

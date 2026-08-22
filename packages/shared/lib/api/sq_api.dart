@@ -34,7 +34,7 @@ class SqApi extends SqApiBase
     required TokenWriter writeTokens,
     required Future<void> Function() onLogout,
   }) : dio = Dio(BaseOptions(baseUrl: baseUrl)) {
-    AuthInterceptor(readTokens, writeTokens, onLogout).attach(dio);
+    AuthInterceptor(dio, readTokens, writeTokens, onLogout);
   }
 
   @override

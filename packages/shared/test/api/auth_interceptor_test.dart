@@ -52,7 +52,10 @@ void main() {
     });
     when(() => gateway.onLogout()).thenAnswer((_) async {});
 
-    AuthInterceptor(gateway.read, gateway.write, gateway.onLogout).attach(dio);
+    // Конструктор сам добавляет себя в dio.interceptors — раньше был
+    // отдельный `.attach(dio)`, который можно было забыть вызвать (тогда
+    // интерцептор выглядел рабочим, но 401 просто проходил мимо).
+    AuthInterceptor(dio, gateway.read, gateway.write, gateway.onLogout);
   });
 
   test('refreshes once on 401 and retries the original request with the new token', () async {
@@ -160,6 +163,78 @@ void main() {
 
     verify(() => gateway.onLogout()).called(1);
     verifyNever(() => gateway.write(any()));
+  });
+
+  test('refresh succeeds but the retry itself fails with 500 — no logout, the real error propagates', () async {
+    adapter
+      ..onGet(
+        '/consultations',
+        (server) => server.reply(401, _unauthorizedBody()),
+        headers: {'Authorization': 'Bearer old-access'},
+      )
+      ..onGet(
+        '/consultations',
+        (server) => server.reply(500, {
+          'error': {'code': 'INTERNAL', 'message': 'boom'},
+        }),
+        headers: {'Authorization': 'Bearer new-access'},
+      )
+      ..onPost(
+        '/auth/refresh',
+        (server) => server.reply(200, _tokensJson('new-access', 'new-refresh')),
+        data: Matchers.any,
+      );
+
+    await expectLater(
+      dio.get<List<dynamic>>('/consultations'),
+      throwsA(
+        isA<DioException>().having(
+          (e) => e.response?.statusCode,
+          'response.statusCode',
+          500,
+        ),
+      ),
+    );
+
+    // Рефреш прошёл успешно (новый токен получен и сохранён) — упал именно
+    // повторный запрос по своей причине, это не повод разлогинивать.
+    verify(() => gateway.write(any())).called(1);
+    verifyNever(() => gateway.onLogout());
+  });
+
+  test('refresh succeeds but the retry itself fails with 403 — no logout, the real error propagates', () async {
+    adapter
+      ..onGet(
+        '/consultations',
+        (server) => server.reply(401, _unauthorizedBody()),
+        headers: {'Authorization': 'Bearer old-access'},
+      )
+      ..onGet(
+        '/consultations',
+        (server) => server.reply(403, {
+          'error': {'code': 'FORBIDDEN', 'message': 'not yours'},
+        }),
+        headers: {'Authorization': 'Bearer new-access'},
+      )
+      ..onPost(
+        '/auth/refresh',
+        (server) => server.reply(200, _tokensJson('new-access', 'new-refresh')),
+        data: Matchers.any,
+      );
+
+    await expectLater(
+      dio.get<List<dynamic>>('/consultations'),
+      throwsA(
+        isA<DioException>().having(
+          (e) => e.response?.statusCode,
+          'response.statusCode',
+          403,
+        ),
+      ),
+    );
+
+    verify(() => gateway.write(any())).called(1);
+    verifyNever(() => gateway.onLogout());
   });
 
   test('does not intercept 401s coming from /auth/* paths (no recursive refresh)', () async {

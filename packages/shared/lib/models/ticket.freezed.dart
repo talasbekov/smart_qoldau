@@ -16,7 +16,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$TicketSummary {
 
- String get id; String get category; String get subject; String get status; String get team; DateTime get createdAt; DateTime get updatedAt;
+ String get id; TicketCategory get category; String get subject; TicketStatus get status; TicketTeam get team; DateTime get createdAt; DateTime get updatedAt;
 /// Create a copy of TicketSummary
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -49,7 +49,7 @@ abstract mixin class $TicketSummaryCopyWith<$Res>  {
   factory $TicketSummaryCopyWith(TicketSummary value, $Res Function(TicketSummary) _then) = _$TicketSummaryCopyWithImpl;
 @useResult
 $Res call({
- String id, String category, String subject, String status, String team, DateTime createdAt, DateTime updatedAt
+ String id, TicketCategory category, String subject, TicketStatus status, TicketTeam team, DateTime createdAt, DateTime updatedAt
 });
 
 
@@ -70,10 +70,10 @@ class _$TicketSummaryCopyWithImpl<$Res>
   return _then(TicketSummary(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,category: null == category ? _self.category : category // ignore: cast_nullable_to_non_nullable
-as String,subject: null == subject ? _self.subject : subject // ignore: cast_nullable_to_non_nullable
+as TicketCategory,subject: null == subject ? _self.subject : subject // ignore: cast_nullable_to_non_nullable
 as String,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
-as String,team: null == team ? _self.team : team // ignore: cast_nullable_to_non_nullable
-as String,createdAt: null == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
+as TicketStatus,team: null == team ? _self.team : team // ignore: cast_nullable_to_non_nullable
+as TicketTeam,createdAt: null == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
 as DateTime,updatedAt: null == updatedAt ? _self.updatedAt : updatedAt // ignore: cast_nullable_to_non_nullable
 as DateTime,
   ));
@@ -160,7 +160,7 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String category,  String subject,  String status,  String team,  DateTime createdAt,  DateTime updatedAt)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  TicketCategory category,  String subject,  TicketStatus status,  TicketTeam team,  DateTime createdAt,  DateTime updatedAt)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _TicketSummary() when $default != null:
 return $default(_that.id,_that.category,_that.subject,_that.status,_that.team,_that.createdAt,_that.updatedAt);case _:
@@ -181,7 +181,7 @@ return $default(_that.id,_that.category,_that.subject,_that.status,_that.team,_t
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String category,  String subject,  String status,  String team,  DateTime createdAt,  DateTime updatedAt)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  TicketCategory category,  String subject,  TicketStatus status,  TicketTeam team,  DateTime createdAt,  DateTime updatedAt)  $default,) {final _that = this;
 switch (_that) {
 case _TicketSummary():
 return $default(_that.id,_that.category,_that.subject,_that.status,_that.team,_that.createdAt,_that.updatedAt);case _:
@@ -201,7 +201,7 @@ return $default(_that.id,_that.category,_that.subject,_that.status,_that.team,_t
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String category,  String subject,  String status,  String team,  DateTime createdAt,  DateTime updatedAt)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  TicketCategory category,  String subject,  TicketStatus status,  TicketTeam team,  DateTime createdAt,  DateTime updatedAt)?  $default,) {final _that = this;
 switch (_that) {
 case _TicketSummary() when $default != null:
 return $default(_that.id,_that.category,_that.subject,_that.status,_that.team,_that.createdAt,_that.updatedAt);case _:
@@ -220,10 +220,10 @@ class _TicketSummary implements TicketSummary {
   factory _TicketSummary.fromJson(Map<String, dynamic> json) => _$TicketSummaryFromJson(json);
 
 @override final  String id;
-@override final  String category;
+@override final  TicketCategory category;
 @override final  String subject;
-@override final  String status;
-@override final  String team;
+@override final  TicketStatus status;
+@override final  TicketTeam team;
 @override final  DateTime createdAt;
 @override final  DateTime updatedAt;
 
@@ -260,7 +260,7 @@ abstract mixin class _$TicketSummaryCopyWith<$Res> implements $TicketSummaryCopy
   factory _$TicketSummaryCopyWith(_TicketSummary value, $Res Function(_TicketSummary) _then) = __$TicketSummaryCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String category, String subject, String status, String team, DateTime createdAt, DateTime updatedAt
+ String id, TicketCategory category, String subject, TicketStatus status, TicketTeam team, DateTime createdAt, DateTime updatedAt
 });
 
 
@@ -281,10 +281,10 @@ class __$TicketSummaryCopyWithImpl<$Res>
   return _then(_TicketSummary(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,category: null == category ? _self.category : category // ignore: cast_nullable_to_non_nullable
-as String,subject: null == subject ? _self.subject : subject // ignore: cast_nullable_to_non_nullable
+as TicketCategory,subject: null == subject ? _self.subject : subject // ignore: cast_nullable_to_non_nullable
 as String,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
-as String,team: null == team ? _self.team : team // ignore: cast_nullable_to_non_nullable
-as String,createdAt: null == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
+as TicketStatus,team: null == team ? _self.team : team // ignore: cast_nullable_to_non_nullable
+as TicketTeam,createdAt: null == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
 as DateTime,updatedAt: null == updatedAt ? _self.updatedAt : updatedAt // ignore: cast_nullable_to_non_nullable
 as DateTime,
   ));
@@ -297,7 +297,7 @@ as DateTime,
 /// @nodoc
 mixin _$TicketDetail {
 
- String get id; String get category; String get subject; String get status; String get team; DateTime get createdAt; DateTime get updatedAt; String get body; DateTime? get firstReplyAt; DateTime? get resolvedAt; String? get relatedConsultationId; String? get relatedPayoutId; List<TicketMessage> get messages;
+ String get id; TicketCategory get category; String get subject; TicketStatus get status; TicketTeam get team; DateTime get createdAt; DateTime get updatedAt; String get body; DateTime? get firstReplyAt; DateTime? get resolvedAt; String? get relatedConsultationId; String? get relatedPayoutId; List<TicketMessage> get messages;
 /// Create a copy of TicketDetail
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -330,7 +330,7 @@ abstract mixin class $TicketDetailCopyWith<$Res>  {
   factory $TicketDetailCopyWith(TicketDetail value, $Res Function(TicketDetail) _then) = _$TicketDetailCopyWithImpl;
 @useResult
 $Res call({
- String id, String category, String subject, String status, String team, DateTime createdAt, DateTime updatedAt, String body, DateTime? firstReplyAt, DateTime? resolvedAt, String? relatedConsultationId, String? relatedPayoutId, List<TicketMessage> messages
+ String id, TicketCategory category, String subject, TicketStatus status, TicketTeam team, DateTime createdAt, DateTime updatedAt, String body, DateTime? firstReplyAt, DateTime? resolvedAt, String? relatedConsultationId, String? relatedPayoutId, List<TicketMessage> messages
 });
 
 
@@ -351,10 +351,10 @@ class _$TicketDetailCopyWithImpl<$Res>
   return _then(TicketDetail(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,category: null == category ? _self.category : category // ignore: cast_nullable_to_non_nullable
-as String,subject: null == subject ? _self.subject : subject // ignore: cast_nullable_to_non_nullable
+as TicketCategory,subject: null == subject ? _self.subject : subject // ignore: cast_nullable_to_non_nullable
 as String,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
-as String,team: null == team ? _self.team : team // ignore: cast_nullable_to_non_nullable
-as String,createdAt: null == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
+as TicketStatus,team: null == team ? _self.team : team // ignore: cast_nullable_to_non_nullable
+as TicketTeam,createdAt: null == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
 as DateTime,updatedAt: null == updatedAt ? _self.updatedAt : updatedAt // ignore: cast_nullable_to_non_nullable
 as DateTime,body: null == body ? _self.body : body // ignore: cast_nullable_to_non_nullable
 as String,firstReplyAt: freezed == firstReplyAt ? _self.firstReplyAt : firstReplyAt // ignore: cast_nullable_to_non_nullable
@@ -447,7 +447,7 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String category,  String subject,  String status,  String team,  DateTime createdAt,  DateTime updatedAt,  String body,  DateTime? firstReplyAt,  DateTime? resolvedAt,  String? relatedConsultationId,  String? relatedPayoutId,  List<TicketMessage> messages)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  TicketCategory category,  String subject,  TicketStatus status,  TicketTeam team,  DateTime createdAt,  DateTime updatedAt,  String body,  DateTime? firstReplyAt,  DateTime? resolvedAt,  String? relatedConsultationId,  String? relatedPayoutId,  List<TicketMessage> messages)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _TicketDetail() when $default != null:
 return $default(_that.id,_that.category,_that.subject,_that.status,_that.team,_that.createdAt,_that.updatedAt,_that.body,_that.firstReplyAt,_that.resolvedAt,_that.relatedConsultationId,_that.relatedPayoutId,_that.messages);case _:
@@ -468,7 +468,7 @@ return $default(_that.id,_that.category,_that.subject,_that.status,_that.team,_t
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String category,  String subject,  String status,  String team,  DateTime createdAt,  DateTime updatedAt,  String body,  DateTime? firstReplyAt,  DateTime? resolvedAt,  String? relatedConsultationId,  String? relatedPayoutId,  List<TicketMessage> messages)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  TicketCategory category,  String subject,  TicketStatus status,  TicketTeam team,  DateTime createdAt,  DateTime updatedAt,  String body,  DateTime? firstReplyAt,  DateTime? resolvedAt,  String? relatedConsultationId,  String? relatedPayoutId,  List<TicketMessage> messages)  $default,) {final _that = this;
 switch (_that) {
 case _TicketDetail():
 return $default(_that.id,_that.category,_that.subject,_that.status,_that.team,_that.createdAt,_that.updatedAt,_that.body,_that.firstReplyAt,_that.resolvedAt,_that.relatedConsultationId,_that.relatedPayoutId,_that.messages);case _:
@@ -488,7 +488,7 @@ return $default(_that.id,_that.category,_that.subject,_that.status,_that.team,_t
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String category,  String subject,  String status,  String team,  DateTime createdAt,  DateTime updatedAt,  String body,  DateTime? firstReplyAt,  DateTime? resolvedAt,  String? relatedConsultationId,  String? relatedPayoutId,  List<TicketMessage> messages)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  TicketCategory category,  String subject,  TicketStatus status,  TicketTeam team,  DateTime createdAt,  DateTime updatedAt,  String body,  DateTime? firstReplyAt,  DateTime? resolvedAt,  String? relatedConsultationId,  String? relatedPayoutId,  List<TicketMessage> messages)?  $default,) {final _that = this;
 switch (_that) {
 case _TicketDetail() when $default != null:
 return $default(_that.id,_that.category,_that.subject,_that.status,_that.team,_that.createdAt,_that.updatedAt,_that.body,_that.firstReplyAt,_that.resolvedAt,_that.relatedConsultationId,_that.relatedPayoutId,_that.messages);case _:
@@ -507,10 +507,10 @@ class _TicketDetail implements TicketDetail {
   factory _TicketDetail.fromJson(Map<String, dynamic> json) => _$TicketDetailFromJson(json);
 
 @override final  String id;
-@override final  String category;
+@override final  TicketCategory category;
 @override final  String subject;
-@override final  String status;
-@override final  String team;
+@override final  TicketStatus status;
+@override final  TicketTeam team;
 @override final  DateTime createdAt;
 @override final  DateTime updatedAt;
 @override final  String body;
@@ -559,7 +559,7 @@ abstract mixin class _$TicketDetailCopyWith<$Res> implements $TicketDetailCopyWi
   factory _$TicketDetailCopyWith(_TicketDetail value, $Res Function(_TicketDetail) _then) = __$TicketDetailCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String category, String subject, String status, String team, DateTime createdAt, DateTime updatedAt, String body, DateTime? firstReplyAt, DateTime? resolvedAt, String? relatedConsultationId, String? relatedPayoutId, List<TicketMessage> messages
+ String id, TicketCategory category, String subject, TicketStatus status, TicketTeam team, DateTime createdAt, DateTime updatedAt, String body, DateTime? firstReplyAt, DateTime? resolvedAt, String? relatedConsultationId, String? relatedPayoutId, List<TicketMessage> messages
 });
 
 
@@ -580,10 +580,10 @@ class __$TicketDetailCopyWithImpl<$Res>
   return _then(_TicketDetail(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,category: null == category ? _self.category : category // ignore: cast_nullable_to_non_nullable
-as String,subject: null == subject ? _self.subject : subject // ignore: cast_nullable_to_non_nullable
+as TicketCategory,subject: null == subject ? _self.subject : subject // ignore: cast_nullable_to_non_nullable
 as String,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
-as String,team: null == team ? _self.team : team // ignore: cast_nullable_to_non_nullable
-as String,createdAt: null == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
+as TicketStatus,team: null == team ? _self.team : team // ignore: cast_nullable_to_non_nullable
+as TicketTeam,createdAt: null == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
 as DateTime,updatedAt: null == updatedAt ? _self.updatedAt : updatedAt // ignore: cast_nullable_to_non_nullable
 as DateTime,body: null == body ? _self.body : body // ignore: cast_nullable_to_non_nullable
 as String,firstReplyAt: freezed == firstReplyAt ? _self.firstReplyAt : firstReplyAt // ignore: cast_nullable_to_non_nullable
@@ -602,7 +602,7 @@ as List<TicketMessage>,
 /// @nodoc
 mixin _$TicketMessage {
 
- String get id; String get authorKind; String get body; DateTime get createdAt;
+ String get id; TicketAuthorKind get authorKind; String get body; DateTime get createdAt;
 /// Create a copy of TicketMessage
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -635,7 +635,7 @@ abstract mixin class $TicketMessageCopyWith<$Res>  {
   factory $TicketMessageCopyWith(TicketMessage value, $Res Function(TicketMessage) _then) = _$TicketMessageCopyWithImpl;
 @useResult
 $Res call({
- String id, String authorKind, String body, DateTime createdAt
+ String id, TicketAuthorKind authorKind, String body, DateTime createdAt
 });
 
 
@@ -656,7 +656,7 @@ class _$TicketMessageCopyWithImpl<$Res>
   return _then(TicketMessage(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,authorKind: null == authorKind ? _self.authorKind : authorKind // ignore: cast_nullable_to_non_nullable
-as String,body: null == body ? _self.body : body // ignore: cast_nullable_to_non_nullable
+as TicketAuthorKind,body: null == body ? _self.body : body // ignore: cast_nullable_to_non_nullable
 as String,createdAt: null == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
 as DateTime,
   ));
@@ -743,7 +743,7 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String authorKind,  String body,  DateTime createdAt)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  TicketAuthorKind authorKind,  String body,  DateTime createdAt)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _TicketMessage() when $default != null:
 return $default(_that.id,_that.authorKind,_that.body,_that.createdAt);case _:
@@ -764,7 +764,7 @@ return $default(_that.id,_that.authorKind,_that.body,_that.createdAt);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String authorKind,  String body,  DateTime createdAt)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  TicketAuthorKind authorKind,  String body,  DateTime createdAt)  $default,) {final _that = this;
 switch (_that) {
 case _TicketMessage():
 return $default(_that.id,_that.authorKind,_that.body,_that.createdAt);case _:
@@ -784,7 +784,7 @@ return $default(_that.id,_that.authorKind,_that.body,_that.createdAt);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String authorKind,  String body,  DateTime createdAt)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  TicketAuthorKind authorKind,  String body,  DateTime createdAt)?  $default,) {final _that = this;
 switch (_that) {
 case _TicketMessage() when $default != null:
 return $default(_that.id,_that.authorKind,_that.body,_that.createdAt);case _:
@@ -803,7 +803,7 @@ class _TicketMessage implements TicketMessage {
   factory _TicketMessage.fromJson(Map<String, dynamic> json) => _$TicketMessageFromJson(json);
 
 @override final  String id;
-@override final  String authorKind;
+@override final  TicketAuthorKind authorKind;
 @override final  String body;
 @override final  DateTime createdAt;
 
@@ -840,7 +840,7 @@ abstract mixin class _$TicketMessageCopyWith<$Res> implements $TicketMessageCopy
   factory _$TicketMessageCopyWith(_TicketMessage value, $Res Function(_TicketMessage) _then) = __$TicketMessageCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String authorKind, String body, DateTime createdAt
+ String id, TicketAuthorKind authorKind, String body, DateTime createdAt
 });
 
 
@@ -861,7 +861,7 @@ class __$TicketMessageCopyWithImpl<$Res>
   return _then(_TicketMessage(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,authorKind: null == authorKind ? _self.authorKind : authorKind // ignore: cast_nullable_to_non_nullable
-as String,body: null == body ? _self.body : body // ignore: cast_nullable_to_non_nullable
+as TicketAuthorKind,body: null == body ? _self.body : body // ignore: cast_nullable_to_non_nullable
 as String,createdAt: null == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
 as DateTime,
   ));
