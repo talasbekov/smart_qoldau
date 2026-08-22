@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- Universal Links (задача 23 эпика E6). Требует, чтобы сайт отдавал
+	     /.well-known/apple-app-site-association — входное условие для
+	     лендинга (эпик E10), см. docs/deeplinks.md. -->
+	<key>com.apple.developer.associated-domains</key>
+	<array>
+		<string>applinks:smartqoldau.kz</string>
+	</array>
+</dict>
+</plist>

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'app.dart';
+import 'core/deep_links.dart';
 import 'core/locale_controller.dart';
 import 'core/push/fcm_push_token_source.dart';
 import 'core/push/firebase_push_messaging_port.dart';
@@ -33,13 +34,22 @@ Future<void> main() async {
         ),
         localNotificationPresenterProvider.overrideWithValue(port.showLocal),
       ],
-      // Навигация по нажатому пушу идёт тем же роутером, что и всё
-      // остальное: отдельный стек разошёлся бы с редирект-гардом сессии.
+      // Навигация по нажатому пушу и по отложенной ссылке идёт тем же
+      // роутером, что и всё остальное: отдельный стек разошёлся бы с
+      // редирект-гардом сессии.
       pushNavigatorProvider.overrideWith(
+        (ref) => (route) => ref.read(routerProvider).go(route),
+      ),
+      deepLinkNavigatorProvider.overrideWith(
         (ref) => (route) => ref.read(routerProvider).go(route),
       ),
     ],
   );
+
+  // Обработчик отложенных ссылок должен существовать до первого кадра:
+  // ссылка холодного старта приходит роутеру сразу, ещё до восстановления
+  // сессии.
+  container.read(deepLinkHandlerProvider);
 
   runApp(
     UncontrolledProviderScope(

@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared/shared.dart';
 
+import 'core/deep_links.dart';
 import 'core/route_paths.dart';
 import 'features/auth/state/auth_controller.dart';
 import 'features/auth/ui/splash_screen.dart';
@@ -88,6 +89,22 @@ class _AuthRefreshNotifier extends ChangeNotifier {
 String? _redirect(Ref ref, GoRouterState state) {
   final location = state.matchedLocation;
   final authState = ref.read(authControllerProvider).valueOrNull;
+
+  // Входящая ссылка (App Links / Universal Links): Flutter отдаёт её как
+  // обычный путь (`/e/expert-1`), которого в таблице маршрутов нет. Здесь
+  // он переводится в маршрут приложения — единственным разбором
+  // `DeepLinks`, тем же, что и у пуша.
+  final deepLinkRoute = DeepLinks.resolvePath(location);
+  if (deepLinkRoute != null) {
+    // Сессии ещё нет — цель запоминается и применяется, как только
+    // `AuthController` выйдет из `AuthUnknown`: иначе гард уведёт на
+    // `/splash` и ссылка потеряется.
+    if (authState == null || authState is AuthUnknown) {
+      ref.read(deepLinkHandlerProvider).handlePath(location);
+      return RoutePaths.splash;
+    }
+    return deepLinkRoute;
+  }
 
   if (authState == null || authState is AuthUnknown) {
     return location == RoutePaths.splash ? null : RoutePaths.splash;
