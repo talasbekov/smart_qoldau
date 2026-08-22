@@ -72,6 +72,17 @@ void main() {
         pathProviderChannel,
         (call) async => Directory.systemTemp.path,
       );
+      // Автоматическая пост-тестовая уборка Flutter не снимает хендлеры,
+      // установленные автором теста на произвольных каналах (она сбрасывает
+      // только то, что ставит сама) — снимаем его явно, иначе он молча
+      // провисит на все оставшиеся тесты файла и подменит path_provider
+      // любому будущему тесту, которому понадобится настоящий провайдер.
+      addTearDown(
+        () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+          pathProviderChannel,
+          null,
+        ),
+      );
 
       final suppressed = <String>[];
       final quietZone = ZoneSpecification(
