@@ -224,7 +224,7 @@ void main() {
     );
   });
 
-  group('connectSqEvents — разрыв, похожий на отказ аутентификации (Round 1 п.4, Round 2 п.1/2, Round 3 п.1)', () {
+  group('connectSqEvents — разрыв, похожий на отказ аутентификации (Round 1 п.4, Round 2 п.1/2, Round 3 п.1, Round 4 п.1/2)', () {
     test(
       'разрыв связи запускает обновление токена через переданный refresh '
       'и переподключение свежим токеном',
@@ -261,14 +261,11 @@ void main() {
     );
 
     test(
-      'провал рефреша с 401 (мёртвый refresh-токен) расходует бюджет, но '
-      'НЕ инвалидирует сессию сразу — только при исчерпании (Round 3, п.1)',
+      'настоящий 401 на /auth/refresh инвалидирует сессию НЕМЕДЛЕННО, с '
+      'первой же попытки (Round 4, п.1 — отменяет решение Round 3: повтор '
+      'структурно обречён, отзыв refresh-токена на бэкенде необратим, '
+      'вторая попытка гарантированно получила бы тот же 401)',
       () async {
-        // До Round 3 один-единственный 401 немедленно чистил сессию, не
-        // дожидаясь исчерпания бюджета. Теперь 401 — «приговор», но
-        // списывает лишь ОДНУ попытку; инвалидация приходит только когда
-        // бюджет исчерпан (см. отдельный тест «бюджет попыток ограничен»
-        // ниже).
         final store = TokenStore(_FakeSecureStore());
         await store.write(_tokens('old'));
         final socket = _FakeSqSocket();
@@ -294,20 +291,15 @@ void main() {
         await pumpEventQueue();
 
         expect(refreshCalls, 1);
-        expect(invalidated, isFalse);
-        expect(
-          (await store.read())?.accessToken,
-          'old',
-          reason: 'одна неудачная попытка бюджет не исчерпывает',
-        );
+        expect(invalidated, isTrue);
+        expect(await store.read(), isNull);
         await connection.dispose();
       },
     );
 
     test(
-      'три подряд разрыва, где рефреш падает СЕТЕВОЙ ошибкой, НЕ тратят '
-      'бюджет и не инвалидируют сессию (Round 3, п.1 — регресс раунда 2: '
-      'обычные обрывы связи в метро не должны разлогинивать)',
+      'три подряд разрыва, где рефреш падает СЕТЕВОЙ ошибкой, НЕ инвалидируют '
+      'сессию — cooldown схлопывает их в ОДНУ попытку (Round 4, п.2)',
       () async {
         final store = TokenStore(_FakeSecureStore());
         await store.write(_tokens('old'));
@@ -326,6 +318,10 @@ void main() {
             );
           },
           onSessionInvalid: () => invalidated = true,
+          // Фиксированное "сейчас" — детерминированно держит все три
+          // разрыва ВНУТРИ одного cooldown-окна, не полагаясь на то, что
+          // тест физически выполнится быстрее 30 секунд по часам машины.
+          now: () => DateTime(2026),
         );
         await pumpEventQueue();
 
@@ -338,11 +334,10 @@ void main() {
 
         expect(
           refreshCalls,
-          3,
+          1,
           reason:
-              'все три попытки должны были реально случиться — бюджет с '
-              'сетевых сбоев не расходуется, а значит и не мог '
-              'преждевременно оборвать серию попыток',
+              'первый разрыв тратит попытку, второй и третий — внутри '
+              'cooldown-окна и не должны звонить /auth/refresh повторно',
         );
         expect(invalidated, isFalse);
         expect(
@@ -355,8 +350,64 @@ void main() {
     );
 
     test(
-      'провал рефреша с 5xx (не 401) тоже НЕ тратит бюджет и не '
-      'инвалидирует — «попробуем позже», как и сетевая ошибка',
+      'cooldown — это интервал, а не счётчик: сколько угодно сетевых '
+      'разрывов внутри окна остаются ОДНОЙ попыткой и НИКОГДА не '
+      'инвалидируют сессию; по истечении окна разрешена следующая попытка '
+      '(Round 4, п.2 — заменяет бывший счётчик-бюджет, который на N+1-м '
+      'разрыве ПОДРЯД инвалидировал бы полностью живую, просто '
+      'нестабильную сессию)',
+      () async {
+        final store = TokenStore(_FakeSecureStore());
+        await store.write(_tokens('old'));
+        final socket = _FakeSqSocket();
+        var invalidated = false;
+        var refreshCalls = 0;
+        var fakeNow = DateTime(2026);
+        final connection = connectSqEvents(
+          store,
+          socket,
+          refresh: () async {
+            refreshCalls++;
+            throw const ApiException(ApiErrorCode.network, 'нет сети', 0);
+          },
+          onSessionInvalid: () => invalidated = true,
+          now: () => fakeNow,
+        );
+        await pumpEventQueue();
+
+        // Пять разрывов ПОДРЯД внутри одного окна cooldown — со старым
+        // бюджетом (2 попытки) это уже трижды хватило бы на инвалидацию
+        // полностью живой сессии.
+        for (var i = 0; i < 5; i++) {
+          socket.pushConnectionState(SqConnectionState.disconnected);
+          await pumpEventQueue();
+        }
+        expect(refreshCalls, 1);
+        expect(invalidated, isFalse);
+
+        // Время ушло дальше cooldown-окна (30 секунд, см.
+        // `_authRefreshCooldown` в providers.dart) — следующий разрыв
+        // снова вправе попробовать рефреш.
+        fakeNow = fakeNow.add(const Duration(seconds: 31));
+        socket.pushConnectionState(SqConnectionState.disconnected);
+        await pumpEventQueue();
+
+        expect(refreshCalls, 2);
+        expect(invalidated, isFalse);
+        expect(
+          (await store.read())?.accessToken,
+          'old',
+          reason:
+              'сессия жива сколь угодно долго — сетевой сбой никогда не '
+              'повод разлогинивать, вне зависимости от числа попыток',
+        );
+        await connection.dispose();
+      },
+    );
+
+    test(
+      'провал рефреша с 5xx (не 401) НЕ инвалидирует — «попробуем позже», '
+      'как и сетевая ошибка',
       () async {
         final store = TokenStore(_FakeSecureStore());
         await store.write(_tokens('old'));
@@ -410,96 +461,6 @@ void main() {
           'old',
           reason: 'сессия сохраняется — сеть может вернуться сама',
         );
-        await connection.dispose();
-      },
-    );
-
-    test(
-      'бюджет попыток ограничен: несколько РЕАЛЬНЫХ отказов аутентификации '
-      '(401) подряд без успешного connected между ними в итоге инвалидируют '
-      'сессию (Round 3, п.1 — раньше это ошибочно достигалось и success-, и '
-      'network-исходами тоже, теперь только настоящим 401)',
-      () async {
-        final store = TokenStore(_FakeSecureStore());
-        await store.write(_tokens('old'));
-        final socket = _FakeSqSocket();
-        var invalidated = false;
-        var refreshCalls = 0;
-        final connection = connectSqEvents(
-          store,
-          socket,
-          refresh: () async {
-            refreshCalls++;
-            throw const ApiException(
-              ApiErrorCode.unauthorized,
-              'refresh-токен тоже мёртв',
-              401,
-            );
-          },
-          onSessionInvalid: () => invalidated = true,
-        );
-        await pumpEventQueue();
-
-        // Три разрыва ПОДРЯД, ни разу не дойдя до connected.
-        socket.pushConnectionState(SqConnectionState.disconnected);
-        await pumpEventQueue();
-        socket.pushConnectionState(SqConnectionState.disconnected);
-        await pumpEventQueue();
-        socket.pushConnectionState(SqConnectionState.disconnected);
-        await pumpEventQueue();
-
-        expect(
-          refreshCalls,
-          2,
-          reason: 'бюджет — 2 попытки; третья должна была уже сдаться',
-        );
-        expect(invalidated, isTrue);
-        await connection.dispose();
-      },
-    );
-
-    test(
-      'успешный connected сбрасывает бюджет — новая серия РЕАЛЬНЫХ отказов '
-      'аутентификации (401) снова получает полный запас попыток',
-      () async {
-        final store = TokenStore(_FakeSecureStore());
-        await store.write(_tokens('old'));
-        final socket = _FakeSqSocket();
-        var invalidated = false;
-        var refreshCalls = 0;
-        final connection = connectSqEvents(
-          store,
-          socket,
-          refresh: () async {
-            refreshCalls++;
-            throw const ApiException(
-              ApiErrorCode.unauthorized,
-              'refresh-токен тоже мёртв',
-              401,
-            );
-          },
-          onSessionInvalid: () => invalidated = true,
-        );
-        await pumpEventQueue();
-
-        socket.pushConnectionState(SqConnectionState.disconnected);
-        await pumpEventQueue();
-        socket.pushConnectionState(SqConnectionState.disconnected);
-        await pumpEventQueue();
-        // Между сериями — успешный connected: бюджет должен сброситься.
-        socket.pushConnectionState(SqConnectionState.connected);
-        await pumpEventQueue();
-        socket.pushConnectionState(SqConnectionState.disconnected);
-        await pumpEventQueue();
-        socket.pushConnectionState(SqConnectionState.disconnected);
-        await pumpEventQueue();
-
-        expect(
-          refreshCalls,
-          4,
-          reason: 'после сброса бюджета доступны ещё 2 попытки',
-        );
-        expect(invalidated, isFalse);
         await connection.dispose();
       },
     );
