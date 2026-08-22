@@ -172,4 +172,87 @@ class AppLocalizationsKk extends AppLocalizations {
   String resendCodeCountdown(int seconds) {
     return '$seconds с кейін қайта жіберу';
   }
+
+  @override
+  String get welcomeTitle => 'SmartQoldau-ға қош келдіңіз';
+
+  @override
+  String get welcomeSubtitle =>
+      'Психологиялық қолдау жаныңызда — дайын болған кезде айтыңыз';
+
+  @override
+  String get actionLoginByPhone => 'Нөмір арқылы кіру';
+
+  @override
+  String get actionContinueAnonymously => 'Анонимді түрде жалғастыру';
+
+  @override
+  String get welcomeTermsLink => 'Пайдаланушы келісімі';
+
+  @override
+  String get welcomePrivacyLink => 'Құпиялылық саясаты';
+
+  @override
+  String get slidesTitle1 => 'Кеңес берудің әртүрлі форматтары';
+
+  @override
+  String get slidesDescription1 =>
+      'Психологпен чатта, аудио немесе бейне арқылы сөйлесіңіз — өзіңізге ыңғайлы форматты таңдаңыз';
+
+  @override
+  String get slidesTitle2 => 'Құпия және анонимді';
+
+  @override
+  String get slidesDescription2 =>
+      'Тіркелусіз жүгінуге болады: атыңызды көрсету міндетті емес, деректеріңіз қорғалған';
+
+  @override
+  String get slidesTitle3 => '1–2 минутта жауап';
+
+  @override
+  String get slidesDescription3 =>
+      'Психолог дерлік бірден байланысқа шығады — сағаттап күтудің қажеті жоқ';
+
+  @override
+  String get slidesSkip => 'Өткізіп жіберу';
+
+  @override
+  String get slidesNext => 'Келесі';
+
+  @override
+  String get slidesStart => 'Бастау';
+
+  @override
+  String get permissionsTitle => 'Рұқсаттар';
+
+  @override
+  String get permissionsSubtitle =>
+      'Психологпен қоңырауда қажет болады — бұл рұқсаттарды кейінірек те баптауға болады';
+
+  @override
+  String get permissionMicrophoneTitle => 'Микрофон';
+
+  @override
+  String get permissionMicrophoneDescription =>
+      'Психологпен аудио кеңес үшін қажет';
+
+  @override
+  String get permissionCameraTitle => 'Камера';
+
+  @override
+  String get permissionCameraDescription =>
+      'Психологпен бейне кеңес үшін қажет';
+
+  @override
+  String get permissionNotificationsTitle => 'Хабарландырулар';
+
+  @override
+  String get permissionNotificationsDescription =>
+      'Психолог жауап бергенде немесе кеңес басталғанда хабарлаймыз';
+
+  @override
+  String get actionAllow => 'Рұқсат ету';
+
+  @override
+  String get actionLater => 'Кейінірек';
 }

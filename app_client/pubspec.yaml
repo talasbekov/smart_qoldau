@@ -45,6 +45,10 @@ dependencies:
   shared_preferences: ^2.5.5
   flutter_secure_storage: ^11.0.0
   uuid: ^4.6.0
+  # Онбординг (E6/задача 6): запрос разрешений и внешние ссылки на
+  # пользовательское соглашение/политику конфиденциальности.
+  permission_handler: ^13.0.1
+  url_launcher: ^6.3.2
 
 dev_dependencies:
   flutter_test:

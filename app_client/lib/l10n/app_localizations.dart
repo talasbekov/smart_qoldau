@@ -415,6 +415,156 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Отправить повторно через {seconds} с'**
   String resendCodeCountdown(int seconds);
+
+  /// Заголовок экрана приветствия — точки входа для неавторизованного пользователя
+  ///
+  /// In ru, this message translates to:
+  /// **'Добро пожаловать в SmartQoldau'**
+  String get welcomeTitle;
+
+  /// Ценностное предложение под заголовком экрана приветствия
+  ///
+  /// In ru, this message translates to:
+  /// **'Психологическая поддержка рядом — говорите об этом, когда будете готовы'**
+  String get welcomeSubtitle;
+
+  /// Кнопка входа по номеру телефона на экране приветствия
+  ///
+  /// In ru, this message translates to:
+  /// **'Войти по номеру'**
+  String get actionLoginByPhone;
+
+  /// Кнопка анонимного (гостевого) входа на экране приветствия — равноправна кнопке входа по номеру (БП-10)
+  ///
+  /// In ru, this message translates to:
+  /// **'Продолжить анонимно'**
+  String get actionContinueAnonymously;
+
+  /// Ссылка на страницу пользовательского соглашения на экране приветствия
+  ///
+  /// In ru, this message translates to:
+  /// **'Пользовательское соглашение'**
+  String get welcomeTermsLink;
+
+  /// Ссылка на страницу политики конфиденциальности на экране приветствия
+  ///
+  /// In ru, this message translates to:
+  /// **'Политика конфиденциальности'**
+  String get welcomePrivacyLink;
+
+  /// Заголовок первого вводного слайда онбординга — форматы консультаций
+  ///
+  /// In ru, this message translates to:
+  /// **'Разные форматы консультаций'**
+  String get slidesTitle1;
+
+  /// Описание первого вводного слайда онбординга — форматы консультаций
+  ///
+  /// In ru, this message translates to:
+  /// **'Общайтесь с психологом в чате, по аудио или видео — выбирайте удобный формат'**
+  String get slidesDescription1;
+
+  /// Заголовок второго вводного слайда онбординга — конфиденциальность и анонимность
+  ///
+  /// In ru, this message translates to:
+  /// **'Конфиденциально и анонимно'**
+  String get slidesTitle2;
+
+  /// Описание второго вводного слайда онбординга — конфиденциальность и анонимность
+  ///
+  /// In ru, this message translates to:
+  /// **'Можно обратиться без регистрации: имя указывать не обязательно, данные защищены'**
+  String get slidesDescription2;
+
+  /// Заголовок третьего вводного слайда онбординга — скорость ответа
+  ///
+  /// In ru, this message translates to:
+  /// **'Ответ за 1–2 минуты'**
+  String get slidesTitle3;
+
+  /// Описание третьего вводного слайда онбординга — скорость ответа
+  ///
+  /// In ru, this message translates to:
+  /// **'Психолог выходит на связь почти сразу — не нужно ждать часами'**
+  String get slidesDescription3;
+
+  /// Кнопка пропуска вводных слайдов онбординга
+  ///
+  /// In ru, this message translates to:
+  /// **'Пропустить'**
+  String get slidesSkip;
+
+  /// Кнопка перехода к следующему вводному слайду онбординга
+  ///
+  /// In ru, this message translates to:
+  /// **'Далее'**
+  String get slidesNext;
+
+  /// Кнопка завершения вводных слайдов онбординга на последнем слайде
+  ///
+  /// In ru, this message translates to:
+  /// **'Начать'**
+  String get slidesStart;
+
+  /// Заголовок экрана запроса разрешений онбординга
+  ///
+  /// In ru, this message translates to:
+  /// **'Разрешения'**
+  String get permissionsTitle;
+
+  /// Пояснение под заголовком экрана запроса разрешений — отказ не блокирует вход
+  ///
+  /// In ru, this message translates to:
+  /// **'Пригодится в звонках с психологом — эти разрешения можно настроить и позже'**
+  String get permissionsSubtitle;
+
+  /// Название разрешения на доступ к микрофону на экране запроса разрешений
+  ///
+  /// In ru, this message translates to:
+  /// **'Микрофон'**
+  String get permissionMicrophoneTitle;
+
+  /// Объяснение, зачем нужен доступ к микрофону
+  ///
+  /// In ru, this message translates to:
+  /// **'Нужен для аудиоконсультаций с психологом'**
+  String get permissionMicrophoneDescription;
+
+  /// Название разрешения на доступ к камере на экране запроса разрешений
+  ///
+  /// In ru, this message translates to:
+  /// **'Камера'**
+  String get permissionCameraTitle;
+
+  /// Объяснение, зачем нужен доступ к камере
+  ///
+  /// In ru, this message translates to:
+  /// **'Нужна для видеоконсультаций с психологом'**
+  String get permissionCameraDescription;
+
+  /// Название разрешения на уведомления на экране запроса разрешений
+  ///
+  /// In ru, this message translates to:
+  /// **'Уведомления'**
+  String get permissionNotificationsTitle;
+
+  /// Объяснение, зачем нужны уведомления
+  ///
+  /// In ru, this message translates to:
+  /// **'Сообщим, когда психолог ответит или начнётся консультация'**
+  String get permissionNotificationsDescription;
+
+  /// Кнопка предоставления запрошенных разрешений
+  ///
+  /// In ru, this message translates to:
+  /// **'Разрешить'**
+  String get actionAllow;
+
+  /// Кнопка пропуска запроса разрешений без блокировки входа
+  ///
+  /// In ru, this message translates to:
+  /// **'Позже'**
+  String get actionLater;
 }
 
 class _AppLocalizationsDelegate

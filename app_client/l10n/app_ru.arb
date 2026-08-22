@@ -221,5 +221,105 @@
         "type": "int"
       }
     }
+  },
+  "welcomeTitle": "Добро пожаловать в SmartQoldau",
+  "@welcomeTitle": {
+    "description": "Заголовок экрана приветствия — точки входа для неавторизованного пользователя"
+  },
+  "welcomeSubtitle": "Психологическая поддержка рядом — говорите об этом, когда будете готовы",
+  "@welcomeSubtitle": {
+    "description": "Ценностное предложение под заголовком экрана приветствия"
+  },
+  "actionLoginByPhone": "Войти по номеру",
+  "@actionLoginByPhone": {
+    "description": "Кнопка входа по номеру телефона на экране приветствия"
+  },
+  "actionContinueAnonymously": "Продолжить анонимно",
+  "@actionContinueAnonymously": {
+    "description": "Кнопка анонимного (гостевого) входа на экране приветствия — равноправна кнопке входа по номеру (БП-10)"
+  },
+  "welcomeTermsLink": "Пользовательское соглашение",
+  "@welcomeTermsLink": {
+    "description": "Ссылка на страницу пользовательского соглашения на экране приветствия"
+  },
+  "welcomePrivacyLink": "Политика конфиденциальности",
+  "@welcomePrivacyLink": {
+    "description": "Ссылка на страницу политики конфиденциальности на экране приветствия"
+  },
+  "slidesTitle1": "Разные форматы консультаций",
+  "@slidesTitle1": {
+    "description": "Заголовок первого вводного слайда онбординга — форматы консультаций"
+  },
+  "slidesDescription1": "Общайтесь с психологом в чате, по аудио или видео — выбирайте удобный формат",
+  "@slidesDescription1": {
+    "description": "Описание первого вводного слайда онбординга — форматы консультаций"
+  },
+  "slidesTitle2": "Конфиденциально и анонимно",
+  "@slidesTitle2": {
+    "description": "Заголовок второго вводного слайда онбординга — конфиденциальность и анонимность"
+  },
+  "slidesDescription2": "Можно обратиться без регистрации: имя указывать не обязательно, данные защищены",
+  "@slidesDescription2": {
+    "description": "Описание второго вводного слайда онбординга — конфиденциальность и анонимность"
+  },
+  "slidesTitle3": "Ответ за 1–2 минуты",
+  "@slidesTitle3": {
+    "description": "Заголовок третьего вводного слайда онбординга — скорость ответа"
+  },
+  "slidesDescription3": "Психолог выходит на связь почти сразу — не нужно ждать часами",
+  "@slidesDescription3": {
+    "description": "Описание третьего вводного слайда онбординга — скорость ответа"
+  },
+  "slidesSkip": "Пропустить",
+  "@slidesSkip": {
+    "description": "Кнопка пропуска вводных слайдов онбординга"
+  },
+  "slidesNext": "Далее",
+  "@slidesNext": {
+    "description": "Кнопка перехода к следующему вводному слайду онбординга"
+  },
+  "slidesStart": "Начать",
+  "@slidesStart": {
+    "description": "Кнопка завершения вводных слайдов онбординга на последнем слайде"
+  },
+  "permissionsTitle": "Разрешения",
+  "@permissionsTitle": {
+    "description": "Заголовок экрана запроса разрешений онбординга"
+  },
+  "permissionsSubtitle": "Пригодится в звонках с психологом — эти разрешения можно настроить и позже",
+  "@permissionsSubtitle": {
+    "description": "Пояснение под заголовком экрана запроса разрешений — отказ не блокирует вход"
+  },
+  "permissionMicrophoneTitle": "Микрофон",
+  "@permissionMicrophoneTitle": {
+    "description": "Название разрешения на доступ к микрофону на экране запроса разрешений"
+  },
+  "permissionMicrophoneDescription": "Нужен для аудиоконсультаций с психологом",
+  "@permissionMicrophoneDescription": {
+    "description": "Объяснение, зачем нужен доступ к микрофону"
+  },
+  "permissionCameraTitle": "Камера",
+  "@permissionCameraTitle": {
+    "description": "Название разрешения на доступ к камере на экране запроса разрешений"
+  },
+  "permissionCameraDescription": "Нужна для видеоконсультаций с психологом",
+  "@permissionCameraDescription": {
+    "description": "Объяснение, зачем нужен доступ к камере"
+  },
+  "permissionNotificationsTitle": "Уведомления",
+  "@permissionNotificationsTitle": {
+    "description": "Название разрешения на уведомления на экране запроса разрешений"
+  },
+  "permissionNotificationsDescription": "Сообщим, когда психолог ответит или начнётся консультация",
+  "@permissionNotificationsDescription": {
+    "description": "Объяснение, зачем нужны уведомления"
+  },
+  "actionAllow": "Разрешить",
+  "@actionAllow": {
+    "description": "Кнопка предоставления запрошенных разрешений"
+  },
+  "actionLater": "Позже",
+  "@actionLater": {
+    "description": "Кнопка пропуска запроса разрешений без блокировки входа"
   }
 }

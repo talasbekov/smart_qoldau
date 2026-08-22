@@ -173,4 +173,87 @@ class AppLocalizationsRu extends AppLocalizations {
   String resendCodeCountdown(int seconds) {
     return 'Отправить повторно через $seconds с';
   }
+
+  @override
+  String get welcomeTitle => 'Добро пожаловать в SmartQoldau';
+
+  @override
+  String get welcomeSubtitle =>
+      'Психологическая поддержка рядом — говорите об этом, когда будете готовы';
+
+  @override
+  String get actionLoginByPhone => 'Войти по номеру';
+
+  @override
+  String get actionContinueAnonymously => 'Продолжить анонимно';
+
+  @override
+  String get welcomeTermsLink => 'Пользовательское соглашение';
+
+  @override
+  String get welcomePrivacyLink => 'Политика конфиденциальности';
+
+  @override
+  String get slidesTitle1 => 'Разные форматы консультаций';
+
+  @override
+  String get slidesDescription1 =>
+      'Общайтесь с психологом в чате, по аудио или видео — выбирайте удобный формат';
+
+  @override
+  String get slidesTitle2 => 'Конфиденциально и анонимно';
+
+  @override
+  String get slidesDescription2 =>
+      'Можно обратиться без регистрации: имя указывать не обязательно, данные защищены';
+
+  @override
+  String get slidesTitle3 => 'Ответ за 1–2 минуты';
+
+  @override
+  String get slidesDescription3 =>
+      'Психолог выходит на связь почти сразу — не нужно ждать часами';
+
+  @override
+  String get slidesSkip => 'Пропустить';
+
+  @override
+  String get slidesNext => 'Далее';
+
+  @override
+  String get slidesStart => 'Начать';
+
+  @override
+  String get permissionsTitle => 'Разрешения';
+
+  @override
+  String get permissionsSubtitle =>
+      'Пригодится в звонках с психологом — эти разрешения можно настроить и позже';
+
+  @override
+  String get permissionMicrophoneTitle => 'Микрофон';
+
+  @override
+  String get permissionMicrophoneDescription =>
+      'Нужен для аудиоконсультаций с психологом';
+
+  @override
+  String get permissionCameraTitle => 'Камера';
+
+  @override
+  String get permissionCameraDescription =>
+      'Нужна для видеоконсультаций с психологом';
+
+  @override
+  String get permissionNotificationsTitle => 'Уведомления';
+
+  @override
+  String get permissionNotificationsDescription =>
+      'Сообщим, когда психолог ответит или начнётся консультация';
+
+  @override
+  String get actionAllow => 'Разрешить';
+
+  @override
+  String get actionLater => 'Позже';
 }

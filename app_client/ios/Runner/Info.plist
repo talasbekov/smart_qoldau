@@ -26,6 +26,12 @@
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<!-- Онбординг (E6/задача 6): пояснения для системного диалога запроса
+	     разрешений — объясняют пользу, а не факт наличия доступа. -->
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Микрофон нужен для аудиоконсультаций с психологом</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Камера нужна для видеоконсультаций с психологом</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>
