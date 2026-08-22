@@ -10,6 +10,7 @@ import { SMS_PROVIDER_TOKEN, SmsProvider } from '../src/auth/sms/sms.provider';
 import { createApp } from './utils/create-app';
 import { acceptingExpert as acceptingExpertHelper } from './utils/expert-helpers';
 import { clientUser as clientUserHelper } from './utils/client-helpers';
+import { flushPushOutbox } from './utils/outbox-helpers';
 
 // Номера спека задачи 7 (E9, чат-пуш офлайн-получателю), не пересекаются с
 // другими спеками.
@@ -230,6 +231,9 @@ describe('Чат-пуш офлайн-получателю, без текста �
   }
 
   async function pushSentTo(token: string): Promise<any[]> {
+    // Пуши уходят из очереди (E11a, задача 3): перед чтением
+    // прокручиваем тик — в бою это делает @Interval(1000).
+    await flushPushOutbox(app);
     const sent = await redis.lrange(`mockpush:sent:${token}`, 0, -1);
     return sent.map((s) => JSON.parse(s));
   }
@@ -256,7 +260,15 @@ describe('Чат-пуш офлайн-получателю, без текста �
       const found = await prisma.notification.findFirst({
         where: { userId, type },
       });
-      if (found) return found;
+      if (found) {
+        // Запись появилась — теперь прокручиваем тик очереди пушей
+        // (E11a, задача 3) и перечитываем: `pushSentAt` проставляет
+        // именно sweep, а не путь запроса.
+        await flushPushOutbox(app);
+        return prisma.notification.findFirstOrThrow({
+          where: { id: found.id },
+        });
+      }
       if (Date.now() > deadline) {
         throw new Error(
           `Timed out waiting for notification type=${type} userId=${userId}`,
@@ -336,6 +348,8 @@ describe('Чат-пуш офлайн-получателю, без текста �
     // dispatch, прежде чем проверять его отсутствие.
     await new Promise((r) => setTimeout(r, 500));
 
+    await flushPushOutbox(app);
+
     const stored = await prisma.notification.findFirst({
       where: { userId: expertUserId, type: 'chat.message' },
     });
@@ -371,6 +385,8 @@ describe('Чат-пуш офлайн-получателю, без текста �
     await expertMsgPromise;
 
     await new Promise((r) => setTimeout(r, 500));
+
+    await flushPushOutbox(app);
 
     const stored = await prisma.notification.findFirst({
       where: { userId: expertUserId, type: 'chat.message' },

@@ -18,6 +18,7 @@ import { SMS_PROVIDER_TOKEN, SmsProvider } from '../src/auth/sms/sms.provider';
 import { createApp } from './utils/create-app';
 import { acceptingExpert as acceptingExpertHelper } from './utils/expert-helpers';
 import { clientUser as clientUserHelper } from './utils/client-helpers';
+import { flushPushOutbox } from './utils/outbox-helpers';
 
 // Номера спека задачи 9 (E9, сквозной e2e шины уведомлений), не пересекаются
 // с другими спеками.
@@ -313,6 +314,9 @@ describe('Сквозной e2e шины уведомлений: заявка -> 
   }
 
   async function pushSentTo(token: string): Promise<any[]> {
+    // Пуши уходят из очереди (E11a, задача 3): перед чтением
+    // прокручиваем тик — в бою это делает @Interval(1000).
+    await flushPushOutbox(app);
     const sent = await redis.lrange(`mockpush:sent:${token}`, 0, -1);
     return sent.map((s) => JSON.parse(s));
   }
@@ -355,8 +359,15 @@ describe('Сквозной e2e шины уведомлений: заявка -> 
     // оффер ещё PENDING для проверки SMS-fallback) --------------------------
     const { offerId } = await requestOffer(cli1, exp);
 
-    const pushed1 = await pushSentTo('lc-tok-1');
-    const pushed2 = await pushSentTo('lc-tok-2');
+    // Фильтр по типу: с очередью (E11a, задача 3) на то же устройство
+    // доходит и пуш, поставленный ДО регистрации токена (verification.
+    // approved при создании эксперта) — раньше он терялся.
+    const offerPushOn = async (token: string) =>
+      (await pushSentTo(token)).filter(
+        (p: any) => p.data?.type === 'offer.incoming',
+      );
+    const pushed1 = await offerPushOn('lc-tok-1');
+    const pushed2 = await offerPushOn('lc-tok-2');
     expect(pushed1).toHaveLength(1);
     expect(pushed2).toHaveLength(1);
     for (const push of [pushed1[0], pushed2[0]]) {
@@ -366,6 +377,8 @@ describe('Сквозной e2e шины уведомлений: заявка -> 
       // PII-инвариант §5.8: ни темы, ни клиента, ни цены в теле пуша.
       expect(push.body).not.toMatch(/anxiety|тревог|price|тиын/i);
     }
+
+    await flushPushOutbox(app);
 
     const offerNotification = await prisma.notification.findFirstOrThrow({
       where: { userId: expertUserId, type: 'offer.incoming' },
@@ -407,6 +420,8 @@ describe('Сквозной e2e шины уведомлений: заявка -> 
     await post(exp.accessToken, `/v1/consultations/${consultationId}/complete`)
       .send({ outcome: 'COMPLETED' })
       .expect(200);
+
+    await flushPushOutbox(app);
 
     const earningNotification = await prisma.notification.findFirstOrThrow({
       where: { userId: expertUserId, type: 'earning.credited' },
@@ -453,6 +468,8 @@ describe('Сквозной e2e шины уведомлений: заявка -> 
         .status,
     ).toBe('PAID');
 
+    await flushPushOutbox(app);
+
     const payoutNotification = await prisma.notification.findFirstOrThrow({
       where: { userId: expertUserId, type: 'payout.paid' },
     });
@@ -495,6 +512,8 @@ describe('Сквозной e2e шины уведомлений: заявка -> 
       cli2.accessToken,
       `/v1/consultations/${consultationId2}/cancel`,
     ).expect(200);
+
+    await flushPushOutbox(app);
 
     const cancelNotification = await prisma.notification.findFirstOrThrow({
       where: { userId: expertUserId, type: 'consultation.cancelled' },

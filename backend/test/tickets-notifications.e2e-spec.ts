@@ -10,6 +10,7 @@ import { SMS_PROVIDER_TOKEN, SmsProvider } from '../src/auth/sms/sms.provider';
 import { createApp } from './utils/create-app';
 import { clientUser } from './utils/client-helpers';
 import { adminUser } from './utils/admin-helpers';
+import { flushPushOutbox } from './utils/outbox-helpers';
 
 // E8a, задача 9: уведомление автору тикета об ответе сотрудника (тип
 // ticket.replied, задача 9). Номера +77102xxxxxx свободны (не пересекаются с
@@ -132,6 +133,9 @@ describe('Уведомление автору об ответе поддержк
   }
 
   async function pushSentTo(token: string): Promise<any[]> {
+    // Пуши уходят из очереди (E11a, задача 3): перед чтением
+    // прокручиваем тик — в бою это делает @Interval(1000).
+    await flushPushOutbox(app);
     const sent = await redis.lrange(`mockpush:sent:${token}`, 0, -1);
     return sent.map((s) => JSON.parse(s));
   }
@@ -171,6 +175,8 @@ describe('Уведомление автору об ответе поддержк
     await post(`/v1/admin/tickets/${ticketId}/reply`, support.token)
       .send({ body: replyBody })
       .expect(200);
+
+    await flushPushOutbox(app);
 
     const stored = await prisma.notification.findFirstOrThrow({
       where: { userId: client.userId, type: 'ticket.replied' },
@@ -234,6 +240,8 @@ describe('Уведомление автору об ответе поддержк
     expect(afterReply.status).toBe('IN_PROGRESS');
     expect(afterReply.firstReplyAt).not.toBeNull();
     expect(afterReply.authorUserId).toBeNull();
+
+    await flushPushOutbox(app);
 
     const notifications = await prisma.notification.findMany({
       where: { type: 'ticket.replied' },

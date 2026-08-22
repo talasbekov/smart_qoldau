@@ -18,6 +18,7 @@ import {
   verifiedExpert as verifiedExpertHelper,
 } from './utils/expert-helpers';
 import { clientUser as clientUserHelper } from './utils/client-helpers';
+import { flushPushOutbox } from './utils/outbox-helpers';
 
 // Номера спека задачи 6 (E9, хуки доменных событий), не пересекаются с
 // другими спеками.
@@ -357,6 +358,9 @@ describe('Уведомления доменных событий: деньги, 
   }
 
   async function pushSentTo(token: string): Promise<any[]> {
+    // Пуши уходят из очереди (E11a, задача 3): перед чтением
+    // прокручиваем тик — в бою это делает @Interval(1000).
+    await flushPushOutbox(app);
     const sent = await redis.lrange(`mockpush:sent:${token}`, 0, -1);
     return sent.map((s) => JSON.parse(s));
   }
@@ -382,6 +386,8 @@ describe('Уведомления доменных событий: деньги, 
     await post(exp.accessToken, `/v1/consultations/${consultationId}/complete`)
       .send({ outcome: 'COMPLETED' })
       .expect(200);
+
+    await flushPushOutbox(app);
 
     const stored = await prisma.notification.findFirstOrThrow({
       where: { userId, type: 'earning.credited' },
@@ -424,6 +430,8 @@ describe('Уведомления доменных событий: деньги, 
       .send(body)
       .expect(200);
 
+    await flushPushOutbox(app);
+
     const stored = await prisma.notification.findFirstOrThrow({
       where: { userId, type: 'payout.paid' },
     });
@@ -454,6 +462,8 @@ describe('Уведомления доменных событий: деньги, 
       .set(...financeAuth.authHeader)
       .send({ reason: 'Подозрительная активность' })
       .expect(200);
+
+    await flushPushOutbox(app);
 
     const stored = await prisma.notification.findFirstOrThrow({
       where: { userId, type: 'payout.rejected' },
@@ -504,6 +514,8 @@ describe('Уведомления доменных событий: деньги, 
       .send({ approve: true })
       .expect(200);
 
+    await flushPushOutbox(app);
+
     const stored = await prisma.notification.findFirstOrThrow({
       where: { userId, type: 'verification.approved' },
     });
@@ -525,6 +537,8 @@ describe('Уведомления доменных событий: деньги, 
       cli.accessToken,
       `/v1/consultations/${consultationId}/cancel`,
     ).expect(200);
+
+    await flushPushOutbox(app);
 
     const stored = await prisma.notification.findFirstOrThrow({
       where: { userId, type: 'consultation.cancelled' },
@@ -550,6 +564,8 @@ describe('Уведомления доменных событий: деньги, 
       where: { id: consultationId },
     });
     expect(row.noShowNotifiedAt).not.toBeNull();
+
+    await flushPushOutbox(app);
 
     const stored = await prisma.notification.findFirstOrThrow({
       where: { userId, type: 'consultation.no_show_hint' },

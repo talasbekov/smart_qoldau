@@ -8,6 +8,7 @@ import { SMS_PROVIDER_TOKEN, SmsProvider } from '../src/auth/sms/sms.provider';
 import { NotificationsService } from '../src/notifications/notifications.service';
 import { createApp } from './utils/create-app';
 import { registeredUser } from './utils/expert-helpers';
+import { flushPushOutbox } from './utils/outbox-helpers';
 
 // Номера спека задачи 3 (E9, dispatch), не пересекаются с другими спеками.
 const PH_U1 = '+77094000001';
@@ -99,6 +100,10 @@ describe('Шина уведомлений: dispatch (E9, задача 3)', () =>
       amountTiyn: 1_275_000,
     });
 
+    // Веер пушей теперь в очереди (E11a, задача 3): прокручиваем тик.
+
+    await flushPushOutbox(app);
+
     const stored = await prisma.notification.findMany({
       where: { userId: u.user.id },
     });
@@ -126,6 +131,10 @@ describe('Шина уведомлений: dispatch (E9, задача 3)', () =>
     await notifications.dispatch(u.user.id, 'offer.incoming', {
       offerId: 'off-1',
     });
+
+    // Веер пушей теперь в очереди (E11a, задача 3): прокручиваем тик.
+
+    await flushPushOutbox(app);
 
     const stored = await prisma.notification.findFirstOrThrow({
       where: { userId: u.user.id },

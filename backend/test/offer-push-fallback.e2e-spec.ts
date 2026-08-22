@@ -15,6 +15,7 @@ import {
 import { createApp } from './utils/create-app';
 import { acceptingExpert as acceptingExpertHelper } from './utils/expert-helpers';
 import { clientUser as clientUserHelper } from './utils/client-helpers';
+import { flushPushOutbox } from './utils/outbox-helpers';
 
 // Номера спека задачи 5 (E9, критичный пуш + SMS-fallback), не пересекаются
 // с другими спеками.
@@ -236,9 +237,22 @@ describe('Критичный пуш входящей заявки + SMS-fallback
     expect(offers).toHaveLength(1);
     ownOfferIds.push(offers[0].offerId);
 
+    // Пуши уходят из очереди (E11a, задача 3): перед чтением прокручиваем
+    // тик — в бою это делает @Interval(1000).
+    await flushPushOutbox(app);
+
+    // Фильтруем по типу, а не берём первый попавшийся: с очередью на то же
+    // устройство может прийти и пуш, поставленный ДО регистрации токена
+    // (например verification.approved при создании эксперта) — раньше он
+    // просто терялся, теперь доходит. Это осознанное расширение поведения,
+    // а не дефект: очередь отправляет по устройствам, актуальным на момент
+    // отправки.
     const sent = await redis.lrange('mockpush:sent:fb-tok-1', 0, -1);
-    expect(sent).toHaveLength(1);
-    const record = JSON.parse(sent[0]);
+    const offerPushes = sent
+      .map((s) => JSON.parse(s))
+      .filter((s) => s.data?.type === 'offer.incoming');
+    expect(offerPushes).toHaveLength(1);
+    const record = offerPushes[0];
     expect(record.critical).toBe(true);
     expect(record.title).toBe('Новая заявка');
     // PII-инвариант §5.8: никаких тем/клиентов/цен в теле пуша.
@@ -370,9 +384,20 @@ describe('Критичный пуш входящей заявки + SMS-fallback
     expect(offers).toHaveLength(1);
     ownOfferIds.push(offers[0].offerId);
 
+    // Пуши уходят из очереди (E11a, задача 3): перед чтением
+
+    // прокручиваем тик — в бою это делает @Interval(1000).
+
+    await flushPushOutbox(app);
+
+    // Фильтр по типу — см. комментарий в первом тесте файла: очередь
+    // доставляет и пуш, поставленный до регистрации токена.
     const sent = await redis.lrange('mockpush:sent:fb-tok-5', 0, -1);
-    expect(sent).toHaveLength(1);
-    expect(JSON.parse(sent[0]).critical).toBe(true);
+    const offerPushes = sent
+      .map((s) => JSON.parse(s))
+      .filter((s) => s.data?.type === 'offer.incoming');
+    expect(offerPushes).toHaveLength(1);
+    expect(offerPushes[0].critical).toBe(true);
 
     const notification = await offerNotificationOf(regular.expertId);
     expect(notification.data).toMatchObject({

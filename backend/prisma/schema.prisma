@@ -514,6 +514,28 @@ model Notification {
   @@map("notifications")
 }
 
+// Очередь отправки пушей (E11a, задача 3). Веер сетевых вызовов по всем
+// устройствам получателя снят с пути запроса: `POST /v1/requests` пишет
+// одну строку сюда, а рассылкой занимается sweep. Путь создания заявки —
+// самый латентно-критичный в продукте (ТЗ §6: p95 подбора ≤ 5 с), и
+// добавлять к нему N сетевых вызовов нельзя.
+model NotificationOutbox {
+  id             String    @id @default(uuid())
+  notificationId String    @map("notification_id")
+  userId         String    @map("user_id")
+  type           String
+  payload        Json
+  attempts       Int       @default(0)
+  nextAttemptAt  DateTime  @map("next_attempt_at")
+  sentAt         DateTime? @map("sent_at")
+  deadAt         DateTime? @map("dead_at")
+  lastError      String?   @map("last_error")
+  createdAt      DateTime  @default(now()) @map("created_at")
+
+  @@index([sentAt, deadAt, nextAttemptAt])
+  @@map("notification_outbox")
+}
+
 enum TicketStatus {
   NEW
   IN_PROGRESS

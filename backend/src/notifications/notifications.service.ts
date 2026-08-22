@@ -4,7 +4,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { ClockService } from '../common/clock/clock.service';
 import { EventsService } from '../ws/events.service';
 import { apiError } from '../common/filters/app-exception.filter';
-import { PushProviderPort } from './provider/push-provider.port';
+import { OutboxService } from './outbox.service';
 import { NotificationsListDto } from './dto/notifications-list.dto';
 import {
   CRITICAL_TYPES,
@@ -26,7 +26,7 @@ export class NotificationsService {
     private prisma: PrismaService,
     private clock: ClockService,
     private events: EventsService,
-    private push: PushProviderPort,
+    private outbox: OutboxService,
   ) {}
 
   async dispatch(
@@ -81,8 +81,6 @@ export class NotificationsService {
       createdAt: notification.createdAt,
     });
 
-    const devices = await this.prisma.device.findMany({ where: { userId } });
-    const critical = CRITICAL_TYPES.has(type);
     // ack доставки идёт по notificationId — приложение вызывает
     // POST /v1/notifications/:id/ack, получив пуш.
     const pushData: Record<string, string> = Object.fromEntries(
@@ -91,32 +89,17 @@ export class NotificationsService {
     pushData.notificationId = notification.id;
     pushData.type = type;
 
-    let sentAtLeastOnce = false;
-    for (const device of devices) {
-      try {
-        await this.push.send({
-          token: device.token,
-          title,
-          body,
-          data: pushData,
-          critical,
-        });
-        sentAtLeastOnce = true;
-      } catch (e) {
-        this.logger.warn(
-          `push на устройство ${device.id} не отправлен: ${
-            e instanceof Error ? e.message : String(e)
-          }`,
-        );
-      }
-    }
-
-    if (sentAtLeastOnce) {
-      await this.prisma.notification.update({
-        where: { id: notification.id },
-        data: { pushSentAt: this.clock.now() },
-      });
-    }
+    // Веер по устройствам снят с пути запроса (E11a, задача 3): здесь
+    // остаётся одна вставка в очередь, а рассылкой занимается
+    // OutboxSweepService. In-app запись и WS-событие по-прежнему
+    // синхронные — это одна вставка и локальный emit, задерживать их
+    // нечем, а реалтайм на них держится.
+    await this.outbox.enqueue({
+      notificationId: notification.id,
+      userId,
+      type,
+      payload: pushData,
+    });
   }
 
   // Диспатч эксперту по Expert.id: резолвит Expert.userId и зовёт dispatch.
