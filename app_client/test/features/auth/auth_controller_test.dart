@@ -31,7 +31,12 @@ class _FakeSecureStore implements SecureStore {
 }
 
 /// Имитирует недоступное/повреждённое хранилище (инвалидация Android
-/// keystore, устаревший формат сохранённых данных) — любое чтение бросает.
+/// keystore, устаревший формат сохранённых данных) — бросают И `read()`,
+/// И `delete()`: именно такое хранилище нужно, чтобы проверить, что
+/// аварийная очистка внутри `AuthController.restore()` (best-effort
+/// `logout()` в `catch`-ветке) сама не может помешать переходу в
+/// `AuthAnonymous`, если хранилище недоступно целиком, а не только на
+/// чтение.
 class _ThrowingSecureStore implements SecureStore {
   @override
   Future<String?> read(String key) async =>
@@ -41,7 +46,8 @@ class _ThrowingSecureStore implements SecureStore {
   Future<void> write(String key, String value) async {}
 
   @override
-  Future<void> delete(String key) async {}
+  Future<void> delete(String key) async =>
+      throw Exception('keystore invalidated');
 }
 
 Tokens _tokens({required bool isGuest}) => Tokens(
@@ -118,6 +124,28 @@ void main() {
         );
       },
     );
+
+    test('даже если и read(), и очистка delete() бросают — не пробрасывает исключение и даёт AuthAnonymous', () async {
+      final container = _makeContainer(
+        api: MockSqApi(),
+        store: _ThrowingSecureStore(),
+      );
+
+      // Явно проверяем именно «не бросает» — раньше сбой аварийной
+      // очистки (`_repo.logout()` в catch-ветке `restore()`) пробрасывал
+      // своё собственное исключение наружу, и `restore()` падал повторно
+      // тем же способом, которым его вызывающая сторона (SplashScreen)
+      // не ловит.
+      await expectLater(
+        container.read(authControllerProvider.notifier).restore(),
+        completes,
+      );
+
+      expect(
+        container.read(authControllerProvider).value,
+        isA<AuthAnonymous>(),
+      );
+    });
   });
 
   group('AuthController.continueAsGuest', () {
