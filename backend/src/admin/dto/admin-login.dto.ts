@@ -27,6 +27,12 @@ export class AdminLoginResponseDto {
   @ApiProperty()
   accessToken: string;
 
+  // Refresh-токен появился в E11a (задача 4): раньше сотрудника
+  // выбрасывало из админки посреди набранного ответа, когда истекал
+  // 15-минутный access-токен.
+  @ApiProperty()
+  refreshToken: string;
+
   @ApiProperty({ type: AdminSummaryDto })
   admin: AdminSummaryDto;
 }

@@ -967,6 +967,232 @@
         ]
       }
     },
+    "/v1/admin/auth/login": {
+      "post": {
+        "operationId": "AdminAuthController_login",
+        "summary": "Вход сотрудника админки по email и паролю",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdminLoginDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "accessToken + сотрудник (id, email, roles)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminLoginResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "ADMIN_INVALID_CREDENTIALS — неверный email, пароль или заблокированный сотрудник (ответ неразличим)"
+          }
+        },
+        "tags": [
+          "admin-auth"
+        ]
+      }
+    },
+    "/v1/admin/auth/refresh": {
+      "post": {
+        "operationId": "AdminAuthController_refresh",
+        "summary": "Продление сессии сотрудника. Токен ротируется: старый отзывается сразу",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdminRefreshDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminLoginResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "ADMIN_INVALID_CREDENTIALS — токен неизвестен, отозван, истёк или сотрудник деактивирован"
+          }
+        },
+        "tags": [
+          "admin-auth"
+        ]
+      }
+    },
+    "/v1/admin/staff": {
+      "post": {
+        "operationId": "AdminStaffController_create",
+        "summary": "Создать сотрудника админки (SUPERADMIN)",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateStaffDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StaffDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED"
+          },
+          "403": {
+            "description": "ADMIN_FORBIDDEN — требуется роль SUPERADMIN"
+          },
+          "409": {
+            "description": "STAFF_EMAIL_EXISTS"
+          }
+        },
+        "tags": [
+          "admin-staff"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "get": {
+        "operationId": "AdminStaffController_list",
+        "summary": "Список сотрудников админки (SUPERADMIN)",
+        "parameters": [
+          {
+            "name": "take",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "maximum": 100,
+              "default": 20,
+              "type": "number"
+            }
+          },
+          {
+            "name": "skip",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": 0,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StaffListDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED"
+          },
+          "403": {
+            "description": "ADMIN_FORBIDDEN — требуется роль SUPERADMIN"
+          }
+        },
+        "tags": [
+          "admin-staff"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/admin/staff/{id}": {
+      "patch": {
+        "operationId": "AdminStaffController_update",
+        "summary": "Изменить роли и/или активность сотрудника (SUPERADMIN)",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateStaffDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StaffCardDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "STAFF_SELF_LOCKOUT_FORBIDDEN — нельзя деактивировать себя или снять с себя роль SUPERADMIN"
+          },
+          "401": {
+            "description": "UNAUTHORIZED"
+          },
+          "403": {
+            "description": "ADMIN_FORBIDDEN — требуется роль SUPERADMIN"
+          },
+          "404": {
+            "description": "STAFF_NOT_FOUND"
+          }
+        },
+        "tags": [
+          "admin-staff"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/notifications": {
       "get": {
         "operationId": "NotificationsController_list",
@@ -2998,197 +3224,6 @@
         ]
       }
     },
-    "/v1/admin/auth/login": {
-      "post": {
-        "operationId": "AdminAuthController_login",
-        "summary": "Вход сотрудника админки по email и паролю",
-        "parameters": [],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/AdminLoginDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "accessToken + сотрудник (id, email, roles)",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AdminLoginResponseDto"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "ADMIN_INVALID_CREDENTIALS — неверный email, пароль или заблокированный сотрудник (ответ неразличим)"
-          }
-        },
-        "tags": [
-          "admin-auth"
-        ]
-      }
-    },
-    "/v1/admin/staff": {
-      "post": {
-        "operationId": "AdminStaffController_create",
-        "summary": "Создать сотрудника админки (SUPERADMIN)",
-        "parameters": [],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CreateStaffDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/StaffDto"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "UNAUTHORIZED"
-          },
-          "403": {
-            "description": "ADMIN_FORBIDDEN — требуется роль SUPERADMIN"
-          },
-          "409": {
-            "description": "STAFF_EMAIL_EXISTS"
-          }
-        },
-        "tags": [
-          "admin-staff"
-        ],
-        "security": [
-          {
-            "bearer": []
-          }
-        ]
-      },
-      "get": {
-        "operationId": "AdminStaffController_list",
-        "summary": "Список сотрудников админки (SUPERADMIN)",
-        "parameters": [
-          {
-            "name": "take",
-            "required": false,
-            "in": "query",
-            "schema": {
-              "maximum": 100,
-              "default": 20,
-              "type": "number"
-            }
-          },
-          {
-            "name": "skip",
-            "required": false,
-            "in": "query",
-            "schema": {
-              "default": 0,
-              "type": "number"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/StaffListDto"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "UNAUTHORIZED"
-          },
-          "403": {
-            "description": "ADMIN_FORBIDDEN — требуется роль SUPERADMIN"
-          }
-        },
-        "tags": [
-          "admin-staff"
-        ],
-        "security": [
-          {
-            "bearer": []
-          }
-        ]
-      }
-    },
-    "/v1/admin/staff/{id}": {
-      "patch": {
-        "operationId": "AdminStaffController_update",
-        "summary": "Изменить роли и/или активность сотрудника (SUPERADMIN)",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "format": "uuid",
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UpdateStaffDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/StaffCardDto"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "STAFF_SELF_LOCKOUT_FORBIDDEN — нельзя деактивировать себя или снять с себя роль SUPERADMIN"
-          },
-          "401": {
-            "description": "UNAUTHORIZED"
-          },
-          "403": {
-            "description": "ADMIN_FORBIDDEN — требуется роль SUPERADMIN"
-          },
-          "404": {
-            "description": "STAFF_NOT_FOUND"
-          }
-        },
-        "tags": [
-          "admin-staff"
-        ],
-        "security": [
-          {
-            "bearer": []
-          }
-        ]
-      }
-    },
     "/v1/tickets": {
       "post": {
         "operationId": "TicketsController_create",
@@ -4219,6 +4254,232 @@
           "ratingAvg",
           "ratingCount"
         ]
+      },
+      "AdminLoginDto": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "example": "operator@smartqoldau.kz"
+          },
+          "password": {
+            "type": "string",
+            "example": "change-me-0123456789ab"
+          }
+        },
+        "required": [
+          "email",
+          "password"
+        ]
+      },
+      "AdminSummaryDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "roles": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "VERIFICATION_OPERATOR",
+                "SUPPORT_OPERATOR",
+                "QUALITY_TEAM",
+                "FINANCE_CONTROL",
+                "SUPERADMIN"
+              ]
+            }
+          }
+        },
+        "required": [
+          "id",
+          "email",
+          "roles"
+        ]
+      },
+      "AdminLoginResponseDto": {
+        "type": "object",
+        "properties": {
+          "accessToken": {
+            "type": "string"
+          },
+          "refreshToken": {
+            "type": "string"
+          },
+          "admin": {
+            "$ref": "#/components/schemas/AdminSummaryDto"
+          }
+        },
+        "required": [
+          "accessToken",
+          "refreshToken",
+          "admin"
+        ]
+      },
+      "AdminRefreshDto": {
+        "type": "object",
+        "properties": {
+          "refreshToken": {
+            "type": "string",
+            "description": "Refresh-токен, выданный при входе"
+          }
+        },
+        "required": [
+          "refreshToken"
+        ]
+      },
+      "CreateStaffDto": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "example": "operator@smartqoldau.kz"
+          },
+          "password": {
+            "type": "string",
+            "example": "change-me-0123456789ab",
+            "minLength": 10
+          },
+          "roles": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "VERIFICATION_OPERATOR",
+                "SUPPORT_OPERATOR",
+                "QUALITY_TEAM",
+                "FINANCE_CONTROL",
+                "SUPERADMIN"
+              ]
+            }
+          }
+        },
+        "required": [
+          "email",
+          "password",
+          "roles"
+        ]
+      },
+      "StaffDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "roles": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "VERIFICATION_OPERATOR",
+                "SUPPORT_OPERATOR",
+                "QUALITY_TEAM",
+                "FINANCE_CONTROL",
+                "SUPERADMIN"
+              ]
+            }
+          },
+          "isActive": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "email",
+          "roles",
+          "isActive"
+        ]
+      },
+      "StaffCardDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "roles": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "VERIFICATION_OPERATOR",
+                "SUPPORT_OPERATOR",
+                "QUALITY_TEAM",
+                "FINANCE_CONTROL",
+                "SUPERADMIN"
+              ]
+            }
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "lastLoginAt": {
+            "type": "string",
+            "nullable": true,
+            "format": "date-time"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "email",
+          "roles",
+          "isActive",
+          "lastLoginAt",
+          "createdAt"
+        ]
+      },
+      "StaffListDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StaffCardDto"
+            }
+          },
+          "total": {
+            "type": "number",
+            "description": "Всего сотрудников (независимо от страницы)"
+          }
+        },
+        "required": [
+          "items",
+          "total"
+        ]
+      },
+      "UpdateStaffDto": {
+        "type": "object",
+        "properties": {
+          "roles": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "VERIFICATION_OPERATOR",
+                "SUPPORT_OPERATOR",
+                "QUALITY_TEAM",
+                "FINANCE_CONTROL",
+                "SUPERADMIN"
+              ]
+            }
+          },
+          "isActive": {
+            "type": "boolean"
+          }
+        }
       },
       "NotificationDto": {
         "type": "object",
@@ -5404,216 +5665,6 @@
         "required": [
           "locale"
         ]
-      },
-      "AdminLoginDto": {
-        "type": "object",
-        "properties": {
-          "email": {
-            "type": "string",
-            "example": "operator@smartqoldau.kz"
-          },
-          "password": {
-            "type": "string",
-            "example": "change-me-0123456789ab"
-          }
-        },
-        "required": [
-          "email",
-          "password"
-        ]
-      },
-      "AdminSummaryDto": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string"
-          },
-          "email": {
-            "type": "string"
-          },
-          "roles": {
-            "type": "array",
-            "items": {
-              "type": "string",
-              "enum": [
-                "VERIFICATION_OPERATOR",
-                "SUPPORT_OPERATOR",
-                "QUALITY_TEAM",
-                "FINANCE_CONTROL",
-                "SUPERADMIN"
-              ]
-            }
-          }
-        },
-        "required": [
-          "id",
-          "email",
-          "roles"
-        ]
-      },
-      "AdminLoginResponseDto": {
-        "type": "object",
-        "properties": {
-          "accessToken": {
-            "type": "string"
-          },
-          "admin": {
-            "$ref": "#/components/schemas/AdminSummaryDto"
-          }
-        },
-        "required": [
-          "accessToken",
-          "admin"
-        ]
-      },
-      "CreateStaffDto": {
-        "type": "object",
-        "properties": {
-          "email": {
-            "type": "string",
-            "example": "operator@smartqoldau.kz"
-          },
-          "password": {
-            "type": "string",
-            "example": "change-me-0123456789ab",
-            "minLength": 10
-          },
-          "roles": {
-            "type": "array",
-            "items": {
-              "type": "string",
-              "enum": [
-                "VERIFICATION_OPERATOR",
-                "SUPPORT_OPERATOR",
-                "QUALITY_TEAM",
-                "FINANCE_CONTROL",
-                "SUPERADMIN"
-              ]
-            }
-          }
-        },
-        "required": [
-          "email",
-          "password",
-          "roles"
-        ]
-      },
-      "StaffDto": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string"
-          },
-          "email": {
-            "type": "string"
-          },
-          "roles": {
-            "type": "array",
-            "items": {
-              "type": "string",
-              "enum": [
-                "VERIFICATION_OPERATOR",
-                "SUPPORT_OPERATOR",
-                "QUALITY_TEAM",
-                "FINANCE_CONTROL",
-                "SUPERADMIN"
-              ]
-            }
-          },
-          "isActive": {
-            "type": "boolean"
-          }
-        },
-        "required": [
-          "id",
-          "email",
-          "roles",
-          "isActive"
-        ]
-      },
-      "StaffCardDto": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string"
-          },
-          "email": {
-            "type": "string"
-          },
-          "roles": {
-            "type": "array",
-            "items": {
-              "type": "string",
-              "enum": [
-                "VERIFICATION_OPERATOR",
-                "SUPPORT_OPERATOR",
-                "QUALITY_TEAM",
-                "FINANCE_CONTROL",
-                "SUPERADMIN"
-              ]
-            }
-          },
-          "isActive": {
-            "type": "boolean"
-          },
-          "lastLoginAt": {
-            "type": "string",
-            "nullable": true,
-            "format": "date-time"
-          },
-          "createdAt": {
-            "type": "string",
-            "format": "date-time"
-          }
-        },
-        "required": [
-          "id",
-          "email",
-          "roles",
-          "isActive",
-          "lastLoginAt",
-          "createdAt"
-        ]
-      },
-      "StaffListDto": {
-        "type": "object",
-        "properties": {
-          "items": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/StaffCardDto"
-            }
-          },
-          "total": {
-            "type": "number",
-            "description": "Всего сотрудников (независимо от страницы)"
-          }
-        },
-        "required": [
-          "items",
-          "total"
-        ]
-      },
-      "UpdateStaffDto": {
-        "type": "object",
-        "properties": {
-          "roles": {
-            "type": "array",
-            "items": {
-              "type": "string",
-              "enum": [
-                "VERIFICATION_OPERATOR",
-                "SUPPORT_OPERATOR",
-                "QUALITY_TEAM",
-                "FINANCE_CONTROL",
-                "SUPERADMIN"
-              ]
-            }
-          },
-          "isActive": {
-            "type": "boolean"
-          }
-        }
       },
       "CreateTicketDto": {
         "type": "object",

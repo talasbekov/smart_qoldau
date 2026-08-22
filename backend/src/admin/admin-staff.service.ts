@@ -7,6 +7,8 @@ import { AuditService } from '../audit/audit.service';
 import { apiError } from '../common/filters/app-exception.filter';
 import { CreateStaffDto } from './dto/create-staff.dto';
 import { UpdateStaffDto } from './dto/update-staff.dto';
+import { AdminAuthService } from './admin-auth.service';
+import { AdminSessionService } from './admin-session.service';
 import { StaffCardDto, StaffDto } from './dto/staff.dto';
 
 const BCRYPT_ROUNDS = 10; // как в admin-auth.service.ts / admin-bootstrap.service.ts
@@ -18,6 +20,8 @@ export class AdminStaffService {
   constructor(
     private prisma: PrismaService,
     private audit: AuditService,
+    private adminAuth: AdminAuthService,
+    private session: AdminSessionService,
   ) {}
 
   async create(dto: CreateStaffDto, actorId: string): Promise<StaffDto> {
@@ -123,6 +127,16 @@ export class AdminStaffService {
       transition: 'staff.updated',
       payload: changes,
     });
+
+    if (dto.isActive === false) {
+      // Деактивация действует НЕМЕДЛЕННО: отзываем refresh-токены и
+      // сбрасываем кэш актуальности, не дожидаясь его TTL.
+      await this.adminAuth.revokeAccess(updated.id);
+    } else if (dto.roles !== undefined) {
+      // Смена ролей — тоже без ожидания TTL: иначе снятая роль ещё
+      // полминуты действует.
+      await this.session.invalidate(updated.id);
+    }
 
     return this.toStaffCardDto(updated);
   }

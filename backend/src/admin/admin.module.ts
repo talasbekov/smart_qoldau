@@ -5,6 +5,7 @@ import { AuditModule } from '../audit/audit.module';
 import { AdminBootstrapService } from './admin-bootstrap.service';
 import { AdminAuthController } from './admin-auth.controller';
 import { AdminAuthService } from './admin-auth.service';
+import { AdminSessionService } from './admin-session.service';
 import { AdminStaffController } from './admin-staff.controller';
 import { AdminStaffService } from './admin-staff.service';
 
@@ -28,6 +29,14 @@ import { AdminStaffService } from './admin-staff.service';
     }),
   ],
   controllers: [AdminAuthController, AdminStaffController],
-  providers: [AdminBootstrapService, AdminAuthService, AdminStaffService],
+  providers: [
+    AdminBootstrapService,
+    AdminAuthService,
+    AdminSessionService,
+    AdminStaffService,
+  ],
+  // AdminJwtGuard живёт в каждом контроллере админки — сервис актуальности
+  // должен быть доступен и вне этого модуля.
+  exports: [AdminSessionService],
 })
 export class AdminModule {}

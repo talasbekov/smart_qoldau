@@ -2,6 +2,7 @@ import { ExecutionContext, Injectable } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { apiError } from '../common/filters/app-exception.filter';
 import { JwtPayload } from '../auth/jwt.strategy';
+import { AdminSessionService } from './admin-session.service';
 
 // Наследник AuthGuard('jwt'): отсутствие/невалидность/просроченность токена
 // по-прежнему даёт стандартный 401 из passport (см. handleRequest в
@@ -11,6 +12,30 @@ import { JwtPayload } from '../auth/jwt.strategy';
 // ADMIN_FORBIDDEN.
 @Injectable()
 export class AdminJwtGuard extends AuthGuard('jwt') {
+  constructor(private session: AdminSessionService) {
+    super();
+  }
+
+  // Подпись токена — не единственное условие доступа (E11a, задача 4):
+  // после неё сверяется АКТУАЛЬНОЕ состояние сотрудника. Иначе
+  // деактивированный работает до истечения токена, а снятая роль не
+  // действует вовсе — роли раньше брались из payload'а.
+  async canActivate(context: ExecutionContext): Promise<boolean> {
+    await super.canActivate(context);
+
+    const request = context.switchToHttp().getRequest();
+    const payload = request.user as JwtPayload;
+    const state = await this.session.stateOf(payload.sub);
+
+    if (!state || !state.isActive) {
+      apiError('ADMIN_INVALID_CREDENTIALS', 'Сессия недействительна', 401);
+    }
+
+    // Роли подменяются свежими: RolesGuard читает их из request.user.
+    request.user = { ...payload, roles: state.roles };
+    return true;
+  }
+
   handleRequest<TUser = JwtPayload>(
     err: unknown,
     user: JwtPayload | false,

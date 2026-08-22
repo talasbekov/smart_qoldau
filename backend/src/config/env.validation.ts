@@ -37,4 +37,8 @@ export const envValidationSchema = Joi.object({
   SMS_EXPERT_COOLDOWN_SEC: Joi.number().default(300),
   SMS_EXPERT_DAILY_MAX: Joi.number().default(20),
   SMS_GLOBAL_DAILY_MAX: Joi.number().default(2000),
+  // Сколько секунд живёт кэш актуальности сотрудника (E11a, задача 4).
+  // Верхняя граница задержки отзыва доступа: деактивация сбрасывает кэш
+  // сама, TTL страхует случаи правки в обход API.
+  ADMIN_CHECK_CACHE_SEC: Joi.number().default(30),
 });

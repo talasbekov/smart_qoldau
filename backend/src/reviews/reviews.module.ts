@@ -10,9 +10,19 @@ import {
   ReviewsController,
 } from './reviews.controller';
 import { ReviewsAdminController } from './reviews-admin.controller';
+import { AdminModule } from '../admin/admin.module';
 
 @Module({
-  imports: [PrismaModule, AuditModule, ConsultationsModule, ExpertsModule],
+  imports: [
+    // AdminJwtGuard теперь проверяет актуальность сотрудника (E11a,
+    // задача 4) и требует AdminSessionService — модуль-владелец обязан
+    // быть импортирован явно.
+    AdminModule,
+    PrismaModule,
+    AuditModule,
+    ConsultationsModule,
+    ExpertsModule,
+  ],
   controllers: [
     ConsultationReviewController,
     ReviewsController,

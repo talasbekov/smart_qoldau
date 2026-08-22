@@ -11,6 +11,7 @@ import { THROTTLE } from '../common/throttle/throttle.constants';
 import { AdminLoginThrottlerGuard } from '../common/throttle/throttle.guards';
 import { AdminAuthService } from './admin-auth.service';
 import { AdminLoginDto, AdminLoginResponseDto } from './dto/admin-login.dto';
+import { AdminRefreshDto } from './dto/admin-refresh.dto';
 
 @ApiTags('admin-auth')
 @Controller('admin/auth')
@@ -34,5 +35,20 @@ export class AdminAuthController {
   })
   login(@Body() dto: AdminLoginDto): Promise<AdminLoginResponseDto> {
     return this.adminAuth.login(dto.email, dto.password);
+  }
+
+  @Post('refresh')
+  @HttpCode(200)
+  @ApiOperation({
+    summary:
+      'Продление сессии сотрудника. Токен ротируется: старый отзывается сразу',
+  })
+  @ApiOkResponse({ type: AdminLoginResponseDto })
+  @ApiUnauthorizedResponse({
+    description:
+      'ADMIN_INVALID_CREDENTIALS — токен неизвестен, отозван, истёк или сотрудник деактивирован',
+  })
+  refresh(@Body() dto: AdminRefreshDto): Promise<AdminLoginResponseDto> {
+    return this.adminAuth.refresh(dto.refreshToken);
   }
 }

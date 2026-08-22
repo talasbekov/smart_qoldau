@@ -7,18 +7,19 @@ import { NotificationsModule } from '../notifications/notifications.module';
 import { TicketsService } from './tickets.service';
 import { TicketsController } from './tickets.controller';
 import { TicketsAdminController } from './tickets-admin.controller';
+import { AdminModule } from '../admin/admin.module';
 
 // JwtStrategy — провайдер AuthModule, регистрируется в passport глобально
 // при старте приложения (как и для остальных модулей с JwtAuthGuard —
 // ReviewsModule/PayoutsModule и т.д.), явный импорт AuthModule здесь не
-// нужен. По той же причине не нужен явный импорт AdminModule для
-// AdminJwtGuard/RolesGuard в TicketsAdminController (задача 8) — оба guard'а
-// используют глобально зарегистрированную passport-стратегию 'jwt' и
-// Reflector из @nestjs/core (см. PayoutsModule/ReviewsModule).
+// нужен. А вот AdminModule с задачи 4 эпика E11a импортировать ОБЯЗАТЕЛЬНО:
+// AdminJwtGuard перестал быть stateless и требует AdminSessionService —
+// без импорта модуля-владельца guard не резолвится и запрос падает 500.
 // NotificationsModule — dispatch() уведомления ticket.replied автору после
 // ответа сотрудника (задача 9, см. TicketsService.reply).
 @Module({
   imports: [
+    AdminModule,
     PrismaModule,
     AuditModule,
     ClockModule,
