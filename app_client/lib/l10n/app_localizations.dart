@@ -565,6 +565,66 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Позже'**
   String get actionLater;
+
+  /// Подпись вкладки «Главная» нижней навигации
+  ///
+  /// In ru, this message translates to:
+  /// **'Главная'**
+  String get navHome;
+
+  /// Подпись вкладки «Каталог» нижней навигации
+  ///
+  /// In ru, this message translates to:
+  /// **'Каталог'**
+  String get navCatalog;
+
+  /// Подпись вкладки «Консультации» нижней навигации
+  ///
+  /// In ru, this message translates to:
+  /// **'Консультации'**
+  String get navConsultations;
+
+  /// Подпись вкладки «Профиль» нижней навигации
+  ///
+  /// In ru, this message translates to:
+  /// **'Профиль'**
+  String get navProfile;
+
+  /// Пояснение под заголовком экрана-заглушки ещё не реализованного раздела (Каталог/Консультации/Профиль/экстренный сценарий/тема/сессия) — явно сообщает, что раздел не готов, а не имитирует легитимно пустой список
+  ///
+  /// In ru, this message translates to:
+  /// **'Раздел находится в разработке'**
+  String get stubSectionSubtitle;
+
+  /// Заголовок-приветствие в аппбаре главного экрана
+  ///
+  /// In ru, this message translates to:
+  /// **'Здравствуйте'**
+  String get homeGreeting;
+
+  /// Текст красной кнопки экстренного сценария на главном экране, ведёт на /emergency
+  ///
+  /// In ru, this message translates to:
+  /// **'Мне нужна помощь сейчас'**
+  String get homeEmergencyCta;
+
+  /// Пояснение под кнопкой экстренного сценария на главном экране
+  ///
+  /// In ru, this message translates to:
+  /// **'Среднее время подключения — до 2 минут'**
+  String get homeEmergencyCtaSubtitle;
+
+  /// Заголовок над сеткой тем консультаций на главном экране
+  ///
+  /// In ru, this message translates to:
+  /// **'Мы поможем вам с:'**
+  String get homeTopicsTitle;
+
+  /// Заголовок баннера активной консультации на главном экране
+  ///
+  /// In ru, this message translates to:
+  /// **'Активная консультация'**
+  String get homeActiveConsultationTitle;
 }
 
 class _AppLocalizationsDelegate

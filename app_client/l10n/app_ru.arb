@@ -321,5 +321,45 @@
   "actionLater": "Позже",
   "@actionLater": {
     "description": "Кнопка пропуска запроса разрешений без блокировки входа"
+  },
+  "navHome": "Главная",
+  "@navHome": {
+    "description": "Подпись вкладки «Главная» нижней навигации"
+  },
+  "navCatalog": "Каталог",
+  "@navCatalog": {
+    "description": "Подпись вкладки «Каталог» нижней навигации"
+  },
+  "navConsultations": "Консультации",
+  "@navConsultations": {
+    "description": "Подпись вкладки «Консультации» нижней навигации"
+  },
+  "navProfile": "Профиль",
+  "@navProfile": {
+    "description": "Подпись вкладки «Профиль» нижней навигации"
+  },
+  "stubSectionSubtitle": "Раздел находится в разработке",
+  "@stubSectionSubtitle": {
+    "description": "Пояснение под заголовком экрана-заглушки ещё не реализованного раздела (Каталог/Консультации/Профиль/экстренный сценарий/тема/сессия) — явно сообщает, что раздел не готов, а не имитирует легитимно пустой список"
+  },
+  "homeGreeting": "Здравствуйте",
+  "@homeGreeting": {
+    "description": "Заголовок-приветствие в аппбаре главного экрана"
+  },
+  "homeEmergencyCta": "Мне нужна помощь сейчас",
+  "@homeEmergencyCta": {
+    "description": "Текст красной кнопки экстренного сценария на главном экране, ведёт на /emergency"
+  },
+  "homeEmergencyCtaSubtitle": "Среднее время подключения — до 2 минут",
+  "@homeEmergencyCtaSubtitle": {
+    "description": "Пояснение под кнопкой экстренного сценария на главном экране"
+  },
+  "homeTopicsTitle": "Мы поможем вам с:",
+  "@homeTopicsTitle": {
+    "description": "Заголовок над сеткой тем консультаций на главном экране"
+  },
+  "homeActiveConsultationTitle": "Активная консультация",
+  "@homeActiveConsultationTitle": {
+    "description": "Заголовок баннера активной консультации на главном экране"
   }
 }

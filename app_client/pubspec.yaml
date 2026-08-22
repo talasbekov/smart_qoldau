@@ -49,6 +49,8 @@ dependencies:
   # пользовательское соглашение/политику конфиденциальности.
   permission_handler: ^13.0.1
   url_launcher: ^6.3.2
+  # Маршрутизация и редирект-гард сессии (E6/задача 7).
+  go_router: ^17.5.0
 
 dev_dependencies:
   flutter_test:

@@ -77,5 +77,15 @@
   "permissionNotificationsTitle": "Хабарландырулар",
   "permissionNotificationsDescription": "Психолог жауап бергенде немесе кеңес басталғанда хабарлаймыз",
   "actionAllow": "Рұқсат ету",
-  "actionLater": "Кейінірек"
+  "actionLater": "Кейінірек",
+  "navHome": "Басты бет",
+  "navCatalog": "Каталог",
+  "navConsultations": "Кеңестер",
+  "navProfile": "Профиль",
+  "stubSectionSubtitle": "Бөлім әзірленуде",
+  "homeGreeting": "Сәлеметсіз бе",
+  "homeEmergencyCta": "Маған қазір көмек керек",
+  "homeEmergencyCtaSubtitle": "Қосылудың орташа уақыты — 2 минутқа дейін",
+  "homeTopicsTitle": "Біз мына мәселелермен көмектесеміз:",
+  "homeActiveConsultationTitle": "Белсенді кеңес"
 }

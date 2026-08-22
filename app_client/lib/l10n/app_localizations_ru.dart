@@ -256,4 +256,35 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get actionLater => 'Позже';
+
+  @override
+  String get navHome => 'Главная';
+
+  @override
+  String get navCatalog => 'Каталог';
+
+  @override
+  String get navConsultations => 'Консультации';
+
+  @override
+  String get navProfile => 'Профиль';
+
+  @override
+  String get stubSectionSubtitle => 'Раздел находится в разработке';
+
+  @override
+  String get homeGreeting => 'Здравствуйте';
+
+  @override
+  String get homeEmergencyCta => 'Мне нужна помощь сейчас';
+
+  @override
+  String get homeEmergencyCtaSubtitle =>
+      'Среднее время подключения — до 2 минут';
+
+  @override
+  String get homeTopicsTitle => 'Мы поможем вам с:';
+
+  @override
+  String get homeActiveConsultationTitle => 'Активная консультация';
 }

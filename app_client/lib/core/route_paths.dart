@@ -1,0 +1,40 @@
+/// Пути маршрутов приложения — общая точка правды для `router.dart` и
+/// экранов, которым нужно на них переходить (`context.go`/`context.push`).
+///
+/// Вынесены из `router.dart` в отдельный файл сознательно: `router.dart`
+/// импортирует экраны фич, чтобы зарегистрировать их как маршруты, и если
+/// бы сами пути жили там же, экранам, которым нужно на них ссылаться
+/// (например, `HomeScreen`, зовущему `context.push(RoutePaths.emergency)`),
+/// пришлось бы импортировать `router.dart` в ответ — цикл `router →
+/// features → router`. `core` (куда допустимо смотреть любой фиче, но не
+/// наоборот, см. `core/providers.dart`) — естественное место для путей,
+/// которые не принадлежат ни одной фиче.
+library;
+
+/// Пути состояний сессии/онбординга, которыми управляет редирект-гард
+/// `router.dart` (см. `_redirect`).
+abstract final class RoutePaths {
+  static const splash = '/splash';
+  static const welcome = '/welcome';
+  static const onboarding = '/onboarding';
+  static const permissions = '/permissions';
+
+  /// Вкладки `ShellRoute` нижней навигации.
+  static const home = '/home';
+  static const catalog = '/catalog';
+  static const consultations = '/consultations';
+  static const profile = '/profile';
+
+  /// Экстренный сценарий (Р-16) — заглушка до задачи 11 эпика E6.
+  static const emergency = '/emergency';
+
+  /// Экран темы (`?slug=<slug>`) — заглушка до задачи 10 эпика E6.
+  static const topic = '/topic';
+
+  /// Шаблон маршрута сессии консультации для регистрации в `GoRoute.path`.
+  static const sessionPattern = '/session/:id';
+
+  /// Строит конкретный путь сессии консультации [id] для навигации
+  /// (`context.push(RoutePaths.session(id))`).
+  static String session(String id) => '/session/$id';
+}

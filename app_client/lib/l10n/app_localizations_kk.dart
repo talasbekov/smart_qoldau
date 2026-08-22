@@ -255,4 +255,35 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get actionLater => 'Кейінірек';
+
+  @override
+  String get navHome => 'Басты бет';
+
+  @override
+  String get navCatalog => 'Каталог';
+
+  @override
+  String get navConsultations => 'Кеңестер';
+
+  @override
+  String get navProfile => 'Профиль';
+
+  @override
+  String get stubSectionSubtitle => 'Бөлім әзірленуде';
+
+  @override
+  String get homeGreeting => 'Сәлеметсіз бе';
+
+  @override
+  String get homeEmergencyCta => 'Маған қазір көмек керек';
+
+  @override
+  String get homeEmergencyCtaSubtitle =>
+      'Қосылудың орташа уақыты — 2 минутқа дейін';
+
+  @override
+  String get homeTopicsTitle => 'Біз мына мәселелермен көмектесеміз:';
+
+  @override
+  String get homeActiveConsultationTitle => 'Белсенді кеңес';
 }
