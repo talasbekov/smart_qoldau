@@ -621,4 +621,54 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get sessionMenuCancel => 'Отменить консультацию';
+
+  @override
+  String get callAudioTitle => 'Аудиоконсультация';
+
+  @override
+  String get callVideoTitle => 'Видеоконсультация';
+
+  @override
+  String get callConnecting => 'Соединяем…';
+
+  @override
+  String get callConnected => 'На связи';
+
+  @override
+  String get callReconnecting =>
+      'Связь восстанавливается, собеседник останется на линии';
+
+  @override
+  String get callFailedTitle => 'Связь не восстановилась';
+
+  @override
+  String get callContinueInChat => 'Продолжить в чате';
+
+  @override
+  String get callEnd => 'Завершить';
+
+  @override
+  String get callMic => 'Микрофон';
+
+  @override
+  String get callCamera => 'Камера';
+
+  @override
+  String get callCameraBlocked => 'Камера недоступна — идёт аудиоразговор';
+
+  @override
+  String get callPermissionTitle => 'Нужен доступ к микрофону';
+
+  @override
+  String get callPermissionBody =>
+      'Без микрофона аудио- или видеоконсультацию провести нельзя. Разрешение можно выдать в настройках приложения';
+
+  @override
+  String get callOpenSettings => 'Открыть настройки';
+
+  @override
+  String get sessionMenuAudio => 'Перейти в аудио';
+
+  @override
+  String get sessionMenuVideo => 'Перейти в видео';
 }

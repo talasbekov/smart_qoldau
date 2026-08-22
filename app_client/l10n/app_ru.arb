@@ -768,5 +768,69 @@
   "sessionMenuCancel": "Отменить консультацию",
   "@sessionMenuCancel": {
     "description": "Пункт меню сессии: отменить консультацию"
+  },
+  "callAudioTitle": "Аудиоконсультация",
+  "@callAudioTitle": {
+    "description": "Заголовок экрана аудиозвонка"
+  },
+  "callVideoTitle": "Видеоконсультация",
+  "@callVideoTitle": {
+    "description": "Заголовок экрана видеозвонка"
+  },
+  "callConnecting": "Соединяем…",
+  "@callConnecting": {
+    "description": "Статус экрана звонка: идёт подключение"
+  },
+  "callConnected": "На связи",
+  "@callConnected": {
+    "description": "Статус экрана звонка: соединение установлено"
+  },
+  "callReconnecting": "Связь восстанавливается, собеседник останется на линии",
+  "@callReconnecting": {
+    "description": "Баннер экрана звонка при переподключении (формулировка прототипа)"
+  },
+  "callFailedTitle": "Связь не восстановилась",
+  "@callFailedTitle": {
+    "description": "Заголовок состояния, когда переподключение не удалось за 30 секунд"
+  },
+  "callContinueInChat": "Продолжить в чате",
+  "@callContinueInChat": {
+    "description": "Кнопка деградации звонка в переписку (ТЗ §6)"
+  },
+  "callEnd": "Завершить",
+  "@callEnd": {
+    "description": "Кнопка завершения звонка — кладёт трубку, исход фиксирует специалист"
+  },
+  "callMic": "Микрофон",
+  "@callMic": {
+    "description": "Подпись кнопки микрофона на экране звонка"
+  },
+  "callCamera": "Камера",
+  "@callCamera": {
+    "description": "Подпись кнопки камеры на экране звонка"
+  },
+  "callCameraBlocked": "Камера недоступна — идёт аудиоразговор",
+  "@callCameraBlocked": {
+    "description": "Пояснение, когда пользователь отказал в доступе к камере"
+  },
+  "callPermissionTitle": "Нужен доступ к микрофону",
+  "@callPermissionTitle": {
+    "description": "Заголовок экрана-объяснения при отказе в разрешении микрофона"
+  },
+  "callPermissionBody": "Без микрофона аудио- или видеоконсультацию провести нельзя. Разрешение можно выдать в настройках приложения",
+  "@callPermissionBody": {
+    "description": "Текст экрана-объяснения при отказе в разрешении"
+  },
+  "callOpenSettings": "Открыть настройки",
+  "@callOpenSettings": {
+    "description": "Кнопка перехода в системные настройки приложения"
+  },
+  "sessionMenuAudio": "Перейти в аудио",
+  "@sessionMenuAudio": {
+    "description": "Пункт меню сессии: эскалация в аудиозвонок"
+  },
+  "sessionMenuVideo": "Перейти в видео",
+  "@sessionMenuVideo": {
+    "description": "Пункт меню сессии: эскалация в видеозвонок"
   }
 }

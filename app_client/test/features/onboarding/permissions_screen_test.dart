@@ -28,6 +28,17 @@ class _FakePermissionService implements PermissionService {
   Future<void> request(SqPermission permission) async {
     requested.add(permission);
   }
+
+  // `ensure`/`openSettings` онбордингу не нужны (он не смотрит на исход и
+  // никуда не уводит) — их использует только звонок, задача 14.
+  @override
+  Future<bool> ensure(SqPermission permission) async {
+    requested.add(permission);
+    return true;
+  }
+
+  @override
+  Future<void> openSettings() async {}
 }
 
 /// [PermissionService], у которого `request` всегда падает — имитирует
@@ -38,6 +49,13 @@ class _ThrowingPermissionService implements PermissionService {
   Future<void> request(SqPermission permission) {
     throw Exception('permission request failed');
   }
+
+  @override
+  Future<bool> ensure(SqPermission permission) =>
+      throw Exception('permission request failed');
+
+  @override
+  Future<void> openSettings() async {}
 }
 
 /// [PermissionService], у которого падает ТОЛЬКО запрос микрофона —
@@ -55,6 +73,15 @@ class _PartiallyThrowingPermissionService implements PermissionService {
       throw Exception('microphone request failed');
     }
   }
+
+  @override
+  Future<bool> ensure(SqPermission permission) async {
+    await request(permission);
+    return true;
+  }
+
+  @override
+  Future<void> openSettings() async {}
 }
 
 /// [OnboardingFlags], у которого `setAskedPermissions` зависает до тех

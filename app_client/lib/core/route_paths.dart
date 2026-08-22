@@ -11,6 +11,8 @@
 /// которые не принадлежат ни одной фиче.
 library;
 
+import 'package:shared/shared.dart';
+
 /// Пути состояний сессии/онбординга, которыми управляет редирект-гард
 /// `router.dart` (см. `_redirect`).
 abstract final class RoutePaths {
@@ -61,4 +63,13 @@ abstract final class RoutePaths {
   /// Строит конкретный путь сессии консультации [id] для навигации
   /// (`context.push(RoutePaths.session(id))`).
   static String session(String id) => '/session/$id';
+
+  /// Шаблон маршрута звонка (аудио/видео) для регистрации в `GoRoute.path`.
+  static const callPattern = '/call/:id';
+
+  /// Путь звонка по консультации [id] в формате [format] — формат едет
+  /// query-параметром, потому что это ЗАПРОШЕННЫЙ формат (эскалация), а не
+  /// текущее состояние консультации.
+  static String call(String id, SessionFormat format) =>
+      '/call/$id?format=${format.wireValue}';
 }

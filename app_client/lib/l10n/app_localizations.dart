@@ -1183,6 +1183,102 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Отменить консультацию'**
   String get sessionMenuCancel;
+
+  /// Заголовок экрана аудиозвонка
+  ///
+  /// In ru, this message translates to:
+  /// **'Аудиоконсультация'**
+  String get callAudioTitle;
+
+  /// Заголовок экрана видеозвонка
+  ///
+  /// In ru, this message translates to:
+  /// **'Видеоконсультация'**
+  String get callVideoTitle;
+
+  /// Статус экрана звонка: идёт подключение
+  ///
+  /// In ru, this message translates to:
+  /// **'Соединяем…'**
+  String get callConnecting;
+
+  /// Статус экрана звонка: соединение установлено
+  ///
+  /// In ru, this message translates to:
+  /// **'На связи'**
+  String get callConnected;
+
+  /// Баннер экрана звонка при переподключении (формулировка прототипа)
+  ///
+  /// In ru, this message translates to:
+  /// **'Связь восстанавливается, собеседник останется на линии'**
+  String get callReconnecting;
+
+  /// Заголовок состояния, когда переподключение не удалось за 30 секунд
+  ///
+  /// In ru, this message translates to:
+  /// **'Связь не восстановилась'**
+  String get callFailedTitle;
+
+  /// Кнопка деградации звонка в переписку (ТЗ §6)
+  ///
+  /// In ru, this message translates to:
+  /// **'Продолжить в чате'**
+  String get callContinueInChat;
+
+  /// Кнопка завершения звонка — кладёт трубку, исход фиксирует специалист
+  ///
+  /// In ru, this message translates to:
+  /// **'Завершить'**
+  String get callEnd;
+
+  /// Подпись кнопки микрофона на экране звонка
+  ///
+  /// In ru, this message translates to:
+  /// **'Микрофон'**
+  String get callMic;
+
+  /// Подпись кнопки камеры на экране звонка
+  ///
+  /// In ru, this message translates to:
+  /// **'Камера'**
+  String get callCamera;
+
+  /// Пояснение, когда пользователь отказал в доступе к камере
+  ///
+  /// In ru, this message translates to:
+  /// **'Камера недоступна — идёт аудиоразговор'**
+  String get callCameraBlocked;
+
+  /// Заголовок экрана-объяснения при отказе в разрешении микрофона
+  ///
+  /// In ru, this message translates to:
+  /// **'Нужен доступ к микрофону'**
+  String get callPermissionTitle;
+
+  /// Текст экрана-объяснения при отказе в разрешении
+  ///
+  /// In ru, this message translates to:
+  /// **'Без микрофона аудио- или видеоконсультацию провести нельзя. Разрешение можно выдать в настройках приложения'**
+  String get callPermissionBody;
+
+  /// Кнопка перехода в системные настройки приложения
+  ///
+  /// In ru, this message translates to:
+  /// **'Открыть настройки'**
+  String get callOpenSettings;
+
+  /// Пункт меню сессии: эскалация в аудиозвонок
+  ///
+  /// In ru, this message translates to:
+  /// **'Перейти в аудио'**
+  String get sessionMenuAudio;
+
+  /// Пункт меню сессии: эскалация в видеозвонок
+  ///
+  /// In ru, this message translates to:
+  /// **'Перейти в видео'**
+  String get sessionMenuVideo;
 }
 
 class _AppLocalizationsDelegate

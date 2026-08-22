@@ -19,7 +19,9 @@ android {
         applicationId = "kz.smartqoldau.app_client"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
-        minSdk = flutter.minSdkVersion
+        // WebRTC (livekit_client, задача 14 эпика E6) требует API 23+ —
+        // flutter.minSdkVersion ниже, и сборка с ним падает на линковке.
+        minSdk = maxOf(flutter.minSdkVersion, 23)
         targetSdk = flutter.targetSdkVersion
         // Uses the version code from pubspec.yaml. When using split APKs, 1000 * ABI_VERSION
         // is added automatically by Flutter. (https://developer.android.com/studio/build/configure-apk-splits#configure-APK-versions)

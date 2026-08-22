@@ -97,3 +97,22 @@ dependencies! / N packages have newer versions...` вместо того, что
 которого больше не редактировать `pubspec.yaml` вручную — тогда `pubspec.lock`
 гарантированно окажется новее и последующие `flutter test` будут тихими; если
 нужно — можно принудительно `touch pubspec.lock .dart_tool/package_config.json`.
+
+## Проверка звонка на эмуляторе — заблокировано окружением
+
+Задача 14 (аудио/видео на LiveKit) реализована и покрыта headless-тестами,
+но Step 4 плана (прогон на эмуляторе с поднятым `livekit` из
+`infra/docker-compose.dev.yml`) выполнить не удалось: в системе установлена
+только JRE — `javac` нет нигде (`/usr/lib/jvm/java-21-openjdk-amd64` без
+`JAVA_COMPILER`), и `flutter build apk --debug` падает на
+`:app:compileDebugJavaWithJavac`:
+
+```
+Toolchain installation '/usr/lib/jvm/java-21-openjdk-amd64'
+does not provide the required capabilities: [JAVA_COMPILER]
+```
+
+Чтобы разблокировать: `sudo apt install openjdk-21-jdk` (или указать путь
+к JDK через `flutter config --jdk-dir=<path>`). После этого нужно провести
+аудио- и видеозвонок, эскалацию чат → аудио → видео и проверку реконнекта
+(`adb shell svc data disable` / `enable` на 10 с) и записать результат сюда.

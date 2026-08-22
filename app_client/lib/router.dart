@@ -21,6 +21,7 @@ import 'features/onboarding/ui/permissions_screen.dart';
 import 'features/onboarding/ui/slides_screen.dart';
 import 'features/onboarding/ui/welcome_screen.dart';
 import 'features/profile/ui/profile_screen.dart';
+import 'features/session/call/ui/call_screen.dart';
 import 'features/session/chat/ui/chat_screen.dart';
 import 'features/payment/ui/add_card_screen.dart';
 import 'features/payment/ui/cards_screen.dart';
@@ -191,6 +192,15 @@ GoRouter sqRouter(Ref ref) {
         // добавят диспетчер по `ClientConsultation.format`.
         builder: (context, state) =>
             ChatScreen(consultationId: state.pathParameters['id']!),
+      ),
+      GoRoute(
+        path: RoutePaths.callPattern,
+        builder: (context, state) => CallScreen(
+          consultationId: state.pathParameters['id']!,
+          format: state.uri.queryParameters['format'] == 'video'
+              ? SessionFormat.video
+              : SessionFormat.audio,
+        ),
       ),
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) =>

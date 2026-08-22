@@ -613,4 +613,55 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get sessionMenuCancel => 'Кеңесті тоқтату';
+
+  @override
+  String get callAudioTitle => 'Аудиокеңес';
+
+  @override
+  String get callVideoTitle => 'Бейнекеңес';
+
+  @override
+  String get callConnecting => 'Қосылып жатырмыз…';
+
+  @override
+  String get callConnected => 'Байланыста';
+
+  @override
+  String get callReconnecting =>
+      'Байланыс қалпына келтірілуде, сұхбаттасыңыз желіде қалады';
+
+  @override
+  String get callFailedTitle => 'Байланыс қалпына келмеді';
+
+  @override
+  String get callContinueInChat => 'Чатта жалғастыру';
+
+  @override
+  String get callEnd => 'Аяқтау';
+
+  @override
+  String get callMic => 'Микрофон';
+
+  @override
+  String get callCamera => 'Камера';
+
+  @override
+  String get callCameraBlocked =>
+      'Камера қолжетімсіз — дауыстық сөйлесу жүріп жатыр';
+
+  @override
+  String get callPermissionTitle => 'Микрофонға рұқсат қажет';
+
+  @override
+  String get callPermissionBody =>
+      'Микрофонсыз аудио- немесе бейнекеңес өткізу мүмкін емес. Рұқсатты қолданба параметрлерінде беруге болады';
+
+  @override
+  String get callOpenSettings => 'Параметрлерді ашу';
+
+  @override
+  String get sessionMenuAudio => 'Аудиоға көшу';
+
+  @override
+  String get sessionMenuVideo => 'Бейнеге көшу';
 }

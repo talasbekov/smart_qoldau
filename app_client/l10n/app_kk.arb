@@ -180,5 +180,21 @@
   "sessionTimeUp": "Кеңес уақыты аяқталды",
   "sessionCancelTitle": "Кеңесті тоқтату керек пе?",
   "sessionCancelBody": "Уақыт басқа пайдаланушыға босайды",
-  "sessionMenuCancel": "Кеңесті тоқтату"
+  "sessionMenuCancel": "Кеңесті тоқтату",
+  "callAudioTitle": "Аудиокеңес",
+  "callVideoTitle": "Бейнекеңес",
+  "callConnecting": "Қосылып жатырмыз…",
+  "callConnected": "Байланыста",
+  "callReconnecting": "Байланыс қалпына келтірілуде, сұхбаттасыңыз желіде қалады",
+  "callFailedTitle": "Байланыс қалпына келмеді",
+  "callContinueInChat": "Чатта жалғастыру",
+  "callEnd": "Аяқтау",
+  "callMic": "Микрофон",
+  "callCamera": "Камера",
+  "callCameraBlocked": "Камера қолжетімсіз — дауыстық сөйлесу жүріп жатыр",
+  "callPermissionTitle": "Микрофонға рұқсат қажет",
+  "callPermissionBody": "Микрофонсыз аудио- немесе бейнекеңес өткізу мүмкін емес. Рұқсатты қолданба параметрлерінде беруге болады",
+  "callOpenSettings": "Параметрлерді ашу",
+  "sessionMenuAudio": "Аудиоға көшу",
+  "sessionMenuVideo": "Бейнеге көшу"
 }

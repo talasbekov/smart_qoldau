@@ -24,6 +24,15 @@ abstract class PermissionService {
   /// вызывающему экрану (см. `PermissionsScreen`) результат не нужен:
   /// онбординг не блокирует вход независимо от решения пользователя.
   Future<void> request(SqPermission permission);
+
+  /// Запрашивает [permission] и сообщает, выдано ли оно. Нужен звонку
+  /// (задача 14): без микрофона подключаться некуда, и отказ там —
+  /// не «идём дальше молча», а отдельный экран-объяснение.
+  Future<bool> ensure(SqPermission permission);
+
+  /// Открывает системные настройки приложения — единственный путь, когда
+  /// пользователь ранее отказал навсегда («Больше не спрашивать»).
+  Future<void> openSettings();
 }
 
 /// Реализация [PermissionService] поверх настоящего `permission_handler`.
@@ -33,6 +42,17 @@ class PermissionHandlerService implements PermissionService {
   @override
   Future<void> request(SqPermission permission) async {
     await _platformPermission(permission).request();
+  }
+
+  @override
+  Future<bool> ensure(SqPermission permission) async {
+    final status = await _platformPermission(permission).request();
+    return status.isGranted || status.isLimited;
+  }
+
+  @override
+  Future<void> openSettings() async {
+    await ph.openAppSettings();
   }
 
   ph.Permission _platformPermission(SqPermission permission) {

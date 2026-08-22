@@ -97,7 +97,11 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           : SessionHeader(
               expertName: asyncState.requireValue.consultation.expert.displayName,
               remaining: asyncState.requireValue.remaining,
-              menu: SessionMenu(onCancel: _confirmCancel),
+              menu: SessionMenu(
+                onCancel: _confirmCancel,
+                onEscalate: (format) =>
+                    context.push(RoutePaths.call(widget.consultationId, format)),
+              ),
             ),
       body: SafeArea(
         child: asyncState.when(

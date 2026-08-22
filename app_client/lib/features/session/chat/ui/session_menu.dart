@@ -1,9 +1,8 @@
 /// Меню сессии консультации.
 ///
-/// Пунктов «Перейти в аудио/видео» и «Сообщить о проблеме» здесь пока нет:
-/// звонок появляется в задаче 14, тикеты — в задаче 19. Показывать их
-/// заранее неактивными значило бы дать клиенту в кризисе кнопку, которая
-/// ничего не делает, — они добавятся вместе со своей работой.
+/// Пункта «Сообщить о проблеме» здесь пока нет: тикеты появляются в задаче
+/// 19. Показывать его заранее неактивным значило бы дать клиенту в кризисе
+/// кнопку, которая ничего не делает.
 library;
 
 import 'package:flutter/material.dart';
@@ -12,9 +11,19 @@ import 'package:shared/shared.dart';
 import '../../../../l10n/app_localizations.dart';
 
 class SessionMenu extends StatelessWidget {
-  const SessionMenu({super.key, required this.onCancel, this.enabled = true});
+  const SessionMenu({
+    super.key,
+    required this.onCancel,
+    this.onEscalate,
+    this.enabled = true,
+  });
 
   final Future<void> Function() onCancel;
+
+  /// Эскалация формата (чат → аудио → видео). `null` — экран, которому
+  /// эскалация не нужна (например, сам звонок).
+  final void Function(SessionFormat format)? onEscalate;
+
   final bool enabled;
 
   @override
@@ -26,6 +35,16 @@ class SessionMenu extends StatelessWidget {
       enabled: enabled,
       icon: const Icon(Icons.more_horiz),
       itemBuilder: (context) => [
+        if (onEscalate != null) ...[
+          PopupMenuItem<void>(
+            onTap: () => onEscalate!(SessionFormat.audio),
+            child: Text(l10n.sessionMenuAudio, style: SqTypography.body),
+          ),
+          PopupMenuItem<void>(
+            onTap: () => onEscalate!(SessionFormat.video),
+            child: Text(l10n.sessionMenuVideo, style: SqTypography.body),
+          ),
+        ],
         PopupMenuItem<void>(
           onTap: onCancel,
           child: Text(
