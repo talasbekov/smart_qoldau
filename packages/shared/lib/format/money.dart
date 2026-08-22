@@ -5,14 +5,22 @@
 library;
 
 /// Форматирует сумму в тиынах [tiyn] как строку в тенге для показа
-/// пользователю: `399000 -> '3\u00A0990\u00A0₸'`.
+/// пользователю: `399000 -> '3\u00A0990\u00A0₸'`, `100450 -> '1\u00A0004\u00A0₸'`.
 ///
 /// Тиыны отбрасываются вниз (целочисленное деление), тысячи разделяются
 /// неразрывным пробелом (U+00A0), он же отделяет число от знака ₸.
+///
+/// Контракт — [tiyn] неотрицателен: деньги в системе представляют суммы
+/// к оплате/начислению, отрицательных сумм в домене нет. Отрицательный
+/// [tiyn] вне контракта этой функции (в debug-режиме на нём падает assert).
 String formatTenge(int tiyn) {
+  assert(
+    tiyn >= 0,
+    'formatTenge ожидает неотрицательную сумму в тиынах, получено $tiyn',
+  );
+
   final tenge = tiyn ~/ 100;
-  final isNegative = tenge < 0;
-  final digits = tenge.abs().toString();
+  final digits = tenge.toString();
 
   final grouped = StringBuffer();
   for (var i = 0; i < digits.length; i++) {
@@ -24,6 +32,5 @@ String formatTenge(int tiyn) {
     grouped.write(digits[i]);
   }
 
-  final sign = isNegative ? '-' : '';
-  return '$sign$grouped\u00A0₸';
+  return '$grouped\u00A0₸';
 }

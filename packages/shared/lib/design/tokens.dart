@@ -50,34 +50,39 @@ class SqRadius {
 /// Размер и межстрочный интервал заданы парой `size/lineHeight`; в Flutter
 /// `TextStyle.height` — множитель от `fontSize`, поэтому пересчитываем его
 /// как `lineHeight / size`.
+///
+/// Стили — `static final`, а не `static TextStyle get`: `GoogleFonts.inter()`
+/// не бесплатен (внутри ищет ближайший вариант начертания и запускает
+/// попытку подгрузить шрифт), а memo-геттер вычисляет его ровно один раз
+/// на всё время жизни процесса вместо пересчёта на каждый доступ/ребилд.
 class SqTypography {
   const SqTypography._();
 
-  static TextStyle get h1 => GoogleFonts.inter(
+  static final TextStyle h1 = GoogleFonts.inter(
     fontSize: 28,
     height: 34 / 28,
     fontWeight: FontWeight.w700,
   );
 
-  static TextStyle get h2 => GoogleFonts.inter(
+  static final TextStyle h2 = GoogleFonts.inter(
     fontSize: 22,
     height: 28 / 22,
     fontWeight: FontWeight.w600,
   );
 
-  static TextStyle get title => GoogleFonts.inter(
+  static final TextStyle title = GoogleFonts.inter(
     fontSize: 17,
     height: 22 / 17,
     fontWeight: FontWeight.w600,
   );
 
-  static TextStyle get body => GoogleFonts.inter(
+  static final TextStyle body = GoogleFonts.inter(
     fontSize: 15,
     height: 22 / 15,
     fontWeight: FontWeight.w400,
   );
 
-  static TextStyle get caption => GoogleFonts.inter(
+  static final TextStyle caption = GoogleFonts.inter(
     fontSize: 13,
     height: 18 / 13,
     fontWeight: FontWeight.w400,

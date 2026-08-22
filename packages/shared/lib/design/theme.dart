@@ -7,9 +7,18 @@ import 'package:google_fonts/google_fonts.dart';
 
 import 'tokens.dart';
 
+ThemeData? _cachedTheme;
+
 /// Собирает `ThemeData` прототипа: светлая тема, фон сцены —
 /// [SqColors.background], типографика — [SqTypography] на базе Inter.
-ThemeData sqTheme() {
+///
+/// Результат кешируется на первый вызов: тема неизменна, а
+/// `GoogleFonts.interTextTheme()` внутри — недешёвая операция (подбирает
+/// начертания под весь `TextTheme` и запускает попытки подгрузить шрифт),
+/// пересчитывать её на каждый вызов незачем.
+ThemeData sqTheme() => _cachedTheme ??= _buildTheme();
+
+ThemeData _buildTheme() {
   final colorScheme =
       ColorScheme.fromSeed(
         seedColor: SqColors.primary,

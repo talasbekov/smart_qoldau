@@ -17,5 +17,11 @@ void main() {
     test('groups larger amounts correctly', () {
       expect(formatTenge(1500000), '15\u00A0000\u00A0₸');
     });
+
+    test('drops a non-zero tiyn remainder instead of rounding', () {
+      // 100450 tiyn = 1004.5 tenge — все прочие кейсы кратны 100 тиынам и
+      // не проверяют собственно отбрасывание остатка, только группировку.
+      expect(formatTenge(100450), '1\u00A0004\u00A0₸');
+    });
   });
 }
