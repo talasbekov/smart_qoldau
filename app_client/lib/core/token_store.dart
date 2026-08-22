@@ -75,8 +75,35 @@ class TokenStore {
 
   final _accessTokenChanges = StreamController<String?>.broadcast();
 
+  /// Хвост очереди [write]/[clear] (Round 1 ревью задачи 8, п.3): без нЕЁ
+  /// гонка «логаут против уже запущенного молчаливого рефреша» ломает
+  /// порядок уведомлений — `write()` от рефреша мог быть ВЫЗВАН раньше
+  /// `clear()` от логаута, но из-за собственных внутренних `await`
+  /// ЗАВЕРШИТЬСЯ позже, и тогда `accessTokenChanges` получил бы сначала
+  /// `null`, а потом СВЕЖИЙ токен — шина реалтайм-событий переподключилась
+  /// бы для только что закрытой пользователем сессии. Очередь гарантирует:
+  /// операции применяются (и уведомляют) СТРОГО в порядке вызова, а не в
+  /// порядке завершения своих внутренних `await`.
+  Future<void> _queue = Future<void>.value();
+
+  /// Хвост очереди — единственная точка входа для [write]/[clear]; ошибка
+  /// одной операции не должна разорвать очередь для последующих (иначе,
+  /// например, сбой хранилища на логауте навсегда запер бы шину без
+  /// возможности снова войти).
+  Future<void> _enqueue(Future<void> Function() action) {
+    final result = _queue.then((_) => action());
+    _queue = result.catchError((_) {});
+    return result;
+  }
+
   /// Читает сохранённую пару токенов. `null`, если сессии ещё не было
   /// (хотя бы один из трёх ключей отсутствует).
+  ///
+  /// Намеренно НЕ идёт через очередь [write]/[clear] — восстановление
+  /// сессии при старте приложения (`AuthController.restore()`) должно
+  /// читать немедленно, а не ждать, пока разрешится произвольно долгая
+  /// цепочка предыдущих операций (которых на холодном старте и быть не
+  /// может).
   Future<Tokens?> read() async {
     final access = await _store.read(_accessKey);
     final refresh = await _store.read(_refreshKey);
@@ -91,19 +118,19 @@ class TokenStore {
     );
   }
 
-  Future<void> write(Tokens tokens) async {
+  Future<void> write(Tokens tokens) => _enqueue(() async {
     await _store.write(_accessKey, tokens.accessToken);
     await _store.write(_refreshKey, tokens.refreshToken);
     await _store.write(_userKey, jsonEncode(tokens.user.toJson()));
     _accessTokenChanges.add(tokens.accessToken);
-  }
+  });
 
-  Future<void> clear() async {
+  Future<void> clear() => _enqueue(() async {
     await _store.delete(_accessKey);
     await _store.delete(_refreshKey);
     await _store.delete(_userKey);
     _accessTokenChanges.add(null);
-  }
+  });
 
   /// Закрывает [accessTokenChanges] — вызывается при уничтожении
   /// [tokenStoreProvider] (`ref.onDispose`), в тестах не обязателен.

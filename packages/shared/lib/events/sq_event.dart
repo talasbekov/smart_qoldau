@@ -84,6 +84,10 @@ final class RequestUpdated extends SqEvent {
   final ExpertPublic? matchedExpert;
   final String? consultationId;
   final List<String>? hotlines;
+
+  @override
+  String toString() =>
+      'RequestUpdated(id: $id, status: $status, consultationId: $consultationId)';
 }
 
 /// `consultation.updated` — частичный патч консультации. Бэкенд шлёт это
@@ -104,6 +108,10 @@ final class ConsultationUpdated extends SqEvent {
   final ConsultationOutcome? outcome;
   final ConsultationPaymentStatus? paymentStatus;
   final SessionFormat? format;
+
+  @override
+  String toString() => 'ConsultationUpdated(id: $id, status: $status, '
+      'outcome: $outcome, paymentStatus: $paymentStatus, format: $format)';
 }
 
 /// `chat.message` — новое сообщение чата консультации.
@@ -111,6 +119,13 @@ final class ChatMessageEvent extends SqEvent {
   const ChatMessageEvent(this.message);
 
   final ChatMessage message;
+
+  /// НЕ включает `message.text` — это содержимое переписки (PII), ему не
+  /// место в логах/диагностике (см. Global Constraints задачи 8).
+  @override
+  String toString() => 'ChatMessageEvent(id: ${message.id}, '
+      'consultationId: ${message.consultationId}, '
+      'senderRole: ${message.senderRole})';
 }
 
 /// `chat.typing` — собеседник печатает.
@@ -122,6 +137,10 @@ final class ChatTypingEvent extends SqEvent {
   /// `client`/`expert` — как и `ChatMessage.senderRole`, у бэкенда это
   /// обычная строка, не enum.
   final String senderRole;
+
+  @override
+  String toString() =>
+      'ChatTypingEvent(consultationId: $consultationId, senderRole: $senderRole)';
 }
 
 /// `chat.error` — `chat.send`/`chat.typing` не выполнились на бэкенде
@@ -130,6 +149,9 @@ final class ChatErrorEvent extends SqEvent {
   const ChatErrorEvent(this.code);
 
   final String code;
+
+  @override
+  String toString() => 'ChatErrorEvent(code: $code)';
 }
 
 /// `notification.new` — новая запись в центре уведомлений. Бэкенд
@@ -143,6 +165,9 @@ final class NotificationNew extends SqEvent {
 
   final String id;
   final String type;
+
+  @override
+  String toString() => 'NotificationNew(id: $id, type: $type)';
 }
 
 /// Незнакомое имя события ИЛИ известное имя с payload'ом, который не
@@ -152,6 +177,12 @@ final class UnknownEvent extends SqEvent {
 
   final String name;
   final dynamic data;
+
+  /// НЕ включает [data] — для незнакомых серверных событий состав payload'а
+  /// непредсказуем и может случайно содержать чувствительные поля; для
+  /// диагностики достаточно имени события.
+  @override
+  String toString() => 'UnknownEvent(name: $name)';
 }
 
 // --- разбор enum'ов с проводного формата ---

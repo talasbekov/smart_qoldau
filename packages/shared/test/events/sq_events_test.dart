@@ -15,12 +15,21 @@ import 'package:shared/shared.dart';
 /// `pushRaw` эмулирует событие, пришедшее от бэкенда.
 class _FakeSqSocket implements SqSocket {
   final _controller = StreamController<(String, dynamic)>.broadcast();
+  final _connectionStateController =
+      StreamController<SqConnectionState>.broadcast();
   final List<(String, dynamic)> emitted = [];
   final List<String> connectCalls = [];
   int disconnectCalls = 0;
 
   @override
   Stream<(String, dynamic)> get events => _controller.stream;
+
+  @override
+  Stream<SqConnectionState> get connectionState =>
+      _connectionStateController.stream;
+
+  void pushConnectionState(SqConnectionState state) =>
+      _connectionStateController.add(state);
 
   @override
   void emit(String event, dynamic data) => emitted.add((event, data));
@@ -33,7 +42,10 @@ class _FakeSqSocket implements SqSocket {
 
   void pushRaw(String event, dynamic data) => _controller.add((event, data));
 
-  Future<void> close() => _controller.close();
+  Future<void> close() async {
+    await _controller.close();
+    await _connectionStateController.close();
+  }
 }
 
 void main() {
@@ -332,6 +344,53 @@ void main() {
 
       expect(socket.connectCalls, ['new-token']);
       expect(socket.disconnectCalls, 0);
+    });
+  });
+
+  group('connectionState', () {
+    test('прокидывает переходы транспорта как есть', () async {
+      final received = <SqConnectionState>[];
+      final sub = events.connectionState.listen(received.add);
+
+      socket.pushConnectionState(SqConnectionState.connecting);
+      socket.pushConnectionState(SqConnectionState.connected);
+      socket.pushConnectionState(SqConnectionState.disconnected);
+      await Future<void>.delayed(Duration.zero);
+      await sub.cancel();
+
+      expect(received, [
+        SqConnectionState.connecting,
+        SqConnectionState.connected,
+        SqConnectionState.disconnected,
+      ]);
+    });
+  });
+
+  group('SqEvent.toString — не содержит PII', () {
+    // Round 1 ревью задачи 8, п.6: toString() нужен для диагностики, но
+    // текст сообщения чата (PII) в нём быть не должно.
+    test('ChatMessageEvent.toString не содержит текст сообщения', () {
+      const secret = 'секретный текст сообщения клиента';
+      final event = ChatMessageEvent(
+        ChatMessage(
+          id: 'm1',
+          consultationId: 'c1',
+          senderRole: 'client',
+          text: secret,
+          createdAt: DateTime(2026, 8, 22),
+        ),
+      );
+
+      expect(event.toString(), isNot(contains(secret)));
+      expect(event.toString(), contains('m1'));
+      expect(event.toString(), contains('c1'));
+    });
+
+    test('UnknownEvent.toString не включает сырой payload', () {
+      final event = UnknownEvent(name: 'offer.new', data: {'secret': 'x'});
+
+      expect(event.toString(), isNot(contains('secret')));
+      expect(event.toString(), contains('offer.new'));
     });
   });
 }

@@ -72,8 +72,18 @@ final sqApiProvider = Provider<SqApi>((ref) {
   );
 });
 
+/// Сколько раз подряд (без промежуточного успешного `connected`) стоит
+/// пытаться обновить токен и переподключиться, прежде чем признать сессию
+/// недействительной (см. [connectSqEvents], Round 1 ревью задачи 8, п.4).
+/// Небольшое число — это подстраховка от бесконечного цикла, а не
+/// собственно механизм рефреша (тот и так single-flight в
+/// `AuthInterceptor`).
+const int _authRetryBudget = 2;
+
 /// Поднимает [SqEvents] поверх [socket] и держит его соединение в шаге с
-/// access-токеном из [tokenStore].
+/// access-токеном из [tokenStore]; при разрыве, похожем на отказ
+/// аутентификации, проактивно обновляет токен через [refreshTokens] и
+/// переподключается им же.
 ///
 /// **Как шина узнаёт о смене токена** (см. брифинг задачи 8 — это
 /// сознательно неочевидное место): единственный канал —
@@ -82,47 +92,160 @@ final sqApiProvider = Provider<SqApi>((ref) {
 /// конверсия гостя (`AuthRepository`), молчаливый рефреш access-токена
 /// (`AuthInterceptor._doRefresh`, где `writeTokens` — это тот же самый
 /// `tokenStore.write`, переданный в `SqApi` из [sqApiProvider]), явный
-/// логаут (`AuthRepository.logout`) и принудительный логаут при неудачном
-/// рефреше ([sqApiProvider]`.onLogout`) — все они в итоге вызывают методы
-/// ОДНОГО И ТОГО ЖЕ инстанса [TokenStore], который живёт в
-/// [tokenStoreProvider]. Отдельно разбирать «это новый логин» от «это
-/// молчаливый рефреш» не нужно — реакция одна и та же: непустой токен просто
-/// подаётся в `socket.connect(token)` (он сам рвёт предыдущее соединение,
-/// если оно было — см. `SocketIoSqSocket.connect`), `null` — рвёт его через
-/// `socket.disconnect()`.
+/// логаут (`AuthRepository.logout`), принудительный логаут при неудачном
+/// рефреше ([sqApiProvider]`.onLogout`) — и, теперь, эта же функция при
+/// исчерпании бюджета проактивных рефрешей ниже. Все они в итоге вызывают
+/// методы ОДНОГО И ТОГО ЖЕ инстанса [TokenStore], который живёт в
+/// [tokenStoreProvider]. `TokenStore.write`/`clear` сами сериализованы
+/// (см. `TokenStore._enqueue`) — их уведомления в [TokenStore
+/// .accessTokenChanges] приходят строго в порядке ВЫЗОВА, а не завершения
+/// внутренних `await`, что важно именно здесь: иначе поздно завершившийся
+/// `write()` от уже отменённого рефреша мог бы прийти ПОСЛЕ `clear()` от
+/// логаута и заново поднять соединение для уже закрытой сессии.
 ///
-/// Одно исключение: сессия, ВОССТАНОВЛЕННАЯ при холодном старте приложения
-/// (`AuthController.restore()`), идёт через `TokenStore.read()`, а не через
-/// `write()` — `accessTokenChanges` её не увидит. Поэтому здесь же, сразу
-/// после подписки, состояние досеивается явным `tokenStore.read()` — но
-/// только для случая «сессия есть»: свежесозданный [socket] и так ещё не
-/// подключён, вызывать `disconnect()` ради отсутствующей сессии незачем.
+/// Один нюанс требует отдельной обработки: сессия, ВОССТАНОВЛЕННАЯ при
+/// холодном старте приложения (`AuthController.restore()`), идёт через
+/// `TokenStore.read()`, а не через `write()` — `accessTokenChanges` её не
+/// увидит. Поэтому здесь же, сразу после подписки, состояние досеивается
+/// явным `tokenStore.read()` — но только для случая «сессия есть»:
+/// свежесозданный [socket] и так ещё не подключён, вызывать `disconnect()`
+/// ради отсутствующей сессии незачем.
+///
+/// **Гонка перекрывающихся смен токена** (Round 1 ревью, п.3): если
+/// `accessTokenChanges` выдаёт два значения быстрее, чем `socket.connect`/
+/// `disconnect` успевают выполниться, наивная реализация могла бы запустить
+/// оба вызова ОДНОВРЕМЕННО — и тогда «проигравший» (тот, что стартовал
+/// раньше, но завершился позже) переписывает состояние поверх «победителя»,
+/// оставляя транспорт в устаревшем виде (например, подключённым протухшим
+/// токеном ПОСЛЕ логаута). Правильный порядок гарантирует не очередь
+/// заявок (каждая совершается сама по себе — тут не о персистентности, важно
+/// только КОНЕЧНОЕ состояние), а drain-цикл с поколением (`_generation`):
+/// `applyToken` только запоминает последний желаемый токен и запускает (или
+/// не трогает, если уже запущен) единственный воркер, который после каждой
+/// попытки проверяет, не появился ли токен новее, и если появился — тут же
+/// применяет его тоже, вместо того чтобы застрять на устаревшем значении.
+/// Флаг `applying` — тот же принцип «async-обработчик с флагом занятости
+/// только в try/finally», что и в задаче 6 (иначе сбой транспорта посреди
+/// цикла навсегда запер бы `applying = true`, и шина перестала бы реагировать
+/// на дальнейшие смены токена).
+///
+/// **Разрыв, похожий на отказ аутентификации** (Round 1 ревью, п.4):
+/// `enableReconnection()` у `socket_io_client` продолжает попытки СТАРЫМ
+/// токеном, зафиксированным в handshake на момент `connect()` — если разрыв
+/// вызван именно протухшим токеном (а не сетевым блипом), эти попытки
+/// обречены повторять один и тот же немедленный отказ бесконечно, и
+/// AuthInterceptor тут не помощник — он реагирует только на 401 у HTTP,
+/// а не на разрыв WS. Поэтому здесь отдельный слушатель `connectionState`:
+/// на каждый `disconnected` (пока в [tokenStore] ещё есть сессия) пробуем
+/// обновить токен через ТОТ ЖЕ REST-эндпоинт, которым пользуется
+/// `AuthInterceptor` ([refreshTokens] — не дублирование, а переиспользование
+/// `SqApi.refresh`), и просто записываем результат в [tokenStore] —
+/// переподключение запустится САМО через `accessTokenChanges`, отдельно
+/// вызывать `socket.connect` тут не нужно. Сбой именно с кодом
+/// [ApiErrorCode.network] НЕ считается решающим (сеть может быть временно
+/// недоступна — это не повод разлогинивать) и бюджет не трогает; любой другой сбой
+/// (в первую очередь `401` на сам `/auth/refresh` — рефреш-токен тоже
+/// мёртв) сразу считается финальным. Бюджет [_authRetryBudget] ограничивает
+/// число ПОДРЯД идущих попыток без успешного `connected` между ними —
+/// исчерпание вызывает [onSessionInvalid] (тот же путь, что и
+/// принудительный логаут в [sqApiProvider]).
 ///
 /// Вынесена отдельной верхнеуровневой функцией (не прямо в тело
-/// `Provider`-фабрики) ради юнит-теста на фейковом [SqSocket] —
+/// `Provider`-фабрики) ради юнит-теста на фейковых [SqSocket]/[TokenStore] —
 /// `test/core/sq_events_connection_test.dart` проверяет ровно эту логику
 /// без Riverpod и без реальной сети.
 ({SqEvents events, Future<void> Function() dispose}) connectSqEvents(
   TokenStore tokenStore,
-  SqSocket socket,
-) {
+  SqSocket socket, {
+  required Future<Tokens> Function(String refreshToken) refreshTokens,
+  required void Function() onSessionInvalid,
+}) {
   final events = SqEvents(socket);
 
-  Future<void> applyToken(String? token) =>
-      token == null ? socket.disconnect() : socket.connect(token);
+  // --- применение токена: drain-цикл с поколением, см. комментарий выше ---
+  var generation = 0;
+  String? latestToken;
+  var applying = false;
 
-  final subscription = tokenStore.accessTokenChanges.listen(applyToken);
+  Future<void> drain() async {
+    if (applying) return;
+    applying = true;
+    try {
+      while (true) {
+        final myGeneration = generation;
+        final token = latestToken;
+        try {
+          if (token == null) {
+            await socket.disconnect();
+          } else {
+            await socket.connect(token);
+          }
+        } catch (_) {
+          // Best-effort — так же, как `EventsService.safeEmit` на бэкенде:
+          // сбой ОДНОЙ попытки применения токена не должен прервать реакцию
+          // на последующие смены.
+        }
+        if (myGeneration == generation) break;
+        // Пока мы работали, пришёл более новый токен — применяем его тоже,
+        // не дожидаясь отдельного вызова applyToken.
+      }
+    } finally {
+      applying = false;
+    }
+  }
+
+  void applyToken(String? token) {
+    latestToken = token;
+    generation++;
+    unawaited(drain());
+  }
+
+  final tokenSub = tokenStore.accessTokenChanges.listen(applyToken);
+
+  // --- разрыв, похожий на отказ аутентификации, см. комментарий выше ---
+  var authRetryBudget = _authRetryBudget;
+  final connectionSub = socket.connectionState.listen((state) {
+    if (state == SqConnectionState.connected) {
+      authRetryBudget = _authRetryBudget;
+      return;
+    }
+    if (state != SqConnectionState.disconnected) return;
+    unawaited(() async {
+      final tokens = await tokenStore.read();
+      if (tokens == null) return; // уже разлогинены — чинить нечего
+
+      if (authRetryBudget <= 0) {
+        await tokenStore.clear();
+        onSessionInvalid();
+        return;
+      }
+      authRetryBudget--;
+
+      try {
+        final fresh = await refreshTokens(tokens.refreshToken);
+        await tokenStore.write(fresh);
+      } on ApiException catch (e) {
+        if (e.code == ApiErrorCode.network) {
+          return; // сеть сейчас недоступна — не наш случай, ничего не решаем
+        }
+        await tokenStore.clear();
+        onSessionInvalid();
+      }
+    }());
+  });
+
   unawaited(
     tokenStore.read().then((tokens) {
       final restoredToken = tokens?.accessToken;
-      if (restoredToken != null) return applyToken(restoredToken);
+      if (restoredToken != null) applyToken(restoredToken);
     }),
   );
 
   return (
     events: events,
     dispose: () async {
-      await subscription.cancel();
+      await tokenSub.cancel();
+      await connectionSub.cancel();
       await socket.disconnect();
     },
   );
@@ -134,8 +257,15 @@ final sqApiProvider = Provider<SqApi>((ref) {
 /// автоматически вместе с сессией (см. [connectSqEvents]).
 final sqEventsProvider = Provider<SqEvents>((ref) {
   final tokenStore = ref.watch(tokenStoreProvider);
+  final api = ref.watch(sqApiProvider);
   final socket = SocketIoSqSocket(wsBase: wsBaseUrl);
-  final connection = connectSqEvents(tokenStore, socket);
+  final connection = connectSqEvents(
+    tokenStore,
+    socket,
+    refreshTokens: api.refresh,
+    onSessionInvalid: () =>
+        ref.read(sessionInvalidatedProvider.notifier).state++,
+  );
   ref.onDispose(() => unawaited(connection.dispose()));
   return connection.events;
 });

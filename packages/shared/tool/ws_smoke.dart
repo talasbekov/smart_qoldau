@@ -48,13 +48,30 @@ Future<void> main(List<String> args) async {
 
   await socket.connect(token);
   await Future<void>.delayed(const Duration(seconds: 2));
-
   print(
     socket.isConnected
-        ? 'CONNECTED к $wsBase/ws — токен принят, соединение держится'
-        : 'DISCONNECTED — сервер разорвал соединение (токен отклонён?)',
+        ? 'connect(): CONNECTED к $wsBase/ws — токен принят'
+        : 'connect(): DISCONNECTED — сервер разорвал соединение (токен отклонён?)',
+  );
+
+  // Round 1 ревью задачи 8, п.1: явный disconnect() — путь, которым
+  // изначальный фикс (zone только вокруг connect()) НЕ был защищён.
+  // Печатаем результат явно: если процесс дожил досюда без необработанного
+  // исключения — фикс держится и на этом пути.
+  await socket.disconnect();
+  print('disconnect(): вызван, необработанных исключений нет');
+
+  // Переподключение (reconnectWith после рефреша токена — тот же вызов на
+  // уровне SqSocket) — держится ли соединение снова.
+  await socket.connect(token);
+  await Future<void>.delayed(const Duration(seconds: 2));
+  print(
+    socket.isConnected
+        ? 'connect() повторно: CONNECTED — переподключение работает'
+        : 'connect() повторно: DISCONNECTED',
   );
 
   await sub.cancel();
   await socket.disconnect();
+  print('итоговый disconnect(): вызван, необработанных исключений нет');
 }

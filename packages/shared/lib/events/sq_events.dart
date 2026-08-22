@@ -67,4 +67,11 @@ class SqEvents {
   /// уже установленном handshake становится негодным для последующих
   /// автопереподключений `socket_io_client`).
   Future<void> reconnectWith(String token) => _socket.connect(token);
+
+  /// Состояние соединения (`connecting`/`connected`/`disconnected`) —
+  /// индикатор «связь восстанавливается» для звонка (задача 14) и чата.
+  /// Прямой проброс [SqSocket.connectionState] — как и
+  /// `TokenStore.accessTokenChanges`, обычный broadcast `Stream`, без
+  /// повтора текущего значения новому подписчику.
+  Stream<SqConnectionState> get connectionState => _socket.connectionState;
 }

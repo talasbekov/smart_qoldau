@@ -17,6 +17,12 @@ dependencies:
   # Шина реалтайм-событий (задача 8): бэкенд поднимает socket.io на
   # неймспейсе `/ws` (не голый WebSocket) — см. `backend/src/ws`.
   socket_io_client: ^3.1.6
+  # Транзитивная зависимость socket_io_client — объявлена явно, потому что
+  # sq_socket.dart напрямую ссылается на `WebSocketConnectionClosed` (см.
+  # отчёт задачи 8, раунд правок 1, п.1-2).
+  web_socket: ^1.0.1
+  # @visibleForTesting на диагностическом `SocketIoSqSocket.debugZone`.
+  meta: ^1.16.0
 
 dev_dependencies:
   flutter_test:
