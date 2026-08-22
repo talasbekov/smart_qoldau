@@ -1,8 +1,9 @@
 /// Меню сессии консультации.
 ///
-/// Пункта «Сообщить о проблеме» здесь пока нет: тикеты появляются в задаче
-/// 19. Показывать его заранее неактивным значило бы дать клиенту в кризисе
-/// кнопку, которая ничего не делает.
+/// Пункты появлялись вместе со своей работой: аудио/видео — в задаче 14,
+/// «Сообщить о проблеме» — в задаче 19. Заранее неактивных пунктов здесь
+/// не было и быть не должно: кнопка, которая ничего не делает, хуже её
+/// отсутствия.
 library;
 
 import 'package:flutter/material.dart';
@@ -15,6 +16,7 @@ class SessionMenu extends StatelessWidget {
     super.key,
     required this.onCancel,
     this.onEscalate,
+    this.onReportProblem,
     this.enabled = true,
   });
 
@@ -23,6 +25,10 @@ class SessionMenu extends StatelessWidget {
   /// Эскалация формата (чат → аудио → видео). `null` — экран, которому
   /// эскалация не нужна (например, сам звонок).
   final void Function(SessionFormat format)? onEscalate;
+
+  /// «Сообщить о проблеме» — обращение в поддержку с привязкой к этой
+  /// консультации. `null` — экран, которому пункт не нужен.
+  final VoidCallback? onReportProblem;
 
   final bool enabled;
 
@@ -45,6 +51,11 @@ class SessionMenu extends StatelessWidget {
             child: Text(l10n.sessionMenuVideo, style: SqTypography.body),
           ),
         ],
+        if (onReportProblem != null)
+          PopupMenuItem<void>(
+            onTap: onReportProblem,
+            child: Text(l10n.sessionMenuReport, style: SqTypography.body),
+          ),
         PopupMenuItem<void>(
           onTap: onCancel,
           child: Text(

@@ -31,6 +31,18 @@ abstract final class RoutePaths {
   /// ссылается тайл уведомления `ticket.replied`.
   static const support = '/support';
 
+  /// Конверсия гостя в аккаунт (Р-22, задача 19).
+  static const convertGuest = '/profile/convert';
+
+  /// Настройки приложения (задача 19).
+  static const settings = '/profile/settings';
+
+  /// Новое обращение в поддержку и карточка обращения (задача 19).
+  static const supportNew = '/support/new';
+  static const supportTicketPattern = '/support/:id';
+
+  static String supportTicket(String id) => '/support/$id';
+
   /// Центр уведомлений (задача 18).
   static const notifications = '/notifications';
 

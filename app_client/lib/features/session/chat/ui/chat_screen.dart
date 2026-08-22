@@ -133,6 +133,14 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                 onCancel: _confirmCancel,
                 onEscalate: (format) =>
                     context.push(RoutePaths.call(widget.consultationId, format)),
+                onReportProblem: () => context.push(
+                  Uri(
+                    path: RoutePaths.supportNew,
+                    queryParameters: {
+                      'consultationId': widget.consultationId,
+                    },
+                  ).toString(),
+                ),
               ),
             ),
       body: SafeArea(

@@ -894,4 +894,144 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get notificationsMarkAllRead => 'Прочитать все';
+
+  @override
+  String get profileGuestTitle => 'Создайте аккаунт';
+
+  @override
+  String get profileGuestBody =>
+      'Активная консультация и привязанная карта сохранятся, а доступ к истории останется при смене устройства';
+
+  @override
+  String get profileCreateAccount => 'Создать аккаунт';
+
+  @override
+  String profileCompletedConsultations(num count) {
+    return 'Завершённых консультаций: $count';
+  }
+
+  @override
+  String get profilePaymentMethods => 'Способы оплаты';
+
+  @override
+  String get profileNotifications => 'Уведомления';
+
+  @override
+  String get profileLanguage => 'Язык';
+
+  @override
+  String get profileSupport => 'Поддержка';
+
+  @override
+  String get profileTerms => 'Пользовательское соглашение';
+
+  @override
+  String get profilePrivacy => 'Политика конфиденциальности';
+
+  @override
+  String get profileDeleteAccount => 'Удалить аккаунт';
+
+  @override
+  String get profileLogout => 'Выйти';
+
+  @override
+  String get profileLogoutTitle => 'Выйти из аккаунта?';
+
+  @override
+  String get profileLogoutBody => 'Вы сможете войти снова по номеру телефона';
+
+  @override
+  String get profileLogoutGuestBody =>
+      'Это гостевая сессия: после выхода её данные будут потеряны безвозвратно — история консультаций и привязанная карта не восстановятся';
+
+  @override
+  String get profileDeleteAccountTitle => 'Удалить аккаунт и данные?';
+
+  @override
+  String get profileDeleteAccountBody =>
+      'Мы создадим обращение в поддержку — команда свяжется с вами и подтвердит удаление';
+
+  @override
+  String get profileDeleteAccountSubject => 'Удаление аккаунта и данных';
+
+  @override
+  String get profileDeleteAccountTicketBody =>
+      'Прошу удалить мой аккаунт и связанные с ним данные';
+
+  @override
+  String get settingsTitle => 'Настройки';
+
+  @override
+  String get convertGuestTitle => 'Создание аккаунта';
+
+  @override
+  String get convertGuestPhoneAlreadyUsed =>
+      'Этот номер уже зарегистрирован. Войти в тот аккаунт можно на экране входа, но данные гостевой сессии в него не перенесутся';
+
+  @override
+  String get supportTitle => 'Поддержка';
+
+  @override
+  String get supportEmpty => 'Обращений пока нет';
+
+  @override
+  String get supportNewTicket => 'Новое обращение';
+
+  @override
+  String get supportNoReplyNotice =>
+      'Дописать в это обращение нельзя — если нужно добавить детали, создайте новое';
+
+  @override
+  String get ticketSubjectLabel => 'Тема';
+
+  @override
+  String get ticketBodyLabel => 'Опишите ситуацию';
+
+  @override
+  String get ticketCategoryLabel => 'Категория';
+
+  @override
+  String get ticketSubjectInvalid => 'Укажите тему обращения';
+
+  @override
+  String get ticketBodyInvalid => 'Опишите ситуацию подробнее';
+
+  @override
+  String get ticketAuthorYou => 'Вы';
+
+  @override
+  String get ticketAuthorStaff => 'Поддержка';
+
+  @override
+  String get ticketStatusNew => 'Новое';
+
+  @override
+  String get ticketStatusInProgress => 'В работе';
+
+  @override
+  String get ticketStatusResolved => 'Решено';
+
+  @override
+  String get ticketCategoryConsultations => 'Консультации';
+
+  @override
+  String get ticketCategoryPayment => 'Оплата';
+
+  @override
+  String get ticketCategoryTechnical => 'Технические проблемы';
+
+  @override
+  String get ticketCategoryAccountData => 'Аккаунт и данные';
+
+  @override
+  String get ticketCategorySecurity => 'Безопасность';
+
+  @override
+  String get ticketCategoryOther => 'Другое';
+
+  @override
+  String get actionSend => 'Отправить';
+
+  @override
+  String get sessionMenuReport => 'Сообщить о проблеме';
 }

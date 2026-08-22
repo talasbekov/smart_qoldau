@@ -24,7 +24,11 @@ import 'features/onboarding/state/onboarding_flags.dart';
 import 'features/onboarding/ui/permissions_screen.dart';
 import 'features/onboarding/ui/slides_screen.dart';
 import 'features/onboarding/ui/welcome_screen.dart';
+import 'features/profile/ui/convert_guest_screen.dart';
 import 'features/profile/ui/profile_screen.dart';
+import 'features/support/ui/new_ticket_screen.dart';
+import 'features/support/ui/support_screen.dart';
+import 'features/support/ui/ticket_screen.dart';
 import 'features/session/call/ui/call_screen.dart';
 import 'features/session/chat/ui/chat_screen.dart';
 import 'features/payment/ui/add_card_screen.dart';
@@ -203,6 +207,26 @@ GoRouter sqRouter(Ref ref) {
         builder: (context, state) => const NotificationsScreen(),
       ),
       GoRoute(
+        path: RoutePaths.support,
+        builder: (context, state) => const SupportScreen(),
+        routes: [
+          GoRoute(
+            path: 'new',
+            builder: (context, state) => NewTicketScreen(
+              // Обращение «по этой консультации» приходит из сессии и из
+              // деталей консультации.
+              relatedConsultationId:
+                  state.uri.queryParameters['consultationId'],
+            ),
+          ),
+          GoRoute(
+            path: ':id',
+            builder: (context, state) =>
+                TicketScreen(ticketId: state.pathParameters['id']!),
+          ),
+        ],
+      ),
+      GoRoute(
         path: RoutePaths.reviewPattern,
         builder: (context, state) =>
             ReviewScreen(consultationId: state.pathParameters['id']!),
@@ -271,6 +295,12 @@ GoRouter sqRouter(Ref ref) {
               GoRoute(
                 path: RoutePaths.profile,
                 builder: (context, state) => const ProfileScreen(),
+                routes: [
+                  GoRoute(
+                    path: 'convert',
+                    builder: (context, state) => const ConvertGuestScreen(),
+                  ),
+                ],
               ),
             ],
           ),

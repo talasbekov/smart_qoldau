@@ -887,4 +887,145 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get notificationsMarkAllRead => 'Барлығын оқылды деп белгілеу';
+
+  @override
+  String get profileGuestTitle => 'Аккаунт жасаңыз';
+
+  @override
+  String get profileGuestBody =>
+      'Белсенді кеңес пен тіркелген карта сақталады, ал құрылғыны ауыстырғанда тарихқа қолжетімділік қалады';
+
+  @override
+  String get profileCreateAccount => 'Аккаунт жасау';
+
+  @override
+  String profileCompletedConsultations(num count) {
+    return 'Аяқталған кеңестер: $count';
+  }
+
+  @override
+  String get profilePaymentMethods => 'Төлем әдістері';
+
+  @override
+  String get profileNotifications => 'Хабарландырулар';
+
+  @override
+  String get profileLanguage => 'Тіл';
+
+  @override
+  String get profileSupport => 'Қолдау';
+
+  @override
+  String get profileTerms => 'Пайдаланушы келісімі';
+
+  @override
+  String get profilePrivacy => 'Құпиялылық саясаты';
+
+  @override
+  String get profileDeleteAccount => 'Аккаунтты жою';
+
+  @override
+  String get profileLogout => 'Шығу';
+
+  @override
+  String get profileLogoutTitle => 'Аккаунттан шығу керек пе?';
+
+  @override
+  String get profileLogoutBody => 'Телефон нөмірімен қайта кіре аласыз';
+
+  @override
+  String get profileLogoutGuestBody =>
+      'Бұл қонақ сессиясы: шыққаннан кейін оның деректері біржола жоғалады — кеңестер тарихы мен тіркелген карта қалпына келмейді';
+
+  @override
+  String get profileDeleteAccountTitle =>
+      'Аккаунт пен деректерді жою керек пе?';
+
+  @override
+  String get profileDeleteAccountBody =>
+      'Біз қолдау қызметіне өтінім жасаймыз — команда сізбен байланысып, жоюды растайды';
+
+  @override
+  String get profileDeleteAccountSubject => 'Аккаунт пен деректерді жою';
+
+  @override
+  String get profileDeleteAccountTicketBody =>
+      'Аккаунтымды және онымен байланысты деректерді жоюды сұраймын';
+
+  @override
+  String get settingsTitle => 'Параметрлер';
+
+  @override
+  String get convertGuestTitle => 'Аккаунт жасау';
+
+  @override
+  String get convertGuestPhoneAlreadyUsed =>
+      'Бұл нөмір тіркелген. Ол аккаунтқа кіру бетінен кіруге болады, бірақ қонақ сессиясының деректері оған көшпейді';
+
+  @override
+  String get supportTitle => 'Қолдау';
+
+  @override
+  String get supportEmpty => 'Өтінімдер әзірге жоқ';
+
+  @override
+  String get supportNewTicket => 'Жаңа өтінім';
+
+  @override
+  String get supportNoReplyNotice =>
+      'Бұл өтінімге қосымша жазуға болмайды — егер дерек қосу керек болса, жаңа өтінім жасаңыз';
+
+  @override
+  String get ticketSubjectLabel => 'Тақырып';
+
+  @override
+  String get ticketBodyLabel => 'Жағдайды сипаттаңыз';
+
+  @override
+  String get ticketCategoryLabel => 'Санат';
+
+  @override
+  String get ticketSubjectInvalid => 'Өтінім тақырыбын жазыңыз';
+
+  @override
+  String get ticketBodyInvalid => 'Жағдайды толығырақ сипаттаңыз';
+
+  @override
+  String get ticketAuthorYou => 'Сіз';
+
+  @override
+  String get ticketAuthorStaff => 'Қолдау';
+
+  @override
+  String get ticketStatusNew => 'Жаңа';
+
+  @override
+  String get ticketStatusInProgress => 'Жұмыста';
+
+  @override
+  String get ticketStatusResolved => 'Шешілді';
+
+  @override
+  String get ticketCategoryConsultations => 'Кеңестер';
+
+  @override
+  String get ticketCategoryPayment => 'Төлем';
+
+  @override
+  String get ticketCategoryTechnical => 'Техникалық мәселелер';
+
+  @override
+  String get ticketCategoryAccountData => 'Аккаунт және деректер';
+
+  @override
+  String get ticketCategorySecurity => 'Қауіпсіздік';
+
+  @override
+  String get ticketCategoryOther => 'Басқа';
+
+  @override
+  String get actionSend => 'Жіберу';
+
+  @override
+  String get sessionMenuReport => 'Мәселе туралы хабарлау';
 }

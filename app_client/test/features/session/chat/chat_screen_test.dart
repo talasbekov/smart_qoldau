@@ -98,6 +98,14 @@ Widget _wrap({
         builder: (context, state) => const Scaffold(body: Text('sq-stub-home')),
       ),
       GoRoute(
+        path: RoutePaths.supportNew,
+        builder: (context, state) => Scaffold(
+          body: Text(
+            'sq-stub-new-ticket:${state.uri.queryParameters['consultationId']}',
+          ),
+        ),
+      ),
+      GoRoute(
         path: RoutePaths.reviewPattern,
         builder: (context, state) => Scaffold(
           body: Text('sq-stub-review:${state.pathParameters['id']}'),
@@ -335,6 +343,22 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('sq-stub-home'), findsOneWidget);
+  });
+
+  testWidgets('«Сообщить о проблеме» открывает обращение по этой консультации', (
+    tester,
+  ) async {
+    // Задача 19: обращение создаётся с привязкой к консультации, иначе
+    // поддержке пришлось бы выяснять, о какой именно сессии речь.
+    await tester.pumpWidget(_wrap(api: api, socket: socket));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const Key('sq-session-menu')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Сообщить о проблеме'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('sq-stub-new-ticket:c1'), findsOneWidget);
   });
 
   testWidgets('плашка о конфиденциальности видна над перепиской', (

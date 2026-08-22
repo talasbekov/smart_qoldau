@@ -9,7 +9,10 @@ import 'dart:ui' show Locale, PlatformDispatcher;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared/shared.dart';
+
 import 'package:shared_preferences/shared_preferences.dart';
+
+import 'providers.dart';
 
 /// Ключ, под которым выбранная локаль хранится в [SharedPreferences].
 const _localePrefsKey = 'sq.locale';
@@ -48,10 +51,24 @@ class NoopLocaleSync implements LocaleSyncPort {
   Future<void> pushLocale(String apiLocale) async {}
 }
 
-/// Провайдер порта синхронизации локали. Задача 19 переопределит его
-/// реализацией поверх `SqApi`.
+/// Реализация [LocaleSyncPort] поверх `SqApi` (`PATCH /v1/me/locale`).
+///
+/// Живёт здесь, а не в `features`: провайдер порта объявлен в `core`, и
+/// заводить ради одной строки обратную зависимость `core -> features` было
+/// бы хуже. Сам вызов — тонкий проброс.
+class SqApiLocaleSync implements LocaleSyncPort {
+  const SqApiLocaleSync(this._api);
+
+  final SqApi _api;
+
+  @override
+  Future<void> pushLocale(String apiLocale) => _api.updateLocale(apiLocale);
+}
+
+/// Провайдер порта синхронизации локали. С задачи 19 — настоящий: язык
+/// уведомлений хранится на бэкенде.
 final localeSyncPortProvider = Provider<LocaleSyncPort>(
-  (ref) => const NoopLocaleSync(),
+  (ref) => SqApiLocaleSync(ref.watch(sqApiProvider)),
 );
 
 final localeControllerProvider = NotifierProvider<LocaleController, Locale>(

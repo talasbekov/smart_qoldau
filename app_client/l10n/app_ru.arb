@@ -1129,5 +1129,186 @@
   "notificationsMarkAllRead": "Прочитать все",
   "@notificationsMarkAllRead": {
     "description": "Кнопка «отметить все прочитанными»"
+  },
+  "profileGuestTitle": "Создайте аккаунт",
+  "@profileGuestTitle": {
+    "description": "Заголовок гостевого блока в профиле"
+  },
+  "profileGuestBody": "Активная консультация и привязанная карта сохранятся, а доступ к истории останется при смене устройства",
+  "@profileGuestBody": {
+    "description": "Объяснение выгоды регистрации гостю (Р-22)"
+  },
+  "profileCreateAccount": "Создать аккаунт",
+  "@profileCreateAccount": {
+    "description": "Кнопка перехода к конверсии гостя"
+  },
+  "profileCompletedConsultations": "Завершённых консультаций: {count}",
+  "@profileCompletedConsultations": {
+    "description": "Строка со счётчиком завершённых консультаций в профиле",
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "profilePaymentMethods": "Способы оплаты",
+  "@profilePaymentMethods": {
+    "description": "Пункт профиля: карты"
+  },
+  "profileNotifications": "Уведомления",
+  "@profileNotifications": {
+    "description": "Пункт профиля: центр уведомлений"
+  },
+  "profileLanguage": "Язык",
+  "@profileLanguage": {
+    "description": "Пункт профиля: язык интерфейса"
+  },
+  "profileSupport": "Поддержка",
+  "@profileSupport": {
+    "description": "Пункт профиля: обращения в поддержку"
+  },
+  "profileTerms": "Пользовательское соглашение",
+  "@profileTerms": {
+    "description": "Пункт профиля: соглашение"
+  },
+  "profilePrivacy": "Политика конфиденциальности",
+  "@profilePrivacy": {
+    "description": "Пункт профиля: политика"
+  },
+  "profileDeleteAccount": "Удалить аккаунт",
+  "@profileDeleteAccount": {
+    "description": "Пункт профиля: удаление аккаунта через обращение"
+  },
+  "profileLogout": "Выйти",
+  "@profileLogout": {
+    "description": "Пункт профиля: выход из аккаунта"
+  },
+  "profileLogoutTitle": "Выйти из аккаунта?",
+  "@profileLogoutTitle": {
+    "description": "Заголовок подтверждения выхода"
+  },
+  "profileLogoutBody": "Вы сможете войти снова по номеру телефона",
+  "@profileLogoutBody": {
+    "description": "Текст подтверждения выхода для зарегистрированного"
+  },
+  "profileLogoutGuestBody": "Это гостевая сессия: после выхода её данные будут потеряны безвозвратно — история консультаций и привязанная карта не восстановятся",
+  "@profileLogoutGuestBody": {
+    "description": "Текст подтверждения выхода для гостя (Р-22)"
+  },
+  "profileDeleteAccountTitle": "Удалить аккаунт и данные?",
+  "@profileDeleteAccountTitle": {
+    "description": "Заголовок подтверждения удаления аккаунта"
+  },
+  "profileDeleteAccountBody": "Мы создадим обращение в поддержку — команда свяжется с вами и подтвердит удаление",
+  "@profileDeleteAccountBody": {
+    "description": "Текст подтверждения удаления аккаунта: прямого эндпоинта удаления нет"
+  },
+  "profileDeleteAccountSubject": "Удаление аккаунта и данных",
+  "@profileDeleteAccountSubject": {
+    "description": "Тема автоматически созданного обращения на удаление аккаунта"
+  },
+  "profileDeleteAccountTicketBody": "Прошу удалить мой аккаунт и связанные с ним данные",
+  "@profileDeleteAccountTicketBody": {
+    "description": "Тело автоматически созданного обращения на удаление аккаунта"
+  },
+  "settingsTitle": "Настройки",
+  "@settingsTitle": {
+    "description": "Заголовок экрана настроек"
+  },
+  "convertGuestTitle": "Создание аккаунта",
+  "@convertGuestTitle": {
+    "description": "Заголовок экрана конверсии гостя"
+  },
+  "convertGuestPhoneAlreadyUsed": "Этот номер уже зарегистрирован. Войти в тот аккаунт можно на экране входа, но данные гостевой сессии в него не перенесутся",
+  "@convertGuestPhoneAlreadyUsed": {
+    "description": "Объяснение при PHONE_ALREADY_REGISTERED на конверсии"
+  },
+  "supportTitle": "Поддержка",
+  "@supportTitle": {
+    "description": "Заголовок экрана обращений"
+  },
+  "supportEmpty": "Обращений пока нет",
+  "@supportEmpty": {
+    "description": "Пустой список обращений"
+  },
+  "supportNewTicket": "Новое обращение",
+  "@supportNewTicket": {
+    "description": "Кнопка создания обращения"
+  },
+  "supportNoReplyNotice": "Дописать в это обращение нельзя — если нужно добавить детали, создайте новое",
+  "@supportNoReplyNotice": {
+    "description": "Пояснение в карточке обращения: бэкенд не даёт автору отвечать в тред"
+  },
+  "ticketSubjectLabel": "Тема",
+  "@ticketSubjectLabel": {
+    "description": "Поле темы обращения"
+  },
+  "ticketBodyLabel": "Опишите ситуацию",
+  "@ticketBodyLabel": {
+    "description": "Поле текста обращения"
+  },
+  "ticketCategoryLabel": "Категория",
+  "@ticketCategoryLabel": {
+    "description": "Выбор категории обращения"
+  },
+  "ticketSubjectInvalid": "Укажите тему обращения",
+  "@ticketSubjectInvalid": {
+    "description": "Ошибка валидации темы"
+  },
+  "ticketBodyInvalid": "Опишите ситуацию подробнее",
+  "@ticketBodyInvalid": {
+    "description": "Ошибка валидации текста"
+  },
+  "ticketAuthorYou": "Вы",
+  "@ticketAuthorYou": {
+    "description": "Автор сообщения обращения: клиент"
+  },
+  "ticketAuthorStaff": "Поддержка",
+  "@ticketAuthorStaff": {
+    "description": "Автор сообщения обращения: сотрудник"
+  },
+  "ticketStatusNew": "Новое",
+  "@ticketStatusNew": {
+    "description": "Статус обращения NEW"
+  },
+  "ticketStatusInProgress": "В работе",
+  "@ticketStatusInProgress": {
+    "description": "Статус обращения IN_PROGRESS"
+  },
+  "ticketStatusResolved": "Решено",
+  "@ticketStatusResolved": {
+    "description": "Статус обращения RESOLVED"
+  },
+  "ticketCategoryConsultations": "Консультации",
+  "@ticketCategoryConsultations": {
+    "description": "Категория обращения CONSULTATIONS"
+  },
+  "ticketCategoryPayment": "Оплата",
+  "@ticketCategoryPayment": {
+    "description": "Категория обращения PAYMENT"
+  },
+  "ticketCategoryTechnical": "Технические проблемы",
+  "@ticketCategoryTechnical": {
+    "description": "Категория обращения TECHNICAL"
+  },
+  "ticketCategoryAccountData": "Аккаунт и данные",
+  "@ticketCategoryAccountData": {
+    "description": "Категория обращения ACCOUNT_DATA"
+  },
+  "ticketCategorySecurity": "Безопасность",
+  "@ticketCategorySecurity": {
+    "description": "Категория обращения SECURITY"
+  },
+  "ticketCategoryOther": "Другое",
+  "@ticketCategoryOther": {
+    "description": "Категория обращения OTHER"
+  },
+  "actionSend": "Отправить",
+  "@actionSend": {
+    "description": "Кнопка отправки формы (обращение в поддержку)"
+  },
+  "sessionMenuReport": "Сообщить о проблеме",
+  "@sessionMenuReport": {
+    "description": "Пункт меню сессии: создать обращение в поддержку по этой консультации"
   }
 }

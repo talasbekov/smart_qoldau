@@ -1717,6 +1717,270 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Прочитать все'**
   String get notificationsMarkAllRead;
+
+  /// Заголовок гостевого блока в профиле
+  ///
+  /// In ru, this message translates to:
+  /// **'Создайте аккаунт'**
+  String get profileGuestTitle;
+
+  /// Объяснение выгоды регистрации гостю (Р-22)
+  ///
+  /// In ru, this message translates to:
+  /// **'Активная консультация и привязанная карта сохранятся, а доступ к истории останется при смене устройства'**
+  String get profileGuestBody;
+
+  /// Кнопка перехода к конверсии гостя
+  ///
+  /// In ru, this message translates to:
+  /// **'Создать аккаунт'**
+  String get profileCreateAccount;
+
+  /// Строка со счётчиком завершённых консультаций в профиле
+  ///
+  /// In ru, this message translates to:
+  /// **'Завершённых консультаций: {count}'**
+  String profileCompletedConsultations(num count);
+
+  /// Пункт профиля: карты
+  ///
+  /// In ru, this message translates to:
+  /// **'Способы оплаты'**
+  String get profilePaymentMethods;
+
+  /// Пункт профиля: центр уведомлений
+  ///
+  /// In ru, this message translates to:
+  /// **'Уведомления'**
+  String get profileNotifications;
+
+  /// Пункт профиля: язык интерфейса
+  ///
+  /// In ru, this message translates to:
+  /// **'Язык'**
+  String get profileLanguage;
+
+  /// Пункт профиля: обращения в поддержку
+  ///
+  /// In ru, this message translates to:
+  /// **'Поддержка'**
+  String get profileSupport;
+
+  /// Пункт профиля: соглашение
+  ///
+  /// In ru, this message translates to:
+  /// **'Пользовательское соглашение'**
+  String get profileTerms;
+
+  /// Пункт профиля: политика
+  ///
+  /// In ru, this message translates to:
+  /// **'Политика конфиденциальности'**
+  String get profilePrivacy;
+
+  /// Пункт профиля: удаление аккаунта через обращение
+  ///
+  /// In ru, this message translates to:
+  /// **'Удалить аккаунт'**
+  String get profileDeleteAccount;
+
+  /// Пункт профиля: выход из аккаунта
+  ///
+  /// In ru, this message translates to:
+  /// **'Выйти'**
+  String get profileLogout;
+
+  /// Заголовок подтверждения выхода
+  ///
+  /// In ru, this message translates to:
+  /// **'Выйти из аккаунта?'**
+  String get profileLogoutTitle;
+
+  /// Текст подтверждения выхода для зарегистрированного
+  ///
+  /// In ru, this message translates to:
+  /// **'Вы сможете войти снова по номеру телефона'**
+  String get profileLogoutBody;
+
+  /// Текст подтверждения выхода для гостя (Р-22)
+  ///
+  /// In ru, this message translates to:
+  /// **'Это гостевая сессия: после выхода её данные будут потеряны безвозвратно — история консультаций и привязанная карта не восстановятся'**
+  String get profileLogoutGuestBody;
+
+  /// Заголовок подтверждения удаления аккаунта
+  ///
+  /// In ru, this message translates to:
+  /// **'Удалить аккаунт и данные?'**
+  String get profileDeleteAccountTitle;
+
+  /// Текст подтверждения удаления аккаунта: прямого эндпоинта удаления нет
+  ///
+  /// In ru, this message translates to:
+  /// **'Мы создадим обращение в поддержку — команда свяжется с вами и подтвердит удаление'**
+  String get profileDeleteAccountBody;
+
+  /// Тема автоматически созданного обращения на удаление аккаунта
+  ///
+  /// In ru, this message translates to:
+  /// **'Удаление аккаунта и данных'**
+  String get profileDeleteAccountSubject;
+
+  /// Тело автоматически созданного обращения на удаление аккаунта
+  ///
+  /// In ru, this message translates to:
+  /// **'Прошу удалить мой аккаунт и связанные с ним данные'**
+  String get profileDeleteAccountTicketBody;
+
+  /// Заголовок экрана настроек
+  ///
+  /// In ru, this message translates to:
+  /// **'Настройки'**
+  String get settingsTitle;
+
+  /// Заголовок экрана конверсии гостя
+  ///
+  /// In ru, this message translates to:
+  /// **'Создание аккаунта'**
+  String get convertGuestTitle;
+
+  /// Объяснение при PHONE_ALREADY_REGISTERED на конверсии
+  ///
+  /// In ru, this message translates to:
+  /// **'Этот номер уже зарегистрирован. Войти в тот аккаунт можно на экране входа, но данные гостевой сессии в него не перенесутся'**
+  String get convertGuestPhoneAlreadyUsed;
+
+  /// Заголовок экрана обращений
+  ///
+  /// In ru, this message translates to:
+  /// **'Поддержка'**
+  String get supportTitle;
+
+  /// Пустой список обращений
+  ///
+  /// In ru, this message translates to:
+  /// **'Обращений пока нет'**
+  String get supportEmpty;
+
+  /// Кнопка создания обращения
+  ///
+  /// In ru, this message translates to:
+  /// **'Новое обращение'**
+  String get supportNewTicket;
+
+  /// Пояснение в карточке обращения: бэкенд не даёт автору отвечать в тред
+  ///
+  /// In ru, this message translates to:
+  /// **'Дописать в это обращение нельзя — если нужно добавить детали, создайте новое'**
+  String get supportNoReplyNotice;
+
+  /// Поле темы обращения
+  ///
+  /// In ru, this message translates to:
+  /// **'Тема'**
+  String get ticketSubjectLabel;
+
+  /// Поле текста обращения
+  ///
+  /// In ru, this message translates to:
+  /// **'Опишите ситуацию'**
+  String get ticketBodyLabel;
+
+  /// Выбор категории обращения
+  ///
+  /// In ru, this message translates to:
+  /// **'Категория'**
+  String get ticketCategoryLabel;
+
+  /// Ошибка валидации темы
+  ///
+  /// In ru, this message translates to:
+  /// **'Укажите тему обращения'**
+  String get ticketSubjectInvalid;
+
+  /// Ошибка валидации текста
+  ///
+  /// In ru, this message translates to:
+  /// **'Опишите ситуацию подробнее'**
+  String get ticketBodyInvalid;
+
+  /// Автор сообщения обращения: клиент
+  ///
+  /// In ru, this message translates to:
+  /// **'Вы'**
+  String get ticketAuthorYou;
+
+  /// Автор сообщения обращения: сотрудник
+  ///
+  /// In ru, this message translates to:
+  /// **'Поддержка'**
+  String get ticketAuthorStaff;
+
+  /// Статус обращения NEW
+  ///
+  /// In ru, this message translates to:
+  /// **'Новое'**
+  String get ticketStatusNew;
+
+  /// Статус обращения IN_PROGRESS
+  ///
+  /// In ru, this message translates to:
+  /// **'В работе'**
+  String get ticketStatusInProgress;
+
+  /// Статус обращения RESOLVED
+  ///
+  /// In ru, this message translates to:
+  /// **'Решено'**
+  String get ticketStatusResolved;
+
+  /// Категория обращения CONSULTATIONS
+  ///
+  /// In ru, this message translates to:
+  /// **'Консультации'**
+  String get ticketCategoryConsultations;
+
+  /// Категория обращения PAYMENT
+  ///
+  /// In ru, this message translates to:
+  /// **'Оплата'**
+  String get ticketCategoryPayment;
+
+  /// Категория обращения TECHNICAL
+  ///
+  /// In ru, this message translates to:
+  /// **'Технические проблемы'**
+  String get ticketCategoryTechnical;
+
+  /// Категория обращения ACCOUNT_DATA
+  ///
+  /// In ru, this message translates to:
+  /// **'Аккаунт и данные'**
+  String get ticketCategoryAccountData;
+
+  /// Категория обращения SECURITY
+  ///
+  /// In ru, this message translates to:
+  /// **'Безопасность'**
+  String get ticketCategorySecurity;
+
+  /// Категория обращения OTHER
+  ///
+  /// In ru, this message translates to:
+  /// **'Другое'**
+  String get ticketCategoryOther;
+
+  /// Кнопка отправки формы (обращение в поддержку)
+  ///
+  /// In ru, this message translates to:
+  /// **'Отправить'**
+  String get actionSend;
+
+  /// Пункт меню сессии: создать обращение в поддержку по этой консультации
+  ///
+  /// In ru, this message translates to:
+  /// **'Сообщить о проблеме'**
+  String get sessionMenuReport;
 }
 
 class _AppLocalizationsDelegate
