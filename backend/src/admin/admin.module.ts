@@ -6,12 +6,16 @@ import { AdminBootstrapService } from './admin-bootstrap.service';
 import { AdminAuthController } from './admin-auth.controller';
 import { AdminAuthService } from './admin-auth.service';
 import { AdminSessionService } from './admin-session.service';
+import { AdminTotpService } from './admin-totp.service';
+import { ChatModule } from '../chat/chat.module';
 import { AdminStaffController } from './admin-staff.controller';
 import { AdminStaffService } from './admin-staff.service';
 
 @Module({
   imports: [
     AuditModule,
+    // MessageCipher: секрет TOTP шифруется тем же приёмом, что чат.
+    ChatModule,
     // JwtModule сконфигурирован здесь ЛОКАЛЬНО (тот же секрет из
     // ConfigService, что и AuthModule) — не трогаем/не расширяем AuthModule
     // ради нужд админки (аналогично WsModule).
@@ -33,6 +37,7 @@ import { AdminStaffService } from './admin-staff.service';
     AdminBootstrapService,
     AdminAuthService,
     AdminSessionService,
+    AdminTotpService,
     AdminStaffService,
   ],
   // AdminJwtGuard живёт в каждом контроллере админки — сервис актуальности

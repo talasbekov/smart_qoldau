@@ -1002,6 +1002,95 @@
         ]
       }
     },
+    "/v1/admin/auth/totp/setup": {
+      "post": {
+        "operationId": "AdminAuthController_totpSetup",
+        "summary": "Привязка второго фактора: секрет и коды восстановления отдаются РОВНО здесь и больше нигде",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TotpSetupResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "admin-auth"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/admin/auth/totp/confirm": {
+      "post": {
+        "operationId": "AdminAuthController_totpConfirm",
+        "summary": "Подтверждение привязки кодом из приложения — без него 2FA не включается",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TotpConfirmDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "admin-auth"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/admin/auth/totp/verify": {
+      "post": {
+        "operationId": "AdminAuthController_totpVerify",
+        "summary": "Второй шаг входа: код из приложения или одноразовый код восстановления",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TotpVerifyDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminLoginResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "admin-auth"
+        ]
+      }
+    },
     "/v1/admin/auth/refresh": {
       "post": {
         "operationId": "AdminAuthController_refresh",
@@ -1185,292 +1274,6 @@
         },
         "tags": [
           "admin-staff"
-        ],
-        "security": [
-          {
-            "bearer": []
-          }
-        ]
-      }
-    },
-    "/v1/notifications": {
-      "get": {
-        "operationId": "NotificationsController_list",
-        "summary": "Центр уведомлений — свои, новые сверху + бейдж",
-        "parameters": [
-          {
-            "name": "take",
-            "required": false,
-            "in": "query",
-            "schema": {
-              "maximum": 100,
-              "default": 20,
-              "type": "number"
-            }
-          },
-          {
-            "name": "skip",
-            "required": false,
-            "in": "query",
-            "schema": {
-              "default": 0,
-              "type": "number"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/NotificationsListDto"
-                }
-              }
-            }
-          }
-        },
-        "tags": [
-          "notifications"
-        ],
-        "security": [
-          {
-            "bearer": []
-          }
-        ]
-      }
-    },
-    "/v1/notifications/read": {
-      "post": {
-        "operationId": "NotificationsController_markRead",
-        "summary": "Прочитать уведомления (без ids — все свои)",
-        "parameters": [],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ReadNotificationsDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "tags": [
-          "notifications"
-        ],
-        "security": [
-          {
-            "bearer": []
-          }
-        ]
-      }
-    },
-    "/v1/notifications/{id}/ack": {
-      "post": {
-        "operationId": "NotificationsController_ack",
-        "summary": "Подтверждение доставки пуша устройством (метрика §11.6)",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "format": "uuid",
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": ""
-          },
-          "404": {
-            "description": "NOTIFICATION_NOT_FOUND"
-          }
-        },
-        "tags": [
-          "notifications"
-        ],
-        "security": [
-          {
-            "bearer": []
-          }
-        ]
-      }
-    },
-    "/v1/experts/me/schedule": {
-      "get": {
-        "operationId": "ScheduleController_getSchedule",
-        "summary": "Получить расписание эксперта (7 дней)",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": "Расписание",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ScheduleResponseDto"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "UNAUTHORIZED"
-          },
-          "404": {
-            "description": "EXPERT_NOT_FOUND"
-          }
-        },
-        "tags": [
-          "experts"
-        ],
-        "security": [
-          {
-            "bearer": []
-          }
-        ]
-      },
-      "put": {
-        "operationId": "ScheduleController_putSchedule",
-        "summary": "Задать расписание эксперта (полная замена)",
-        "parameters": [],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UpdateScheduleDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Расписание сохранено",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ScheduleResponseDto"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "SCHEDULE_INVALID"
-          },
-          "401": {
-            "description": "UNAUTHORIZED"
-          },
-          "404": {
-            "description": "EXPERT_NOT_FOUND"
-          }
-        },
-        "tags": [
-          "experts"
-        ],
-        "security": [
-          {
-            "bearer": []
-          }
-        ]
-      }
-    },
-    "/v1/experts/me/availability": {
-      "patch": {
-        "operationId": "ScheduleController_updateAvailability",
-        "summary": "Переключить готовность принимать срочные заявки",
-        "parameters": [],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UpdateAvailabilityDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Готовность обновлена"
-          },
-          "401": {
-            "description": "UNAUTHORIZED"
-          },
-          "404": {
-            "description": "EXPERT_NOT_FOUND"
-          }
-        },
-        "tags": [
-          "experts"
-        ],
-        "security": [
-          {
-            "bearer": []
-          }
-        ]
-      }
-    },
-    "/v1/matching/online-count": {
-      "get": {
-        "operationId": "MatchingController_onlineCount",
-        "summary": "Счётчик доступных сейчас экспертов для экрана поиска (ТЗ §5.3, БП-01)",
-        "parameters": [
-          {
-            "name": "topicSlug",
-            "required": true,
-            "in": "query",
-            "description": "Slug темы из справочника /v1/topics",
-            "schema": {
-              "example": "anxiety-stress",
-              "type": "string"
-            }
-          },
-          {
-            "name": "format",
-            "required": true,
-            "in": "query",
-            "schema": {
-              "enum": [
-                "chat",
-                "audio",
-                "video"
-              ],
-              "type": "string"
-            }
-          },
-          {
-            "name": "urgentOnly",
-            "required": false,
-            "in": "query",
-            "description": "Только эксперты с acceptsUrgent=true (экстренный поиск, БП-02)",
-            "schema": {
-              "type": "boolean"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Число подходящих экспертов онлайн (без PII)",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/OnlineCountDto"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "UNAUTHORIZED"
-          }
-        },
-        "tags": [
-          "matching"
         ],
         "security": [
           {
@@ -2113,6 +1916,292 @@
         },
         "tags": [
           "webhooks"
+        ]
+      }
+    },
+    "/v1/notifications": {
+      "get": {
+        "operationId": "NotificationsController_list",
+        "summary": "Центр уведомлений — свои, новые сверху + бейдж",
+        "parameters": [
+          {
+            "name": "take",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "maximum": 100,
+              "default": 20,
+              "type": "number"
+            }
+          },
+          {
+            "name": "skip",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": 0,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificationsListDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "notifications"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/notifications/read": {
+      "post": {
+        "operationId": "NotificationsController_markRead",
+        "summary": "Прочитать уведомления (без ids — все свои)",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReadNotificationsDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "notifications"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/notifications/{id}/ack": {
+      "post": {
+        "operationId": "NotificationsController_ack",
+        "summary": "Подтверждение доставки пуша устройством (метрика §11.6)",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          },
+          "404": {
+            "description": "NOTIFICATION_NOT_FOUND"
+          }
+        },
+        "tags": [
+          "notifications"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/experts/me/schedule": {
+      "get": {
+        "operationId": "ScheduleController_getSchedule",
+        "summary": "Получить расписание эксперта (7 дней)",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Расписание",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScheduleResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED"
+          },
+          "404": {
+            "description": "EXPERT_NOT_FOUND"
+          }
+        },
+        "tags": [
+          "experts"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "put": {
+        "operationId": "ScheduleController_putSchedule",
+        "summary": "Задать расписание эксперта (полная замена)",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateScheduleDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Расписание сохранено",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScheduleResponseDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "SCHEDULE_INVALID"
+          },
+          "401": {
+            "description": "UNAUTHORIZED"
+          },
+          "404": {
+            "description": "EXPERT_NOT_FOUND"
+          }
+        },
+        "tags": [
+          "experts"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/experts/me/availability": {
+      "patch": {
+        "operationId": "ScheduleController_updateAvailability",
+        "summary": "Переключить готовность принимать срочные заявки",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateAvailabilityDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Готовность обновлена"
+          },
+          "401": {
+            "description": "UNAUTHORIZED"
+          },
+          "404": {
+            "description": "EXPERT_NOT_FOUND"
+          }
+        },
+        "tags": [
+          "experts"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/matching/online-count": {
+      "get": {
+        "operationId": "MatchingController_onlineCount",
+        "summary": "Счётчик доступных сейчас экспертов для экрана поиска (ТЗ §5.3, БП-01)",
+        "parameters": [
+          {
+            "name": "topicSlug",
+            "required": true,
+            "in": "query",
+            "description": "Slug темы из справочника /v1/topics",
+            "schema": {
+              "example": "anxiety-stress",
+              "type": "string"
+            }
+          },
+          {
+            "name": "format",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "enum": [
+                "chat",
+                "audio",
+                "video"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "name": "urgentOnly",
+            "required": false,
+            "in": "query",
+            "description": "Только эксперты с acceptsUrgent=true (экстренный поиск, БП-02)",
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Число подходящих экспертов онлайн (без PII)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OnlineCountDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED"
+          }
+        },
+        "tags": [
+          "matching"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
         ]
       }
     },
@@ -4320,6 +4409,61 @@
           "admin"
         ]
       },
+      "TotpSetupResponseDto": {
+        "type": "object",
+        "properties": {
+          "secret": {
+            "type": "string",
+            "description": "Секрет для приложения-аутентификатора. Единственный момент, когда он покидает сервер"
+          },
+          "otpauthUrl": {
+            "type": "string",
+            "description": "otpauth://-ссылка для QR-кода"
+          },
+          "recoveryCodes": {
+            "description": "Одноразовые коды восстановления. Показываются один раз — дальше в базе только их хеши",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "secret",
+          "otpauthUrl",
+          "recoveryCodes"
+        ]
+      },
+      "TotpConfirmDto": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "example": "123456"
+          }
+        },
+        "required": [
+          "code"
+        ]
+      },
+      "TotpVerifyDto": {
+        "type": "object",
+        "properties": {
+          "challengeToken": {
+            "type": "string",
+            "description": "challengeToken из ответа на вход"
+          },
+          "code": {
+            "type": "string",
+            "example": "123456",
+            "description": "Код из приложения или код восстановления"
+          }
+        },
+        "required": [
+          "challengeToken",
+          "code"
+        ]
+      },
       "AdminRefreshDto": {
         "type": "object",
         "properties": {
@@ -4480,166 +4624,6 @@
             "type": "boolean"
           }
         }
-      },
-      "NotificationDto": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string"
-          },
-          "type": {
-            "type": "string",
-            "example": "earning.credited"
-          },
-          "title": {
-            "type": "string"
-          },
-          "body": {
-            "type": "string"
-          },
-          "data": {
-            "type": "object"
-          },
-          "readAt": {
-            "format": "date-time",
-            "type": "string",
-            "nullable": true
-          },
-          "createdAt": {
-            "format": "date-time",
-            "type": "string"
-          }
-        },
-        "required": [
-          "id",
-          "type",
-          "title",
-          "body",
-          "data",
-          "readAt",
-          "createdAt"
-        ]
-      },
-      "NotificationsListDto": {
-        "type": "object",
-        "properties": {
-          "items": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/NotificationDto"
-            }
-          },
-          "unreadCount": {
-            "type": "number",
-            "description": "Всего непрочитанных (независимо от страницы)"
-          }
-        },
-        "required": [
-          "items",
-          "unreadCount"
-        ]
-      },
-      "ReadNotificationsDto": {
-        "type": "object",
-        "properties": {
-          "ids": {
-            "description": "Без ids — прочитать все свои",
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          }
-        }
-      },
-      "ScheduleDayDto": {
-        "type": "object",
-        "properties": {
-          "weekday": {
-            "type": "number",
-            "minimum": 0,
-            "maximum": 6,
-            "description": "0=Пн … 6=Вс"
-          },
-          "enabled": {
-            "type": "boolean"
-          },
-          "startMin": {
-            "type": "number",
-            "description": "Минуты от полуночи"
-          },
-          "endMin": {
-            "type": "number",
-            "description": "Минуты от полуночи"
-          },
-          "breakStart": {
-            "type": "number",
-            "nullable": true
-          },
-          "breakEnd": {
-            "type": "number",
-            "nullable": true
-          }
-        },
-        "required": [
-          "weekday",
-          "enabled",
-          "startMin",
-          "endMin"
-        ]
-      },
-      "ScheduleResponseDto": {
-        "type": "object",
-        "properties": {
-          "days": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/ScheduleDayDto"
-            }
-          }
-        },
-        "required": [
-          "days"
-        ]
-      },
-      "UpdateScheduleDto": {
-        "type": "object",
-        "properties": {
-          "days": {
-            "description": "Ровно 7 дней",
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/ScheduleDayDto"
-            }
-          }
-        },
-        "required": [
-          "days"
-        ]
-      },
-      "UpdateAvailabilityDto": {
-        "type": "object",
-        "properties": {
-          "acceptsUrgent": {
-            "type": "boolean",
-            "description": "Готовность принимать срочные заявки"
-          }
-        },
-        "required": [
-          "acceptsUrgent"
-        ]
-      },
-      "OnlineCountDto": {
-        "type": "object",
-        "properties": {
-          "count": {
-            "type": "number",
-            "example": 3,
-            "description": "Число подходящих экспертов онлайн"
-          }
-        },
-        "required": [
-          "count"
-        ]
       },
       "MessageDto": {
         "type": "object",
@@ -5026,6 +5010,166 @@
         "required": [
           "balanceTiyn",
           "items"
+        ]
+      },
+      "NotificationDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string",
+            "example": "earning.credited"
+          },
+          "title": {
+            "type": "string"
+          },
+          "body": {
+            "type": "string"
+          },
+          "data": {
+            "type": "object"
+          },
+          "readAt": {
+            "format": "date-time",
+            "type": "string",
+            "nullable": true
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "type",
+          "title",
+          "body",
+          "data",
+          "readAt",
+          "createdAt"
+        ]
+      },
+      "NotificationsListDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/NotificationDto"
+            }
+          },
+          "unreadCount": {
+            "type": "number",
+            "description": "Всего непрочитанных (независимо от страницы)"
+          }
+        },
+        "required": [
+          "items",
+          "unreadCount"
+        ]
+      },
+      "ReadNotificationsDto": {
+        "type": "object",
+        "properties": {
+          "ids": {
+            "description": "Без ids — прочитать все свои",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "ScheduleDayDto": {
+        "type": "object",
+        "properties": {
+          "weekday": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 6,
+            "description": "0=Пн … 6=Вс"
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "startMin": {
+            "type": "number",
+            "description": "Минуты от полуночи"
+          },
+          "endMin": {
+            "type": "number",
+            "description": "Минуты от полуночи"
+          },
+          "breakStart": {
+            "type": "number",
+            "nullable": true
+          },
+          "breakEnd": {
+            "type": "number",
+            "nullable": true
+          }
+        },
+        "required": [
+          "weekday",
+          "enabled",
+          "startMin",
+          "endMin"
+        ]
+      },
+      "ScheduleResponseDto": {
+        "type": "object",
+        "properties": {
+          "days": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ScheduleDayDto"
+            }
+          }
+        },
+        "required": [
+          "days"
+        ]
+      },
+      "UpdateScheduleDto": {
+        "type": "object",
+        "properties": {
+          "days": {
+            "description": "Ровно 7 дней",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ScheduleDayDto"
+            }
+          }
+        },
+        "required": [
+          "days"
+        ]
+      },
+      "UpdateAvailabilityDto": {
+        "type": "object",
+        "properties": {
+          "acceptsUrgent": {
+            "type": "boolean",
+            "description": "Готовность принимать срочные заявки"
+          }
+        },
+        "required": [
+          "acceptsUrgent"
+        ]
+      },
+      "OnlineCountDto": {
+        "type": "object",
+        "properties": {
+          "count": {
+            "type": "number",
+            "example": 3,
+            "description": "Число подходящих экспертов онлайн"
+          }
+        },
+        "required": [
+          "count"
         ]
       },
       "CreateRequestDto": {

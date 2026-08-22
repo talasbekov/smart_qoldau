@@ -16,6 +16,16 @@ export class AdminJwtGuard extends AuthGuard('jwt') {
     super();
   }
 
+  /// Маршруты привязки второго фактора — единственное, что доступно
+  /// сотруднику без 2FA при TOTP_REQUIRED=true. Иначе включить её было бы
+  /// невозможно: любой запрос отвергался бы.
+  private isTotpSetupRoute(path: string): boolean {
+    return (
+      path.endsWith('/admin/auth/totp/setup') ||
+      path.endsWith('/admin/auth/totp/confirm')
+    );
+  }
+
   // Подпись токена — не единственное условие доступа (E11a, задача 4):
   // после неё сверяется АКТУАЛЬНОЕ состояние сотрудника. Иначе
   // деактивированный работает до истечения токена, а снятая роль не
@@ -25,10 +35,34 @@ export class AdminJwtGuard extends AuthGuard('jwt') {
 
     const request = context.switchToHttp().getRequest();
     const payload = request.user as JwtPayload;
+
+    // Токен первого шага двухфакторного входа (E11a, задача 5) несёт
+    // `stage: 'totp'` и не открывает НИ ОДИН рабочий маршрут: иначе знание
+    // пароля давало бы доступ, а второй фактор оставался бы формальностью.
+    if (payload.stage === 'totp') {
+      apiError('ADMIN_INVALID_CREDENTIALS', 'Вход не завершён', 401);
+    }
+
     const state = await this.session.stateOf(payload.sub);
 
     if (!state || !state.isActive) {
       apiError('ADMIN_INVALID_CREDENTIALS', 'Сессия недействительна', 401);
+    }
+
+    if (
+      // Читается из process.env на каждый запрос, а не через ConfigService:
+      // валидированный конфиг снимается один раз при инициализации, а
+      // требование второго фактора должно включаться и в уже запущенном
+      // приложении (и в e2e — тем же способом, что THROTTLE_ENABLED).
+      process.env.TOTP_REQUIRED === 'true' &&
+      !state.totpEnabled &&
+      !this.isTotpSetupRoute(request.url ?? '')
+    ) {
+      apiError(
+        'TOTP_SETUP_REQUIRED',
+        'Включите второй фактор, чтобы продолжить',
+        403,
+      );
     }
 
     // Роли подменяются свежими: RolesGuard читает их из request.user.

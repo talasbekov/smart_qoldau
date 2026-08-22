@@ -17,6 +17,8 @@ import { RedisService } from '../redis/redis.service';
 export interface AdminState {
   isActive: boolean;
   roles: AdminRole[];
+  /// Привязан ли второй фактор. Нужен guard'у, когда TOTP_REQUIRED=true.
+  totpEnabled: boolean;
 }
 
 const CACHE_PREFIX = 'admin:state:';
@@ -41,11 +43,15 @@ export class AdminSessionService {
 
     const admin = await this.prisma.adminUser.findUnique({
       where: { id: adminUserId },
-      select: { isActive: true, roles: true },
+      select: { isActive: true, roles: true, totpEnabledAt: true },
     });
     if (!admin) return null;
 
-    const state: AdminState = { isActive: admin.isActive, roles: admin.roles };
+    const state: AdminState = {
+      isActive: admin.isActive,
+      roles: admin.roles,
+      totpEnabled: admin.totpEnabledAt !== null,
+    };
     await this.redis.set(key, JSON.stringify(state), 'EX', this.cacheTtlSec);
     return state;
   }

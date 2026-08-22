@@ -11,6 +11,11 @@ export interface JwtPayload {
   isGuest: boolean;
   isAdmin?: true;
   roles?: AdminRole[];
+  // Незавершённый вход сотрудника: первый шаг двухфакторной аутентификации
+  // (E11a, задача 5). Такой токен НЕ открывает рабочие маршруты — см.
+  // AdminJwtGuard. Поле обязано доезжать до guard'а, поэтому оно здесь, а
+  // не отбрасывается вместе с прочими claim'ами.
+  stage?: 'totp';
 }
 
 @Injectable()
@@ -27,6 +32,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     const result: JwtPayload = { sub: payload.sub, isGuest: payload.isGuest };
     if (payload.isAdmin) result.isAdmin = payload.isAdmin;
     if (payload.roles) result.roles = payload.roles;
+    if (payload.stage) result.stage = payload.stage;
     return result;
   }
 }

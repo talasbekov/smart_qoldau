@@ -41,4 +41,8 @@ export const envValidationSchema = Joi.object({
   // Верхняя граница задержки отзыва доступа: деактивация сбрасывает кэш
   // сама, TTL страхует случаи правки в обход API.
   ADMIN_CHECK_CACHE_SEC: Joi.number().default(30),
+  // Требовать ли второй фактор от всех сотрудников (E11a, задача 5).
+  // В dev по умолчанию false, в проде обязан быть true: сотрудник без
+  // привязанной 2FA тогда видит только маршруты привязки.
+  TOTP_REQUIRED: Joi.string().valid('true', 'false').default('false'),
 });
