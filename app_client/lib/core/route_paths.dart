@@ -64,6 +64,12 @@ abstract final class RoutePaths {
   /// (`context.push(RoutePaths.session(id))`).
   static String session(String id) => '/session/$id';
 
+  /// Шаблон маршрута экрана оценки консультации.
+  static const reviewPattern = '/review/:id';
+
+  /// Путь экрана оценки консультации [id].
+  static String review(String id) => '/review/$id';
+
   /// Шаблон маршрута звонка (аудио/видео) для регистрации в `GoRoute.path`.
   static const callPattern = '/call/:id';
 

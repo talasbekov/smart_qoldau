@@ -8,7 +8,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:shared/shared.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
+import 'package:app_client/core/locale_controller.dart';
 import 'package:app_client/core/providers.dart';
 import 'package:app_client/core/route_paths.dart';
 import 'package:app_client/features/session/chat/ui/chat_screen.dart';
@@ -78,7 +80,11 @@ ChatMessage _message(String id, String role, String text) => ChatMessage(
   createdAt: DateTime.now(),
 );
 
-Widget _wrap({required SqApi api, required SqSocket socket}) {
+Widget _wrap({
+  required SqApi api,
+  required SqSocket socket,
+  SharedPreferences? prefs,
+}) {
   final router = GoRouter(
     initialLocation: RoutePaths.session('c1'),
     routes: [
@@ -91,6 +97,12 @@ Widget _wrap({required SqApi api, required SqSocket socket}) {
         path: RoutePaths.home,
         builder: (context, state) => const Scaffold(body: Text('sq-stub-home')),
       ),
+      GoRoute(
+        path: RoutePaths.reviewPattern,
+        builder: (context, state) => Scaffold(
+          body: Text('sq-stub-review:${state.pathParameters['id']}'),
+        ),
+      ),
     ],
   );
   addTearDown(router.dispose);
@@ -99,6 +111,7 @@ Widget _wrap({required SqApi api, required SqSocket socket}) {
     overrides: [
       sqApiProvider.overrideWithValue(api),
       sqEventsProvider.overrideWithValue(SqEvents(socket)),
+      if (prefs != null) sharedPreferencesProvider.overrideWithValue(prefs),
     ],
     child: MaterialApp.router(
       routerConfig: router,
@@ -231,24 +244,26 @@ void main() {
     await _teardownTree(tester);
   });
 
-  testWidgets('после завершения консультации поле ввода заблокировано', (
-    tester,
-  ) async {
-    when(() => api.consultationById('c1')).thenAnswer(
-      (_) async => _consultation(status: ConsultationStatus.completed),
-    );
+  testWidgets(
+    'уже завершённая консультация открывается как чат: ввод заблокирован, '
+    'но на оценку экран не уводит (её открывают из истории, задача 17)',
+    (tester) async {
+      when(() => api.consultationById('c1')).thenAnswer(
+        (_) async => _consultation(status: ConsultationStatus.completed),
+      );
 
-    await tester.pumpWidget(_wrap(api: api, socket: socket));
-    await tester.pumpAndSettle();
+      await tester.pumpWidget(_wrap(api: api, socket: socket));
+      await tester.pumpAndSettle();
 
-    expect(find.byType(TextField), findsNothing);
-    expect(
-      find.text('Консультация завершена — писать больше нельзя'),
-      findsOneWidget,
-    );
+      expect(find.byType(TextField), findsNothing);
+      expect(
+        find.text('Консультация завершена — писать больше нельзя'),
+        findsOneWidget,
+      );
 
-    await _teardownTree(tester);
-  });
+      await _teardownTree(tester);
+    },
+  );
 
   testWidgets('отмена консультации подтверждается и возвращает на главную', (
     tester,
@@ -271,6 +286,54 @@ void main() {
     await tester.pumpAndSettle();
 
     verify(() => api.cancelConsultation('c1')).called(1);
+    expect(find.text('sq-stub-home'), findsOneWidget);
+  });
+
+  testWidgets('завершение консультации уводит на экран оценки', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
+    final prefs = await SharedPreferences.getInstance();
+
+    await tester.pumpWidget(_wrap(api: api, socket: socket, prefs: prefs));
+    await tester.pumpAndSettle();
+
+    socket.push('consultation.updated', {'id': 'c1', 'status': 'COMPLETED'});
+    await tester.pumpAndSettle();
+
+    expect(find.text('sq-stub-review:c1'), findsOneWidget);
+  });
+
+  testWidgets('уже оценённая консультация оценку повторно не предлагает', (
+    tester,
+  ) async {
+    // Оценка предлагается один раз (бриф задачи 15): флаг ставится и при
+    // отправке, и при «Пропустить».
+    SharedPreferences.setMockInitialValues({'sq.reviewed.c1': true});
+    final prefs = await SharedPreferences.getInstance();
+
+    await tester.pumpWidget(_wrap(api: api, socket: socket, prefs: prefs));
+    await tester.pumpAndSettle();
+
+    socket.push('consultation.updated', {'id': 'c1', 'status': 'COMPLETED'});
+    await tester.pumpAndSettle();
+
+    expect(find.text('sq-stub-review:c1'), findsNothing);
+    expect(find.text('sq-stub-home'), findsOneWidget);
+  });
+
+  testWidgets('отменённая консультация уводит на главную, а не на оценку', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
+    final prefs = await SharedPreferences.getInstance();
+
+    await tester.pumpWidget(_wrap(api: api, socket: socket, prefs: prefs));
+    await tester.pumpAndSettle();
+
+    socket.push('consultation.updated', {'id': 'c1', 'status': 'CANCELLED'});
+    await tester.pumpAndSettle();
+
     expect(find.text('sq-stub-home'), findsOneWidget);
   });
 

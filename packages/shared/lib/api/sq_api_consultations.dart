@@ -96,14 +96,14 @@ mixin SqApiConsultations on SqApiBase {
 
   /// `POST /consultations/{id}/review` — оставить отзыв на завершённую
   /// консультацию.
-  Future<void> createReview(
+  Future<ReviewCreated> createReview(
     String consultationId, {
     required int rating,
     String? publicText,
     String? privateText,
   }) =>
       guard(() async {
-        await dio.post<void>(
+        final response = await dio.post<Map<String, dynamic>>(
           SqEndpoints.consultationReview(consultationId),
           data: {
             'rating': rating,
@@ -111,6 +111,7 @@ mixin SqApiConsultations on SqApiBase {
             'privateText': ?privateText,
           },
         );
+        return ReviewCreated.fromJson(response.data!);
       });
 
   /// `DELETE /reviews/{id}` — удаление своего отзыва.

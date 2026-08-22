@@ -664,4 +664,50 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get sessionMenuVideo => 'Бейнеге көшу';
+
+  @override
+  String get reviewTitle => 'SmartQoldau-ға сенгеніңіз үшін рақмет';
+
+  @override
+  String get reviewRatingQuestion => 'Кеңес қалай өтті?';
+
+  @override
+  String get reviewPublicLabel => 'Ашық пікір';
+
+  @override
+  String get reviewPublicHint => 'Басқа клиенттерге көрінеді, атыңызсыз';
+
+  @override
+  String get reviewPrivateLabel => 'Сапа тобына жеке';
+
+  @override
+  String get reviewPrivateHint =>
+      'Пікірді тек SmartQoldau сапа тобы көреді — психолог көрмейді';
+
+  @override
+  String get reviewSend => 'Аяқтау';
+
+  @override
+  String get reviewSkip => 'Өткізіп жіберу';
+
+  @override
+  String get reviewContinueSameExpert => 'Сол психологпен жалғастыру';
+
+  @override
+  String get reviewExistsTitle => 'Сіз бұл кеңеске баға бердіңіз';
+
+  @override
+  String get reviewRating1 => 'Нашар';
+
+  @override
+  String get reviewRating2 => 'Орташа';
+
+  @override
+  String get reviewRating3 => 'Қалыпты';
+
+  @override
+  String get reviewRating4 => 'Жақсы';
+
+  @override
+  String get reviewRating5 => 'Тамаша';
 }

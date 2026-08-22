@@ -196,5 +196,20 @@
   "callPermissionBody": "Микрофонсыз аудио- немесе бейнекеңес өткізу мүмкін емес. Рұқсатты қолданба параметрлерінде беруге болады",
   "callOpenSettings": "Параметрлерді ашу",
   "sessionMenuAudio": "Аудиоға көшу",
-  "sessionMenuVideo": "Бейнеге көшу"
+  "sessionMenuVideo": "Бейнеге көшу",
+  "reviewTitle": "SmartQoldau-ға сенгеніңіз үшін рақмет",
+  "reviewRatingQuestion": "Кеңес қалай өтті?",
+  "reviewPublicLabel": "Ашық пікір",
+  "reviewPublicHint": "Басқа клиенттерге көрінеді, атыңызсыз",
+  "reviewPrivateLabel": "Сапа тобына жеке",
+  "reviewPrivateHint": "Пікірді тек SmartQoldau сапа тобы көреді — психолог көрмейді",
+  "reviewSend": "Аяқтау",
+  "reviewSkip": "Өткізіп жіберу",
+  "reviewContinueSameExpert": "Сол психологпен жалғастыру",
+  "reviewExistsTitle": "Сіз бұл кеңеске баға бердіңіз",
+  "reviewRating1": "Нашар",
+  "reviewRating2": "Орташа",
+  "reviewRating3": "Қалыпты",
+  "reviewRating4": "Жақсы",
+  "reviewRating5": "Тамаша"
 }

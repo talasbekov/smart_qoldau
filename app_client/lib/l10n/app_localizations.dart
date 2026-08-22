@@ -1279,6 +1279,96 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Перейти в видео'**
   String get sessionMenuVideo;
+
+  /// Заголовок экрана оценки консультации (прототип 15-rating.png)
+  ///
+  /// In ru, this message translates to:
+  /// **'Спасибо, что доверяете SmartQoldau'**
+  String get reviewTitle;
+
+  /// Вопрос над звёздами на экране оценки
+  ///
+  /// In ru, this message translates to:
+  /// **'Как прошла консультация?'**
+  String get reviewRatingQuestion;
+
+  /// Подпись поля публичного отзыва
+  ///
+  /// In ru, this message translates to:
+  /// **'Публичный отзыв'**
+  String get reviewPublicLabel;
+
+  /// Пояснение к полю публичного отзыва: он анонимный
+  ///
+  /// In ru, this message translates to:
+  /// **'Виден другим клиентам, без вашего имени'**
+  String get reviewPublicHint;
+
+  /// Подпись поля приватного отзыва
+  ///
+  /// In ru, this message translates to:
+  /// **'Приватно команде качества'**
+  String get reviewPrivateLabel;
+
+  /// Пояснение к приватному полю (формулировка прототипа)
+  ///
+  /// In ru, this message translates to:
+  /// **'Отзыв видит только команда качества SmartQoldau — психолог его не увидит'**
+  String get reviewPrivateHint;
+
+  /// Кнопка отправки отзыва (формулировка прототипа)
+  ///
+  /// In ru, this message translates to:
+  /// **'Завершить'**
+  String get reviewSend;
+
+  /// Кнопка отказа от оценки
+  ///
+  /// In ru, this message translates to:
+  /// **'Пропустить'**
+  String get reviewSkip;
+
+  /// Кнопка создания новой заявки к тому же специалисту
+  ///
+  /// In ru, this message translates to:
+  /// **'Продолжить с тем же психологом'**
+  String get reviewContinueSameExpert;
+
+  /// Экран при ответе REVIEW_EXISTS
+  ///
+  /// In ru, this message translates to:
+  /// **'Вы уже оценили эту консультацию'**
+  String get reviewExistsTitle;
+
+  /// Подпись под одной звездой
+  ///
+  /// In ru, this message translates to:
+  /// **'Плохо'**
+  String get reviewRating1;
+
+  /// Подпись под двумя звёздами
+  ///
+  /// In ru, this message translates to:
+  /// **'Так себе'**
+  String get reviewRating2;
+
+  /// Подпись под тремя звёздами
+  ///
+  /// In ru, this message translates to:
+  /// **'Нормально'**
+  String get reviewRating3;
+
+  /// Подпись под четырьмя звёздами
+  ///
+  /// In ru, this message translates to:
+  /// **'Хорошо'**
+  String get reviewRating4;
+
+  /// Подпись под пятью звёздами
+  ///
+  /// In ru, this message translates to:
+  /// **'Отлично'**
+  String get reviewRating5;
 }
 
 class _AppLocalizationsDelegate

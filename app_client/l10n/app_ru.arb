@@ -832,5 +832,65 @@
   "sessionMenuVideo": "Перейти в видео",
   "@sessionMenuVideo": {
     "description": "Пункт меню сессии: эскалация в видеозвонок"
+  },
+  "reviewTitle": "Спасибо, что доверяете SmartQoldau",
+  "@reviewTitle": {
+    "description": "Заголовок экрана оценки консультации (прототип 15-rating.png)"
+  },
+  "reviewRatingQuestion": "Как прошла консультация?",
+  "@reviewRatingQuestion": {
+    "description": "Вопрос над звёздами на экране оценки"
+  },
+  "reviewPublicLabel": "Публичный отзыв",
+  "@reviewPublicLabel": {
+    "description": "Подпись поля публичного отзыва"
+  },
+  "reviewPublicHint": "Виден другим клиентам, без вашего имени",
+  "@reviewPublicHint": {
+    "description": "Пояснение к полю публичного отзыва: он анонимный"
+  },
+  "reviewPrivateLabel": "Приватно команде качества",
+  "@reviewPrivateLabel": {
+    "description": "Подпись поля приватного отзыва"
+  },
+  "reviewPrivateHint": "Отзыв видит только команда качества SmartQoldau — психолог его не увидит",
+  "@reviewPrivateHint": {
+    "description": "Пояснение к приватному полю (формулировка прототипа)"
+  },
+  "reviewSend": "Завершить",
+  "@reviewSend": {
+    "description": "Кнопка отправки отзыва (формулировка прототипа)"
+  },
+  "reviewSkip": "Пропустить",
+  "@reviewSkip": {
+    "description": "Кнопка отказа от оценки"
+  },
+  "reviewContinueSameExpert": "Продолжить с тем же психологом",
+  "@reviewContinueSameExpert": {
+    "description": "Кнопка создания новой заявки к тому же специалисту"
+  },
+  "reviewExistsTitle": "Вы уже оценили эту консультацию",
+  "@reviewExistsTitle": {
+    "description": "Экран при ответе REVIEW_EXISTS"
+  },
+  "reviewRating1": "Плохо",
+  "@reviewRating1": {
+    "description": "Подпись под одной звездой"
+  },
+  "reviewRating2": "Так себе",
+  "@reviewRating2": {
+    "description": "Подпись под двумя звёздами"
+  },
+  "reviewRating3": "Нормально",
+  "@reviewRating3": {
+    "description": "Подпись под тремя звёздами"
+  },
+  "reviewRating4": "Хорошо",
+  "@reviewRating4": {
+    "description": "Подпись под четырьмя звёздами"
+  },
+  "reviewRating5": "Отлично",
+  "@reviewRating5": {
+    "description": "Подпись под пятью звёздами"
   }
 }

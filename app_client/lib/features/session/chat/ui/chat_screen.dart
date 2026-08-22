@@ -11,8 +11,10 @@ import 'package:go_router/go_router.dart';
 import 'package:shared/shared.dart';
 
 import '../../../../core/error_text.dart';
+import '../../../../core/locale_controller.dart';
 import '../../../../core/route_paths.dart';
 import '../../../../l10n/app_localizations.dart';
+import '../../../review/state/review_controller.dart';
 import '../state/chat_controller.dart';
 import 'message_bubble.dart';
 import 'session_header.dart';
@@ -84,10 +86,40 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     }
   }
 
+  /// Консультация закрылась: завершённая — на оценку (если её ещё не
+  /// предлагали), отменённая — на главную. Оценивать отменённую нечего.
+  void _onConsultationClosed(ConsultationStatus status) {
+    if (status == ConsultationStatus.active) return;
+
+    if (status == ConsultationStatus.completed) {
+      final reviewed = ref
+              .read(sharedPreferencesProvider)
+              .getBool(reviewedFlagKey(widget.consultationId)) ??
+          false;
+      if (!reviewed) {
+        context.go(RoutePaths.review(widget.consultationId));
+        return;
+      }
+    }
+    context.go(RoutePaths.home);
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final provider = chatControllerProvider(widget.consultationId);
+
+    ref.listen(provider, (previous, next) {
+      final status = next.valueOrNull?.status;
+      final before = previous?.valueOrNull?.status;
+      // Уводим только когда консультация закрылась ПРИ КЛИЕНТЕ. Открытый
+      // из истории уже завершённый чат (задача 17) обязан остаться чатом:
+      // человек пришёл перечитать переписку, а не оценивать заново.
+      if (status == null || before != ConsultationStatus.active) return;
+      if (status == before) return;
+      _onConsultationClosed(status);
+    });
+
     final asyncState = ref.watch(provider);
 
     return Scaffold(

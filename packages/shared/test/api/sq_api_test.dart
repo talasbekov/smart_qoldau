@@ -67,6 +67,63 @@ void main() {
     });
   });
 
+  group('createReview', () {
+    test(
+      'возвращает созданный отзыв — бэкенд отдаёт ReviewCreatedDto с id, '
+      'и без него удалить свой отзыв (ТЗ §5.7) будет нечем',
+      () async {
+        adapter.onPost(
+          '/consultations/c1/review',
+          (server) => server.reply(201, {
+            'id': 'rev-1',
+            'consultationId': 'c1',
+            'rating': 5,
+            'publicText': 'спасибо',
+            'createdAt': '2026-08-22T10:00:00.000Z',
+          }),
+          data: {'rating': 5, 'publicText': 'спасибо'},
+        );
+
+        final review = await api.createReview(
+          'c1',
+          rating: 5,
+          publicText: 'спасибо',
+        );
+
+        expect(review.id, 'rev-1');
+        expect(review.consultationId, 'c1');
+        expect(review.rating, 5);
+        expect(review.publicText, 'спасибо');
+      },
+    );
+
+    test('приватный текст в ответе не возвращается и полем модели не является', () async {
+      // `ReviewCreatedDto` бэкенда собирается явным перечислением полей и
+      // privateText автору НЕ отдаёт (виден только админ-API). Модель
+      // повторяет это 1:1 — поля просто нет.
+      adapter.onPost(
+        '/consultations/c1/review',
+        (server) => server.reply(201, {
+          'id': 'rev-2',
+          'consultationId': 'c1',
+          'rating': 4,
+          'publicText': null,
+          'createdAt': '2026-08-22T10:00:00.000Z',
+        }),
+        data: {'rating': 4, 'privateText': 'жалоба'},
+      );
+
+      final review = await api.createReview(
+        'c1',
+        rating: 4,
+        privateText: 'жалоба',
+      );
+
+      expect(review.publicText, isNull);
+      expect(review.toJson().containsKey('privateText'), isFalse);
+    });
+  });
+
   group('query parameter building', () {
     test('experts() sends topic/language/format/sort with the documented key names', () async {
       adapter.onGet(

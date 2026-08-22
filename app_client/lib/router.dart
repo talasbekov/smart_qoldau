@@ -26,6 +26,7 @@ import 'features/session/chat/ui/chat_screen.dart';
 import 'features/payment/ui/add_card_screen.dart';
 import 'features/payment/ui/cards_screen.dart';
 import 'features/payment/ui/found_screen.dart';
+import 'features/review/ui/review_screen.dart';
 import 'features/shell/ui/app_shell.dart';
 import 'features/funnel/state/search_controller.dart';
 import 'features/funnel/ui/search_screen.dart';
@@ -192,6 +193,11 @@ GoRouter sqRouter(Ref ref) {
         // добавят диспетчер по `ClientConsultation.format`.
         builder: (context, state) =>
             ChatScreen(consultationId: state.pathParameters['id']!),
+      ),
+      GoRoute(
+        path: RoutePaths.reviewPattern,
+        builder: (context, state) =>
+            ReviewScreen(consultationId: state.pathParameters['id']!),
       ),
       GoRoute(
         path: RoutePaths.callPattern,

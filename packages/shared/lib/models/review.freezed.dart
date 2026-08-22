@@ -14,6 +14,281 @@ part of 'review.dart';
 T _$identity<T>(T value) => value;
 
 /// @nodoc
+mixin _$ReviewCreated {
+
+ String get id; String get consultationId; int get rating; String? get publicText; DateTime get createdAt;
+/// Create a copy of ReviewCreated
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$ReviewCreatedCopyWith<ReviewCreated> get copyWith => _$ReviewCreatedCopyWithImpl<ReviewCreated>(this as ReviewCreated, _$identity);
+
+  /// Serializes this ReviewCreated to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ReviewCreated&&(identical(other.id, id) || other.id == id)&&(identical(other.consultationId, consultationId) || other.consultationId == consultationId)&&(identical(other.rating, rating) || other.rating == rating)&&(identical(other.publicText, publicText) || other.publicText == publicText)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,id,consultationId,rating,publicText,createdAt);
+
+@override
+String toString() {
+  return 'ReviewCreated(id: $id, consultationId: $consultationId, rating: $rating, publicText: $publicText, createdAt: $createdAt)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $ReviewCreatedCopyWith<$Res>  {
+  factory $ReviewCreatedCopyWith(ReviewCreated value, $Res Function(ReviewCreated) _then) = _$ReviewCreatedCopyWithImpl;
+@useResult
+$Res call({
+ String id, String consultationId, int rating, String? publicText, DateTime createdAt
+});
+
+
+
+
+}
+/// @nodoc
+class _$ReviewCreatedCopyWithImpl<$Res>
+    implements $ReviewCreatedCopyWith<$Res> {
+  _$ReviewCreatedCopyWithImpl(this._self, this._then);
+
+  final ReviewCreated _self;
+  final $Res Function(ReviewCreated) _then;
+
+/// Create a copy of ReviewCreated
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? consultationId = null,Object? rating = null,Object? publicText = freezed,Object? createdAt = null,}) {
+  return _then(ReviewCreated(
+id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+as String,consultationId: null == consultationId ? _self.consultationId : consultationId // ignore: cast_nullable_to_non_nullable
+as String,rating: null == rating ? _self.rating : rating // ignore: cast_nullable_to_non_nullable
+as int,publicText: freezed == publicText ? _self.publicText : publicText // ignore: cast_nullable_to_non_nullable
+as String?,createdAt: null == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
+as DateTime,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [ReviewCreated].
+extension ReviewCreatedPatterns on ReviewCreated {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _ReviewCreated value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _ReviewCreated() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _ReviewCreated value)  $default,){
+final _that = this;
+switch (_that) {
+case _ReviewCreated():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _ReviewCreated value)?  $default,){
+final _that = this;
+switch (_that) {
+case _ReviewCreated() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String consultationId,  int rating,  String? publicText,  DateTime createdAt)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _ReviewCreated() when $default != null:
+return $default(_that.id,_that.consultationId,_that.rating,_that.publicText,_that.createdAt);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String consultationId,  int rating,  String? publicText,  DateTime createdAt)  $default,) {final _that = this;
+switch (_that) {
+case _ReviewCreated():
+return $default(_that.id,_that.consultationId,_that.rating,_that.publicText,_that.createdAt);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String consultationId,  int rating,  String? publicText,  DateTime createdAt)?  $default,) {final _that = this;
+switch (_that) {
+case _ReviewCreated() when $default != null:
+return $default(_that.id,_that.consultationId,_that.rating,_that.publicText,_that.createdAt);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _ReviewCreated implements ReviewCreated {
+  const _ReviewCreated({required this.id, required this.consultationId, required this.rating, this.publicText, required this.createdAt});
+  factory _ReviewCreated.fromJson(Map<String, dynamic> json) => _$ReviewCreatedFromJson(json);
+
+@override final  String id;
+@override final  String consultationId;
+@override final  int rating;
+@override final  String? publicText;
+@override final  DateTime createdAt;
+
+/// Create a copy of ReviewCreated
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$ReviewCreatedCopyWith<_ReviewCreated> get copyWith => __$ReviewCreatedCopyWithImpl<_ReviewCreated>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$ReviewCreatedToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ReviewCreated&&(identical(other.id, id) || other.id == id)&&(identical(other.consultationId, consultationId) || other.consultationId == consultationId)&&(identical(other.rating, rating) || other.rating == rating)&&(identical(other.publicText, publicText) || other.publicText == publicText)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,id,consultationId,rating,publicText,createdAt);
+
+@override
+String toString() {
+  return 'ReviewCreated(id: $id, consultationId: $consultationId, rating: $rating, publicText: $publicText, createdAt: $createdAt)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$ReviewCreatedCopyWith<$Res> implements $ReviewCreatedCopyWith<$Res> {
+  factory _$ReviewCreatedCopyWith(_ReviewCreated value, $Res Function(_ReviewCreated) _then) = __$ReviewCreatedCopyWithImpl;
+@override @useResult
+$Res call({
+ String id, String consultationId, int rating, String? publicText, DateTime createdAt
+});
+
+
+
+
+}
+/// @nodoc
+class __$ReviewCreatedCopyWithImpl<$Res>
+    implements _$ReviewCreatedCopyWith<$Res> {
+  __$ReviewCreatedCopyWithImpl(this._self, this._then);
+
+  final _ReviewCreated _self;
+  final $Res Function(_ReviewCreated) _then;
+
+/// Create a copy of ReviewCreated
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? consultationId = null,Object? rating = null,Object? publicText = freezed,Object? createdAt = null,}) {
+  return _then(_ReviewCreated(
+id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+as String,consultationId: null == consultationId ? _self.consultationId : consultationId // ignore: cast_nullable_to_non_nullable
+as String,rating: null == rating ? _self.rating : rating // ignore: cast_nullable_to_non_nullable
+as int,publicText: freezed == publicText ? _self.publicText : publicText // ignore: cast_nullable_to_non_nullable
+as String?,createdAt: null == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
+as DateTime,
+  ));
+}
+
+
+}
+
+
+/// @nodoc
 mixin _$ReviewItem {
 
  int get rating; String? get publicText; String? get expertReply; DateTime get createdAt;

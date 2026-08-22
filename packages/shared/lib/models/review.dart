@@ -3,6 +3,30 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 part 'review.freezed.dart';
 part 'review.g.dart';
 
+/// Созданный отзыв (`ReviewCreatedDto`, ответ `POST
+/// /consultations/{id}/review`).
+///
+/// `privateText` здесь ОТСУТСТВУЕТ намеренно: бэкенд собирает этот DTO
+/// явным перечислением полей и приватный текст автору не возвращает — он
+/// виден только сотрудникам через админ-API. Модель повторяет контракт 1:1.
+///
+/// [id] нужен, чтобы клиент мог удалить свой отзыв (`DELETE /reviews/{id}`,
+/// ТЗ §5.7): отдельного эндпоинта «мой отзыв по консультации» у бэкенда
+/// нет, и другого способа узнать идентификатор не существует.
+@freezed
+abstract class ReviewCreated with _$ReviewCreated {
+  const factory ReviewCreated({
+    required String id,
+    required String consultationId,
+    required int rating,
+    String? publicText,
+    required DateTime createdAt,
+  }) = _ReviewCreated;
+
+  factory ReviewCreated.fromJson(Map<String, dynamic> json) =>
+      _$ReviewCreatedFromJson(json);
+}
+
 /// Один отзыв в публичной ленте эксперта (`ReviewItemDto`). Автор анонимен —
 /// у бэкенда в этом DTO нет ни имени, ни id клиента.
 @freezed

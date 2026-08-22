@@ -6,6 +6,24 @@ part of 'review.dart';
 // JsonSerializableGenerator
 // **************************************************************************
 
+_ReviewCreated _$ReviewCreatedFromJson(Map<String, dynamic> json) =>
+    _ReviewCreated(
+      id: json['id'] as String,
+      consultationId: json['consultationId'] as String,
+      rating: (json['rating'] as num).toInt(),
+      publicText: json['publicText'] as String?,
+      createdAt: DateTime.parse(json['createdAt'] as String),
+    );
+
+Map<String, dynamic> _$ReviewCreatedToJson(_ReviewCreated instance) =>
+    <String, dynamic>{
+      'id': instance.id,
+      'consultationId': instance.consultationId,
+      'rating': instance.rating,
+      'publicText': instance.publicText,
+      'createdAt': instance.createdAt.toIso8601String(),
+    };
+
 _ReviewItem _$ReviewItemFromJson(Map<String, dynamic> json) => _ReviewItem(
   rating: (json['rating'] as num).toInt(),
   publicText: json['publicText'] as String?,

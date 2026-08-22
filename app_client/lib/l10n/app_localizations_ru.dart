@@ -671,4 +671,50 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get sessionMenuVideo => 'Перейти в видео';
+
+  @override
+  String get reviewTitle => 'Спасибо, что доверяете SmartQoldau';
+
+  @override
+  String get reviewRatingQuestion => 'Как прошла консультация?';
+
+  @override
+  String get reviewPublicLabel => 'Публичный отзыв';
+
+  @override
+  String get reviewPublicHint => 'Виден другим клиентам, без вашего имени';
+
+  @override
+  String get reviewPrivateLabel => 'Приватно команде качества';
+
+  @override
+  String get reviewPrivateHint =>
+      'Отзыв видит только команда качества SmartQoldau — психолог его не увидит';
+
+  @override
+  String get reviewSend => 'Завершить';
+
+  @override
+  String get reviewSkip => 'Пропустить';
+
+  @override
+  String get reviewContinueSameExpert => 'Продолжить с тем же психологом';
+
+  @override
+  String get reviewExistsTitle => 'Вы уже оценили эту консультацию';
+
+  @override
+  String get reviewRating1 => 'Плохо';
+
+  @override
+  String get reviewRating2 => 'Так себе';
+
+  @override
+  String get reviewRating3 => 'Нормально';
+
+  @override
+  String get reviewRating4 => 'Хорошо';
+
+  @override
+  String get reviewRating5 => 'Отлично';
 }
