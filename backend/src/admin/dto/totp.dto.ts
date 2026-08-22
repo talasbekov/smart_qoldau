@@ -34,10 +34,11 @@ export class TotpVerifyDto {
 
   @ApiProperty({
     example: '123456',
-    description: 'Код из приложения или код восстановления',
+    description:
+      'Код из приложения (6 цифр) или код восстановления (32 hex-символа)',
   })
   @IsString()
-  @Length(6, 32)
+  @Length(6, 64)
   code: string;
 }
 

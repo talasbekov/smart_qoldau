@@ -90,6 +90,11 @@ describe('AdminTotpService', () => {
     expect(new Set(codes).size).toBe(codes.length);
     expect(codes.length).toBeGreaterThanOrEqual(8);
     for (const code of codes) {
+      // 128 бит энтропии: код восстановления обходит второй фактор целиком,
+      // и коротких 40 бит для этого мало.
+      expect(code).toHaveLength(32);
+    }
+    for (const code of codes) {
       expect(service.hashRecoveryCode(code)).not.toContain(code);
     }
   });

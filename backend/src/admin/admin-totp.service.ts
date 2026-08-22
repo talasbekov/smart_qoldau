@@ -10,6 +10,7 @@ import { RedisService } from '../redis/redis.service';
 // (AES-256-GCM, MessageCipher): база с открытыми секретами второго фактора
 // — это второй фактор, известный любому, у кого есть дамп.
 const RECOVERY_CODES = 8;
+const RECOVERY_CODE_BYTES = 16;
 // Окно ±1 шаг (30 с): часы телефона и сервера расходятся, и требовать
 // идеального совпадения значит регулярно отказывать честному сотруднику.
 // Пакет зафиксирован на otplib 12.x: 13.x — ESM-only, и jest в этом
@@ -64,8 +65,12 @@ export class AdminTotpService {
   }
 
   generateRecoveryCodes(): string[] {
+    // 16 байт = 128 бит энтропии на код. Код восстановления — полноценный
+    // обход второго фактора, и коротких 40 бит (10 hex-символов) для него
+    // мало: перебор такого пространства по сети реалистичен, а лимит на
+    // попытки защищает только от прямолинейного брутфорса.
     return Array.from({ length: RECOVERY_CODES }, () =>
-      crypto.randomBytes(5).toString('hex').toUpperCase(),
+      crypto.randomBytes(RECOVERY_CODE_BYTES).toString('hex').toUpperCase(),
     );
   }
 

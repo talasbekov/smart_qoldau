@@ -107,12 +107,50 @@ export class AdminStaffService {
         );
     }
 
-    const updated = await this.prisma.adminUser.update({
-      where: { id },
-      data: {
-        ...(dto.roles !== undefined ? { roles: dto.roles } : {}),
-        ...(dto.isActive !== undefined ? { isActive: dto.isActive } : {}),
-      },
+    // Изменение выполняется В ТРАНЗАКЦИИ с подсчётом оставшихся активных
+    // суперадминов (E11a, задача 6). Проверка-перед-записью здесь не
+    // годится: два параллельных запроса на деактивацию двух последних
+    // суперадминов оба увидели бы «ещё есть второй» и оставили админку без
+    // единого действующего суперадмина. Существовавший
+    // STAFF_SELF_LOCKOUT_FORBIDDEN закрывал только самоблокировку и создавал
+    // ложное впечатление, что система уже защищена.
+    const losesSuperadmin =
+      dto.isActive === false ||
+      (dto.roles !== undefined && !dto.roles.includes(AdminRole.SUPERADMIN));
+    const wasSuperadmin = existing.roles.includes(AdminRole.SUPERADMIN);
+
+    const updated = await this.prisma.$transaction(async (tx) => {
+      if (wasSuperadmin && losesSuperadmin) {
+        // Блокировка строк ВСЕХ активных суперадминов до изменения.
+        // Без неё две параллельные транзакции на READ COMMITTED каждая
+        // видит чужую строку ещё активной, обе проходят проверку и обе
+        // коммитятся — админка остаётся без единого суперадмина (ровно
+        // это и поймал e2e «в обход HTTP»).
+        await tx.$queryRaw`SELECT id FROM admin_users WHERE is_active = true AND 'SUPERADMIN' = ANY(roles) FOR UPDATE`;
+      }
+
+      const row = await tx.adminUser.update({
+        where: { id },
+        data: {
+          ...(dto.roles !== undefined ? { roles: dto.roles } : {}),
+          ...(dto.isActive !== undefined ? { isActive: dto.isActive } : {}),
+        },
+      });
+
+      if (wasSuperadmin && losesSuperadmin) {
+        const remaining = await tx.adminUser.count({
+          where: { isActive: true, roles: { has: AdminRole.SUPERADMIN } },
+        });
+        if (remaining === 0) {
+          apiError(
+            'LAST_SUPERADMIN',
+            'Нельзя оставить админку без активного суперадмина',
+            409,
+          );
+        }
+      }
+
+      return row;
     });
 
     const changes: Record<string, unknown> = {};
