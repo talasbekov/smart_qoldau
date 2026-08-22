@@ -1,6 +1,7 @@
 /// Секьюрное хранилище пары токенов сессии и профиля пользователя.
 library;
 
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -52,9 +53,27 @@ const _userKey = 'sq.user';
 /// `isGuest`/`phone`: это ровно то, что позволяет гостевому профилю и
 /// зарегистрированной сессии одинаково пережить перезапуск приложения.
 class TokenStore {
-  const TokenStore(this._store);
+  TokenStore(this._store);
 
   final SecureStore _store;
+
+  /// Транслирует access-токен при каждом [write] и `null` при каждом
+  /// [clear] — независимо от того, что именно вызвало запись: явный вход,
+  /// конверсия гостя, молчаливый рефреш `AuthInterceptor` или логаут
+  /// (явный и принудительный). Единственный канал, которым шина
+  /// реалтайм-событий (`sqEventsProvider`, задача 8 эпика E6) узнаёт о
+  /// новом/протухшем токене — без обратной зависимости `core -> features`
+  /// (см. `sessionInvalidatedProvider` в `providers.dart` про тот же приём
+  /// для принудительного логаута).
+  ///
+  /// Не несёт текущее значение сама по себе (это обычный `Stream`, не
+  /// `ValueStream`) — токен, восстановленный из хранилища при холодном
+  /// старте приложения (`AuthController.restore()`, только [read]), сюда
+  /// не попадает; подписчику нужно ОТДЕЛЬНО досеять состояние вызовом
+  /// [read] сразу после подписки.
+  Stream<String?> get accessTokenChanges => _accessTokenChanges.stream;
+
+  final _accessTokenChanges = StreamController<String?>.broadcast();
 
   /// Читает сохранённую пару токенов. `null`, если сессии ещё не было
   /// (хотя бы один из трёх ключей отсутствует).
@@ -76,11 +95,17 @@ class TokenStore {
     await _store.write(_accessKey, tokens.accessToken);
     await _store.write(_refreshKey, tokens.refreshToken);
     await _store.write(_userKey, jsonEncode(tokens.user.toJson()));
+    _accessTokenChanges.add(tokens.accessToken);
   }
 
   Future<void> clear() async {
     await _store.delete(_accessKey);
     await _store.delete(_refreshKey);
     await _store.delete(_userKey);
+    _accessTokenChanges.add(null);
   }
+
+  /// Закрывает [accessTokenChanges] — вызывается при уничтожении
+  /// [tokenStoreProvider] (`ref.onDispose`), в тестах не обязателен.
+  void dispose() => _accessTokenChanges.close();
 }

@@ -14,6 +14,9 @@ dependencies:
   dio: ^5.11.0
   freezed_annotation: ^3.1.0
   json_annotation: ^4.12.0
+  # Шина реалтайм-событий (задача 8): бэкенд поднимает socket.io на
+  # неймспейсе `/ws` (не голый WebSocket) — см. `backend/src/ws`.
+  socket_io_client: ^3.1.6
 
 dev_dependencies:
   flutter_test:
