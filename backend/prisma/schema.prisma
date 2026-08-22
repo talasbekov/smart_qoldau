@@ -637,6 +637,9 @@ model Ticket {
   resolvedAt            DateTime?        @map("resolved_at")
   relatedConsultationId String?          @map("related_consultation_id")
   relatedPayoutId       String?          @map("related_payout_id")
+  // Назначение обращения сотруднику (E11a, задача 8). Без него очередь
+  // общая, и двое операторов отвечают в один тикет, не зная друг о друге.
+  assignedToId          String?          @map("assigned_to_id")
   // @default(now()) — страховка на случай записи мимо TicketsService;
   // само значение TicketsService.create() ВСЕГДА проставляет явно через
   // ClockService.now(), иначе виртуальное время в e2e не подчиняет момент

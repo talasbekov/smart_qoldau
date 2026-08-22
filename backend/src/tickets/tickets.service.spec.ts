@@ -118,9 +118,8 @@ describe('TicketsService.reply — гонка с resolve()', () => {
     await service.reply(ADMIN, TICKET_ID, 'Ещё один ответ');
 
     expect(ticketMessageCreate).toHaveBeenCalledTimes(1);
-    // updateMany вызывался ровно один раз — с условием на оба поля, без
-    // отдельного безусловного апдейта статуса.
-    expect(ticketUpdateMany).toHaveBeenCalledTimes(1);
+    // Статус и firstReplyAt пишутся ОДНИМ условным updateMany с условием на
+    // оба поля — без отдельного безусловного апдейта статуса.
     expect(ticketUpdateMany).toHaveBeenCalledWith({
       where: {
         id: TICKET_ID,
@@ -129,6 +128,13 @@ describe('TicketsService.reply — гонка с resolve()', () => {
       },
       data: { status: TicketStatus.IN_PROGRESS, firstReplyAt: NOW },
     });
+    // Второй updateMany — автоназначение (E11a, задача 8). Условие
+    // `assignedToId: null` не даёт перехватить тикет, уже взятый коллегой.
+    expect(ticketUpdateMany).toHaveBeenCalledWith({
+      where: { id: TICKET_ID, assignedToId: null },
+      data: { assignedToId: ADMIN.id },
+    });
+    expect(ticketUpdateMany).toHaveBeenCalledTimes(2);
     expect(audit.log).toHaveBeenCalledWith(
       expect.objectContaining({ payload: { firstReply: false } }),
     );

@@ -1,5 +1,6 @@
 import {
   Body,
+  HttpCode,
   Controller,
   Get,
   Param,
@@ -27,6 +28,7 @@ import { ListTicketsDto } from './dto/list-tickets.dto';
 import { Throttle } from '@nestjs/throttler';
 import { THROTTLE } from '../common/throttle/throttle.constants';
 import { IpThrottlerGuard } from '../common/throttle/throttle.guards';
+import { ReplyTicketDto } from './dto/reply-ticket.dto';
 import {
   TicketCreatedDto,
   TicketDetailDto,
@@ -82,5 +84,21 @@ export class TicketsController {
     @Param('id', ParseUUIDPipe) id: string,
   ): Promise<TicketDetailDto> {
     return this.tickets.getOwn(user.sub, id);
+  }
+
+  @Post(':id/reply')
+  @HttpCode(204)
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary:
+      'Ответ автора в своё обращение. Решённое -> 409: переоткрытия нет, создаётся новое',
+  })
+  replyByAuthor(
+    @CurrentUser() user: JwtPayload,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: ReplyTicketDto,
+  ): Promise<void> {
+    return this.tickets.replyByAuthor(user.sub, id, dto.body);
   }
 }

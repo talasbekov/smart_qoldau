@@ -3479,6 +3479,45 @@
         ]
       }
     },
+    "/v1/tickets/{id}/reply": {
+      "post": {
+        "operationId": "TicketsController_replyByAuthor",
+        "summary": "Ответ автора в своё обращение. Решённое -> 409: переоткрытия нет, создаётся новое",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReplyTicketDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "tickets"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/admin/tickets": {
       "get": {
         "operationId": "TicketsAdminController_list",
@@ -3507,6 +3546,19 @@
                 "VERIFICATION_OPERATOR",
                 "FINANCE_CONTROL",
                 "QUALITY_TEAM"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "name": "assigned",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "enum": [
+                "me",
+                "none",
+                "any"
               ],
               "type": "string"
             }
@@ -3675,6 +3727,48 @@
           },
           "409": {
             "description": "TICKET_ALREADY_RESOLVED"
+          }
+        },
+        "tags": [
+          "admin-tickets"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/admin/tickets/{id}/assign": {
+      "post": {
+        "operationId": "TicketsAdminController_assign",
+        "summary": "Назначить обращение сотруднику. Без adminUserId — себе, null — снять назначение",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AssignTicketDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": ""
+          },
+          "401": {
+            "description": "UNAUTHORIZED"
           }
         },
         "tags": [
@@ -6131,6 +6225,18 @@
           "messages"
         ]
       },
+      "ReplyTicketDto": {
+        "type": "object",
+        "properties": {
+          "body": {
+            "type": "string",
+            "maxLength": 4000
+          }
+        },
+        "required": [
+          "body"
+        ]
+      },
       "AdminTicketsListDto": {
         "type": "object",
         "properties": {
@@ -6265,17 +6371,16 @@
           "contactPhone"
         ]
       },
-      "ReplyTicketDto": {
+      "AssignTicketDto": {
         "type": "object",
         "properties": {
-          "body": {
+          "adminUserId": {
             "type": "string",
-            "maxLength": 4000
+            "format": "uuid",
+            "nullable": true,
+            "description": "Кому назначить. Не передан — назначить себе; null — снять назначение"
           }
-        },
-        "required": [
-          "body"
-        ]
+        }
       }
     }
   }

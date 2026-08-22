@@ -31,6 +31,7 @@ import { TicketsService } from './tickets.service';
 import { AdminListTicketsDto } from './dto/admin-list-tickets.dto';
 import { ReplyTicketDto } from './dto/reply-ticket.dto';
 import { AdminTicketDetailDto, AdminTicketsListDto } from './dto/ticket.dto';
+import { AssignTicketDto } from './dto/assign-ticket.dto';
 
 // Роли, открывающие доступ к очереди тикетов сотрудника (задача 8) —
 // профильные команды, на которые маршрутизируются тикеты (ticket-routing.ts).
@@ -112,5 +113,20 @@ export class TicketsAdminController {
     @Param('id', ParseUUIDPipe) id: string,
   ): Promise<void> {
     await this.tickets.resolve(admin, id);
+  }
+
+  @Post(':id/assign')
+  @HttpCode(204)
+  @Roles(...TICKET_TEAM_ROLES)
+  @ApiOperation({
+    summary:
+      'Назначить обращение сотруднику. Без adminUserId — себе, null — снять назначение',
+  })
+  assign(
+    @CurrentAdmin() admin: CurrentAdminPayload,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: AssignTicketDto,
+  ): Promise<void> {
+    return this.tickets.assign(admin, id, dto.adminUserId);
   }
 }

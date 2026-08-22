@@ -1,7 +1,7 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { TicketStatus, TicketTeam } from '@prisma/client';
 import { Type } from 'class-transformer';
-import { IsEnum, IsInt, IsOptional, Max, Min } from 'class-validator';
+import { IsEnum, IsIn, IsInt, IsOptional, Max, Min } from 'class-validator';
 
 // Очередь сотрудника (GET /v1/admin/tickets, задача 8). status/team —
 // необязательные фильтры; team за пределами команд сотрудника даёт пустой
@@ -16,6 +16,14 @@ export class AdminListTicketsDto {
   @IsOptional()
   @IsEnum(TicketTeam)
   team?: TicketTeam;
+
+  // Назначение (E11a, задача 8): `me` — мои, `none` — свободные, `any` —
+  // все доступные (умолчание). Без этого фильтра очередь общая, и двое
+  // операторов берут один тикет.
+  @ApiPropertyOptional({ enum: ['me', 'none', 'any'] })
+  @IsOptional()
+  @IsIn(['me', 'none', 'any'])
+  assigned?: 'me' | 'none' | 'any';
 
   @ApiPropertyOptional({ default: 20, maximum: 100 })
   @IsOptional()

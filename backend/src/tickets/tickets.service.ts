@@ -182,6 +182,10 @@ export class TicketsService {
       where.team = { in: ownTeams };
     }
 
+    // Назначение (E11a, задача 8): `me` — взятые мной, `none` — свободные.
+    if (filters.assigned === 'me') where.assignedToId = admin.id;
+    if (filters.assigned === 'none') where.assignedToId = null;
+
     const [tickets, total] = await Promise.all([
       this.prisma.ticket.findMany({
         where,
@@ -292,6 +296,14 @@ export class TicketsService {
           body,
           createdAt: now,
         },
+      });
+
+      // Первый ответ по неназначенному тикету назначает его отвечающему:
+      // самый частый сценарий не должен требовать лишнего действия, а
+      // условие `assignedToId: null` не даёт перехватить чужой тикет.
+      await tx.ticket.updateMany({
+        where: { id, assignedToId: null },
+        data: { assignedToId: admin.id },
       });
 
       return firstReply.count > 0;
@@ -424,5 +436,92 @@ export class TicketsService {
       contactEmail: null,
       contactPhone: account?.phone ?? null,
     };
+  }
+
+  // POST /v1/tickets/:id/reply — ответ САМОГО АВТОРА (E11a, задача 8).
+  // До этого диалог был односторонним: сотрудник отвечал, а автор, чтобы
+  // что-то добавить, заводил новое обращение.
+  async replyByAuthor(userId: string, id: string, body: string): Promise<void> {
+    const ticket = await this.prisma.ticket.findUnique({ where: { id } });
+    // Чужое и несуществующее — одинаковый 404: существование чужого тикета
+    // не раскрываем. Гостевой тикет сюда не попадёт: у него нет
+    // authorUserId, и владельцем он ни для кого не считается.
+    if (!ticket || ticket.authorUserId !== userId) {
+      apiError('TICKET_NOT_FOUND', 'Обращение не найдено', 404);
+    }
+    if (ticket!.status === TicketStatus.RESOLVED) {
+      // Переоткрытия нет: статусов ровно три (Р-23), новое обращение
+      // создаётся отдельно.
+      apiError('TICKET_ALREADY_RESOLVED', 'Обращение уже решено', 409);
+    }
+
+    const now = this.clock.now();
+    await this.prisma.ticketMessage.create({
+      data: {
+        ticketId: id,
+        authorKind: 'user',
+        authorId: userId,
+        body,
+        createdAt: now,
+      },
+    });
+
+    await this.audit.log({
+      actorType: 'user',
+      actorId: userId,
+      entity: 'ticket',
+      entityId: id,
+      transition: 'ticket.replied_by_author',
+    });
+
+    // Уведомление автору НЕ отправляется: он сам и есть отправитель.
+  }
+
+  // POST /v1/admin/tickets/:id/assign — назначить обращение сотруднику.
+  // Без adminUserId — себе; null — снять назначение.
+  async assign(
+    admin: CurrentAdminPayload,
+    id: string,
+    adminUserId: string | null | undefined,
+  ): Promise<void> {
+    const ticket = await this.findAccessibleOrThrow(admin, id);
+
+    const assignee = adminUserId === undefined ? admin.id : adminUserId;
+
+    if (assignee !== null && assignee !== admin.id) {
+      const target = await this.prisma.adminUser.findUnique({
+        where: { id: assignee },
+        select: { roles: true, isActive: true },
+      });
+      // Назначать можно только живому сотруднику своей команды: тикет,
+      // отданный в чужую команду, исчезает из обеих очередей.
+      const targetTeams = target ? staffTeams(target.roles) : [];
+      if (
+        !target ||
+        !target.isActive ||
+        (!target.roles.includes(AdminRole.SUPERADMIN) &&
+          !targetTeams.includes(ticket.team))
+      ) {
+        apiError(
+          'TICKET_ASSIGNEE_INVALID',
+          'Сотрудник не может вести это обращение',
+          400,
+        );
+      }
+    }
+
+    await this.prisma.ticket.update({
+      where: { id },
+      data: { assignedToId: assignee },
+    });
+
+    await this.audit.log({
+      actorType: 'admin',
+      actorId: admin.id,
+      entity: 'ticket',
+      entityId: id,
+      transition: 'ticket.assigned',
+      payload: { assignedToId: assignee },
+    });
   }
 }
