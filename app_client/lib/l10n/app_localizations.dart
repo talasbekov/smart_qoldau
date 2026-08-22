@@ -1699,6 +1699,24 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Перейти к консультации'**
   String get funnelActiveRequestGoTo;
+
+  /// Заголовок центра уведомлений
+  ///
+  /// In ru, this message translates to:
+  /// **'Уведомления'**
+  String get notificationsTitle;
+
+  /// Пустой центр уведомлений
+  ///
+  /// In ru, this message translates to:
+  /// **'Уведомлений пока нет'**
+  String get notificationsEmpty;
+
+  /// Кнопка «отметить все прочитанными»
+  ///
+  /// In ru, this message translates to:
+  /// **'Прочитать все'**
+  String get notificationsMarkAllRead;
 }
 
 class _AppLocalizationsDelegate

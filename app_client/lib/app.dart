@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared/shared.dart';
 
 import 'core/locale_controller.dart';
+import 'features/notifications/state/notifications_controller.dart';
 import 'l10n/app_localizations.dart';
 import 'router.dart';
 
@@ -20,6 +21,10 @@ class SqClientApp extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final locale = ref.watch(localeControllerProvider);
     final router = ref.watch(routerProvider);
+    // Регистрация устройства для пушей: сама подписывается на появление
+    // сессии и на смену языка (задача 18). Достаточно, чтобы провайдер был
+    // жив всё время работы приложения.
+    ref.watch(deviceRegistrationProvider);
 
     return MaterialApp.router(
       onGenerateTitle: (context) => AppLocalizations.of(context)!.appTitle,

@@ -153,3 +153,14 @@ class AuthController extends AsyncNotifier<AuthState> {
 final authControllerProvider = AsyncNotifierProvider<AuthController, AuthState>(
   AuthController.new,
 );
+
+/// Есть ли у клиента живая сессия — гостевая или зарегистрированная.
+///
+/// Отдельный провайдер, а не проверка `AuthState` по месту: на него
+/// подписывается регистрация устройства для пушей (задача 18), которой
+/// важно не «кто вошёл», а только сам факт сессии — `POST /devices`
+/// требует JWT.
+final hasSessionProvider = Provider<bool>((ref) {
+  final state = ref.watch(authControllerProvider).valueOrNull;
+  return state is AuthGuest || state is AuthRegistered;
+});

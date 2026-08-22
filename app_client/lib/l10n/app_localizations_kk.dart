@@ -878,4 +878,13 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get funnelActiveRequestGoTo => 'Кеңеске өту';
+
+  @override
+  String get notificationsTitle => 'Хабарландырулар';
+
+  @override
+  String get notificationsEmpty => 'Хабарландырулар әзірге жоқ';
+
+  @override
+  String get notificationsMarkAllRead => 'Барлығын оқылды деп белгілеу';
 }

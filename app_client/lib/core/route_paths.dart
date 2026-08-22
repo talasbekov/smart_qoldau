@@ -27,6 +27,13 @@ abstract final class RoutePaths {
   static const consultations = '/consultations';
   static const profile = '/profile';
 
+  /// Поддержка (задача 19). Маршрут заведён раньше экрана: на него
+  /// ссылается тайл уведомления `ticket.replied`.
+  static const support = '/support';
+
+  /// Центр уведомлений (задача 18).
+  static const notifications = '/notifications';
+
   /// Детали консультации — вложенный маршрут вкладки «Консультации».
   static const consultationDetailsPattern = '/consultations/:id';
 

@@ -11,6 +11,7 @@ import 'package:shared/shared.dart';
 import '../../../core/error_text.dart';
 import '../../../core/route_paths.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../notifications/state/notifications_controller.dart';
 import '../state/home_controller.dart';
 import 'active_consultation_banner.dart';
 import 'emergency_situation_notice.dart';
@@ -29,12 +30,40 @@ class HomeScreen extends ConsumerWidget {
       appBar: AppBar(
         title: Text(l10n.homeGreeting),
         actions: [
-          // Место под бейдж непрочитанных уведомлений — сам центр
-          // уведомлений и источник счётчика добавляет задача 18 эпика E6.
           IconButton(
             key: const Key('sq-home-notifications-button'),
-            icon: const Icon(Icons.notifications_none),
-            onPressed: () {},
+            icon: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                const Icon(Icons.notifications_none),
+                // Бейдж — дополнение, а не содержимое экрана: пока центр
+                // уведомлений не загрузился (или недоступен), счётчик
+                // равен нулю и бейджа просто нет.
+                if (ref.watch(unreadCountProvider) > 0)
+                  Positioned(
+                    right: -4,
+                    top: -4,
+                    child: Container(
+                      key: const Key('sq-home-notifications-badge'),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 5,
+                        vertical: 1,
+                      ),
+                      decoration: BoxDecoration(
+                        color: SqColors.danger,
+                        borderRadius: BorderRadius.circular(SqRadius.pill),
+                      ),
+                      child: Text(
+                        '${ref.watch(unreadCountProvider)}',
+                        style: SqTypography.caption.copyWith(
+                          color: SqColors.surface,
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+            onPressed: () => context.push(RoutePaths.notifications),
           ),
         ],
       ),

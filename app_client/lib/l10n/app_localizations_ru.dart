@@ -885,4 +885,13 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get funnelActiveRequestGoTo => 'Перейти к консультации';
+
+  @override
+  String get notificationsTitle => 'Уведомления';
+
+  @override
+  String get notificationsEmpty => 'Уведомлений пока нет';
+
+  @override
+  String get notificationsMarkAllRead => 'Прочитать все';
 }

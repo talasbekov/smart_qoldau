@@ -1117,5 +1117,17 @@
   "funnelActiveRequestGoTo": "Перейти к консультации",
   "@funnelActiveRequestGoTo": {
     "description": "Кнопка перехода к уже идущей консультации из диалога ACTIVE_REQUEST_EXISTS"
+  },
+  "notificationsTitle": "Уведомления",
+  "@notificationsTitle": {
+    "description": "Заголовок центра уведомлений"
+  },
+  "notificationsEmpty": "Уведомлений пока нет",
+  "@notificationsEmpty": {
+    "description": "Пустой центр уведомлений"
+  },
+  "notificationsMarkAllRead": "Прочитать все",
+  "@notificationsMarkAllRead": {
+    "description": "Кнопка «отметить все прочитанными»"
   }
 }

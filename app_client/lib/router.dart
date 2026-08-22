@@ -19,6 +19,7 @@ import 'features/emergency/ui/danger_screen.dart';
 import 'features/emergency/ui/hotlines_screen.dart';
 import 'features/emergency/ui/screening_screen.dart';
 import 'features/home/ui/home_screen.dart';
+import 'features/notifications/ui/notifications_screen.dart';
 import 'features/onboarding/state/onboarding_flags.dart';
 import 'features/onboarding/ui/permissions_screen.dart';
 import 'features/onboarding/ui/slides_screen.dart';
@@ -196,6 +197,10 @@ GoRouter sqRouter(Ref ref) {
         // добавят диспетчер по `ClientConsultation.format`.
         builder: (context, state) =>
             ChatScreen(consultationId: state.pathParameters['id']!),
+      ),
+      GoRoute(
+        path: RoutePaths.notifications,
+        builder: (context, state) => const NotificationsScreen(),
       ),
       GoRoute(
         path: RoutePaths.reviewPattern,

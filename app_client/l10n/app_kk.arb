@@ -266,5 +266,8 @@
   "reviewDeleteTitle": "Пікірді жою керек пе?",
   "reviewDeleteBody": "Маманның рейтингі қайта есептеледі",
   "reviewDelete": "Пікірді жою",
-  "funnelActiveRequestGoTo": "Кеңеске өту"
+  "funnelActiveRequestGoTo": "Кеңеске өту",
+  "notificationsTitle": "Хабарландырулар",
+  "notificationsEmpty": "Хабарландырулар әзірге жоқ",
+  "notificationsMarkAllRead": "Барлығын оқылды деп белгілеу"
 }
