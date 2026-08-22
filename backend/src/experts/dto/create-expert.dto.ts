@@ -1,10 +1,10 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { ArrayNotEmpty, IsIn, IsInt, Length } from 'class-validator';
 import { ExperienceLevel } from '@prisma/client';
+import { SESSION_FORMATS } from '../../common/constants/session-formats';
 
 const CITIES = ['Астана', 'Алматы', 'Шымкент'] as const;
 const LANGUAGES = ['ru', 'kz', 'en'] as const;
-const FORMATS = ['chat', 'audio', 'video'] as const;
 
 export class CreateExpertDto {
   @ApiProperty({ example: 'Айгуль С.', minLength: 2, maxLength: 100 })
@@ -39,12 +39,12 @@ export class CreateExpertDto {
   languages: string[];
 
   @ApiProperty({
-    enum: FORMATS,
+    enum: SESSION_FORMATS,
     isArray: true,
     example: ['chat', 'audio', 'video'],
   })
   @ArrayNotEmpty()
-  @IsIn(FORMATS, { each: true })
+  @IsIn(SESSION_FORMATS, { each: true })
   formats: string[];
 
   @ApiProperty({

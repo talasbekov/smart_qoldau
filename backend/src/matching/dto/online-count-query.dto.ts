@@ -1,8 +1,7 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
 import { IsBoolean, IsIn, IsOptional, IsString } from 'class-validator';
-
-const FORMATS = ['chat', 'audio', 'video'] as const;
+import { SESSION_FORMATS } from '../../common/constants/session-formats';
 
 // Валидация topicSlug/format зеркалит CreateRequestDto (E1/E3) —
 // счётчик отвечает на тот же вопрос ("кто подходит клиенту сейчас"),
@@ -15,8 +14,8 @@ export class OnlineCountQueryDto {
   @IsString()
   topicSlug: string;
 
-  @ApiProperty({ enum: FORMATS })
-  @IsIn(FORMATS)
+  @ApiProperty({ enum: SESSION_FORMATS })
+  @IsIn(SESSION_FORMATS)
   format: string;
 
   @ApiPropertyOptional({

@@ -1,8 +1,8 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { IsIn, IsOptional, IsString } from 'class-validator';
+import { SESSION_FORMATS } from '../../common/constants/session-formats';
 
 const LANGUAGES = ['ru', 'kz', 'en'] as const;
-const FORMATS = ['chat', 'audio', 'video'] as const;
 const SORTS = ['price_asc', 'price_desc', 'rating'] as const;
 
 export class ListExpertsDto {
@@ -16,9 +16,9 @@ export class ListExpertsDto {
   @IsIn(LANGUAGES)
   language?: string;
 
-  @ApiPropertyOptional({ enum: FORMATS })
+  @ApiPropertyOptional({ enum: SESSION_FORMATS })
   @IsOptional()
-  @IsIn(FORMATS)
+  @IsIn(SESSION_FORMATS)
   format?: string;
 
   @ApiPropertyOptional({ enum: SORTS })

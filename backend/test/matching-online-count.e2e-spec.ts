@@ -191,6 +191,21 @@ describe('GET /v1/matching/online-count (e2e)', () => {
     expect(withUrgent.body).toEqual({ count: 0 });
   });
 
+  it('urgentOnly=false (буквальная строка из query) не фильтрует — эксперт всё ещё считается', async () => {
+    // Регрессия, которую легко не заметить: query-параметры всегда строки, и
+    // наивное приведение (`Boolean('false')`) дало бы true. Кастомный
+    // @Transform в OnlineCountQueryDto обязан сравнивать со строкой 'true'
+    // буквально, иначе ?urgentOnly=false вёл бы себя как urgentOnly=true.
+    await acceptingExpert(PH_E1, { topics: ['anxiety-stress'] }); // acceptsUrgent по умолчанию false
+    const token = await clientToken();
+
+    const res = await getOnlineCount(
+      token,
+      '?topicSlug=anxiety-stress&format=chat&urgentOnly=false',
+    ).expect(200);
+    expect(res.body).toEqual({ count: 1 });
+  });
+
   it('неизвестный topicSlug -> count == 0 (без 404)', async () => {
     await acceptingExpert(PH_E1, { topics: ['anxiety-stress'] });
     const token = await clientToken();

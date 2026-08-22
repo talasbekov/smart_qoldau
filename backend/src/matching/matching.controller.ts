@@ -31,14 +31,20 @@ export class MatchingController {
   async onlineCount(
     @Query() query: OnlineCountQueryDto,
   ): Promise<OnlineCountDto> {
-    // Неизвестный topicSlug не выделяется отдельной веткой: findCandidates
-    // просто не находит совпадений по теме и отдаёт [] — счётчик
+    // Неизвестный topicSlug не выделяется отдельной веткой: countCandidates
+    // просто не находит совпадений по теме и отдаёт 0 — счётчик
     // информационный, поведение выровнено с фильтром каталога экспертов.
-    const ids = await this.matching.findCandidates({
+    //
+    // Используется countCandidates, а не findCandidates: этому эндпоинту
+    // нужна только длина списка, а findCandidates дополнительно считает
+    // скоринг и сегодняшние офферы ради сортировки, которая здесь никому не
+    // нужна — 2 лишних запроса к БД на каждого кандидата (см. комментарий
+    // у countCandidates и matching-online-count-perf.e2e-spec.ts).
+    const count = await this.matching.countCandidates({
       topicSlug: query.topicSlug,
       format: query.format,
       urgentOnly: query.urgentOnly,
     });
-    return { count: ids.length };
+    return { count };
   }
 }

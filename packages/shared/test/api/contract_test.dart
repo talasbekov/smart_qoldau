@@ -10,7 +10,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared/shared.dart';
 
 void main() {
-  test('every SqEndpoints entry (except the task-9 exclusion) is in docs/openapi.json', () {
+  test('every SqEndpoints entry (except SqEndpoints.excludedFromContractTest) is in docs/openapi.json', () {
     final file = File('../../docs/openapi.json');
     expect(
       file.existsSync(),

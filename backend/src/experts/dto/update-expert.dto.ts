@@ -7,10 +7,10 @@ import {
   Length,
 } from 'class-validator';
 import { ExperienceLevel } from '@prisma/client';
+import { SESSION_FORMATS } from '../../common/constants/session-formats';
 
 const CITIES = ['Астана', 'Алматы', 'Шымкент'] as const;
 const LANGUAGES = ['ru', 'kz', 'en'] as const;
-const FORMATS = ['chat', 'audio', 'video'] as const;
 
 // Разрешённые поля PATCH (Р-18): displayName, education, experience,
 // priceTiyn, topicSlugs, formats, city, languages — все опциональны.
@@ -50,10 +50,10 @@ export class UpdateExpertDto {
   @IsIn(LANGUAGES, { each: true })
   languages?: string[];
 
-  @ApiPropertyOptional({ enum: FORMATS, isArray: true })
+  @ApiPropertyOptional({ enum: SESSION_FORMATS, isArray: true })
   @IsOptional()
   @ArrayNotEmpty()
-  @IsIn(FORMATS, { each: true })
+  @IsIn(SESSION_FORMATS, { each: true })
   formats?: string[];
 
   @ApiPropertyOptional({ isArray: true, example: ['self-esteem'] })

@@ -95,6 +95,53 @@ export class MatchingService {
     });
   }
 
+  // Экономный путь для GET /matching/online-count (задача 9 эпика E6,
+  // ревью раунд 1, п.1): считает тех же кандидатов, что и findCandidates
+  // (presence -> БД-допуск -> расписание), но БЕЗ скоринга (ScoringService,
+  // 1 запрос requestCandidate.findMany на кандидата) и БЕЗ подсчёта офферов
+  // за сегодня (ещё 1 запрос на кандидата) — обе стадии существуют только
+  // ради сортировки итогового списка, а счётчику нужна лишь его длина.
+  // Измерено отдельным e2e (matching-online-count-perf.e2e-spec.ts):
+  // полный конвейер даёт 1+3N запросов к Postgres на N подходящих
+  // кандидатов, этот путь — 1+N. При потолке ТЗ §6 (до 500 онлайн,
+  // экран поиска опрашивает эндпоинт раз в 10с у каждого клиента) разница
+  // не разовая, а на каждый такой опрос.
+  //
+  // where-условие ниже дословно повторяет findCandidates — сознательно:
+  // findCandidates обслуживает боевой путь матчинга и покрыт спеками E3,
+  // трогать его ради дедупликации здесь избыточный риск ради условий,
+  // которые в обоих методах должны совпадать 1:1 (иначе счётчик и реальный
+  // подбор разойдутся в том, кого считают "подходящим").
+  async countCandidates(params: FindCandidatesParams): Promise<number> {
+    const { topicSlug, format, excludeExpertIds = [], urgentOnly } = params;
+
+    const availableIds = await this.presence.listFresh();
+    const candidateIds = availableIds.filter(
+      (id) => !excludeExpertIds.includes(id),
+    );
+    if (candidateIds.length === 0) return 0;
+
+    const experts = await this.prisma.expert.findMany({
+      where: {
+        id: { in: candidateIds },
+        verificationStatus: 'VERIFIED',
+        isBlocked: false,
+        workStatus: 'ACCEPTING',
+        formats: { has: format },
+        topics: { some: { topic: { slug: topicSlug } } },
+        ...(urgentOnly ? { acceptsUrgent: true } : {}),
+      },
+      select: { id: true },
+    });
+    if (experts.length === 0) return 0;
+
+    const now = this.clock.now();
+    const withinSchedule = await Promise.all(
+      experts.map((e) => this.schedule.isWithinSchedule(e.id, now)),
+    );
+    return withinSchedule.filter(Boolean).length;
+  }
+
   private startOfAlmatyDay(date: Date): Date {
     const formatter = new Intl.DateTimeFormat('en-CA', {
       timeZone: 'Asia/Almaty',

@@ -1,7 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { IsBoolean, IsIn, IsOptional, IsString, IsUUID } from 'class-validator';
-
-const FORMATS = ['chat', 'audio', 'video'] as const;
+import { SESSION_FORMATS } from '../../common/constants/session-formats';
 
 export class CreateRequestDto {
   @ApiProperty({
@@ -11,8 +10,8 @@ export class CreateRequestDto {
   @IsString()
   topicSlug: string;
 
-  @ApiProperty({ enum: FORMATS })
-  @IsIn(FORMATS)
+  @ApiProperty({ enum: SESSION_FORMATS })
+  @IsIn(SESSION_FORMATS)
   format: string;
 
   @ApiPropertyOptional({
