@@ -7,3 +7,11 @@ brain/.obsidian/workspace.json
 .obsidian/workspace-mobile.json
 .trash/
 .superpowers/
+
+# Flutter (app_client/, packages/shared/)
+.dart_tool/
+build/
+.flutter-plugins*
+.packages
+*.iml
+.idea/

@@ -1,0 +1,5972 @@
+{
+  "openapi": "3.0.0",
+  "paths": {
+    "/v1": {
+      "get": {
+        "operationId": "AppController_getHello",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/v1/health": {
+      "get": {
+        "operationId": "AppController_health",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/v1/topics": {
+      "get": {
+        "operationId": "TopicsController_list",
+        "parameters": [
+          {
+            "name": "locale",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "enum": [
+                "ru",
+                "kz"
+              ],
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Список активных тем по sortOrder в выбранной локали",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TopicDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "topics"
+        ]
+      }
+    },
+    "/v1/auth/request-code": {
+      "post": {
+        "operationId": "AuthController_requestCode",
+        "summary": "Запросить SMS-код входа",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RequestCodeDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Код отправлен (или залогирован в dev-режиме)"
+          },
+          "400": {
+            "description": "VALIDATION_FAILED — номер не в формате +77XXXXXXXXX"
+          },
+          "429": {
+            "description": "SMS_RATE_LIMITED — повтор раньше 45 секунд"
+          }
+        },
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/v1/auth/verify-code": {
+      "post": {
+        "operationId": "AuthController_verifyCode",
+        "summary": "Подтвердить SMS-код и получить токены",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VerifyCodeDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Пара токенов + пользователь",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TokensDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "SMS_CODE_EXPIRED | SMS_CODE_INVALID | VALIDATION_FAILED"
+          }
+        },
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/v1/auth/refresh": {
+      "post": {
+        "operationId": "AuthController_refresh",
+        "summary": "Обновить пару токенов по refresh-токену",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RefreshDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Новая пара токенов + пользователь",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TokensDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED — refresh-токен недействителен, отозван или истёк"
+          }
+        },
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/v1/auth/guest": {
+      "post": {
+        "operationId": "AuthController_guest",
+        "summary": "Гостевой вход по deviceId",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GuestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Пара токенов + гостевой пользователь (идемпотентно по deviceId)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TokensDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "VALIDATION_FAILED — deviceId не задан"
+          }
+        },
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/v1/auth/guest/convert": {
+      "post": {
+        "operationId": "AuthController_convertGuest",
+        "summary": "Конверсия гостя в аккаунт по телефону (Р-22)",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConvertGuestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Тот же user.id, isGuest=false, телефон записан",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TokensDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "SMS_CODE_EXPIRED | SMS_CODE_INVALID | VALIDATION_FAILED"
+          },
+          "401": {
+            "description": "UNAUTHORIZED — access-токен недействителен"
+          },
+          "403": {
+            "description": "FORBIDDEN — вызывающий не является гостем (isGuest=false)"
+          },
+          "409": {
+            "description": "PHONE_ALREADY_REGISTERED — номер уже используется другим аккаунтом"
+          }
+        },
+        "tags": [
+          "auth"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/experts": {
+      "post": {
+        "operationId": "ExpertsController_create",
+        "summary": "Создать анкету эксперта (Р-04)",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateExpertDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Анкета создана",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExpertMeDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "VALIDATION_FAILED | PRICE_OUT_OF_RANGE"
+          },
+          "401": {
+            "description": "UNAUTHORIZED"
+          },
+          "403": {
+            "description": "FORBIDDEN — гостевой аккаунт не может создать анкету"
+          },
+          "409": {
+            "description": "EXPERT_EXISTS — анкета уже создана"
+          }
+        },
+        "tags": [
+          "experts"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "get": {
+        "operationId": "ExpertsPublicController_list",
+        "summary": "Публичный список экспертов (VERIFIED, не заблокированные)",
+        "parameters": [
+          {
+            "name": "topic",
+            "required": false,
+            "in": "query",
+            "description": "Slug темы из справочника /v1/topics",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "language",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "enum": [
+                "ru",
+                "kz",
+                "en"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "name": "format",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "enum": [
+                "chat",
+                "audio",
+                "video"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "name": "sort",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "enum": [
+                "price_asc",
+                "price_desc",
+                "rating"
+              ],
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Список публичных карточек",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ExpertPublicDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "experts"
+        ]
+      }
+    },
+    "/v1/experts/me": {
+      "get": {
+        "operationId": "ExpertsController_me",
+        "summary": "Получить свою анкету эксперта",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Анкета эксперта",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExpertMeDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED"
+          },
+          "404": {
+            "description": "EXPERT_NOT_FOUND"
+          }
+        },
+        "tags": [
+          "experts"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "patch": {
+        "operationId": "ExpertsController_update",
+        "summary": "Обновить свою анкету эксперта (Р-18)",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateExpertDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Анкета обновлена",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExpertMeDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "VALIDATION_FAILED | PRICE_OUT_OF_RANGE"
+          },
+          "401": {
+            "description": "UNAUTHORIZED"
+          },
+          "404": {
+            "description": "EXPERT_NOT_FOUND"
+          }
+        },
+        "tags": [
+          "experts"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/experts/me/work-status": {
+      "patch": {
+        "operationId": "ExpertsController_updateWorkStatus",
+        "summary": "Изменить рабочий статус эксперта (presence в Redis)",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WorkStatusDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Статус изменён",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExpertMeDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "NOT_VERIFIED — ACCEPTING доступен только VERIFIED-эксперту"
+          },
+          "401": {
+            "description": "UNAUTHORIZED"
+          },
+          "403": {
+            "description": "EXPERT_BLOCKED — эксперт заблокирован"
+          },
+          "404": {
+            "description": "EXPERT_NOT_FOUND"
+          }
+        },
+        "tags": [
+          "experts"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/experts/me/heartbeat": {
+      "post": {
+        "operationId": "ExpertsController_heartbeat",
+        "summary": "Heartbeat эксперта — обновить свежесть presence (E3)",
+        "parameters": [],
+        "responses": {
+          "204": {
+            "description": "Presence обновлён"
+          },
+          "401": {
+            "description": "UNAUTHORIZED"
+          },
+          "404": {
+            "description": "EXPERT_NOT_FOUND"
+          }
+        },
+        "tags": [
+          "experts"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/experts/me/documents/submit": {
+      "post": {
+        "operationId": "DocumentsController_submit",
+        "summary": "Отправить анкету на проверку (Р-14)",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Анкета отправлена на проверку",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubmitVerificationDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "DOCUMENTS_INCOMPLETE | INVALID_STATE_TRANSITION"
+          },
+          "401": {
+            "description": "UNAUTHORIZED"
+          },
+          "404": {
+            "description": "EXPERT_NOT_FOUND"
+          }
+        },
+        "tags": [
+          "experts"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/experts/me/documents/{type}": {
+      "post": {
+        "operationId": "DocumentsController_upload",
+        "summary": "Загрузить документ эксперта (4 типа, MinIO)",
+        "parameters": [
+          {
+            "name": "type",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "enum": [
+                "IDENTITY",
+                "DIPLOMA",
+                "CERTIFICATES",
+                "QUALIFICATION"
+              ],
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Документ загружен",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExpertDocumentDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "VALIDATION_FAILED"
+          },
+          "401": {
+            "description": "UNAUTHORIZED"
+          },
+          "404": {
+            "description": "EXPERT_NOT_FOUND"
+          }
+        },
+        "tags": [
+          "experts"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/experts/me/documents": {
+      "get": {
+        "operationId": "DocumentsController_list",
+        "summary": "Список документов эксперта (4 позиции)",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Документы эксперта",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ExpertDocumentDto"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED"
+          },
+          "404": {
+            "description": "EXPERT_NOT_FOUND"
+          }
+        },
+        "tags": [
+          "experts"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/experts/{id}": {
+      "get": {
+        "operationId": "ExpertsPublicController_findOne",
+        "summary": "Публичная карточка эксперта",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Карточка эксперта",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExpertPublicDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "EXPERT_NOT_FOUND"
+          }
+        },
+        "tags": [
+          "experts"
+        ]
+      }
+    },
+    "/v1/admin/verification/queue": {
+      "get": {
+        "operationId": "VerificationController_queue",
+        "summary": "Очередь экспертов на верификацию (PENDING)",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/QueueEntryDto"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED"
+          }
+        },
+        "tags": [
+          "admin-verification"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/admin/verification/documents/{documentId}/decision": {
+      "post": {
+        "operationId": "VerificationController_decideDocument",
+        "summary": "Решение по документу: approve/reject",
+        "parameters": [
+          {
+            "name": "documentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DecisionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Решение зафиксировано"
+          },
+          "400": {
+            "description": "VALIDATION_FAILED"
+          },
+          "401": {
+            "description": "UNAUTHORIZED"
+          },
+          "404": {
+            "description": "NOT_FOUND"
+          }
+        },
+        "tags": [
+          "admin-verification"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/admin/verification/{expertId}/decision": {
+      "post": {
+        "operationId": "VerificationController_decideExpert",
+        "summary": "Решение по анкете эксперта: approve/reject",
+        "parameters": [
+          {
+            "name": "expertId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DecisionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Решение зафиксировано",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExpertMeDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "VALIDATION_FAILED | INVALID_STATE_TRANSITION | DOCUMENTS_INCOMPLETE"
+          },
+          "401": {
+            "description": "UNAUTHORIZED"
+          },
+          "404": {
+            "description": "EXPERT_NOT_FOUND"
+          }
+        },
+        "tags": [
+          "admin-verification"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/admin/experts/{expertId}/block": {
+      "post": {
+        "operationId": "VerificationController_block",
+        "summary": "Заблокировать эксперта (Р-19)",
+        "parameters": [
+          {
+            "name": "expertId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BlockExpertDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Эксперт заблокирован"
+          },
+          "400": {
+            "description": "VALIDATION_FAILED"
+          },
+          "401": {
+            "description": "UNAUTHORIZED"
+          },
+          "404": {
+            "description": "EXPERT_NOT_FOUND"
+          }
+        },
+        "tags": [
+          "admin-verification"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/admin/experts/{expertId}/unblock": {
+      "post": {
+        "operationId": "VerificationController_unblock",
+        "summary": "Снять блокировку эксперта",
+        "parameters": [
+          {
+            "name": "expertId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Блокировка снята"
+          },
+          "401": {
+            "description": "UNAUTHORIZED"
+          },
+          "404": {
+            "description": "EXPERT_NOT_FOUND"
+          }
+        },
+        "tags": [
+          "admin-verification"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/admin/experts/flagged": {
+      "get": {
+        "operationId": "VerificationController_flaggedExperts",
+        "summary": "Очередь экспертов ниже порога рейтинга (Р-20): ratingCount >= 20 и ratingAvg < 4.0",
+        "parameters": [
+          {
+            "name": "take",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "maximum": 100,
+              "default": 20,
+              "type": "number"
+            }
+          },
+          {
+            "name": "skip",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": 0,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/FlaggedExpertDto"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED"
+          }
+        },
+        "tags": [
+          "admin-verification"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/notifications": {
+      "get": {
+        "operationId": "NotificationsController_list",
+        "summary": "Центр уведомлений — свои, новые сверху + бейдж",
+        "parameters": [
+          {
+            "name": "take",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "maximum": 100,
+              "default": 20,
+              "type": "number"
+            }
+          },
+          {
+            "name": "skip",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": 0,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificationsListDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "notifications"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/notifications/read": {
+      "post": {
+        "operationId": "NotificationsController_markRead",
+        "summary": "Прочитать уведомления (без ids — все свои)",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReadNotificationsDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "notifications"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/notifications/{id}/ack": {
+      "post": {
+        "operationId": "NotificationsController_ack",
+        "summary": "Подтверждение доставки пуша устройством (метрика §11.6)",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          },
+          "404": {
+            "description": "NOTIFICATION_NOT_FOUND"
+          }
+        },
+        "tags": [
+          "notifications"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/experts/me/schedule": {
+      "get": {
+        "operationId": "ScheduleController_getSchedule",
+        "summary": "Получить расписание эксперта (7 дней)",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Расписание",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScheduleResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED"
+          },
+          "404": {
+            "description": "EXPERT_NOT_FOUND"
+          }
+        },
+        "tags": [
+          "experts"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "put": {
+        "operationId": "ScheduleController_putSchedule",
+        "summary": "Задать расписание эксперта (полная замена)",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateScheduleDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Расписание сохранено",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScheduleResponseDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "SCHEDULE_INVALID"
+          },
+          "401": {
+            "description": "UNAUTHORIZED"
+          },
+          "404": {
+            "description": "EXPERT_NOT_FOUND"
+          }
+        },
+        "tags": [
+          "experts"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/experts/me/availability": {
+      "patch": {
+        "operationId": "ScheduleController_updateAvailability",
+        "summary": "Переключить готовность принимать срочные заявки",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateAvailabilityDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Готовность обновлена"
+          },
+          "401": {
+            "description": "UNAUTHORIZED"
+          },
+          "404": {
+            "description": "EXPERT_NOT_FOUND"
+          }
+        },
+        "tags": [
+          "experts"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/consultations/{id}/messages": {
+      "get": {
+        "operationId": "ChatController_messages",
+        "summary": "История сообщений чата консультации (участнику), расшифрованная, порядок createdAt asc",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "cursor",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "maximum": 100,
+              "default": 50,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessageHistoryDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "CONSULTATION_NOT_FOUND"
+          }
+        },
+        "tags": [
+          "consultations"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/consultations/{id}": {
+      "get": {
+        "operationId": "ConsultationsController_findOne",
+        "summary": "Консультация участника — клиент видит ConsultationClientDto, эксперт ConsultationExpertDto",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Консультация (форма зависит от роли вызывающего)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ConsultationClientDto"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ConsultationExpertDto"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "CONSULTATION_NOT_FOUND"
+          }
+        },
+        "tags": [
+          "consultations"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/consultations": {
+      "get": {
+        "operationId": "ConsultationsController_list",
+        "summary": "Список своих консультаций (as=client|expert, default client), пагинация take/skip",
+        "parameters": [
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "enum": [
+                "ACTIVE",
+                "COMPLETED",
+                "CANCELLED"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "name": "as",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": "client",
+              "enum": [
+                "client",
+                "expert"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "name": "take",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "maximum": 100,
+              "default": 20,
+              "type": "number"
+            }
+          },
+          {
+            "name": "skip",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": 0,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Список консультаций",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "oneOf": [
+                      {
+                        "$ref": "#/components/schemas/ConsultationClientDto"
+                      },
+                      {
+                        "$ref": "#/components/schemas/ConsultationExpertDto"
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "consultations"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/consultations/{id}/complete": {
+      "post": {
+        "operationId": "ConsultationsController_complete",
+        "summary": "Завершение консультации экспертом с исходом (COMPLETED|CLIENT_NO_SHOW|CLIENT_CANCELLED|TECH_ISSUE)",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CompleteConsultationDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConsultationExpertDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN — не эксперт-участник"
+          },
+          "404": {
+            "description": "CONSULTATION_NOT_FOUND"
+          },
+          "409": {
+            "description": "CONSULTATION_NOT_ACTIVE"
+          }
+        },
+        "tags": [
+          "consultations"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/consultations/{id}/cancel": {
+      "post": {
+        "operationId": "ConsultationsController_cancel",
+        "summary": "Отмена консультации клиентом",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConsultationClientDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN — не клиент-участник"
+          },
+          "404": {
+            "description": "CONSULTATION_NOT_FOUND"
+          },
+          "409": {
+            "description": "CONSULTATION_NOT_ACTIVE"
+          }
+        },
+        "tags": [
+          "consultations"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/consultations/{id}/note": {
+      "get": {
+        "operationId": "NotesController_getNote",
+        "summary": "Приватная заметка эксперта к консультации",
+        "description": "Приватные заметки специалиста. Не используйте медицинские диагнозы.",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Заметка (text: null если заметки нет). Только для эксперта-участника.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExpertNoteDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "CONSULTATION_NOT_FOUND — клиент или чужой эксперт (заметка приватна)"
+          }
+        },
+        "tags": [
+          "consultations"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "put": {
+        "operationId": "NotesController_updateNote",
+        "summary": "Создать или обновить приватную заметку эксперта",
+        "description": "Приватные заметки специалиста. Не используйте медицинские диагнозы.",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateExpertNoteDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Созданная/обновлённая заметка",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExpertNoteDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Текст не может быть пустым или >5000 символов"
+          },
+          "404": {
+            "description": "CONSULTATION_NOT_FOUND — клиент или чужой эксперт (заметка приватна)"
+          }
+        },
+        "tags": [
+          "consultations"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/payment-methods": {
+      "post": {
+        "operationId": "PaymentMethodsController_add",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddPaymentMethodDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Карта привязана",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaymentMethodDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "payment-methods"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "get": {
+        "operationId": "PaymentMethodsController_list",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Свои живые карты",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PaymentMethodDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "payment-methods"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/payment-methods/{id}": {
+      "delete": {
+        "operationId": "PaymentMethodsController_remove",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Карта откреплена (soft-delete)"
+          },
+          "404": {
+            "description": "PAYMENT_METHOD_NOT_FOUND"
+          }
+        },
+        "tags": [
+          "payment-methods"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/consultations/{id}/pay": {
+      "post": {
+        "operationId": "PaymentsController_pay",
+        "summary": "Оплата консультации (холд) — только клиент-участник",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PayConsultationDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PayResultDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "CONSULTATION_NOT_FOUND | PAYMENT_METHOD_NOT_FOUND"
+          },
+          "409": {
+            "description": "CONSULTATION_NOT_ACTIVE | ALREADY_PAID"
+          }
+        },
+        "tags": [
+          "payments"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/consultations/{id}/payment": {
+      "get": {
+        "operationId": "PaymentsController_getStatus",
+        "summary": "Статус платежа консультации — только клиент-участник",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaymentStatusDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "CONSULTATION_NOT_FOUND"
+          }
+        },
+        "tags": [
+          "payments"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/experts/me/earnings": {
+      "get": {
+        "operationId": "EarningsController_list",
+        "summary": "Начисления эксперта (Р-02) — список capture-платежей + текущий баланс",
+        "parameters": [
+          {
+            "name": "take",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "maximum": 100,
+              "default": 20,
+              "type": "number"
+            }
+          },
+          {
+            "name": "skip",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": 0,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EarningsDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED"
+          }
+        },
+        "tags": [
+          "payments"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/webhooks/payments": {
+      "post": {
+        "operationId": "PaymentsWebhookController_handle",
+        "summary": "Вебхук платёжного провайдера (без auth-guard — подпись проверяется HMAC)",
+        "parameters": [
+          {
+            "name": "x-payment-signature",
+            "required": true,
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "webhooks"
+        ]
+      }
+    },
+    "/v1/requests": {
+      "post": {
+        "operationId": "RequestsController_create",
+        "summary": "Создать заявку на консультацию (БП-01)",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Заявка создана",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequestDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED"
+          },
+          "409": {
+            "description": "ACTIVE_REQUEST_EXISTS — у клиента уже есть активная заявка | EXPERT_UNAVAILABLE — выбранный эксперт недоступен"
+          }
+        },
+        "tags": [
+          "requests"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/requests/{id}": {
+      "get": {
+        "operationId": "RequestsController_findOne",
+        "summary": "Статус своей заявки",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Статус заявки",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequestDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED"
+          },
+          "404": {
+            "description": "REQUEST_NOT_FOUND"
+          }
+        },
+        "tags": [
+          "requests"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/requests/{id}/cancel": {
+      "post": {
+        "operationId": "RequestsController_cancel",
+        "summary": "Отменить свою заявку",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Заявка отменена",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequestDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED"
+          },
+          "404": {
+            "description": "REQUEST_NOT_FOUND"
+          },
+          "409": {
+            "description": "REQUEST_ALREADY_CLOSED"
+          }
+        },
+        "tags": [
+          "requests"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/experts/me/offers": {
+      "get": {
+        "operationId": "OffersController_myOffers",
+        "summary": "Активные PENDING-офферы эксперта (без PII клиента)",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Список офферов",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/OfferDto"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED"
+          },
+          "404": {
+            "description": "EXPERT_NOT_FOUND"
+          }
+        },
+        "tags": [
+          "offers"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/offers/{offerId}/accept": {
+      "post": {
+        "operationId": "OffersController_accept",
+        "summary": "Принять оффер (атомарно)",
+        "parameters": [
+          {
+            "name": "offerId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Заявка сматчена",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AcceptOfferDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED"
+          },
+          "404": {
+            "description": "OFFER_NOT_FOUND"
+          },
+          "409": {
+            "description": "OFFER_ALREADY_TAKEN"
+          },
+          "410": {
+            "description": "OFFER_EXPIRED — истёк дедлайн"
+          }
+        },
+        "tags": [
+          "offers"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/offers/{offerId}/decline": {
+      "post": {
+        "operationId": "OffersController_decline",
+        "summary": "Отклонить оффер — заявка уходит следующему кандидату",
+        "parameters": [
+          {
+            "name": "offerId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Оффер отклонён"
+          },
+          "401": {
+            "description": "UNAUTHORIZED"
+          },
+          "404": {
+            "description": "OFFER_NOT_FOUND"
+          },
+          "409": {
+            "description": "OFFER_ALREADY_TAKEN"
+          },
+          "410": {
+            "description": "OFFER_EXPIRED — истёк дедлайн"
+          }
+        },
+        "tags": [
+          "offers"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/experts/me/balance": {
+      "get": {
+        "operationId": "PayoutsController_balance",
+        "summary": "Баланс эксперта (доступно к выводу, Р-06)",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BalanceDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED"
+          }
+        },
+        "tags": [
+          "payouts"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/payouts": {
+      "post": {
+        "operationId": "PayoutsController_request",
+        "summary": "Заявка на вывод — минимум 10 000 ₸, автоодобрение до 300 000 ₸/мес (Р-06)",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RequestPayoutDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PayoutDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED"
+          }
+        },
+        "tags": [
+          "payouts"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "get": {
+        "operationId": "PayoutsController_list",
+        "summary": "Свои выводы (новые сверху)",
+        "parameters": [
+          {
+            "name": "take",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "maximum": 100,
+              "default": 20,
+              "type": "number"
+            }
+          },
+          {
+            "name": "skip",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": 0,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PayoutsListDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED"
+          }
+        },
+        "tags": [
+          "payouts"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/admin/payouts": {
+      "get": {
+        "operationId": "PayoutsAdminController_list",
+        "summary": "Очередь финконтроля выводов (по умолчанию PENDING_REVIEW, Р-06)",
+        "parameters": [
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": "PENDING_REVIEW",
+              "enum": [
+                "PENDING_REVIEW",
+                "PROCESSING",
+                "PAID",
+                "REJECTED"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "name": "take",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "maximum": 100,
+              "default": 20,
+              "type": "number"
+            }
+          },
+          {
+            "name": "skip",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": 0,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminPayoutsListDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED"
+          }
+        },
+        "tags": [
+          "admin-payouts"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/admin/payouts/{id}/approve": {
+      "post": {
+        "operationId": "PayoutsAdminController_approve",
+        "summary": "Одобрить вывод из очереди -> PROCESSING + отправка провайдеру",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "401": {
+            "description": "UNAUTHORIZED"
+          },
+          "404": {
+            "description": "PAYOUT_NOT_FOUND"
+          },
+          "409": {
+            "description": "PAYOUT_NOT_PENDING"
+          }
+        },
+        "tags": [
+          "admin-payouts"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/admin/payouts/{id}/reject": {
+      "post": {
+        "operationId": "PayoutsAdminController_reject",
+        "summary": "Отклонить вывод с причиной -> REJECTED + возврат резерва на баланс",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RejectPayoutDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "401": {
+            "description": "UNAUTHORIZED"
+          },
+          "404": {
+            "description": "PAYOUT_NOT_FOUND"
+          },
+          "409": {
+            "description": "PAYOUT_NOT_PENDING"
+          }
+        },
+        "tags": [
+          "admin-payouts"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/webhooks/payouts": {
+      "post": {
+        "operationId": "PayoutsWebhookController_handle",
+        "summary": "Вебхук payout-провайдера (без auth-guard — подпись проверяется HMAC)",
+        "parameters": [
+          {
+            "name": "x-payout-signature",
+            "required": true,
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "webhooks"
+        ]
+      }
+    },
+    "/v1/favorites/{expertId}": {
+      "put": {
+        "operationId": "FavoritesController_addToFavorites",
+        "parameters": [
+          {
+            "name": "expertId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Эксперт добавлен в избранное (идемпотентно)"
+          }
+        },
+        "tags": [
+          "favorites"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "delete": {
+        "operationId": "FavoritesController_removeFromFavorites",
+        "parameters": [
+          {
+            "name": "expertId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Эксперт удалён из избранного (идемпотентно)"
+          }
+        },
+        "tags": [
+          "favorites"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/favorites": {
+      "get": {
+        "operationId": "FavoritesController_getFavorites",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Список избранных экспертов (скрытые/заблокированные выпадают)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ExpertPublicDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "favorites"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/consultations/{id}/media-token": {
+      "post": {
+        "operationId": "MediaController_mediaToken",
+        "summary": "LiveKit-токен для участника ACTIVE-консультации; эскалация формата chat->audio->video (понижение запрещено)",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MediaTokenRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MediaTokenResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "CONSULTATION_NOT_FOUND"
+          }
+        },
+        "tags": [
+          "consultations"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/webhooks/livekit": {
+      "post": {
+        "operationId": "LivekitWebhookController_handle",
+        "summary": "Вебхук LiveKit (без auth-guard — подпись проверяется WebhookReceiver)",
+        "parameters": [
+          {
+            "name": "authorization",
+            "required": true,
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "webhooks"
+        ]
+      }
+    },
+    "/v1/consultations/{id}/review": {
+      "post": {
+        "operationId": "ConsultationReviewController_create",
+        "summary": "Клиент оставляет отзыв на завершённую консультацию (COMPLETED, outcome COMPLETED)",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateReviewDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Отзыв создан",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReviewCreatedDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN — не клиент-участник"
+          },
+          "404": {
+            "description": "CONSULTATION_NOT_FOUND"
+          },
+          "409": {
+            "description": "CONSULTATION_NOT_COMPLETED | REVIEW_EXISTS"
+          }
+        },
+        "tags": [
+          "reviews"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/reviews/{id}": {
+      "delete": {
+        "operationId": "ReviewsController_remove",
+        "summary": "Удаление своего отзыва автором-клиентом",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Отзыв удалён"
+          },
+          "404": {
+            "description": "REVIEW_NOT_FOUND"
+          }
+        },
+        "tags": [
+          "reviews"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/reviews/{id}/reply": {
+      "post": {
+        "operationId": "ReviewsController_reply",
+        "summary": "Ответ эксперта на отзыв о себе (только PUBLISHED, повтор перезаписывает)",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReplyReviewDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Ответ сохранён"
+          },
+          "404": {
+            "description": "REVIEW_NOT_FOUND"
+          },
+          "409": {
+            "description": "INVALID_STATE_TRANSITION"
+          }
+        },
+        "tags": [
+          "reviews"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/reviews/{id}/complaint": {
+      "post": {
+        "operationId": "ReviewsController_complaint",
+        "summary": "Жалоба эксперта на отзыв о себе: PUBLISHED -> FLAGGED, скрывается из публичной выдачи до решения админа",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ComplaintReviewDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Жалоба зафиксирована"
+          },
+          "404": {
+            "description": "REVIEW_NOT_FOUND"
+          },
+          "409": {
+            "description": "INVALID_STATE_TRANSITION"
+          }
+        },
+        "tags": [
+          "reviews"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/experts/{id}/reviews": {
+      "get": {
+        "operationId": "ExpertReviewsController_list",
+        "summary": "Публичные отзывы эксперта (PUBLISHED), автор анонимен, распределение 1..5",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "take",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "maximum": 100,
+              "default": 20,
+              "type": "number"
+            }
+          },
+          {
+            "name": "skip",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": 0,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExpertReviewsDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "reviews"
+        ]
+      }
+    },
+    "/v1/admin/reviews/flagged": {
+      "get": {
+        "operationId": "ReviewsAdminController_flagged",
+        "summary": "Очередь FLAGGED-отзывов на модерацию (админ видит всё, включая privateText)",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/FlaggedReviewDto"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED"
+          }
+        },
+        "tags": [
+          "admin-reviews"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/admin/reviews/{id}/resolve": {
+      "post": {
+        "operationId": "ReviewsAdminController_resolve",
+        "summary": "Решение по FLAGGED-отзыву: hide -> HIDDEN | restore -> PUBLISHED, пересчёт агрегатов",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResolveReviewDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Решение зафиксировано"
+          },
+          "401": {
+            "description": "UNAUTHORIZED"
+          },
+          "404": {
+            "description": "REVIEW_NOT_FOUND"
+          },
+          "409": {
+            "description": "INVALID_STATE_TRANSITION"
+          }
+        },
+        "tags": [
+          "admin-reviews"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/devices": {
+      "post": {
+        "operationId": "DevicesController_register",
+        "summary": "Регистрация push-токена устройства (upsert)",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegisterDeviceDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeviceDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "devices"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/devices/{token}": {
+      "delete": {
+        "operationId": "DevicesController_remove",
+        "summary": "Удаление push-токена (logout устройства)",
+        "parameters": [
+          {
+            "name": "token",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          },
+          "404": {
+            "description": "DEVICE_NOT_FOUND"
+          }
+        },
+        "tags": [
+          "devices"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/me/locale": {
+      "patch": {
+        "operationId": "DevicesController_updateLocale",
+        "summary": "Локаль пользователя (ru|kz) — язык уведомлений",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateLocaleDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "devices"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/admin/auth/login": {
+      "post": {
+        "operationId": "AdminAuthController_login",
+        "summary": "Вход сотрудника админки по email и паролю",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdminLoginDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "accessToken + сотрудник (id, email, roles)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminLoginResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "ADMIN_INVALID_CREDENTIALS — неверный email, пароль или заблокированный сотрудник (ответ неразличим)"
+          }
+        },
+        "tags": [
+          "admin-auth"
+        ]
+      }
+    },
+    "/v1/admin/staff": {
+      "post": {
+        "operationId": "AdminStaffController_create",
+        "summary": "Создать сотрудника админки (SUPERADMIN)",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateStaffDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StaffDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED"
+          },
+          "403": {
+            "description": "ADMIN_FORBIDDEN — требуется роль SUPERADMIN"
+          },
+          "409": {
+            "description": "STAFF_EMAIL_EXISTS"
+          }
+        },
+        "tags": [
+          "admin-staff"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "get": {
+        "operationId": "AdminStaffController_list",
+        "summary": "Список сотрудников админки (SUPERADMIN)",
+        "parameters": [
+          {
+            "name": "take",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "maximum": 100,
+              "default": 20,
+              "type": "number"
+            }
+          },
+          {
+            "name": "skip",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": 0,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StaffListDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED"
+          },
+          "403": {
+            "description": "ADMIN_FORBIDDEN — требуется роль SUPERADMIN"
+          }
+        },
+        "tags": [
+          "admin-staff"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/admin/staff/{id}": {
+      "patch": {
+        "operationId": "AdminStaffController_update",
+        "summary": "Изменить роли и/или активность сотрудника (SUPERADMIN)",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateStaffDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StaffCardDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "STAFF_SELF_LOCKOUT_FORBIDDEN — нельзя деактивировать себя или снять с себя роль SUPERADMIN"
+          },
+          "401": {
+            "description": "UNAUTHORIZED"
+          },
+          "403": {
+            "description": "ADMIN_FORBIDDEN — требуется роль SUPERADMIN"
+          },
+          "404": {
+            "description": "STAFF_NOT_FOUND"
+          }
+        },
+        "tags": [
+          "admin-staff"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/tickets": {
+      "post": {
+        "operationId": "TicketsController_create",
+        "summary": "Создать обращение в поддержку. JWT необязателен: с токеном автор определяется сервером (эксперт/клиент), без токена — гость (обязателен contactEmail или contactPhone)",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateTicketDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TicketCreatedDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "TICKET_CONTACT_REQUIRED | TICKET_CATEGORY_NOT_ALLOWED"
+          }
+        },
+        "tags": [
+          "tickets"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "get": {
+        "operationId": "TicketsController_list",
+        "summary": "Мои обращения в поддержку",
+        "parameters": [
+          {
+            "name": "take",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "maximum": 100,
+              "default": 20,
+              "type": "number"
+            }
+          },
+          {
+            "name": "skip",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": 0,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TicketSummaryDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "tickets"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/tickets/{id}": {
+      "get": {
+        "operationId": "TicketsController_getOne",
+        "summary": "Своё обращение с перепиской",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TicketDetailDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "TICKET_NOT_FOUND"
+          }
+        },
+        "tags": [
+          "tickets"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/admin/tickets": {
+      "get": {
+        "operationId": "TicketsAdminController_list",
+        "summary": "Очередь тикетов своих команд (SUPERADMIN — все команды без ограничения)",
+        "parameters": [
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "enum": [
+                "NEW",
+                "IN_PROGRESS",
+                "RESOLVED"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "name": "team",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "enum": [
+                "SUPPORT_OPERATOR",
+                "VERIFICATION_OPERATOR",
+                "FINANCE_CONTROL",
+                "QUALITY_TEAM"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "name": "take",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "maximum": 100,
+              "default": 20,
+              "type": "number"
+            }
+          },
+          {
+            "name": "skip",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": 0,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminTicketsListDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED"
+          }
+        },
+        "tags": [
+          "admin-tickets"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/admin/tickets/{id}": {
+      "get": {
+        "operationId": "TicketsAdminController_getOne",
+        "summary": "Карточка тикета с перепиской и данными автора",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminTicketDetailDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED"
+          },
+          "404": {
+            "description": "TICKET_NOT_FOUND"
+          }
+        },
+        "tags": [
+          "admin-tickets"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/admin/tickets/{id}/reply": {
+      "post": {
+        "operationId": "TicketsAdminController_reply",
+        "summary": "Ответ сотрудника: первый ответ проставляет firstReplyAt и переводит NEW -> IN_PROGRESS (идемпотентно)",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReplyTicketDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Ответ сохранён, тело ответа пустое"
+          },
+          "401": {
+            "description": "UNAUTHORIZED"
+          },
+          "404": {
+            "description": "TICKET_NOT_FOUND"
+          },
+          "409": {
+            "description": "TICKET_ALREADY_RESOLVED"
+          }
+        },
+        "tags": [
+          "admin-tickets"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/admin/tickets/{id}/resolve": {
+      "post": {
+        "operationId": "TicketsAdminController_resolve",
+        "summary": "Решить тикет -> RESOLVED",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Тикет решён, тело ответа пустое"
+          },
+          "401": {
+            "description": "UNAUTHORIZED"
+          },
+          "404": {
+            "description": "TICKET_NOT_FOUND"
+          },
+          "409": {
+            "description": "TICKET_ALREADY_RESOLVED"
+          }
+        },
+        "tags": [
+          "admin-tickets"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    }
+  },
+  "info": {
+    "title": "SmartQoldau API",
+    "description": "",
+    "version": "1.0",
+    "contact": {}
+  },
+  "tags": [],
+  "servers": [],
+  "components": {
+    "securitySchemes": {
+      "bearer": {
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "type": "http"
+      }
+    },
+    "schemas": {
+      "TopicDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "slug": {
+            "type": "string",
+            "example": "anxiety-stress"
+          },
+          "name": {
+            "type": "string",
+            "example": "Тревога и стресс"
+          }
+        },
+        "required": [
+          "id",
+          "slug",
+          "name"
+        ]
+      },
+      "RequestCodeDto": {
+        "type": "object",
+        "properties": {
+          "phone": {
+            "type": "string",
+            "example": "+77011234567",
+            "description": "Казахстанский мобильный номер в формате +77XXXXXXXXX",
+            "pattern": "^\\+77\\d{9}$"
+          }
+        },
+        "required": [
+          "phone"
+        ]
+      },
+      "VerifyCodeDto": {
+        "type": "object",
+        "properties": {
+          "phone": {
+            "type": "string",
+            "example": "+77011234567",
+            "description": "Казахстанский мобильный номер в формате +77XXXXXXXXX",
+            "pattern": "^\\+77\\d{9}$"
+          },
+          "code": {
+            "type": "string",
+            "example": "1234",
+            "description": "Одноразовый SMS-код (4 цифры)"
+          }
+        },
+        "required": [
+          "phone",
+          "code"
+        ]
+      },
+      "UserDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "phone": {
+            "type": "string",
+            "nullable": true
+          },
+          "isGuest": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "phone",
+          "isGuest"
+        ]
+      },
+      "TokensDto": {
+        "type": "object",
+        "properties": {
+          "accessToken": {
+            "type": "string"
+          },
+          "refreshToken": {
+            "type": "string"
+          },
+          "user": {
+            "$ref": "#/components/schemas/UserDto"
+          }
+        },
+        "required": [
+          "accessToken",
+          "refreshToken",
+          "user"
+        ]
+      },
+      "RefreshDto": {
+        "type": "object",
+        "properties": {
+          "refreshToken": {
+            "type": "string",
+            "description": "Refresh-токен, выданный ранее"
+          }
+        },
+        "required": [
+          "refreshToken"
+        ]
+      },
+      "GuestDto": {
+        "type": "object",
+        "properties": {
+          "deviceId": {
+            "type": "string",
+            "example": "a1b2c3d4-device-uuid",
+            "description": "Уникальный идентификатор устройства гостя"
+          }
+        },
+        "required": [
+          "deviceId"
+        ]
+      },
+      "ConvertGuestDto": {
+        "type": "object",
+        "properties": {
+          "phone": {
+            "type": "string",
+            "example": "+77011234567",
+            "description": "Казахстанский мобильный номер в формате +77XXXXXXXXX",
+            "pattern": "^\\+77\\d{9}$"
+          },
+          "code": {
+            "type": "string",
+            "example": "1234",
+            "description": "Одноразовый SMS-код (4 цифры)"
+          }
+        },
+        "required": [
+          "phone",
+          "code"
+        ]
+      },
+      "CreateExpertDto": {
+        "type": "object",
+        "properties": {
+          "displayName": {
+            "type": "string",
+            "example": "Айгуль С.",
+            "minLength": 2,
+            "maxLength": 100
+          },
+          "city": {
+            "type": "string",
+            "enum": [
+              "Астана",
+              "Алматы",
+              "Шымкент"
+            ]
+          },
+          "experience": {
+            "type": "string",
+            "enum": [
+              "LESS_THAN_YEAR",
+              "ONE_TO_THREE",
+              "THREE_TO_FIVE",
+              "FIVE_TO_TEN",
+              "MORE_THAN_TEN"
+            ]
+          },
+          "education": {
+            "type": "string",
+            "example": "КазНУ им. аль-Фараби",
+            "minLength": 2,
+            "maxLength": 500
+          },
+          "priceTiyn": {
+            "type": "number",
+            "example": 399000,
+            "description": "Цена в тиынах"
+          },
+          "languages": {
+            "type": "array",
+            "example": [
+              "ru",
+              "kz"
+            ],
+            "items": {
+              "type": "string",
+              "enum": [
+                "ru",
+                "kz",
+                "en"
+              ]
+            }
+          },
+          "formats": {
+            "type": "array",
+            "example": [
+              "chat",
+              "audio",
+              "video"
+            ],
+            "items": {
+              "type": "string",
+              "enum": [
+                "chat",
+                "audio",
+                "video"
+              ]
+            }
+          },
+          "topicSlugs": {
+            "example": [
+              "anxiety-stress",
+              "burnout"
+            ],
+            "description": "Slug-и тем из справочника /v1/topics",
+            "type": "array",
+            "items": {
+              "type": "array"
+            }
+          }
+        },
+        "required": [
+          "displayName",
+          "city",
+          "experience",
+          "education",
+          "priceTiyn",
+          "languages",
+          "formats",
+          "topicSlugs"
+        ]
+      },
+      "ExpertMeDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "city": {
+            "type": "string"
+          },
+          "experience": {
+            "type": "string",
+            "enum": [
+              "LESS_THAN_YEAR",
+              "ONE_TO_THREE",
+              "THREE_TO_FIVE",
+              "FIVE_TO_TEN",
+              "MORE_THAN_TEN"
+            ]
+          },
+          "education": {
+            "type": "string"
+          },
+          "priceTiyn": {
+            "type": "number",
+            "description": "Цена в тиынах"
+          },
+          "languages": {
+            "example": [
+              "ru",
+              "kz"
+            ],
+            "type": "array",
+            "items": {
+              "type": "array"
+            }
+          },
+          "formats": {
+            "example": [
+              "chat",
+              "audio",
+              "video"
+            ],
+            "type": "array",
+            "items": {
+              "type": "array"
+            }
+          },
+          "topicSlugs": {
+            "example": [
+              "anxiety-stress",
+              "burnout"
+            ],
+            "type": "array",
+            "items": {
+              "type": "array"
+            }
+          },
+          "verificationStatus": {
+            "type": "string",
+            "enum": [
+              "DRAFT",
+              "PENDING",
+              "VERIFIED"
+            ]
+          },
+          "workStatus": {
+            "type": "string",
+            "enum": [
+              "ACCEPTING",
+              "BUSY",
+              "NOT_ACCEPTING",
+              "UNAVAILABLE"
+            ]
+          },
+          "isBlocked": {
+            "type": "boolean"
+          },
+          "acceptsUrgent": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "displayName",
+          "city",
+          "experience",
+          "education",
+          "priceTiyn",
+          "languages",
+          "formats",
+          "topicSlugs",
+          "verificationStatus",
+          "workStatus",
+          "isBlocked",
+          "acceptsUrgent"
+        ]
+      },
+      "UpdateExpertDto": {
+        "type": "object",
+        "properties": {
+          "displayName": {
+            "type": "string",
+            "example": "Айгуль С.",
+            "minLength": 2,
+            "maxLength": 100
+          },
+          "city": {
+            "type": "string",
+            "enum": [
+              "Астана",
+              "Алматы",
+              "Шымкент"
+            ]
+          },
+          "experience": {
+            "type": "string",
+            "enum": [
+              "LESS_THAN_YEAR",
+              "ONE_TO_THREE",
+              "THREE_TO_FIVE",
+              "FIVE_TO_TEN",
+              "MORE_THAN_TEN"
+            ]
+          },
+          "education": {
+            "type": "string",
+            "example": "КазНУ им. аль-Фараби",
+            "minLength": 2,
+            "maxLength": 500
+          },
+          "priceTiyn": {
+            "type": "number",
+            "example": 449000,
+            "description": "Цена в тиынах"
+          },
+          "languages": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "ru",
+                "kz",
+                "en"
+              ]
+            }
+          },
+          "formats": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "chat",
+                "audio",
+                "video"
+              ]
+            }
+          },
+          "topicSlugs": {
+            "example": [
+              "self-esteem"
+            ],
+            "type": "array",
+            "items": {
+              "type": "array"
+            }
+          }
+        }
+      },
+      "WorkStatusDto": {
+        "type": "object",
+        "properties": {
+          "workStatus": {
+            "type": "string",
+            "enum": [
+              "ACCEPTING",
+              "BUSY",
+              "NOT_ACCEPTING",
+              "UNAVAILABLE"
+            ]
+          }
+        },
+        "required": [
+          "workStatus"
+        ]
+      },
+      "SubmitVerificationDto": {
+        "type": "object",
+        "properties": {
+          "verificationStatus": {
+            "type": "string",
+            "enum": [
+              "DRAFT",
+              "PENDING",
+              "VERIFIED"
+            ]
+          }
+        },
+        "required": [
+          "verificationStatus"
+        ]
+      },
+      "ExpertDocumentDto": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "IDENTITY",
+              "DIPLOMA",
+              "CERTIFICATES",
+              "QUALIFICATION"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "UPLOADED",
+              "APPROVED",
+              "REUPLOAD_REQUIRED"
+            ],
+            "nullable": true
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "status"
+        ]
+      },
+      "ExpertPublicDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "city": {
+            "type": "string"
+          },
+          "experience": {
+            "type": "string",
+            "enum": [
+              "LESS_THAN_YEAR",
+              "ONE_TO_THREE",
+              "THREE_TO_FIVE",
+              "FIVE_TO_TEN",
+              "MORE_THAN_TEN"
+            ]
+          },
+          "priceTiyn": {
+            "type": "number",
+            "description": "Цена в тиынах"
+          },
+          "languages": {
+            "example": [
+              "ru",
+              "kz"
+            ],
+            "type": "array",
+            "items": {
+              "type": "array"
+            }
+          },
+          "formats": {
+            "example": [
+              "chat",
+              "audio",
+              "video"
+            ],
+            "type": "array",
+            "items": {
+              "type": "array"
+            }
+          },
+          "topicSlugs": {
+            "example": [
+              "anxiety-stress",
+              "burnout"
+            ],
+            "type": "array",
+            "items": {
+              "type": "array"
+            }
+          },
+          "workStatus": {
+            "type": "string",
+            "enum": [
+              "ACCEPTING",
+              "BUSY",
+              "NOT_ACCEPTING",
+              "UNAVAILABLE"
+            ]
+          },
+          "ratingAvg": {
+            "type": "number",
+            "description": "Средний рейтинг по PUBLISHED-отзывам (0 если отзывов нет)"
+          },
+          "ratingCount": {
+            "type": "number",
+            "description": "Количество PUBLISHED-отзывов"
+          }
+        },
+        "required": [
+          "id",
+          "displayName",
+          "city",
+          "experience",
+          "priceTiyn",
+          "languages",
+          "formats",
+          "topicSlugs",
+          "workStatus",
+          "ratingAvg",
+          "ratingCount"
+        ]
+      },
+      "QueueDocumentDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "IDENTITY",
+              "DIPLOMA",
+              "CERTIFICATES",
+              "QUALIFICATION"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "UPLOADED",
+              "APPROVED",
+              "REUPLOAD_REQUIRED"
+            ]
+          },
+          "downloadUrl": {
+            "type": "string",
+            "description": "Подписанная ссылка на скачивание, TTL 300с"
+          }
+        },
+        "required": [
+          "id",
+          "type",
+          "status",
+          "downloadUrl"
+        ]
+      },
+      "QueueEntryDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "verificationStatus": {
+            "type": "string",
+            "enum": [
+              "DRAFT",
+              "PENDING",
+              "VERIFIED"
+            ]
+          },
+          "documents": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/QueueDocumentDto"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "displayName",
+          "verificationStatus",
+          "documents"
+        ]
+      },
+      "DecisionDto": {
+        "type": "object",
+        "properties": {
+          "approve": {
+            "type": "boolean",
+            "description": "true — одобрить, false — отклонить"
+          },
+          "comment": {
+            "type": "string",
+            "description": "Обязателен при approve=false",
+            "maxLength": 1000
+          }
+        },
+        "required": [
+          "approve"
+        ]
+      },
+      "BlockExpertDto": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string",
+            "description": "Причина блокировки (Р-19)",
+            "maxLength": 1000
+          }
+        },
+        "required": [
+          "reason"
+        ]
+      },
+      "FlaggedExpertDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "ratingAvg": {
+            "type": "number"
+          },
+          "ratingCount": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "id",
+          "displayName",
+          "ratingAvg",
+          "ratingCount"
+        ]
+      },
+      "NotificationDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string",
+            "example": "earning.credited"
+          },
+          "title": {
+            "type": "string"
+          },
+          "body": {
+            "type": "string"
+          },
+          "data": {
+            "type": "object"
+          },
+          "readAt": {
+            "format": "date-time",
+            "type": "string",
+            "nullable": true
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "type",
+          "title",
+          "body",
+          "data",
+          "readAt",
+          "createdAt"
+        ]
+      },
+      "NotificationsListDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/NotificationDto"
+            }
+          },
+          "unreadCount": {
+            "type": "number",
+            "description": "Всего непрочитанных (независимо от страницы)"
+          }
+        },
+        "required": [
+          "items",
+          "unreadCount"
+        ]
+      },
+      "ReadNotificationsDto": {
+        "type": "object",
+        "properties": {
+          "ids": {
+            "description": "Без ids — прочитать все свои",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "ScheduleDayDto": {
+        "type": "object",
+        "properties": {
+          "weekday": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 6,
+            "description": "0=Пн … 6=Вс"
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "startMin": {
+            "type": "number",
+            "description": "Минуты от полуночи"
+          },
+          "endMin": {
+            "type": "number",
+            "description": "Минуты от полуночи"
+          },
+          "breakStart": {
+            "type": "number",
+            "nullable": true
+          },
+          "breakEnd": {
+            "type": "number",
+            "nullable": true
+          }
+        },
+        "required": [
+          "weekday",
+          "enabled",
+          "startMin",
+          "endMin"
+        ]
+      },
+      "ScheduleResponseDto": {
+        "type": "object",
+        "properties": {
+          "days": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ScheduleDayDto"
+            }
+          }
+        },
+        "required": [
+          "days"
+        ]
+      },
+      "UpdateScheduleDto": {
+        "type": "object",
+        "properties": {
+          "days": {
+            "description": "Ровно 7 дней",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ScheduleDayDto"
+            }
+          }
+        },
+        "required": [
+          "days"
+        ]
+      },
+      "UpdateAvailabilityDto": {
+        "type": "object",
+        "properties": {
+          "acceptsUrgent": {
+            "type": "boolean",
+            "description": "Готовность принимать срочные заявки"
+          }
+        },
+        "required": [
+          "acceptsUrgent"
+        ]
+      },
+      "MessageDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "consultationId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "senderRole": {
+            "type": "string",
+            "enum": [
+              "client",
+              "expert"
+            ]
+          },
+          "text": {
+            "type": "string"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "consultationId",
+          "senderRole",
+          "text",
+          "createdAt"
+        ]
+      },
+      "MessageHistoryDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MessageDto"
+            }
+          },
+          "nextCursor": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "ConsultationClientDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ACTIVE",
+              "COMPLETED",
+              "CANCELLED"
+            ]
+          },
+          "outcome": {
+            "type": "string",
+            "enum": [
+              "COMPLETED",
+              "CLIENT_NO_SHOW",
+              "CLIENT_CANCELLED",
+              "TECH_ISSUE"
+            ]
+          },
+          "format": {
+            "type": "string",
+            "example": "video"
+          },
+          "isEmergency": {
+            "type": "boolean"
+          },
+          "startedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "endedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "priceTiyn": {
+            "type": "number",
+            "description": "Цена в тиынах (снапшот на момент матча)"
+          },
+          "plannedDurationMin": {
+            "type": "number"
+          },
+          "paymentStatus": {
+            "type": "string",
+            "enum": [
+              "UNPAID",
+              "HELD",
+              "CAPTURED",
+              "VOIDED",
+              "FAILED"
+            ]
+          },
+          "expert": {
+            "$ref": "#/components/schemas/ExpertPublicDto"
+          }
+        },
+        "required": [
+          "id",
+          "status",
+          "format",
+          "isEmergency",
+          "startedAt",
+          "priceTiyn",
+          "plannedDurationMin",
+          "paymentStatus",
+          "expert"
+        ]
+      },
+      "ConsultationExpertDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ACTIVE",
+              "COMPLETED",
+              "CANCELLED"
+            ]
+          },
+          "outcome": {
+            "type": "string",
+            "enum": [
+              "COMPLETED",
+              "CLIENT_NO_SHOW",
+              "CLIENT_CANCELLED",
+              "TECH_ISSUE"
+            ]
+          },
+          "format": {
+            "type": "string",
+            "example": "video"
+          },
+          "isEmergency": {
+            "type": "boolean"
+          },
+          "startedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "endedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "clientCode": {
+            "type": "number",
+            "description": "4-значный код клиента"
+          },
+          "topicSlug": {
+            "type": "string"
+          },
+          "priceTiyn": {
+            "type": "number",
+            "description": "Цена в тиынах (снапшот на момент матча)"
+          },
+          "plannedDurationMin": {
+            "type": "number"
+          },
+          "paymentStatus": {
+            "type": "string",
+            "enum": [
+              "UNPAID",
+              "HELD",
+              "CAPTURED",
+              "VOIDED",
+              "FAILED"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "status",
+          "format",
+          "isEmergency",
+          "startedAt",
+          "clientCode",
+          "topicSlug",
+          "priceTiyn",
+          "plannedDurationMin",
+          "paymentStatus"
+        ]
+      },
+      "CompleteConsultationDto": {
+        "type": "object",
+        "properties": {
+          "outcome": {
+            "type": "string",
+            "enum": [
+              "COMPLETED",
+              "CLIENT_NO_SHOW",
+              "CLIENT_CANCELLED",
+              "TECH_ISSUE"
+            ]
+          }
+        },
+        "required": [
+          "outcome"
+        ]
+      },
+      "ExpertNoteDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "UpdateExpertNoteDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "AddPaymentMethodDto": {
+        "type": "object",
+        "properties": {
+          "pan": {
+            "type": "string",
+            "example": "4111111111111111",
+            "description": "PAN карты"
+          },
+          "expiry": {
+            "type": "string",
+            "example": "12/28",
+            "description": "MM/YY"
+          },
+          "holderName": {
+            "type": "string",
+            "example": "Ivan Petrov"
+          }
+        },
+        "required": [
+          "pan",
+          "expiry",
+          "holderName"
+        ]
+      },
+      "PaymentMethodDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "maskedPan": {
+            "type": "string",
+            "example": "**** 1111"
+          },
+          "brand": {
+            "type": "string",
+            "example": "visa"
+          },
+          "holderName": {
+            "type": "string",
+            "example": "Ivan Petrov"
+          }
+        },
+        "required": [
+          "id",
+          "maskedPan",
+          "brand",
+          "holderName"
+        ]
+      },
+      "PayConsultationDto": {
+        "type": "object",
+        "properties": {
+          "paymentMethodId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Своя живая карта"
+          }
+        },
+        "required": [
+          "paymentMethodId"
+        ]
+      },
+      "PayResultDto": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "PENDING",
+              "HELD",
+              "CAPTURED",
+              "VOIDED",
+              "FAILED"
+            ],
+            "example": "HELD"
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "PaymentStatusDto": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "PENDING",
+              "HELD",
+              "CAPTURED",
+              "VOIDED",
+              "FAILED"
+            ]
+          },
+          "amountTiyn": {
+            "type": "number",
+            "description": "Полная цена в тиынах (снапшот)"
+          },
+          "maskedPan": {
+            "type": "string",
+            "example": "**** 1111"
+          }
+        },
+        "required": [
+          "status",
+          "amountTiyn",
+          "maskedPan"
+        ]
+      },
+      "EarningsItemDto": {
+        "type": "object",
+        "properties": {
+          "consultationId": {
+            "type": "string"
+          },
+          "priceTiyn": {
+            "type": "number",
+            "description": "Полная цена консультации в тиынах"
+          },
+          "commissionTiyn": {
+            "type": "number",
+            "description": "Комиссия платформы в тиынах"
+          },
+          "netTiyn": {
+            "type": "number",
+            "description": "Зачислено эксперту в тиынах (priceTiyn - commissionTiyn)"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "consultationId",
+          "priceTiyn",
+          "commissionTiyn",
+          "netTiyn",
+          "createdAt"
+        ]
+      },
+      "EarningsDto": {
+        "type": "object",
+        "properties": {
+          "balanceTiyn": {
+            "type": "number",
+            "description": "Текущий баланс эксперта в тиынах (из ledger)"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EarningsItemDto"
+            }
+          }
+        },
+        "required": [
+          "balanceTiyn",
+          "items"
+        ]
+      },
+      "CreateRequestDto": {
+        "type": "object",
+        "properties": {
+          "topicSlug": {
+            "type": "string",
+            "example": "anxiety-stress",
+            "description": "Slug темы из справочника /v1/topics"
+          },
+          "format": {
+            "type": "string",
+            "enum": [
+              "chat",
+              "audio",
+              "video"
+            ]
+          },
+          "isEmergency": {
+            "type": "boolean",
+            "default": false,
+            "description": "Экстренная заявка — дедлайн оффера 20с, только acceptsUrgent"
+          },
+          "expertId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Ручной выбор эксперта из каталога (directed-заявка)"
+          }
+        },
+        "required": [
+          "topicSlug",
+          "format"
+        ]
+      },
+      "RequestDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "SEARCHING",
+              "MATCHED",
+              "CANCELLED",
+              "NO_EXPERTS",
+              "CALLBACK_REQUESTED"
+            ]
+          },
+          "isEmergency": {
+            "type": "boolean"
+          },
+          "clientCode": {
+            "type": "number",
+            "description": "4-значный код клиента, показывается эксперту"
+          },
+          "matchedExpert": {
+            "$ref": "#/components/schemas/ExpertPublicDto"
+          },
+          "consultationId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Консультация, созданная при матче (статус MATCHED)"
+          },
+          "hotlines": {
+            "example": [
+              "150",
+              "103",
+              "112"
+            ],
+            "description": "Горячие линии при статусе CALLBACK_REQUESTED",
+            "type": "array",
+            "items": {
+              "type": "array"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "status",
+          "isEmergency",
+          "clientCode"
+        ]
+      },
+      "OfferDto": {
+        "type": "object",
+        "properties": {
+          "offerId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "topicSlug": {
+            "type": "string",
+            "example": "anxiety-stress"
+          },
+          "format": {
+            "type": "string",
+            "example": "video"
+          },
+          "isEmergency": {
+            "type": "boolean"
+          },
+          "clientCode": {
+            "type": "number",
+            "description": "4-значный код клиента"
+          },
+          "deadlineAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "offerId",
+          "topicSlug",
+          "format",
+          "isEmergency",
+          "clientCode",
+          "deadlineAt"
+        ]
+      },
+      "AcceptOfferDto": {
+        "type": "object",
+        "properties": {
+          "requestId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "SEARCHING",
+              "MATCHED",
+              "CANCELLED",
+              "NO_EXPERTS",
+              "CALLBACK_REQUESTED"
+            ],
+            "example": "MATCHED"
+          },
+          "consultationId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "required": [
+          "requestId",
+          "status",
+          "consultationId"
+        ]
+      },
+      "BalanceDto": {
+        "type": "object",
+        "properties": {
+          "balanceTiyn": {
+            "type": "number",
+            "description": "Баланс счёта эксперта в тиынах"
+          },
+          "availableTiyn": {
+            "type": "number",
+            "description": "Доступно к выводу в тиынах"
+          }
+        },
+        "required": [
+          "balanceTiyn",
+          "availableTiyn"
+        ]
+      },
+      "RequestPayoutDto": {
+        "type": "object",
+        "properties": {
+          "amountTiyn": {
+            "type": "number",
+            "example": 1000000,
+            "description": "Сумма вывода в тиынах"
+          },
+          "pan": {
+            "type": "string",
+            "example": "4111111111111111",
+            "description": "PAN карты"
+          },
+          "expiry": {
+            "type": "string",
+            "example": "12/28",
+            "description": "MM/YY"
+          },
+          "holderName": {
+            "type": "string",
+            "example": "Ivan Petrov"
+          }
+        },
+        "required": [
+          "amountTiyn",
+          "pan",
+          "expiry",
+          "holderName"
+        ]
+      },
+      "PayoutDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "amountTiyn": {
+            "type": "number",
+            "description": "Сумма вывода в тиынах"
+          },
+          "maskedPan": {
+            "type": "string",
+            "example": "**** 1111",
+            "description": "Маска карты вывода"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "PENDING_REVIEW",
+              "PROCESSING",
+              "PAID",
+              "REJECTED"
+            ]
+          },
+          "rejectReason": {
+            "type": "string",
+            "nullable": true
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "amountTiyn",
+          "maskedPan",
+          "status",
+          "rejectReason",
+          "createdAt"
+        ]
+      },
+      "PayoutsListDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PayoutDto"
+            }
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "AdminPayoutDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "expertId": {
+            "type": "string"
+          },
+          "amountTiyn": {
+            "type": "number",
+            "description": "Сумма вывода в тиынах"
+          },
+          "maskedPan": {
+            "type": "string",
+            "example": "**** 1111"
+          },
+          "holderName": {
+            "type": "string"
+          },
+          "monthTotalTiyn": {
+            "type": "number",
+            "description": "Сумма выводов эксперта за текущий календарный месяц (кроме REJECTED), тиын"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "expertId",
+          "amountTiyn",
+          "maskedPan",
+          "holderName",
+          "monthTotalTiyn",
+          "createdAt"
+        ]
+      },
+      "AdminPayoutsListDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AdminPayoutDto"
+            }
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "RejectPayoutDto": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string",
+            "example": "Подозрительная активность"
+          }
+        },
+        "required": [
+          "reason"
+        ]
+      },
+      "MediaTokenRequestDto": {
+        "type": "object",
+        "properties": {
+          "format": {
+            "type": "string",
+            "enum": [
+              "audio",
+              "video"
+            ]
+          }
+        },
+        "required": [
+          "format"
+        ]
+      },
+      "MediaTokenResponseDto": {
+        "type": "object",
+        "properties": {
+          "token": {
+            "type": "string",
+            "description": "LiveKit access JWT (TTL 2ч)"
+          },
+          "url": {
+            "type": "string",
+            "description": "LiveKit server URL (LIVEKIT_URL)"
+          },
+          "room": {
+            "type": "string",
+            "description": "Комната LiveKit, cons-{consultationId}"
+          }
+        },
+        "required": [
+          "token",
+          "url",
+          "room"
+        ]
+      },
+      "CreateReviewDto": {
+        "type": "object",
+        "properties": {
+          "rating": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 5
+          },
+          "publicText": {
+            "type": "string",
+            "maxLength": 2000
+          },
+          "privateText": {
+            "type": "string",
+            "maxLength": 2000
+          }
+        },
+        "required": [
+          "rating"
+        ]
+      },
+      "ReviewCreatedDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "consultationId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "rating": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 5
+          },
+          "publicText": {
+            "type": "string",
+            "nullable": true
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "consultationId",
+          "rating",
+          "createdAt"
+        ]
+      },
+      "ReplyReviewDto": {
+        "type": "object",
+        "properties": {
+          "text": {
+            "type": "string",
+            "maxLength": 1000
+          }
+        },
+        "required": [
+          "text"
+        ]
+      },
+      "ComplaintReviewDto": {
+        "type": "object",
+        "properties": {
+          "text": {
+            "type": "string",
+            "maxLength": 1000
+          }
+        },
+        "required": [
+          "text"
+        ]
+      },
+      "ReviewItemDto": {
+        "type": "object",
+        "properties": {
+          "rating": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 5
+          },
+          "publicText": {
+            "type": "string",
+            "nullable": true
+          },
+          "expertReply": {
+            "type": "string",
+            "nullable": true
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "rating",
+          "createdAt"
+        ]
+      },
+      "RatingDistributionDto": {
+        "type": "object",
+        "properties": {
+          "1": {
+            "type": "number"
+          },
+          "2": {
+            "type": "number"
+          },
+          "3": {
+            "type": "number"
+          },
+          "4": {
+            "type": "number"
+          },
+          "5": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "1",
+          "2",
+          "3",
+          "4",
+          "5"
+        ]
+      },
+      "ExpertReviewsDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReviewItemDto"
+            }
+          },
+          "distribution": {
+            "$ref": "#/components/schemas/RatingDistributionDto"
+          },
+          "ratingAvg": {
+            "type": "number"
+          },
+          "ratingCount": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "items",
+          "distribution",
+          "ratingAvg",
+          "ratingCount"
+        ]
+      },
+      "FlaggedReviewDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "expertId": {
+            "type": "string"
+          },
+          "rating": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 5
+          },
+          "publicText": {
+            "type": "string",
+            "nullable": true
+          },
+          "privateText": {
+            "type": "string",
+            "nullable": true
+          },
+          "complaint": {
+            "type": "string",
+            "nullable": true
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "expertId",
+          "rating",
+          "createdAt"
+        ]
+      },
+      "ResolveReviewDto": {
+        "type": "object",
+        "properties": {
+          "action": {
+            "type": "string",
+            "enum": [
+              "hide",
+              "restore"
+            ]
+          },
+          "comment": {
+            "type": "string",
+            "maxLength": 1000
+          }
+        },
+        "required": [
+          "action"
+        ]
+      },
+      "RegisterDeviceDto": {
+        "type": "object",
+        "properties": {
+          "platform": {
+            "type": "string",
+            "enum": [
+              "ios",
+              "android"
+            ]
+          },
+          "token": {
+            "type": "string",
+            "description": "FCM/APNs push-токен устройства"
+          },
+          "locale": {
+            "type": "string",
+            "enum": [
+              "ru",
+              "kz"
+            ],
+            "description": "Локаль устройства"
+          }
+        },
+        "required": [
+          "platform",
+          "token"
+        ]
+      },
+      "DeviceDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "platform": {
+            "type": "string",
+            "enum": [
+              "ios",
+              "android"
+            ]
+          },
+          "token": {
+            "type": "string"
+          },
+          "locale": {
+            "type": "string",
+            "example": "ru"
+          }
+        },
+        "required": [
+          "id",
+          "platform",
+          "token",
+          "locale"
+        ]
+      },
+      "UpdateLocaleDto": {
+        "type": "object",
+        "properties": {
+          "locale": {
+            "type": "string",
+            "enum": [
+              "ru",
+              "kz"
+            ]
+          }
+        },
+        "required": [
+          "locale"
+        ]
+      },
+      "AdminLoginDto": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "example": "operator@smartqoldau.kz"
+          },
+          "password": {
+            "type": "string",
+            "example": "change-me-0123456789ab"
+          }
+        },
+        "required": [
+          "email",
+          "password"
+        ]
+      },
+      "AdminSummaryDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "roles": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "VERIFICATION_OPERATOR",
+                "SUPPORT_OPERATOR",
+                "QUALITY_TEAM",
+                "FINANCE_CONTROL",
+                "SUPERADMIN"
+              ]
+            }
+          }
+        },
+        "required": [
+          "id",
+          "email",
+          "roles"
+        ]
+      },
+      "AdminLoginResponseDto": {
+        "type": "object",
+        "properties": {
+          "accessToken": {
+            "type": "string"
+          },
+          "admin": {
+            "$ref": "#/components/schemas/AdminSummaryDto"
+          }
+        },
+        "required": [
+          "accessToken",
+          "admin"
+        ]
+      },
+      "CreateStaffDto": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "example": "operator@smartqoldau.kz"
+          },
+          "password": {
+            "type": "string",
+            "example": "change-me-0123456789ab",
+            "minLength": 10
+          },
+          "roles": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "VERIFICATION_OPERATOR",
+                "SUPPORT_OPERATOR",
+                "QUALITY_TEAM",
+                "FINANCE_CONTROL",
+                "SUPERADMIN"
+              ]
+            }
+          }
+        },
+        "required": [
+          "email",
+          "password",
+          "roles"
+        ]
+      },
+      "StaffDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "roles": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "VERIFICATION_OPERATOR",
+                "SUPPORT_OPERATOR",
+                "QUALITY_TEAM",
+                "FINANCE_CONTROL",
+                "SUPERADMIN"
+              ]
+            }
+          },
+          "isActive": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "email",
+          "roles",
+          "isActive"
+        ]
+      },
+      "StaffCardDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "roles": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "VERIFICATION_OPERATOR",
+                "SUPPORT_OPERATOR",
+                "QUALITY_TEAM",
+                "FINANCE_CONTROL",
+                "SUPERADMIN"
+              ]
+            }
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "lastLoginAt": {
+            "type": "string",
+            "nullable": true,
+            "format": "date-time"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "email",
+          "roles",
+          "isActive",
+          "lastLoginAt",
+          "createdAt"
+        ]
+      },
+      "StaffListDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StaffCardDto"
+            }
+          },
+          "total": {
+            "type": "number",
+            "description": "Всего сотрудников (независимо от страницы)"
+          }
+        },
+        "required": [
+          "items",
+          "total"
+        ]
+      },
+      "UpdateStaffDto": {
+        "type": "object",
+        "properties": {
+          "roles": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "VERIFICATION_OPERATOR",
+                "SUPPORT_OPERATOR",
+                "QUALITY_TEAM",
+                "FINANCE_CONTROL",
+                "SUPERADMIN"
+              ]
+            }
+          },
+          "isActive": {
+            "type": "boolean"
+          }
+        }
+      },
+      "CreateTicketDto": {
+        "type": "object",
+        "properties": {
+          "category": {
+            "type": "string",
+            "enum": [
+              "CONSULTATIONS",
+              "PAYMENT",
+              "PAYOUTS",
+              "TECHNICAL",
+              "VERIFICATION",
+              "SECURITY",
+              "CLIENT_QUESTION",
+              "ACCOUNT_DATA",
+              "OTHER"
+            ],
+            "description": "Набор допустимых категорий зависит от типа автора (клиент/гость vs эксперт) — см. CATEGORIES_BY_AUTHOR"
+          },
+          "subject": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "body": {
+            "type": "string",
+            "maxLength": 4000
+          },
+          "contactEmail": {
+            "type": "string",
+            "description": "Обязателен для гостя (без токена), если не передан contactPhone. У авторизованного автора игнорируется — контакт берётся из аккаунта."
+          },
+          "contactPhone": {
+            "type": "string",
+            "example": "+77011234567",
+            "pattern": "^\\+77\\d{9}$",
+            "description": "Обязателен для гостя (без токена), если не передан contactEmail. У авторизованного автора игнорируется — контакт берётся из аккаунта."
+          },
+          "relatedConsultationId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "relatedPayoutId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "required": [
+          "category",
+          "subject",
+          "body"
+        ]
+      },
+      "TicketCreatedDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "NEW",
+              "IN_PROGRESS",
+              "RESOLVED"
+            ]
+          },
+          "category": {
+            "type": "string",
+            "enum": [
+              "CONSULTATIONS",
+              "PAYMENT",
+              "PAYOUTS",
+              "TECHNICAL",
+              "VERIFICATION",
+              "SECURITY",
+              "CLIENT_QUESTION",
+              "ACCOUNT_DATA",
+              "OTHER"
+            ]
+          },
+          "team": {
+            "type": "string",
+            "enum": [
+              "SUPPORT_OPERATOR",
+              "VERIFICATION_OPERATOR",
+              "FINANCE_CONTROL",
+              "QUALITY_TEAM"
+            ]
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "status",
+          "category",
+          "team",
+          "createdAt"
+        ]
+      },
+      "TicketSummaryDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "category": {
+            "type": "string",
+            "enum": [
+              "CONSULTATIONS",
+              "PAYMENT",
+              "PAYOUTS",
+              "TECHNICAL",
+              "VERIFICATION",
+              "SECURITY",
+              "CLIENT_QUESTION",
+              "ACCOUNT_DATA",
+              "OTHER"
+            ]
+          },
+          "subject": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "NEW",
+              "IN_PROGRESS",
+              "RESOLVED"
+            ]
+          },
+          "team": {
+            "type": "string",
+            "enum": [
+              "SUPPORT_OPERATOR",
+              "VERIFICATION_OPERATOR",
+              "FINANCE_CONTROL",
+              "QUALITY_TEAM"
+            ]
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "category",
+          "subject",
+          "status",
+          "team",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
+      "TicketMessageDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "authorKind": {
+            "type": "string",
+            "enum": [
+              "user",
+              "staff"
+            ]
+          },
+          "body": {
+            "type": "string"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "authorKind",
+          "body",
+          "createdAt"
+        ]
+      },
+      "TicketDetailDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "category": {
+            "type": "string",
+            "enum": [
+              "CONSULTATIONS",
+              "PAYMENT",
+              "PAYOUTS",
+              "TECHNICAL",
+              "VERIFICATION",
+              "SECURITY",
+              "CLIENT_QUESTION",
+              "ACCOUNT_DATA",
+              "OTHER"
+            ]
+          },
+          "subject": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "NEW",
+              "IN_PROGRESS",
+              "RESOLVED"
+            ]
+          },
+          "team": {
+            "type": "string",
+            "enum": [
+              "SUPPORT_OPERATOR",
+              "VERIFICATION_OPERATOR",
+              "FINANCE_CONTROL",
+              "QUALITY_TEAM"
+            ]
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "body": {
+            "type": "string"
+          },
+          "firstReplyAt": {
+            "type": "string",
+            "nullable": true
+          },
+          "resolvedAt": {
+            "type": "string",
+            "nullable": true
+          },
+          "relatedConsultationId": {
+            "type": "string",
+            "nullable": true
+          },
+          "relatedPayoutId": {
+            "type": "string",
+            "nullable": true
+          },
+          "messages": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TicketMessageDto"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "category",
+          "subject",
+          "status",
+          "team",
+          "createdAt",
+          "updatedAt",
+          "body",
+          "firstReplyAt",
+          "resolvedAt",
+          "relatedConsultationId",
+          "relatedPayoutId",
+          "messages"
+        ]
+      },
+      "AdminTicketsListDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TicketSummaryDto"
+            }
+          },
+          "total": {
+            "type": "number",
+            "description": "Всего тикетов в выборке (независимо от страницы)"
+          }
+        },
+        "required": [
+          "items",
+          "total"
+        ]
+      },
+      "AdminTicketDetailDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "category": {
+            "type": "string",
+            "enum": [
+              "CONSULTATIONS",
+              "PAYMENT",
+              "PAYOUTS",
+              "TECHNICAL",
+              "VERIFICATION",
+              "SECURITY",
+              "CLIENT_QUESTION",
+              "ACCOUNT_DATA",
+              "OTHER"
+            ]
+          },
+          "subject": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "NEW",
+              "IN_PROGRESS",
+              "RESOLVED"
+            ]
+          },
+          "team": {
+            "type": "string",
+            "enum": [
+              "SUPPORT_OPERATOR",
+              "VERIFICATION_OPERATOR",
+              "FINANCE_CONTROL",
+              "QUALITY_TEAM"
+            ]
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "body": {
+            "type": "string"
+          },
+          "firstReplyAt": {
+            "type": "string",
+            "nullable": true
+          },
+          "resolvedAt": {
+            "type": "string",
+            "nullable": true
+          },
+          "relatedConsultationId": {
+            "type": "string",
+            "nullable": true
+          },
+          "relatedPayoutId": {
+            "type": "string",
+            "nullable": true
+          },
+          "messages": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TicketMessageDto"
+            }
+          },
+          "authorType": {
+            "type": "string",
+            "enum": [
+              "CLIENT",
+              "EXPERT",
+              "GUEST"
+            ]
+          },
+          "authorUserId": {
+            "type": "string",
+            "nullable": true
+          },
+          "contactEmail": {
+            "type": "string",
+            "nullable": true
+          },
+          "contactPhone": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "id",
+          "category",
+          "subject",
+          "status",
+          "team",
+          "createdAt",
+          "updatedAt",
+          "body",
+          "firstReplyAt",
+          "resolvedAt",
+          "relatedConsultationId",
+          "relatedPayoutId",
+          "messages",
+          "authorType",
+          "authorUserId",
+          "contactEmail",
+          "contactPhone"
+        ]
+      },
+      "ReplyTicketDto": {
+        "type": "object",
+        "properties": {
+          "body": {
+            "type": "string",
+            "maxLength": 4000
+          }
+        },
+        "required": [
+          "body"
+        ]
+      }
+    }
+  }
+}

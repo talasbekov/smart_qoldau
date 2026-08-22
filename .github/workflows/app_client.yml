@@ -1,0 +1,23 @@
+name: app_client
+on: { pull_request: { paths: ['app_client/**', 'packages/shared/**'] }, push: { branches: [main] } }
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        package: [packages/shared, app_client]
+    defaults: { run: { working-directory: "${{ matrix.package }}" } }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with: { channel: stable }
+      - run: flutter pub get
+      - name: Generate code (build_runner)
+        run: |
+          if grep -q build_runner pubspec.yaml; then
+            dart run build_runner build --delete-conflicting-outputs
+          else
+            echo "build_runner ещё не подключён (генераторы появятся в задаче 4 эпика E6) — шаг пропущен"
+          fi
+      - run: flutter analyze
+      - run: flutter test
