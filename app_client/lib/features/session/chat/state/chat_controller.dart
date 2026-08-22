@@ -7,6 +7,7 @@ import 'dart:developer' as developer;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared/shared.dart';
 
+import '../../../../core/analytics_provider.dart';
 import '../../../../core/providers.dart';
 import '../data/chat_repository.dart';
 
@@ -176,6 +177,16 @@ class ChatController extends AutoDisposeFamilyAsyncNotifier<ChatState, String> {
     );
     _current = loaded;
     _ready = true;
+    if (consultation.status == ConsultationStatus.active) {
+      // Сессия началась. Открытая из истории завершённая переписка — это
+      // чтение, а не сессия: там события быть не должно.
+      ref.read(analyticsProvider).track(
+        SessionStarted(
+          consultationId: arg,
+          format: consultation.format.wireValue,
+        ),
+      );
+    }
     // Переигрываем то, что пришло, пока грузились: подписка открыта раньше
     // запроса именно ради этого окна.
     final buffered = [..._earlyEvents];
@@ -202,11 +213,46 @@ class ChatController extends AutoDisposeFamilyAsyncNotifier<ChatState, String> {
       case ChatErrorEvent(code: final code):
         _markSendFailed(code);
       case ConsultationUpdated(status: final status?):
-        _updateState((state) => state.copyWith(status: status));
+        _onConsultationStatus(status, event.outcome);
       default:
         break;
     }
   }
+
+  /// Смена статуса консультации: завершение или отмена закрывают сессию —
+  /// и то и другое считается её концом (ТЗ §10).
+  void _onConsultationStatus(
+    ConsultationStatus status,
+    ConsultationOutcome? outcome,
+  ) {
+    final current = _current;
+    final wasActive = current?.status == ConsultationStatus.active;
+    _updateState((state) => state.copyWith(status: status));
+
+    if (!wasActive || status == ConsultationStatus.active) return;
+    final consultation = current!.consultation;
+    ref.read(analyticsProvider).track(
+      SessionEnded(
+        consultationId: arg,
+        outcome: _outcomeWire(outcome) ?? _statusWire(status),
+        durationSec: DateTime.now()
+            .difference(consultation.startedAt)
+            .inSeconds,
+      ),
+    );
+  }
+
+  /// Проводные значения бэкенда, а не `enum.name`: `clientNoShow` дал бы
+  /// «CLIENTNOSHOW», и аналитика разошлась бы с бэкендом.
+  String? _outcomeWire(ConsultationOutcome? outcome) => switch (outcome) {
+    null => null,
+    ConsultationOutcome.completed => 'COMPLETED',
+    ConsultationOutcome.clientNoShow => 'CLIENT_NO_SHOW',
+    ConsultationOutcome.clientCancelled => 'CLIENT_CANCELLED',
+    ConsultationOutcome.techIssue => 'TECH_ISSUE',
+  };
+
+  String _statusWire(ConsultationStatus status) => status.wireValue;
 
   void _onIncomingMessage(ChatMessage message) {
     _updateState((state) {

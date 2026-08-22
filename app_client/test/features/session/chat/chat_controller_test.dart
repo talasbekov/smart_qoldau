@@ -13,10 +13,23 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:shared/shared.dart';
 
+import 'package:app_client/core/analytics_provider.dart';
 import 'package:app_client/core/providers.dart';
 import 'package:app_client/features/session/chat/state/chat_controller.dart';
 
 class MockSqApi extends Mock implements SqApi {}
+
+class _RecordingAnalytics implements AnalyticsPort {
+  final List<AnalyticsEvent> events = [];
+
+  @override
+  Future<void> track(AnalyticsEvent event) async => events.add(event);
+
+  @override
+  Future<void> identify(String distinctId, {required bool isGuest}) async {}
+}
+
+final _analytics = _RecordingAnalytics();
 
 /// Фейковый транспорт шины: тест сам решает, что и когда приходит от
 /// бэкенда, и видит, что клиент отправил в сокет (`chat.send`/`chat.typing`).
@@ -104,6 +117,7 @@ ProviderContainer _container({
     overrides: [
       sqApiProvider.overrideWithValue(api),
       sqEventsProvider.overrideWithValue(SqEvents(socket)),
+      analyticsProvider.overrideWithValue(_analytics),
     ],
   );
   addTearDown(container.dispose);
@@ -375,6 +389,70 @@ void main() {
     await tester.pump();
 
     expect(_state(container).messages.map((m) => m.id), ['m1', 'm9']);
+
+    _disposeNow(container);
+  });
+
+  testWidgets('открытие активной консультации даёт событие session_started', (
+    tester,
+  ) async {
+    _analytics.events.clear();
+    final container = _container(api: api, socket: socket);
+    await tester.pump();
+
+    expect(
+      _analytics.events.map((e) => e.name),
+      contains('session_started'),
+    );
+    expect(
+      _analytics.events
+          .firstWhere((e) => e.name == 'session_started')
+          .properties['format'],
+      'chat',
+    );
+
+    _disposeNow(container);
+  });
+
+  testWidgets('завершение консультации даёт session_ended с исходом', (
+    tester,
+  ) async {
+    _analytics.events.clear();
+    final container = _container(api: api, socket: socket);
+    await tester.pump();
+
+    socket.push('consultation.updated', {
+      'id': 'c1',
+      'status': 'COMPLETED',
+      'outcome': 'COMPLETED',
+    });
+    await tester.pump();
+
+    final ended = _analytics.events.where((e) => e.name == 'session_ended');
+    expect(ended, hasLength(1));
+    expect(ended.single.properties['outcome'], 'COMPLETED');
+    expect(ended.single.properties['duration_sec'], isA<int>());
+
+    _disposeNow(container);
+  });
+
+  testWidgets('завершённая при открытии консультация session_started не шлёт', (
+    tester,
+  ) async {
+    // Открытая из истории переписка — это чтение, а не сессия: событие
+    // начала сессии здесь было бы ложным.
+    when(() => api.consultationById('c1')).thenAnswer(
+      (_) async => _consultation(status: ConsultationStatus.completed),
+    );
+    _analytics.events.clear();
+
+    final container = _container(api: api, socket: socket);
+    await tester.pump();
+
+    expect(
+      _analytics.events.map((e) => e.name),
+      isNot(contains('session_started')),
+    );
 
     _disposeNow(container);
   });

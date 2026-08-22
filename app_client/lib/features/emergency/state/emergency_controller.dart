@@ -6,6 +6,7 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared/shared.dart';
 
+import '../../../core/analytics_provider.dart';
 import '../../funnel/data/requests_repository.dart';
 
 /// Тема экстренной заявки. Отдельного «экстренного» справочника у бэкенда
@@ -44,6 +45,11 @@ class EmergencyController extends AutoDisposeAsyncNotifier<void> {
             format: format,
             isEmergency: true,
           );
+      ref.read(analyticsProvider)
+        ..track(RequestCreated(requestId: request.id, isEmergency: true))
+        ..track(
+          EmergencyEscalated(requestId: request.id, stage: 'search'),
+        );
       state = const AsyncData(null);
       return request;
     } catch (error, stackTrace) {

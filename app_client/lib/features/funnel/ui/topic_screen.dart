@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared/shared.dart';
 
+import '../../../core/analytics_provider.dart';
 import '../../../core/error_text.dart';
 import '../../../core/route_paths.dart';
 import '../../consultations/data/consultations_repository.dart';
@@ -36,10 +37,23 @@ class _TopicScreenState extends ConsumerState<TopicScreen> {
   SessionFormat? _format;
   String? _error;
 
+  @override
+  void initState() {
+    super.initState();
+    // Тема выбрана — экран темы открыт именно с ней (ТЗ §10).
+    final slug = widget.slug;
+    if (slug != null) {
+      ref.read(analyticsProvider).track(TopicSelected(topicSlug: slug));
+    }
+  }
+
   Future<void> _pickFormat() async {
     final format = await showFormatSheet(context);
     // Закрытие шторки без выбора — нормальный исход: ничего не меняем.
     if (format == null || !mounted) return;
+    ref.read(analyticsProvider).track(
+      FormatSelected(format: format.wireValue),
+    );
     setState(() {
       _format = format;
       _error = null;

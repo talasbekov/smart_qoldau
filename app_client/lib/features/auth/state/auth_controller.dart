@@ -6,6 +6,7 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared/shared.dart';
 
+import '../../../core/analytics_provider.dart';
 import '../../../core/providers.dart';
 import '../data/auth_repository.dart';
 
@@ -130,6 +131,7 @@ class AuthController extends AsyncNotifier<AuthState> {
   Future<void> convertGuest(String phone, String code) async {
     final tokens = await _repo.convertGuest(phone, code);
     state = AsyncData(_stateFor(tokens));
+    ref.read(analyticsProvider).track(const GuestConverted());
   }
 
   /// Пользователь сам решил выйти: чистит хранилище и переводит состояние
@@ -144,6 +146,11 @@ class AuthController extends AsyncNotifier<AuthState> {
 
   AuthState _stateFor(Tokens? tokens) {
     if (tokens == null) return const AuthAnonymous();
+    // Аналитике сообщаем идентификатор пользователя — тот же, что в JWT
+    // (`sub`). Ни телефона, ни других ПД (ТЗ §10).
+    ref
+        .read(analyticsProvider)
+        .identify(tokens.user.id, isGuest: tokens.user.isGuest);
     return tokens.user.isGuest
         ? AuthGuest(tokens.user)
         : AuthRegistered(tokens.user);

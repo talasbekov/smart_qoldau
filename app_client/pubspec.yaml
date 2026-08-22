@@ -52,6 +52,11 @@ dependencies:
   # Маршрутизация и редирект-гард сессии (E6/задача 7).
   go_router: ^17.5.0
   livekit_client: ^2.11.0
+  # HTTP-клиент нужен напрямую в двух местах: аналитика PostHog (задача 24)
+  # ходит мимо `SqApi` — это чужой сервис, не наш бэкенд, — и сквозной
+  # integration_test играет роль эксперта. Прикладной код по-прежнему
+  # обращается к бэкенду только через `SqApi`.
+  dio: ^5.9.0
   firebase_core: ^4.13.0
   firebase_messaging: ^16.5.0
   flutter_local_notifications: ^22.3.0
@@ -62,10 +67,7 @@ dev_dependencies:
   # Сквозной прогон воронки против поднятого бэкенда (E6/задача 20).
   integration_test:
     sdk: flutter
-  # Прямые HTTP-вызовы в сквозном тесте: роль эксперта играет сам тест —
-  # экспертного приложения в этом эпике нет, а без второй стороны воронку
-  # не пройти. В самом приложении сеть идёт только через `SqApi`.
-  dio: ^5.9.0
+
 
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is

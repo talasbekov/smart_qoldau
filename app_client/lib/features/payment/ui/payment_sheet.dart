@@ -198,6 +198,7 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
         .pay(
           consultationId: widget.consultation.id,
           paymentMethodId: cardId,
+          priceTiyn: widget.consultation.priceTiyn,
         );
   }
 }

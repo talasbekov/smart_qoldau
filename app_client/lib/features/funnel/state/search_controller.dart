@@ -8,6 +8,7 @@ import 'dart:developer' as developer;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared/shared.dart';
 
+import '../../../core/analytics_provider.dart';
 import '../../../core/providers.dart';
 import '../data/requests_repository.dart';
 
@@ -199,6 +200,18 @@ class SearchController extends AutoDisposeFamilyAsyncNotifier<SearchState, Searc
         );
     _current = next;
     if (next.isTerminal) _stopTimers();
+    if (status == RequestStatus.matched &&
+        current?.status != RequestStatus.matched) {
+      // Время до соединения — тот самый показатель обещания «1–2 минуты»
+      // (ТЗ §11.1); считаем его от открытия экрана поиска, то есть от
+      // создания заявки.
+      ref.read(analyticsProvider).track(
+        ExpertMatched(
+          requestId: arg.requestId,
+          secondsToMatch: next.elapsedSec,
+        ),
+      );
+    }
     _publish();
   }
 

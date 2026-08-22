@@ -7,6 +7,7 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared/shared.dart';
 
+import '../../../core/analytics_provider.dart';
 import '../data/requests_repository.dart';
 
 /// Держит только состояние ОДНОЙ операции создания заявки: `AsyncLoading`
@@ -40,6 +41,9 @@ class FunnelController extends AutoDisposeAsyncNotifier<void> {
             isEmergency: isEmergency,
             expertId: expertId,
           );
+      ref.read(analyticsProvider).track(
+        RequestCreated(requestId: request.id, isEmergency: isEmergency),
+      );
       state = const AsyncData(null);
       return request;
     } catch (error, stackTrace) {

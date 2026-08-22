@@ -6,6 +6,10 @@
 /// загружается и доступен потребителям.
 library;
 
+export 'analytics/analytics_event.dart';
+export 'analytics/analytics_port.dart';
+export 'analytics/noop_analytics.dart';
+export 'analytics/posthog_analytics.dart';
 export 'api/api_exception.dart';
 export 'api/auth_interceptor.dart';
 export 'api/sq_api.dart';

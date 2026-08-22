@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared/shared.dart';
 
 import '../../../core/locale_controller.dart';
+import '../../../core/analytics_provider.dart';
 import '../../funnel/data/requests_repository.dart';
 import '../data/reviews_repository.dart';
 
@@ -90,6 +91,9 @@ class ReviewController
             privateText: _nullIfBlank(state.privateText),
           );
       await _rememberReviewed(reviewId: review.id);
+      ref.read(analyticsProvider).track(
+        ReviewSubmitted(consultationId: arg, rating: state.rating),
+      );
       state = state.copyWith(phase: ReviewPhase.sent);
     } on ApiException catch (error) {
       if (error.code == ApiErrorCode.reviewExists) {
