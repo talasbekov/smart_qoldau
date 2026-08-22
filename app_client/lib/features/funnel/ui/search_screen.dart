@@ -9,6 +9,7 @@ import 'package:shared/shared.dart';
 
 import '../../../core/error_text.dart';
 import '../../../core/route_paths.dart';
+import '../../../core/url_launcher_port.dart';
 import '../../../l10n/app_localizations.dart';
 import '../state/funnel_controller.dart';
 import '../state/search_controller.dart';
@@ -108,7 +109,9 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
       case RequestStatus.cancelled:
         context.go(RoutePaths.home);
       case RequestStatus.callbackRequested:
-        context.go(RoutePaths.emergencyHotlines);
+        // Номера едут с собой: они пришли в событии заявки, отдельного
+        // эндпоинта для них у бэкенда нет.
+        context.go(RoutePaths.emergencyHotlines, extra: next.hotlines);
       case RequestStatus.noExperts:
       case RequestStatus.searching:
         break;
@@ -163,6 +166,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
               error: _error,
               cancelling: _cancelling,
               onCancel: _cancelling ? null : _cancel,
+              isEmergency: widget.args.isEmergency,
             ),
           },
         ),
@@ -171,12 +175,13 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   }
 }
 
-class _SearchingContent extends StatelessWidget {
+class _SearchingContent extends ConsumerWidget {
   const _SearchingContent({
     required this.state,
     required this.error,
     required this.cancelling,
     required this.onCancel,
+    required this.isEmergency,
   });
 
   final SearchState state;
@@ -184,28 +189,78 @@ class _SearchingContent extends StatelessWidget {
   final bool cancelling;
   final VoidCallback? onCancel;
 
+  /// Экстренный вариант экрана (БП-02, прототип `16-emergency.png`):
+  /// красный акцент, «Приоритетный поиск» и ПОСТОЯННО видимая кнопка
+  /// вызова служб — она не входит в прокручиваемое содержимое.
+  final bool isEmergency;
+
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
     final onlineCount = state.onlineCount;
+    final accent = isEmergency ? SqColors.danger : SqColors.primary;
 
+    return Column(
+      children: [
+        Expanded(child: _list(context, l10n, onlineCount, accent)),
+        if (isEmergency)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+              SqSpacing.l,
+              0,
+              SqSpacing.l,
+              SqSpacing.l,
+            ),
+            child: SqButton(
+              key: const Key('sq-search-call-services'),
+              kind: SqButtonKind.danger,
+              label: l10n.emergencyCallServices,
+              // 103 — скорая помощь; 112 в подписи оставлен как второй
+              // известный номер, но набирается один: диалог выбора номера
+              // посреди кризиса — лишний шаг.
+              onPressed: () =>
+                  ref.read(urlLauncherPortProvider).launch('tel:103'),
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _list(
+    BuildContext context,
+    AppLocalizations l10n,
+    int? onlineCount,
+    Color accent,
+  ) {
     return ListView(
       padding: const EdgeInsets.all(SqSpacing.l),
       children: [
         const SizedBox(height: SqSpacing.xl),
-        Text(l10n.searchTitle, style: SqTypography.h1, textAlign: TextAlign.center),
+        if (isEmergency) ...[
+          Center(
+            child: SqChip(label: l10n.emergencySearchBadge, selected: true),
+          ),
+          const SizedBox(height: SqSpacing.m),
+        ],
+        Text(
+          isEmergency ? l10n.emergencySearchTitle : l10n.searchTitle,
+          style: SqTypography.h1,
+          textAlign: TextAlign.center,
+        ),
         const SizedBox(height: SqSpacing.s),
         Text(
-          l10n.searchSubtitle,
+          isEmergency ? l10n.emergencySearchSubtitle : l10n.searchSubtitle,
           style: SqTypography.body.copyWith(color: SqColors.textSecondary),
           textAlign: TextAlign.center,
         ),
-        const SizedBox(height: SqSpacing.xs),
-        Text(
-          l10n.searchHint,
-          style: SqTypography.caption.copyWith(color: SqColors.textTertiary),
-          textAlign: TextAlign.center,
-        ),
+        if (!isEmergency) ...[
+          const SizedBox(height: SqSpacing.xs),
+          Text(
+            l10n.searchHint,
+            style: SqTypography.caption.copyWith(color: SqColors.textTertiary),
+            textAlign: TextAlign.center,
+          ),
+        ],
         const SizedBox(height: SqSpacing.xl),
         const Center(child: SqLoader()),
         const SizedBox(height: SqSpacing.xl),
@@ -217,7 +272,7 @@ class _SearchingContent extends StatelessWidget {
         Text(
           formatElapsed(state.elapsedSec),
           key: const Key('sq-search-elapsed'),
-          style: SqTypography.h1.copyWith(color: SqColors.primary),
+          style: SqTypography.h1.copyWith(color: accent),
           textAlign: TextAlign.center,
         ),
         if (onlineCount != null) ...[
@@ -226,7 +281,7 @@ class _SearchingContent extends StatelessWidget {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(Icons.circle, size: 10, color: SqColors.accent),
+                Icon(Icons.circle, size: 10, color: accent),
                 const SizedBox(width: SqSpacing.s),
                 Flexible(
                   child: Text(
@@ -241,7 +296,9 @@ class _SearchingContent extends StatelessWidget {
         ],
         const SizedBox(height: SqSpacing.l),
         Text(
-          l10n.searchEncouragement,
+          isEmergency
+              ? l10n.emergencySearchEncouragement
+              : l10n.searchEncouragement,
           style: SqTypography.body.copyWith(color: SqColors.textSecondary),
           textAlign: TextAlign.center,
         ),

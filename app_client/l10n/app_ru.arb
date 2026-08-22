@@ -470,5 +470,94 @@
         "type": "num"
       }
     }
+  },
+  "emergencyScreeningTitle": "Вам угрожает опасность прямо сейчас?",
+  "@emergencyScreeningTitle": {
+    "description": "Вопрос скрининга экстренного сценария (БП-02, шаг 2)"
+  },
+  "emergencyScreeningBody": "Ответьте честно — от этого зависит, чем мы поможем в первую очередь",
+  "@emergencyScreeningBody": {
+    "description": "Пояснение под вопросом скрининга"
+  },
+  "emergencyScreeningFormatHint": "Формат подбора можно сменить",
+  "@emergencyScreeningFormatHint": {
+    "description": "Подпись у выбора формата на экране скрининга — по умолчанию чат"
+  },
+  "actionYes": "Да",
+  "@actionYes": {
+    "description": "Утвердительный ответ на вопрос скрининга"
+  },
+  "actionNo": "Нет",
+  "@actionNo": {
+    "description": "Отрицательный ответ на вопрос скрининга"
+  },
+  "emergencyDangerTitle": "Если есть угроза жизни — звоните напрямую",
+  "@emergencyDangerTitle": {
+    "description": "Заголовок экрана угрозы (ответ «Да» на скрининге)"
+  },
+  "emergencyDangerBody": "Платформа не заменяет экстренные службы. Позвоните по одному из номеров — это быстрее всего",
+  "@emergencyDangerBody": {
+    "description": "Текст экрана угрозы"
+  },
+  "emergencyCallPolice": "Позвонить 102",
+  "@emergencyCallPolice": {
+    "description": "Кнопка звонка в полицию на экране угрозы"
+  },
+  "emergencyCallAmbulance": "Позвонить 103",
+  "@emergencyCallAmbulance": {
+    "description": "Кнопка звонка в скорую помощь на экране угрозы"
+  },
+  "emergencyContinueSearch": "Мне не угрожает опасность, продолжить подбор",
+  "@emergencyContinueSearch": {
+    "description": "Кнопка внизу экрана угрозы — перейти к приоритетному подбору специалиста"
+  },
+  "emergencySearchBadge": "Приоритетный поиск",
+  "@emergencySearchBadge": {
+    "description": "Бейдж экстренного варианта экрана поиска (прототип 16-emergency.png)"
+  },
+  "emergencySearchTitle": "Ищем свободного специалиста для вас",
+  "@emergencySearchTitle": {
+    "description": "Заголовок экстренного варианта экрана поиска"
+  },
+  "emergencySearchSubtitle": "Мы соединим вас первым в очереди. Если станет тяжело — можно позвонить на 103",
+  "@emergencySearchSubtitle": {
+    "description": "Пояснение экстренного варианта экрана поиска"
+  },
+  "emergencySearchEncouragement": "Вы не одни — мы уже подключаем специалиста",
+  "@emergencySearchEncouragement": {
+    "description": "Поддерживающая строка экстренного варианта экрана поиска"
+  },
+  "emergencyCallServices": "Позвонить 103 / 112",
+  "@emergencyCallServices": {
+    "description": "Постоянно видимая кнопка вызова экстренных служб на экстренном поиске (требование БП-02)"
+  },
+  "hotlinesTitle": "Мы перезвоним вам",
+  "@hotlinesTitle": {
+    "description": "Заголовок экрана эскалации Р-16"
+  },
+  "hotlinesBody": "Заявка на обратный звонок уже оформлена — с вами свяжется первый освободившийся специалист. Пока можно позвонить:",
+  "@hotlinesBody": {
+    "description": "Текст экрана эскалации Р-16: заявку создаёт бэкенд, клиенту ничего отправлять не нужно"
+  },
+  "hotlineCall": "Позвонить {number}",
+  "@hotlineCall": {
+    "description": "Кнопка звонка на конкретный номер горячей линии",
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
+  "hotlineName150": "Телефон доверия",
+  "@hotlineName150": {
+    "description": "Название номера 150"
+  },
+  "hotlineName103": "Скорая помощь",
+  "@hotlineName103": {
+    "description": "Название номера 103"
+  },
+  "hotlineName112": "Единая служба спасения",
+  "@hotlineName112": {
+    "description": "Название номера 112"
   }
 }

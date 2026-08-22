@@ -12,7 +12,9 @@ import 'features/auth/state/auth_controller.dart';
 import 'features/auth/ui/splash_screen.dart';
 import 'features/catalog/ui/catalog_screen.dart';
 import 'features/consultations/ui/consultations_screen.dart';
-import 'features/emergency/ui/emergency_screen.dart';
+import 'features/emergency/ui/danger_screen.dart';
+import 'features/emergency/ui/hotlines_screen.dart';
+import 'features/emergency/ui/screening_screen.dart';
 import 'features/home/ui/home_screen.dart';
 import 'features/onboarding/state/onboarding_flags.dart';
 import 'features/onboarding/ui/permissions_screen.dart';
@@ -128,15 +130,19 @@ GoRouter sqRouter(Ref ref) {
       ),
       GoRoute(
         path: RoutePaths.emergency,
-        builder: (context, state) => const EmergencyScreen(),
+        builder: (context, state) => const ScreeningScreen(),
       ),
       GoRoute(
-        // Список горячих линий Р-16 — пока тот же экран-заглушка, что и
-        // `/emergency`: настоящий добавляет задача 11 эпика E6. Маршрут
-        // зарегистрирован уже сейчас, потому что экран поиска уводит сюда
-        // при статусе заявки `CALLBACK_REQUESTED`.
+        path: RoutePaths.emergencyDanger,
+        builder: (context, state) => const DangerScreen(),
+      ),
+      GoRoute(
+        // Номера горячих линий приходят с событием `request.updated`
+        // (`hotlines`) и передаются экрану через `extra`; при открытии по
+        // прямой ссылке их нет — экран возьмёт фолбэк.
         path: RoutePaths.emergencyHotlines,
-        builder: (context, state) => const EmergencyScreen(),
+        builder: (context, state) =>
+            HotlinesScreen(hotlines: state.extra as List<String>?),
       ),
       GoRoute(
         path: RoutePaths.topic,

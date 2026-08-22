@@ -379,4 +379,76 @@ class AppLocalizationsKk extends AppLocalizations {
     );
     return 'Қазір желіде: $_temp0';
   }
+
+  @override
+  String get emergencyScreeningTitle => 'Сізге дәл қазір қауіп төніп тұр ма?';
+
+  @override
+  String get emergencyScreeningBody =>
+      'Шынын айтыңыз — алдымен қалай көмектесетініміз соған байланысты';
+
+  @override
+  String get emergencyScreeningFormatHint => 'Таңдау форматын өзгертуге болады';
+
+  @override
+  String get actionYes => 'Иә';
+
+  @override
+  String get actionNo => 'Жоқ';
+
+  @override
+  String get emergencyDangerTitle =>
+      'Өмірге қауіп болса — тікелей хабарласыңыз';
+
+  @override
+  String get emergencyDangerBody =>
+      'Платформа шұғыл қызметтерді алмастырмайды. Нөмірлердің біріне қоңырау шалыңыз — бұл ең жылдам жол';
+
+  @override
+  String get emergencyCallPolice => '102-ге қоңырау шалу';
+
+  @override
+  String get emergencyCallAmbulance => '103-ке қоңырау шалу';
+
+  @override
+  String get emergencyContinueSearch =>
+      'Маған қауіп жоқ, маман таңдауды жалғастыру';
+
+  @override
+  String get emergencySearchBadge => 'Басым іздеу';
+
+  @override
+  String get emergencySearchTitle => 'Сізге бос маман іздеп жатырмыз';
+
+  @override
+  String get emergencySearchSubtitle =>
+      'Сізді кезекте бірінші қосамыз. Ауырлап кетсе — 103-ке қоңырау шалуға болады';
+
+  @override
+  String get emergencySearchEncouragement =>
+      'Сіз жалғыз емессіз — маманды қазір қосып жатырмыз';
+
+  @override
+  String get emergencyCallServices => '103 / 112-ге қоңырау шалу';
+
+  @override
+  String get hotlinesTitle => 'Біз сізге қайта қоңырау шаламыз';
+
+  @override
+  String get hotlinesBody =>
+      'Кері қоңырауға өтінім жасалды — бірінші босаған маман сізбен байланысады. Әзірше мына нөмірлерге қоңырау шалуға болады:';
+
+  @override
+  String hotlineCall(String number) {
+    return '$number нөміріне қоңырау шалу';
+  }
+
+  @override
+  String get hotlineName150 => 'Сенім телефоны';
+
+  @override
+  String get hotlineName103 => 'Жедел жәрдем';
+
+  @override
+  String get hotlineName112 => 'Бірыңғай құтқару қызметі';
 }

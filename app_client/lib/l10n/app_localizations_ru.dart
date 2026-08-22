@@ -382,4 +382,76 @@ class AppLocalizationsRu extends AppLocalizations {
     );
     return 'Сейчас онлайн: $_temp0';
   }
+
+  @override
+  String get emergencyScreeningTitle => 'Вам угрожает опасность прямо сейчас?';
+
+  @override
+  String get emergencyScreeningBody =>
+      'Ответьте честно — от этого зависит, чем мы поможем в первую очередь';
+
+  @override
+  String get emergencyScreeningFormatHint => 'Формат подбора можно сменить';
+
+  @override
+  String get actionYes => 'Да';
+
+  @override
+  String get actionNo => 'Нет';
+
+  @override
+  String get emergencyDangerTitle =>
+      'Если есть угроза жизни — звоните напрямую';
+
+  @override
+  String get emergencyDangerBody =>
+      'Платформа не заменяет экстренные службы. Позвоните по одному из номеров — это быстрее всего';
+
+  @override
+  String get emergencyCallPolice => 'Позвонить 102';
+
+  @override
+  String get emergencyCallAmbulance => 'Позвонить 103';
+
+  @override
+  String get emergencyContinueSearch =>
+      'Мне не угрожает опасность, продолжить подбор';
+
+  @override
+  String get emergencySearchBadge => 'Приоритетный поиск';
+
+  @override
+  String get emergencySearchTitle => 'Ищем свободного специалиста для вас';
+
+  @override
+  String get emergencySearchSubtitle =>
+      'Мы соединим вас первым в очереди. Если станет тяжело — можно позвонить на 103';
+
+  @override
+  String get emergencySearchEncouragement =>
+      'Вы не одни — мы уже подключаем специалиста';
+
+  @override
+  String get emergencyCallServices => 'Позвонить 103 / 112';
+
+  @override
+  String get hotlinesTitle => 'Мы перезвоним вам';
+
+  @override
+  String get hotlinesBody =>
+      'Заявка на обратный звонок уже оформлена — с вами свяжется первый освободившийся специалист. Пока можно позвонить:';
+
+  @override
+  String hotlineCall(String number) {
+    return 'Позвонить $number';
+  }
+
+  @override
+  String get hotlineName150 => 'Телефон доверия';
+
+  @override
+  String get hotlineName103 => 'Скорая помощь';
+
+  @override
+  String get hotlineName112 => 'Единая служба спасения';
 }

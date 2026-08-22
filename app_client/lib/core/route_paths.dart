@@ -25,12 +25,15 @@ abstract final class RoutePaths {
   static const consultations = '/consultations';
   static const profile = '/profile';
 
-  /// Экстренный сценарий (Р-16) — заглушка до задачи 11 эпика E6.
+  /// Экстренный сценарий (БП-02): скрининг «угрожает ли опасность».
   static const emergency = '/emergency';
 
-  /// Экстренный сценарий: список горячих линий (Р-16) — заглушка до
-  /// задачи 11 эпика E6, но экран поиска уводит сюда уже сейчас, когда
-  /// заявка закрылась статусом `CALLBACK_REQUESTED`.
+  /// Экстренный сценарий: экран угрозы (ответ «Да» на скрининге БП-02).
+  static const emergencyDanger = '/emergency/danger';
+
+  /// Экстренный сценарий: список горячих линий (эскалация Р-16). Сюда
+  /// уводит экран поиска, когда заявка закрылась статусом
+  /// `CALLBACK_REQUESTED`.
   static const emergencyHotlines = '/emergency/hotlines';
 
   /// Экран темы (`?slug=<slug>`): подтверждение темы и выбор формата.

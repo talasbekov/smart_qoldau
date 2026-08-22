@@ -781,6 +781,132 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Сейчас онлайн: {count, plural, one{{count} специалист} few{{count} специалиста} many{{count} специалистов} other{{count} специалиста}}'**
   String searchOnlineCount(num count);
+
+  /// Вопрос скрининга экстренного сценария (БП-02, шаг 2)
+  ///
+  /// In ru, this message translates to:
+  /// **'Вам угрожает опасность прямо сейчас?'**
+  String get emergencyScreeningTitle;
+
+  /// Пояснение под вопросом скрининга
+  ///
+  /// In ru, this message translates to:
+  /// **'Ответьте честно — от этого зависит, чем мы поможем в первую очередь'**
+  String get emergencyScreeningBody;
+
+  /// Подпись у выбора формата на экране скрининга — по умолчанию чат
+  ///
+  /// In ru, this message translates to:
+  /// **'Формат подбора можно сменить'**
+  String get emergencyScreeningFormatHint;
+
+  /// Утвердительный ответ на вопрос скрининга
+  ///
+  /// In ru, this message translates to:
+  /// **'Да'**
+  String get actionYes;
+
+  /// Отрицательный ответ на вопрос скрининга
+  ///
+  /// In ru, this message translates to:
+  /// **'Нет'**
+  String get actionNo;
+
+  /// Заголовок экрана угрозы (ответ «Да» на скрининге)
+  ///
+  /// In ru, this message translates to:
+  /// **'Если есть угроза жизни — звоните напрямую'**
+  String get emergencyDangerTitle;
+
+  /// Текст экрана угрозы
+  ///
+  /// In ru, this message translates to:
+  /// **'Платформа не заменяет экстренные службы. Позвоните по одному из номеров — это быстрее всего'**
+  String get emergencyDangerBody;
+
+  /// Кнопка звонка в полицию на экране угрозы
+  ///
+  /// In ru, this message translates to:
+  /// **'Позвонить 102'**
+  String get emergencyCallPolice;
+
+  /// Кнопка звонка в скорую помощь на экране угрозы
+  ///
+  /// In ru, this message translates to:
+  /// **'Позвонить 103'**
+  String get emergencyCallAmbulance;
+
+  /// Кнопка внизу экрана угрозы — перейти к приоритетному подбору специалиста
+  ///
+  /// In ru, this message translates to:
+  /// **'Мне не угрожает опасность, продолжить подбор'**
+  String get emergencyContinueSearch;
+
+  /// Бейдж экстренного варианта экрана поиска (прототип 16-emergency.png)
+  ///
+  /// In ru, this message translates to:
+  /// **'Приоритетный поиск'**
+  String get emergencySearchBadge;
+
+  /// Заголовок экстренного варианта экрана поиска
+  ///
+  /// In ru, this message translates to:
+  /// **'Ищем свободного специалиста для вас'**
+  String get emergencySearchTitle;
+
+  /// Пояснение экстренного варианта экрана поиска
+  ///
+  /// In ru, this message translates to:
+  /// **'Мы соединим вас первым в очереди. Если станет тяжело — можно позвонить на 103'**
+  String get emergencySearchSubtitle;
+
+  /// Поддерживающая строка экстренного варианта экрана поиска
+  ///
+  /// In ru, this message translates to:
+  /// **'Вы не одни — мы уже подключаем специалиста'**
+  String get emergencySearchEncouragement;
+
+  /// Постоянно видимая кнопка вызова экстренных служб на экстренном поиске (требование БП-02)
+  ///
+  /// In ru, this message translates to:
+  /// **'Позвонить 103 / 112'**
+  String get emergencyCallServices;
+
+  /// Заголовок экрана эскалации Р-16
+  ///
+  /// In ru, this message translates to:
+  /// **'Мы перезвоним вам'**
+  String get hotlinesTitle;
+
+  /// Текст экрана эскалации Р-16: заявку создаёт бэкенд, клиенту ничего отправлять не нужно
+  ///
+  /// In ru, this message translates to:
+  /// **'Заявка на обратный звонок уже оформлена — с вами свяжется первый освободившийся специалист. Пока можно позвонить:'**
+  String get hotlinesBody;
+
+  /// Кнопка звонка на конкретный номер горячей линии
+  ///
+  /// In ru, this message translates to:
+  /// **'Позвонить {number}'**
+  String hotlineCall(String number);
+
+  /// Название номера 150
+  ///
+  /// In ru, this message translates to:
+  /// **'Телефон доверия'**
+  String get hotlineName150;
+
+  /// Название номера 103
+  ///
+  /// In ru, this message translates to:
+  /// **'Скорая помощь'**
+  String get hotlineName103;
+
+  /// Название номера 112
+  ///
+  /// In ru, this message translates to:
+  /// **'Единая служба спасения'**
+  String get hotlineName112;
 }
 
 class _AppLocalizationsDelegate
