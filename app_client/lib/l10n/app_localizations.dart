@@ -134,12 +134,6 @@ abstract class AppLocalizations {
   /// **'Готово'**
   String get actionDone;
 
-  /// Кнопка возврата на предыдущий экран
-  ///
-  /// In ru, this message translates to:
-  /// **'Назад'**
-  String get actionBack;
-
   /// Название русского языка в переключателе языка интерфейса
   ///
   /// In ru, this message translates to:
@@ -589,12 +583,6 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Профиль'**
   String get navProfile;
-
-  /// Пояснение под заголовком экрана-заглушки ещё не реализованного раздела (Каталог/Консультации/Профиль/экстренный сценарий/тема/сессия) — явно сообщает, что раздел не готов, а не имитирует легитимно пустой список
-  ///
-  /// In ru, this message translates to:
-  /// **'Раздел находится в разработке'**
-  String get stubSectionSubtitle;
 
   /// Заголовок-приветствие в аппбаре главного экрана
   ///
@@ -1448,24 +1436,6 @@ abstract class AppLocalizations {
   /// **'Применить'**
   String get actionApply;
 
-  /// Язык консультации: русский
-  ///
-  /// In ru, this message translates to:
-  /// **'Русский'**
-  String get languageRu;
-
-  /// Язык консультации: казахский
-  ///
-  /// In ru, this message translates to:
-  /// **'Казахский'**
-  String get languageKz;
-
-  /// Язык консультации: английский
-  ///
-  /// In ru, this message translates to:
-  /// **'Английский'**
-  String get languageEn;
-
   /// Заголовок экрана избранных специалистов
   ///
   /// In ru, this message translates to:
@@ -1832,12 +1802,6 @@ abstract class AppLocalizations {
   /// **'Прошу удалить мой аккаунт и связанные с ним данные'**
   String get profileDeleteAccountTicketBody;
 
-  /// Заголовок экрана настроек
-  ///
-  /// In ru, this message translates to:
-  /// **'Настройки'**
-  String get settingsTitle;
-
   /// Заголовок экрана конверсии гостя
   ///
   /// In ru, this message translates to:
@@ -1981,6 +1945,12 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Сообщить о проблеме'**
   String get sessionMenuReport;
+
+  /// Язык консультации: английский
+  ///
+  /// In ru, this message translates to:
+  /// **'Английский'**
+  String get languageEnglish;
 }
 
 class _AppLocalizationsDelegate

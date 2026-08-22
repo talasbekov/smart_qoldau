@@ -28,9 +28,6 @@ class AppLocalizationsRu extends AppLocalizations {
   String get actionDone => 'Готово';
 
   @override
-  String get actionBack => 'Назад';
-
-  @override
   String get languageRussian => 'Русский';
 
   @override
@@ -268,9 +265,6 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get navProfile => 'Профиль';
-
-  @override
-  String get stubSectionSubtitle => 'Раздел находится в разработке';
 
   @override
   String get homeGreeting => 'Здравствуйте';
@@ -758,15 +752,6 @@ class AppLocalizationsRu extends AppLocalizations {
   String get actionApply => 'Применить';
 
   @override
-  String get languageRu => 'Русский';
-
-  @override
-  String get languageKz => 'Казахский';
-
-  @override
-  String get languageEn => 'Английский';
-
-  @override
   String get favoritesTitle => 'Избранное';
 
   @override
@@ -959,9 +944,6 @@ class AppLocalizationsRu extends AppLocalizations {
       'Прошу удалить мой аккаунт и связанные с ним данные';
 
   @override
-  String get settingsTitle => 'Настройки';
-
-  @override
   String get convertGuestTitle => 'Создание аккаунта';
 
   @override
@@ -1034,4 +1016,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get sessionMenuReport => 'Сообщить о проблеме';
+
+  @override
+  String get languageEnglish => 'Английский';
 }

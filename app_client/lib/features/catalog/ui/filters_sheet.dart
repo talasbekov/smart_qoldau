@@ -74,9 +74,9 @@ class _FiltersSheet extends ConsumerWidget {
                     onTap: () => controller.update(clearLanguage: true),
                   ),
                   for (final entry in {
-                    'ru': l10n.languageRu,
-                    'kz': l10n.languageKz,
-                    'en': l10n.languageEn,
+                    'ru': l10n.languageRussian,
+                    'kz': l10n.languageKazakh,
+                    'en': l10n.languageEnglish,
                   }.entries)
                     _FilterOption(
                       key: Key('sq-filter-language-${entry.key}'),

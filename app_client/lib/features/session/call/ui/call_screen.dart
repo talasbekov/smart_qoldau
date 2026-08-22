@@ -83,6 +83,8 @@ class _CallScreenState extends ConsumerState<CallScreen> {
               expertName: chat.consultation.expert.displayName,
               remaining: chat.remaining,
               menu: const SizedBox.shrink(),
+              // Свой статус соединения экран звонка показывает сам.
+              showOnline: false,
             ),
       body: SafeArea(
         child: switch (call.phase) {

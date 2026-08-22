@@ -24,10 +24,6 @@
   "@actionDone": {
     "description": "Кнопка завершения шага или сценария"
   },
-  "actionBack": "Назад",
-  "@actionBack": {
-    "description": "Кнопка возврата на предыдущий экран"
-  },
   "languageRussian": "Русский",
   "@languageRussian": {
     "description": "Название русского языка в переключателе языка интерфейса"
@@ -337,10 +333,6 @@
   "navProfile": "Профиль",
   "@navProfile": {
     "description": "Подпись вкладки «Профиль» нижней навигации"
-  },
-  "stubSectionSubtitle": "Раздел находится в разработке",
-  "@stubSectionSubtitle": {
-    "description": "Пояснение под заголовком экрана-заглушки ещё не реализованного раздела (Каталог/Консультации/Профиль/экстренный сценарий/тема/сессия) — явно сообщает, что раздел не готов, а не имитирует легитимно пустой список"
   },
   "homeGreeting": "Здравствуйте",
   "@homeGreeting": {
@@ -945,18 +937,6 @@
   "@actionApply": {
     "description": "Кнопка применения фильтров"
   },
-  "languageRu": "Русский",
-  "@languageRu": {
-    "description": "Язык консультации: русский"
-  },
-  "languageKz": "Казахский",
-  "@languageKz": {
-    "description": "Язык консультации: казахский"
-  },
-  "languageEn": "Английский",
-  "@languageEn": {
-    "description": "Язык консультации: английский"
-  },
   "favoritesTitle": "Избранное",
   "@favoritesTitle": {
     "description": "Заголовок экрана избранных специалистов"
@@ -1211,10 +1191,6 @@
   "@profileDeleteAccountTicketBody": {
     "description": "Тело автоматически созданного обращения на удаление аккаунта"
   },
-  "settingsTitle": "Настройки",
-  "@settingsTitle": {
-    "description": "Заголовок экрана настроек"
-  },
   "convertGuestTitle": "Создание аккаунта",
   "@convertGuestTitle": {
     "description": "Заголовок экрана конверсии гостя"
@@ -1310,5 +1286,9 @@
   "sessionMenuReport": "Сообщить о проблеме",
   "@sessionMenuReport": {
     "description": "Пункт меню сессии: создать обращение в поддержку по этой консультации"
+  },
+  "languageEnglish": "Английский",
+  "@languageEnglish": {
+    "description": "Язык консультации: английский"
   }
 }

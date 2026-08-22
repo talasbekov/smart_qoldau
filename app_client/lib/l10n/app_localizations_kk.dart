@@ -28,9 +28,6 @@ class AppLocalizationsKk extends AppLocalizations {
   String get actionDone => 'Дайын';
 
   @override
-  String get actionBack => 'Артқа';
-
-  @override
   String get languageRussian => 'Орысша';
 
   @override
@@ -267,9 +264,6 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get navProfile => 'Профиль';
-
-  @override
-  String get stubSectionSubtitle => 'Бөлім әзірленуде';
 
   @override
   String get homeGreeting => 'Сәлеметсіз бе';
@@ -751,15 +745,6 @@ class AppLocalizationsKk extends AppLocalizations {
   String get actionApply => 'Қолдану';
 
   @override
-  String get languageRu => 'Орысша';
-
-  @override
-  String get languageKz => 'Қазақша';
-
-  @override
-  String get languageEn => 'Ағылшынша';
-
-  @override
   String get favoritesTitle => 'Таңдаулылар';
 
   @override
@@ -953,9 +938,6 @@ class AppLocalizationsKk extends AppLocalizations {
       'Аккаунтымды және онымен байланысты деректерді жоюды сұраймын';
 
   @override
-  String get settingsTitle => 'Параметрлер';
-
-  @override
   String get convertGuestTitle => 'Аккаунт жасау';
 
   @override
@@ -1028,4 +1010,7 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get sessionMenuReport => 'Мәселе туралы хабарлау';
+
+  @override
+  String get languageEnglish => 'Ағылшынша';
 }

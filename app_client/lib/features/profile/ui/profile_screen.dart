@@ -125,12 +125,12 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           children: [
             ListTile(
               key: const Key('sq-profile-locale-ru'),
-              title: Text(l10n.languageRu),
+              title: Text(l10n.languageRussian),
               onTap: () => Navigator.of(sheetContext).pop(const Locale('ru')),
             ),
             ListTile(
               key: const Key('sq-profile-locale-kk'),
-              title: const Text('Қазақша'),
+              title: Text(l10n.languageKazakh),
               onTap: () => Navigator.of(sheetContext).pop(const Locale('kk')),
             ),
           ],

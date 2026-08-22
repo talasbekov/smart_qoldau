@@ -56,6 +56,13 @@ dependencies:
 dev_dependencies:
   flutter_test:
     sdk: flutter
+  # Сквозной прогон воронки против поднятого бэкенда (E6/задача 20).
+  integration_test:
+    sdk: flutter
+  # Прямые HTTP-вызовы в сквозном тесте: роль эксперта играет сам тест —
+  # экспертного приложения в этом эпике нет, а без второй стороны воронку
+  # не пройти. В самом приложении сеть идёт только через `SqApi`.
+  dio: ^5.9.0
 
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is

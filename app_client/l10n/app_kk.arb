@@ -6,7 +6,6 @@
   "actionRetry": "Қайталау",
   "actionClose": "Жабу",
   "actionDone": "Дайын",
-  "actionBack": "Артқа",
   "languageRussian": "Орысша",
   "languageKazakh": "Қазақша",
   "errorGeneric": "Бірдеңе дұрыс болмады",
@@ -82,7 +81,6 @@
   "navCatalog": "Каталог",
   "navConsultations": "Кеңестер",
   "navProfile": "Профиль",
-  "stubSectionSubtitle": "Бөлім әзірленуде",
   "homeGreeting": "Сәлеметсіз бе",
   "homeEmergencyCta": "Маған қазір көмек керек",
   "homeEmergencyCtaSubtitle": "Қосылудың орташа уақыты — 2 минутқа дейін",
@@ -225,9 +223,6 @@
   "sortPriceDesc": "Алдымен қымбаты",
   "sortRating": "Рейтинг бойынша",
   "actionApply": "Қолдану",
-  "languageRu": "Орысша",
-  "languageKz": "Қазақша",
-  "languageEn": "Ағылшынша",
   "favoritesTitle": "Таңдаулылар",
   "favoritesEmpty": "Әзірге ешкім қосылмаған",
   "expertTopicsTitle": "Тақырыптар",
@@ -289,7 +284,6 @@
   "profileDeleteAccountBody": "Біз қолдау қызметіне өтінім жасаймыз — команда сізбен байланысып, жоюды растайды",
   "profileDeleteAccountSubject": "Аккаунт пен деректерді жою",
   "profileDeleteAccountTicketBody": "Аккаунтымды және онымен байланысты деректерді жоюды сұраймын",
-  "settingsTitle": "Параметрлер",
   "convertGuestTitle": "Аккаунт жасау",
   "convertGuestPhoneAlreadyUsed": "Бұл нөмір тіркелген. Ол аккаунтқа кіру бетінен кіруге болады, бірақ қонақ сессиясының деректері оған көшпейді",
   "supportTitle": "Қолдау",
@@ -313,5 +307,6 @@
   "ticketCategorySecurity": "Қауіпсіздік",
   "ticketCategoryOther": "Басқа",
   "actionSend": "Жіберу",
-  "sessionMenuReport": "Мәселе туралы хабарлау"
+  "sessionMenuReport": "Мәселе туралы хабарлау",
+  "languageEnglish": "Ағылшынша"
 }

@@ -19,6 +19,7 @@ class SessionHeader extends StatelessWidget implements PreferredSizeWidget {
     required this.expertName,
     required this.remaining,
     required this.menu,
+    this.showOnline = true,
   });
 
   final String expertName;
@@ -27,6 +28,11 @@ class SessionHeader extends StatelessWidget implements PreferredSizeWidget {
   /// Меню сессии (`SessionMenu`) — передаётся снаружи, чтобы шапка не знала
   /// ни про контроллер, ни про навигацию.
   final Widget menu;
+
+  /// Показывать ли отметку «На связи». На экране звонка она выключена: там
+  /// есть собственный статус соединения, и две одинаковые надписи рядом —
+  /// шум, а не информация.
+  final bool showOnline;
 
   @override
   Size get preferredSize => const Size.fromHeight(64);
@@ -46,7 +52,28 @@ class SessionHeader extends StatelessWidget implements PreferredSizeWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text(expertName, style: SqTypography.title),
+                Row(
+                  children: [
+                    Flexible(
+                      child: Text(expertName, style: SqTypography.title),
+                    ),
+                    if (showOnline) ...[
+                      const SizedBox(width: SqSpacing.s),
+                      const Icon(
+                        Icons.circle,
+                        size: 8,
+                        color: SqColors.accent,
+                      ),
+                      const SizedBox(width: SqSpacing.xs),
+                      Text(
+                        l10n.sessionOnline,
+                        style: SqTypography.caption.copyWith(
+                          color: SqColors.accent,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
                 Text(
                   // Ноль — плановое время вышло. Сессию это не закрывает:
                   // исход фиксирует специалист (БП-03), поэтому здесь
