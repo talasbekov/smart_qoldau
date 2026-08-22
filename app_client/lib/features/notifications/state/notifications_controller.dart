@@ -193,14 +193,7 @@ class DeviceRegistrar {
     try {
       final token = await _ref.read(pushTokenSourceProvider).token();
       if (token == null || token.isEmpty) return;
-
-      await _ref
-          .read(notificationsRepositoryProvider)
-          .registerDevice(
-            platform: Platform.isIOS ? 'ios' : 'android',
-            token: token,
-            locale: localeToApi(_ref.read(localeControllerProvider)),
-          );
+      await registerToken(token);
     } catch (error) {
       developer.log(
         'устройство не зарегистрировано: ${error.runtimeType}',
@@ -208,6 +201,16 @@ class DeviceRegistrar {
       );
     }
   }
+
+  /// Регистрирует КОНКРЕТНЫЙ токен — путь для `onTokenRefresh` (задача
+  /// 22): там новое значение уже известно, спрашивать его заново незачем.
+  Future<void> registerToken(String token) => _ref
+      .read(notificationsRepositoryProvider)
+      .registerDevice(
+        platform: Platform.isIOS ? 'ios' : 'android',
+        token: token,
+        locale: localeToApi(_ref.read(localeControllerProvider)),
+      );
 }
 
 final deviceRegistrarProvider = Provider<DeviceRegistrar>(

@@ -21,6 +21,10 @@ plugins {
     id("dev.flutter.flutter-plugin-loader") version "1.0.0"
     id("com.android.application") version "9.1.0" apply false
     id("org.jetbrains.kotlin.android") version "2.4.0" apply false
+    // Плагин Firebase объявлен, но НЕ применяется здесь: в app/build.gradle.kts
+    // он включается только при наличии реального google-services.json
+    // (задача 22 эпика E6) — иначе сборка без ключей Firebase падала бы.
+    id("com.google.gms.google-services") version "4.4.2" apply false
 }
 
 include(":app")

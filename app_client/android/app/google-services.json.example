@@ -1,0 +1,29 @@
+{
+  "_comment": "ПРИМЕР. Реальный google-services.json в git не кладётся (см. .gitignore) — его выдаёт консоль Firebase для конкретного проекта. Положите файл рядом под именем google-services.json и собирайте с --dart-define=PUSH_ENABLED=true.",
+  "project_info": {
+    "project_number": "000000000000",
+    "project_id": "smartqoldau-example",
+    "storage_bucket": "smartqoldau-example.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:000000000000:android:0000000000000000000000",
+        "android_client_info": {
+          "package_name": "kz.smartqoldau.app_client"
+        }
+      },
+      "api_key": [
+        {
+          "current_key": "EXAMPLE-REPLACE-WITH-REAL-KEY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

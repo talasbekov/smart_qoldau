@@ -4,6 +4,15 @@ plugins {
     id("dev.flutter.flutter-gradle-plugin")
 }
 
+// Firebase подключается ТОЛЬКО когда в сборку положен настоящий
+// google-services.json (задача 22 эпика E6). Без него плагин Google
+// Services валит сборку с "File google-services.json is missing", а
+// приложение при PUSH_ENABLED=false к Firebase вообще не обращается —
+// поэтому здесь условие, а не безусловный apply.
+if (file("google-services.json").exists()) {
+    apply(plugin = "com.google.gms.google-services")
+}
+
 android {
     namespace = "kz.smartqoldau.app_client"
     compileSdk = flutter.compileSdkVersion

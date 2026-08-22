@@ -46,3 +46,8 @@ app.*.map.json
 
 # Widget Preview related
 .widget_preview/
+
+# Реальные конфигурации Firebase (задача 22 эпика E6): выдаются консолью
+# проекта и в репозиторий не кладутся — рядом лежат только .example-файлы.
+android/app/google-services.json
+ios/Runner/GoogleService-Info.plist
