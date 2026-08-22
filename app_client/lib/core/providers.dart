@@ -4,7 +4,6 @@ library;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared/shared.dart';
 
-import '../features/auth/state/auth_controller.dart';
 import 'token_store.dart';
 
 /// Адрес бэкенда. Задаётся при сборке через `--dart-define=API_BASE_URL`
@@ -25,21 +24,36 @@ final tokenStoreProvider = Provider<TokenStore>(
   (ref) => TokenStore(ref.watch(secureStoreProvider)),
 );
 
+/// Тикает (увеличивается на 1) при каждом принудительном разлогине со
+/// стороны бэкенда — когда `AuthInterceptor` не смог обновить протухший
+/// access-токен через `/auth/refresh`.
+///
+/// `core` намеренно не хранит здесь прямую ссылку на `AuthController`
+/// (`features/auth/state/auth_controller.dart`) — иначе `core` зависел бы
+/// от `features`, разворачивая обычное направление зависимостей монорепо
+/// (`features` вправе знать про `core`, но не наоборот) и создавая цикл
+/// импортов `core → features → data → core`. Вместо этого `core` только
+/// объявляет универсальный сигнал «сессия только что была аннулирована»,
+/// а `AuthController` сам подписывается на него через `ref.listen` в своём
+/// `build()` и реагирует переходом в `AuthAnonymous` — зависимость идёт
+/// только в одну сторону: `features` → `core`.
+final sessionInvalidatedProvider = StateProvider<int>((ref) => 0);
+
 /// Единая точка входа в бэкенд SmartQoldau.
 ///
-/// `onLogout` читает [authControllerProvider] через `ref.read` в момент
-/// вызова, а не `ref.watch` при построении — иначе получился бы цикл
-/// провайдеров: `SqApi` нужен `AuthController` (чтобы ходить в сеть), а
-/// `onLogout` нужен `SqApi` (чтобы разлогинить при неудачном рефреше).
-/// `ref.read` внутри колбэка разрывает цикл: колбэк не строит
-/// `authControllerProvider` прямо сейчас, а обращается к нему только когда
-/// его действительно вызовет `AuthInterceptor`.
+/// `onLogout` не вызывает `AuthController` напрямую (см.
+/// [sessionInvalidatedProvider]): чистит хранилище токенов, до которого
+/// `core` и так имеет прямой доступ ([tokenStoreProvider]), и увеличивает
+/// счётчик — реакцию на него берёт на себя `features/auth`.
 final sqApiProvider = Provider<SqApi>((ref) {
   final tokenStore = ref.watch(tokenStoreProvider);
   return SqApi(
     baseUrl: apiBaseUrl,
     readTokens: tokenStore.read,
     writeTokens: tokenStore.write,
-    onLogout: () => ref.read(authControllerProvider.notifier).logout(),
+    onLogout: () async {
+      await tokenStore.clear();
+      ref.read(sessionInvalidatedProvider.notifier).state++;
+    },
   );
 });

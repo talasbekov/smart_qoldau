@@ -40,7 +40,7 @@ class AppLocalizationsKk extends AppLocalizations {
   String get errorGeneric => 'Бірдеңе дұрыс болмады';
 
   @override
-  String get errorValidationFailed => 'Бірдеңе дұрыс болмады';
+  String get errorValidationFailed => 'Енгізілген деректерді тексеріңіз';
 
   @override
   String get errorUnauthorized => 'Сессия аяқталды, қайта кіріңіз';
@@ -58,7 +58,7 @@ class AppLocalizationsKk extends AppLocalizations {
   String get errorRateLimited => 'Әрекеттер тым жиі, сәл кідіріңіз';
 
   @override
-  String get errorInternal => 'Бірдеңе дұрыс болмады';
+  String get errorInternal => 'Серверде қате пайда болды, кейінірек қайталаңыз';
 
   @override
   String get errorSmsCodeInvalid => 'Код қате';
@@ -149,7 +149,7 @@ class AppLocalizationsKk extends AppLocalizations {
   String get phoneNumberLabel => 'Телефон нөмірі';
 
   @override
-  String get phoneNumberHint => '+7 (7XX) XXX-XX-XX';
+  String get phoneNumberHint => 'XX) XXX-XX-XX';
 
   @override
   String get phoneScreenHelper => 'SMS арқылы бір реттік код жібереміз';

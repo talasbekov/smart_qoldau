@@ -40,9 +40,9 @@
   "@errorGeneric": {
     "description": "Текст-заглушка для непредвиденной ошибки без более точного объяснения"
   },
-  "errorValidationFailed": "Что-то пошло не так",
+  "errorValidationFailed": "Проверьте введённые данные",
   "@errorValidationFailed": {
-    "description": "VALIDATION_FAILED — ошибка валидации запроса; пользователь не должен видеть её осмысленно, общий текст допустим"
+    "description": "VALIDATION_FAILED — ошибка валидации запроса"
   },
   "errorUnauthorized": "Сессия истекла, войдите заново",
   "@errorUnauthorized": {
@@ -64,9 +64,9 @@
   "@errorRateLimited": {
     "description": "RATE_LIMITED — общий код превышения частоты запросов"
   },
-  "errorInternal": "Что-то пошло не так",
+  "errorInternal": "Ошибка на сервере, попробуйте позже",
   "@errorInternal": {
-    "description": "INTERNAL — внутренняя ошибка сервера; пользователь не должен видеть её осмысленно, общий текст допустим"
+    "description": "INTERNAL — внутренняя ошибка сервера"
   },
   "errorSmsCodeInvalid": "Неверный код",
   "@errorSmsCodeInvalid": {
@@ -184,9 +184,9 @@
   "@phoneNumberLabel": {
     "description": "Подпись поля ввода номера телефона"
   },
-  "phoneNumberHint": "+7 (7XX) XXX-XX-XX",
+  "phoneNumberHint": "XX) XXX-XX-XX",
   "@phoneNumberHint": {
-    "description": "Шаблон-подсказка маски номера телефона в поле ввода — формат цифр не зависит от языка интерфейса"
+    "description": "Шаблон-подсказка маски номера телефона в поле ввода (без +7 (7 — тот выведен отдельным несъёмным префиксом поля) — формат цифр не зависит от языка интерфейса"
   },
   "phoneScreenHelper": "Пришлём одноразовый код по SMS",
   "@phoneScreenHelper": {

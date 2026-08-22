@@ -30,6 +30,20 @@ class _FakeSecureStore implements SecureStore {
   Future<void> delete(String key) async => data.remove(key);
 }
 
+/// Имитирует недоступное/повреждённое хранилище (инвалидация Android
+/// keystore, устаревший формат сохранённых данных) — любое чтение бросает.
+class _ThrowingSecureStore implements SecureStore {
+  @override
+  Future<String?> read(String key) async =>
+      throw Exception('keystore invalidated');
+
+  @override
+  Future<void> write(String key, String value) async {}
+
+  @override
+  Future<void> delete(String key) async {}
+}
+
 Tokens _tokens({required bool isGuest}) => Tokens(
   accessToken: 'access-$isGuest',
   refreshToken: 'refresh-$isGuest',
@@ -87,6 +101,23 @@ void main() {
       expect(state, isA<AuthRegistered>());
       expect((state as AuthRegistered).user.isGuest, isFalse);
     });
+
+    test(
+      'при ошибке чтения хранилища не виснет и даёт AuthAnonymous',
+      () async {
+        final container = _makeContainer(
+          api: MockSqApi(),
+          store: _ThrowingSecureStore(),
+        );
+
+        await container.read(authControllerProvider.notifier).restore();
+
+        expect(
+          container.read(authControllerProvider).value,
+          isA<AuthAnonymous>(),
+        );
+      },
+    );
   });
 
   group('AuthController.continueAsGuest', () {
@@ -182,6 +213,27 @@ void main() {
         isA<AuthAnonymous>(),
       );
       expect(await tokenStore.read(), isNull);
+    });
+  });
+
+  group('sessionInvalidatedProvider', () {
+    test('принудительный разлогин (тик сигнала из core) переводит контроллер в AuthAnonymous', () async {
+      final store = _FakeSecureStore();
+      await TokenStore(store).write(_tokens(isGuest: true));
+      final container = _makeContainer(api: MockSqApi(), store: store);
+      await container.read(authControllerProvider.notifier).restore();
+      expect(
+        container.read(authControllerProvider).value,
+        isA<AuthGuest>(),
+        reason: 'предусловие: сессия действительно восстановлена',
+      );
+
+      container.read(sessionInvalidatedProvider.notifier).state++;
+
+      expect(
+        container.read(authControllerProvider).value,
+        isA<AuthAnonymous>(),
+      );
     });
   });
 }

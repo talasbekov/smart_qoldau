@@ -6,6 +6,7 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared/shared.dart';
 
+import '../../../core/providers.dart';
 import '../data/auth_repository.dart';
 
 /// Состояние аутентификации клиента.
@@ -52,14 +53,43 @@ class AuthRegistered extends AuthState {
 /// задачи 5 эпика E6), его явно вызывает экран заставки через [restore].
 class AuthController extends AsyncNotifier<AuthState> {
   @override
-  FutureOr<AuthState> build() => const AuthUnknown();
+  FutureOr<AuthState> build() {
+    // Принудительный разлогин со стороны бэкенда (`AuthInterceptor` не смог
+    // обновить протухший токен) идёт не прямым вызовом, а реактивным
+    // сигналом из `core` — см. `sessionInvalidatedProvider` в
+    // `core/providers.dart` про то, почему это разорвало цикл импортов
+    // `core → features`. `ref.listen` внутри `build()` — штатный,
+    // безопасный способ Riverpod подписаться на другой провайдер без
+    // побочных эффектов в момент самого построения: подписка происходит
+    // сразу, а `state = ...` сработает позже, только когда сигнал реально
+    // придёт.
+    ref.listen<int>(sessionInvalidatedProvider, (previous, next) {
+      state = const AsyncData(AuthAnonymous());
+    });
+    return const AuthUnknown();
+  }
 
   AuthRepository get _repo => ref.read(authRepositoryProvider);
 
   /// Восстанавливает сессию — вызывается один раз при старте приложения
   /// (экраном заставки).
+  ///
+  /// Никогда не пробрасывает исключение: ошибка чтения хранилища
+  /// (инвалидация Android keystore, повреждённый/устаревший JSON под
+  /// `sq.user`, который больше не разбирается `AuthUser.fromJson`, и т.п.)
+  /// трактуется как отсутствие сессии — иначе экран заставки, который
+  /// просто `await`-ит этот метод, завис бы на спиннере навсегда.
+  /// Испорченные данные при этом подчищаются, чтобы не спотыкаться о них
+  /// на каждом следующем запуске.
   Future<void> restore() async {
-    final tokens = await _repo.restoredTokens();
+    final Tokens? tokens;
+    try {
+      tokens = await _repo.restoredTokens();
+    } catch (_) {
+      await _repo.logout();
+      state = const AsyncData(AuthAnonymous());
+      return;
+    }
     state = AsyncData(_stateFor(tokens));
   }
 
@@ -91,9 +121,11 @@ class AuthController extends AsyncNotifier<AuthState> {
     state = AsyncData(_stateFor(tokens));
   }
 
-  /// Завершает сессию: чистит хранилище и переводит состояние в
-  /// [AuthAnonymous]. Также вызывается автоматически из `SqApi.onLogout`,
-  /// когда `AuthInterceptor` не смог обновить протухший токен.
+  /// Пользователь сам решил выйти: чистит хранилище и переводит состояние
+  /// в [AuthAnonymous]. Принудительный разлогин со стороны бэкенда (когда
+  /// `AuthInterceptor` не смог обновить протухший токен) в этот метод не
+  /// заходит — он приходит реактивно через [sessionInvalidatedProvider]
+  /// (см. подписку в `build()`).
   Future<void> logout() async {
     await _repo.logout();
     state = const AsyncData(AuthAnonymous());

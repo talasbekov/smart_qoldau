@@ -158,10 +158,10 @@ abstract class AppLocalizations {
   /// **'Что-то пошло не так'**
   String get errorGeneric;
 
-  /// VALIDATION_FAILED — ошибка валидации запроса; пользователь не должен видеть её осмысленно, общий текст допустим
+  /// VALIDATION_FAILED — ошибка валидации запроса
   ///
   /// In ru, this message translates to:
-  /// **'Что-то пошло не так'**
+  /// **'Проверьте введённые данные'**
   String get errorValidationFailed;
 
   /// UNAUTHORIZED — истёкшая или недействительная сессия
@@ -194,10 +194,10 @@ abstract class AppLocalizations {
   /// **'Слишком много попыток, подождите немного'**
   String get errorRateLimited;
 
-  /// INTERNAL — внутренняя ошибка сервера; пользователь не должен видеть её осмысленно, общий текст допустим
+  /// INTERNAL — внутренняя ошибка сервера
   ///
   /// In ru, this message translates to:
-  /// **'Что-то пошло не так'**
+  /// **'Ошибка на сервере, попробуйте позже'**
   String get errorInternal;
 
   /// SMS_CODE_INVALID — введённый SMS-код не совпадает с отправленным
@@ -374,10 +374,10 @@ abstract class AppLocalizations {
   /// **'Номер телефона'**
   String get phoneNumberLabel;
 
-  /// Шаблон-подсказка маски номера телефона в поле ввода — формат цифр не зависит от языка интерфейса
+  /// Шаблон-подсказка маски номера телефона в поле ввода (без +7 (7 — тот выведен отдельным несъёмным префиксом поля) — формат цифр не зависит от языка интерфейса
   ///
   /// In ru, this message translates to:
-  /// **'+7 (7XX) XXX-XX-XX'**
+  /// **'XX) XXX-XX-XX'**
   String get phoneNumberHint;
 
   /// Пояснение под полем ввода номера телефона

@@ -46,14 +46,6 @@ const _allCodes = <String>[
   ApiErrorCode.network,
 ];
 
-/// Коды, для которых пользователь в принципе не должен видеть осмысленный
-/// текст (см. разрешение неоднозначностей задачи 5, п. 9) — им разрешён
-/// тот же текст, что и общей заглушке, но ключ ARB у них свой.
-const _genericAllowed = <String>{
-  ApiErrorCode.internal,
-  ApiErrorCode.validationFailed,
-};
-
 void main() {
   testWidgets(
     'errorText покрывает каждый код словаря ApiErrorCode непустым текстом',
@@ -80,13 +72,11 @@ void main() {
           ApiException(code, 'test message', 400),
         );
         expect(text, isNotEmpty, reason: 'код $code должен иметь текст');
-        if (!_genericAllowed.contains(code)) {
-          expect(
-            text,
-            isNot(generic),
-            reason: 'код $code должен иметь текст, отличный от заглушки',
-          );
-        }
+        expect(
+          text,
+          isNot(generic),
+          reason: 'код $code должен иметь текст, отличный от заглушки',
+        );
       }
     },
   );

@@ -40,7 +40,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get errorGeneric => 'Что-то пошло не так';
 
   @override
-  String get errorValidationFailed => 'Что-то пошло не так';
+  String get errorValidationFailed => 'Проверьте введённые данные';
 
   @override
   String get errorUnauthorized => 'Сессия истекла, войдите заново';
@@ -58,7 +58,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get errorRateLimited => 'Слишком много попыток, подождите немного';
 
   @override
-  String get errorInternal => 'Что-то пошло не так';
+  String get errorInternal => 'Ошибка на сервере, попробуйте позже';
 
   @override
   String get errorSmsCodeInvalid => 'Неверный код';
@@ -150,7 +150,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get phoneNumberLabel => 'Номер телефона';
 
   @override
-  String get phoneNumberHint => '+7 (7XX) XXX-XX-XX';
+  String get phoneNumberHint => 'XX) XXX-XX-XX';
 
   @override
   String get phoneScreenHelper => 'Пришлём одноразовый код по SMS';

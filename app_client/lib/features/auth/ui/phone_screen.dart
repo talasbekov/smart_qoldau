@@ -12,34 +12,59 @@ import '../../../l10n/app_localizations.dart';
 import '../state/auth_controller.dart';
 import 'code_screen.dart';
 
-/// Количество цифр, которое пользователь набирает после фиксированного
-/// префикса `+7 (7` — код страны (`7`) и первая цифра мобильного номера
-/// (тоже литеральная `7`, все казахстанские мобильные номера начинают
-/// абонентский номер с неё) в маску уже вшиты.
+/// Количество свободных цифр, которые пользователь набирает после
+/// фиксированного префикса `+7 (7` — код страны (`7`) и первая цифра
+/// мобильного номера (тоже литеральная `7`, все казахстанские мобильные
+/// номера начинают абонентский номер с неё) в маску вшиты, но НЕ хранятся
+/// в `TextEditingController.text` — они нарисованы декорацией поля
+/// (`InputDecoration.prefixText`), а не написаны в редактируемый текст.
+///
+/// Это принципиально: если бы фиксированный префикс лежал прямо в тексте
+/// поля, каждое новое нажатие заново извлекало бы цифры из ВСЕГО текста
+/// (включая уже когда-то дописанный туда же префикс) и приписывало бы
+/// поверх него ещё один — маска раздувалась бы с каждым нажатием
+/// (`"7"` → `"77"` → `"777"` → ...). Вынос префикса в декорацию убирает
+/// этот класс багов целиком: текст поля всегда состоит только из того,
+/// что реально набрал пользователь, плюс расставленные этим же
+/// форматтером разделители.
 const _typedDigitsCount = 9;
 
-/// Полное число цифр в отформатированном тексте поля, когда маска
-/// заполнена целиком: 2 фиксированных («7» кода страны + литеральная «7»
-/// мобильного номера) плюс [_typedDigitsCount] набранных пользователем —
-/// именно столько цифр реально лежит в `TextEditingController.text` после
-/// [_PhoneMaskFormatter] (маска пишет фиксированные цифры прямо в текст, а
-/// не только в декорацию), поэтому кнопка сверяется с этим числом, а не с
-/// [_typedDigitsCount].
-const _totalDigitsCount = 2 + _typedDigitsCount;
+/// Если после вставки/ввода в тексте набралось больше [_typedDigitsCount]
+/// цифр, но лишние в точности совпадают с распространённым способом
+/// вписать код страны вместе с номером (пользователь вставил из буфера
+/// обмена полный номер вида `+7 701 234 56 78`/`8 701 234 56 78`, либо
+/// вручную набрал `+7`/`8` перед своим номером) — отрезает именно этот
+/// распознанный избыточный префикс, а не хвост настоящих цифр номера
+/// (как было бы при простом обрезании `substring(0, 9)`).
+String _stripRedundantPrefix(String digits) {
+  final overflow = digits.length - _typedDigitsCount;
+  if (overflow == 2 && (digits.startsWith('77') || digits.startsWith('87'))) {
+    return digits.substring(2);
+  }
+  if (overflow == 1 && (digits.startsWith('7') || digits.startsWith('8'))) {
+    return digits.substring(1);
+  }
+  return digits;
+}
 
-/// Преобразует набранные цифры в маску `+7 (7XX) XXX-XX-XX`.
+/// Преобразует набранные цифры в суффикс маски `XX) XXX-XX-XX`, который
+/// идёт в тексте поля после фиксированного `InputDecoration.prefixText`
+/// `+7 (7` (см. [_typedDigitsCount] — почему префикс не часть текста).
 class _PhoneMaskFormatter extends TextInputFormatter {
   @override
   TextEditingValue formatEditUpdate(
     TextEditingValue oldValue,
     TextEditingValue newValue,
   ) {
-    final digits = newValue.text.replaceAll(RegExp(r'\D'), '');
-    final trimmed = digits.length > _typedDigitsCount
-        ? digits.substring(0, _typedDigitsCount)
-        : digits;
+    final raw = newValue.text.replaceAll(RegExp(r'\D'), '');
+    final withoutPrefix = raw.length > _typedDigitsCount
+        ? _stripRedundantPrefix(raw)
+        : raw;
+    final trimmed = withoutPrefix.length > _typedDigitsCount
+        ? withoutPrefix.substring(0, _typedDigitsCount)
+        : withoutPrefix;
 
-    final buffer = StringBuffer('+7 (7');
+    final buffer = StringBuffer();
     for (var i = 0; i < trimmed.length; i++) {
       if (i == 2) buffer.write(') ');
       if (i == 5) buffer.write('-');
@@ -79,16 +104,17 @@ class _PhoneScreenState extends ConsumerState<PhoneScreen> {
     super.dispose();
   }
 
-  /// Все цифры отформатированного текста поля — включая фиксированные
-  /// «77» из маски, а не только набранные пользователем (см.
-  /// [_totalDigitsCount]).
+  /// Цифры, реально набранные пользователем (без фиксированного
+  /// префикса — он не часть [TextEditingController.text], см.
+  /// [_typedDigitsCount]).
   String get _digits => _controller.text.replaceAll(RegExp(r'\D'), '');
 
-  bool get _canSubmit => _digits.length == _totalDigitsCount && !_submitting;
+  bool get _canSubmit => _digits.length == _typedDigitsCount && !_submitting;
 
-  /// `+77XXXXXXXXX` — просто [_digits] с ведущим `+`, потому что
-  /// фиксированные «77» уже часть [_digits] (их пишет маска).
-  String get _normalizedPhone => '+$_digits';
+  /// `+77XXXXXXXXX` — фиксированный префикс `77` (код страны + литеральная
+  /// первая цифра мобильного номера) приписывается вручную, потому что в
+  /// [_digits] его нет.
+  String get _normalizedPhone => '+77$_digits';
 
   Future<void> _submit() async {
     if (!_canSubmit) return;
@@ -136,6 +162,10 @@ class _PhoneScreenState extends ConsumerState<PhoneScreen> {
               style: SqTypography.body.copyWith(color: SqColors.textPrimary),
               decoration: InputDecoration(
                 labelText: l10n.phoneNumberLabel,
+                prefixText: '+7 (7',
+                prefixStyle: SqTypography.body.copyWith(
+                  color: SqColors.textPrimary,
+                ),
                 hintText: l10n.phoneNumberHint,
                 errorText: _errorText,
                 filled: true,
