@@ -23,6 +23,7 @@ jobs:
         if: matrix.package == 'app_client'
         run: |
           flutter gen-l10n
+          git add --intent-to-add -- lib/l10n
           git diff --exit-code -- lib/l10n || {
             echo "::error::lib/l10n/*.dart разошёлся с l10n/*.arb — перегенерируй (flutter gen-l10n) и закоммить"
             exit 1
