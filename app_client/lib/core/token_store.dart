@@ -1,0 +1,86 @@
+/// Секьюрное хранилище пары токенов сессии и профиля пользователя.
+library;
+
+import 'dart:convert';
+
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:shared/shared.dart';
+
+/// Узкий интерфейс поверх секьюрного хранилища ключ-значение.
+///
+/// `flutter_secure_storage` — платформенный плагин на `MethodChannel` и в
+/// `flutter test` без подмены канала не отвечает вообще (обращение к нему
+/// в юнит-тестах просто зависает/бросает `MissingPluginException`).
+/// Вместо мока канала (в задаче 2 такой мок «протёк» на другие тесты
+/// файла — см. `packages/shared/test/design/widgets_test.dart`) сужаем
+/// поверхность до трёх методов: продакшен-реализация ([FlutterSecureStore])
+/// оборачивает реальный плагин, а тесты подставляют простую
+/// in-memory-реализацию через `Provider.overrideWithValue`.
+abstract class SecureStore {
+  Future<String?> read(String key);
+  Future<void> write(String key, String value);
+  Future<void> delete(String key);
+}
+
+/// Реализация [SecureStore] поверх настоящего [FlutterSecureStorage] —
+/// используется в приложении (см. `secureStoreProvider` в `providers.dart`).
+class FlutterSecureStore implements SecureStore {
+  const FlutterSecureStore([this._storage = const FlutterSecureStorage()]);
+
+  final FlutterSecureStorage _storage;
+
+  @override
+  Future<String?> read(String key) => _storage.read(key: key);
+
+  @override
+  Future<void> write(String key, String value) =>
+      _storage.write(key: key, value: value);
+
+  @override
+  Future<void> delete(String key) => _storage.delete(key: key);
+}
+
+const _accessKey = 'sq.access';
+const _refreshKey = 'sq.refresh';
+const _userKey = 'sq.user';
+
+/// Хранит пару токенов сессии (`Tokens`) в [SecureStore].
+///
+/// Профиль пользователя (`AuthUser`) хранится рядом с токенами (JSON-строкой
+/// под собственным ключом) — при восстановлении сессии (`AuthController
+/// .restore()`) не нужен отдельный сетевой запрос, чтобы узнать
+/// `isGuest`/`phone`: это ровно то, что позволяет гостевому профилю и
+/// зарегистрированной сессии одинаково пережить перезапуск приложения.
+class TokenStore {
+  const TokenStore(this._store);
+
+  final SecureStore _store;
+
+  /// Читает сохранённую пару токенов. `null`, если сессии ещё не было
+  /// (хотя бы один из трёх ключей отсутствует).
+  Future<Tokens?> read() async {
+    final access = await _store.read(_accessKey);
+    final refresh = await _store.read(_refreshKey);
+    final userJson = await _store.read(_userKey);
+    if (access == null || refresh == null || userJson == null) {
+      return null;
+    }
+    return Tokens(
+      accessToken: access,
+      refreshToken: refresh,
+      user: AuthUser.fromJson(jsonDecode(userJson) as Map<String, dynamic>),
+    );
+  }
+
+  Future<void> write(Tokens tokens) async {
+    await _store.write(_accessKey, tokens.accessToken);
+    await _store.write(_refreshKey, tokens.refreshToken);
+    await _store.write(_userKey, jsonEncode(tokens.user.toJson()));
+  }
+
+  Future<void> clear() async {
+    await _store.delete(_accessKey);
+    await _store.delete(_refreshKey);
+    await _store.delete(_userKey);
+  }
+}

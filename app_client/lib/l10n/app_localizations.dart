@@ -157,6 +157,264 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Что-то пошло не так'**
   String get errorGeneric;
+
+  /// VALIDATION_FAILED — ошибка валидации запроса; пользователь не должен видеть её осмысленно, общий текст допустим
+  ///
+  /// In ru, this message translates to:
+  /// **'Что-то пошло не так'**
+  String get errorValidationFailed;
+
+  /// UNAUTHORIZED — истёкшая или недействительная сессия
+  ///
+  /// In ru, this message translates to:
+  /// **'Сессия истекла, войдите заново'**
+  String get errorUnauthorized;
+
+  /// FORBIDDEN — действие запрещено для текущего пользователя
+  ///
+  /// In ru, this message translates to:
+  /// **'Недостаточно прав для этого действия'**
+  String get errorForbidden;
+
+  /// NOT_FOUND — общий код отсутствия ресурса
+  ///
+  /// In ru, this message translates to:
+  /// **'Запрашиваемые данные не найдены'**
+  String get errorNotFound;
+
+  /// CONFLICT — общий код конфликта состояния
+  ///
+  /// In ru, this message translates to:
+  /// **'Действие конфликтует с текущим состоянием'**
+  String get errorConflict;
+
+  /// RATE_LIMITED — общий код превышения частоты запросов
+  ///
+  /// In ru, this message translates to:
+  /// **'Слишком много попыток, подождите немного'**
+  String get errorRateLimited;
+
+  /// INTERNAL — внутренняя ошибка сервера; пользователь не должен видеть её осмысленно, общий текст допустим
+  ///
+  /// In ru, this message translates to:
+  /// **'Что-то пошло не так'**
+  String get errorInternal;
+
+  /// SMS_CODE_INVALID — введённый SMS-код не совпадает с отправленным
+  ///
+  /// In ru, this message translates to:
+  /// **'Неверный код'**
+  String get errorSmsCodeInvalid;
+
+  /// SMS_CODE_EXPIRED — SMS-код больше не действителен
+  ///
+  /// In ru, this message translates to:
+  /// **'Код истёк, запросите новый'**
+  String get errorSmsCodeExpired;
+
+  /// SMS_RATE_LIMITED — повторная отправка SMS-кода запрошена раньше 45 секунд (Р-10)
+  ///
+  /// In ru, this message translates to:
+  /// **'Слишком много попыток, повторите чуть позже'**
+  String get errorSmsRateLimited;
+
+  /// PHONE_ALREADY_REGISTERED — телефон уже привязан к другому аккаунту
+  ///
+  /// In ru, this message translates to:
+  /// **'Этот номер уже зарегистрирован'**
+  String get errorPhoneAlreadyRegistered;
+
+  /// ACTIVE_REQUEST_EXISTS — у клиента уже есть незавершённая заявка на подбор эксперта
+  ///
+  /// In ru, this message translates to:
+  /// **'У вас уже есть активная заявка'**
+  String get errorActiveRequestExists;
+
+  /// EXPERT_UNAVAILABLE — эксперт временно не принимает консультации
+  ///
+  /// In ru, this message translates to:
+  /// **'Эксперт сейчас недоступен'**
+  String get errorExpertUnavailable;
+
+  /// EXPERT_NOT_FOUND — эксперт с таким идентификатором не существует
+  ///
+  /// In ru, this message translates to:
+  /// **'Эксперт не найден'**
+  String get errorExpertNotFound;
+
+  /// EXPERT_BLOCKED — эксперт заблокирован и недоступен для новых консультаций
+  ///
+  /// In ru, this message translates to:
+  /// **'Эксперт недоступен для консультаций'**
+  String get errorExpertBlocked;
+
+  /// REQUEST_NOT_FOUND — заявка на подбор эксперта не найдена
+  ///
+  /// In ru, this message translates to:
+  /// **'Заявка не найдена'**
+  String get errorRequestNotFound;
+
+  /// REQUEST_ALREADY_CLOSED — заявка уже завершена или отменена
+  ///
+  /// In ru, this message translates to:
+  /// **'Заявка уже закрыта'**
+  String get errorRequestAlreadyClosed;
+
+  /// CONSULTATION_NOT_FOUND — консультация с таким идентификатором не существует
+  ///
+  /// In ru, this message translates to:
+  /// **'Консультация не найдена'**
+  String get errorConsultationNotFound;
+
+  /// CONSULTATION_NOT_ACTIVE — действие недоступно для неактивной консультации
+  ///
+  /// In ru, this message translates to:
+  /// **'Консультация уже завершена'**
+  String get errorConsultationNotActive;
+
+  /// PAYMENT_METHOD_NOT_FOUND — сохранённый способ оплаты не найден
+  ///
+  /// In ru, this message translates to:
+  /// **'Способ оплаты не найден'**
+  String get errorPaymentMethodNotFound;
+
+  /// PAYMENT_NOT_FOUND — платёж с таким идентификатором не найден
+  ///
+  /// In ru, this message translates to:
+  /// **'Платёж не найден'**
+  String get errorPaymentNotFound;
+
+  /// PROVIDER_DECLINED — платёжный провайдер отклонил операцию
+  ///
+  /// In ru, this message translates to:
+  /// **'Платёж отклонён банком'**
+  String get errorProviderDeclined;
+
+  /// ALREADY_PAID — повторная попытка оплаты уже оплаченной консультации
+  ///
+  /// In ru, this message translates to:
+  /// **'Уже оплачено'**
+  String get errorAlreadyPaid;
+
+  /// REVIEW_EXISTS — отзыв на эту консультацию уже оставлен
+  ///
+  /// In ru, this message translates to:
+  /// **'Вы уже оставили отзыв'**
+  String get errorReviewExists;
+
+  /// REVIEW_NOT_FOUND — отзыв с таким идентификатором не найден
+  ///
+  /// In ru, this message translates to:
+  /// **'Отзыв не найден'**
+  String get errorReviewNotFound;
+
+  /// NOTIFICATION_NOT_FOUND — уведомление с таким идентификатором не найдено
+  ///
+  /// In ru, this message translates to:
+  /// **'Уведомление не найдено'**
+  String get errorNotificationNotFound;
+
+  /// DEVICE_NOT_FOUND — устройство для push-уведомлений не зарегистрировано
+  ///
+  /// In ru, this message translates to:
+  /// **'Устройство не найдено'**
+  String get errorDeviceNotFound;
+
+  /// TICKET_NOT_FOUND — обращение в поддержку с таким идентификатором не найдено
+  ///
+  /// In ru, this message translates to:
+  /// **'Обращение не найдено'**
+  String get errorTicketNotFound;
+
+  /// TICKET_CONTACT_REQUIRED — для анонимного обращения не указан контакт для ответа
+  ///
+  /// In ru, this message translates to:
+  /// **'Укажите контакт для связи'**
+  String get errorTicketContactRequired;
+
+  /// TICKET_CATEGORY_NOT_ALLOWED — выбранная категория обращения недопустима
+  ///
+  /// In ru, this message translates to:
+  /// **'Эта категория недоступна для обращения'**
+  String get errorTicketCategoryNotAllowed;
+
+  /// TICKET_ALREADY_RESOLVED — обращение в поддержку уже закрыто как решённое
+  ///
+  /// In ru, this message translates to:
+  /// **'Обращение уже решено'**
+  String get errorTicketAlreadyResolved;
+
+  /// NETWORK — клиентский код сетевого сбоя (таймаут, обрыв соединения, DNS)
+  ///
+  /// In ru, this message translates to:
+  /// **'Нет соединения с сервером'**
+  String get errorNetwork;
+
+  /// Слоган под названием приложения на заставке
+  ///
+  /// In ru, this message translates to:
+  /// **'Поддержка рядом, когда она нужна'**
+  String get splashTagline;
+
+  /// Заголовок экрана ввода номера телефона
+  ///
+  /// In ru, this message translates to:
+  /// **'Вход по номеру телефона'**
+  String get phoneScreenTitle;
+
+  /// Подзаголовок экрана ввода номера телефона
+  ///
+  /// In ru, this message translates to:
+  /// **'Это займёт меньше минуты'**
+  String get phoneScreenSubtitle;
+
+  /// Подпись поля ввода номера телефона
+  ///
+  /// In ru, this message translates to:
+  /// **'Номер телефона'**
+  String get phoneNumberLabel;
+
+  /// Шаблон-подсказка маски номера телефона в поле ввода — формат цифр не зависит от языка интерфейса
+  ///
+  /// In ru, this message translates to:
+  /// **'+7 (7XX) XXX-XX-XX'**
+  String get phoneNumberHint;
+
+  /// Пояснение под полем ввода номера телефона
+  ///
+  /// In ru, this message translates to:
+  /// **'Пришлём одноразовый код по SMS'**
+  String get phoneScreenHelper;
+
+  /// Кнопка отправки SMS-кода на экране ввода номера телефона
+  ///
+  /// In ru, this message translates to:
+  /// **'Получить код'**
+  String get actionGetCode;
+
+  /// Заголовок экрана ввода SMS-кода
+  ///
+  /// In ru, this message translates to:
+  /// **'Введите код из SMS'**
+  String get codeScreenTitle;
+
+  /// Подзаголовок экрана ввода SMS-кода — номер, на который отправлен код
+  ///
+  /// In ru, this message translates to:
+  /// **'Код отправлен на номер {phone}'**
+  String codeScreenSubtitle(String phone);
+
+  /// Кнопка повторной отправки SMS-кода, доступна после обратного отсчёта
+  ///
+  /// In ru, this message translates to:
+  /// **'Отправить повторно'**
+  String get actionResendCode;
+
+  /// Текст кнопки повторной отправки SMS-кода во время обратного отсчёта (Р-10 — 45 секунд)
+  ///
+  /// In ru, this message translates to:
+  /// **'Отправить повторно через {seconds} с'**
+  String resendCodeCountdown(int seconds);
 }
 
 class _AppLocalizationsDelegate

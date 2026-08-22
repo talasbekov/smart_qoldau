@@ -39,5 +39,187 @@
   "errorGeneric": "Что-то пошло не так",
   "@errorGeneric": {
     "description": "Текст-заглушка для непредвиденной ошибки без более точного объяснения"
+  },
+  "errorValidationFailed": "Что-то пошло не так",
+  "@errorValidationFailed": {
+    "description": "VALIDATION_FAILED — ошибка валидации запроса; пользователь не должен видеть её осмысленно, общий текст допустим"
+  },
+  "errorUnauthorized": "Сессия истекла, войдите заново",
+  "@errorUnauthorized": {
+    "description": "UNAUTHORIZED — истёкшая или недействительная сессия"
+  },
+  "errorForbidden": "Недостаточно прав для этого действия",
+  "@errorForbidden": {
+    "description": "FORBIDDEN — действие запрещено для текущего пользователя"
+  },
+  "errorNotFound": "Запрашиваемые данные не найдены",
+  "@errorNotFound": {
+    "description": "NOT_FOUND — общий код отсутствия ресурса"
+  },
+  "errorConflict": "Действие конфликтует с текущим состоянием",
+  "@errorConflict": {
+    "description": "CONFLICT — общий код конфликта состояния"
+  },
+  "errorRateLimited": "Слишком много попыток, подождите немного",
+  "@errorRateLimited": {
+    "description": "RATE_LIMITED — общий код превышения частоты запросов"
+  },
+  "errorInternal": "Что-то пошло не так",
+  "@errorInternal": {
+    "description": "INTERNAL — внутренняя ошибка сервера; пользователь не должен видеть её осмысленно, общий текст допустим"
+  },
+  "errorSmsCodeInvalid": "Неверный код",
+  "@errorSmsCodeInvalid": {
+    "description": "SMS_CODE_INVALID — введённый SMS-код не совпадает с отправленным"
+  },
+  "errorSmsCodeExpired": "Код истёк, запросите новый",
+  "@errorSmsCodeExpired": {
+    "description": "SMS_CODE_EXPIRED — SMS-код больше не действителен"
+  },
+  "errorSmsRateLimited": "Слишком много попыток, повторите чуть позже",
+  "@errorSmsRateLimited": {
+    "description": "SMS_RATE_LIMITED — повторная отправка SMS-кода запрошена раньше 45 секунд (Р-10)"
+  },
+  "errorPhoneAlreadyRegistered": "Этот номер уже зарегистрирован",
+  "@errorPhoneAlreadyRegistered": {
+    "description": "PHONE_ALREADY_REGISTERED — телефон уже привязан к другому аккаунту"
+  },
+  "errorActiveRequestExists": "У вас уже есть активная заявка",
+  "@errorActiveRequestExists": {
+    "description": "ACTIVE_REQUEST_EXISTS — у клиента уже есть незавершённая заявка на подбор эксперта"
+  },
+  "errorExpertUnavailable": "Эксперт сейчас недоступен",
+  "@errorExpertUnavailable": {
+    "description": "EXPERT_UNAVAILABLE — эксперт временно не принимает консультации"
+  },
+  "errorExpertNotFound": "Эксперт не найден",
+  "@errorExpertNotFound": {
+    "description": "EXPERT_NOT_FOUND — эксперт с таким идентификатором не существует"
+  },
+  "errorExpertBlocked": "Эксперт недоступен для консультаций",
+  "@errorExpertBlocked": {
+    "description": "EXPERT_BLOCKED — эксперт заблокирован и недоступен для новых консультаций"
+  },
+  "errorRequestNotFound": "Заявка не найдена",
+  "@errorRequestNotFound": {
+    "description": "REQUEST_NOT_FOUND — заявка на подбор эксперта не найдена"
+  },
+  "errorRequestAlreadyClosed": "Заявка уже закрыта",
+  "@errorRequestAlreadyClosed": {
+    "description": "REQUEST_ALREADY_CLOSED — заявка уже завершена или отменена"
+  },
+  "errorConsultationNotFound": "Консультация не найдена",
+  "@errorConsultationNotFound": {
+    "description": "CONSULTATION_NOT_FOUND — консультация с таким идентификатором не существует"
+  },
+  "errorConsultationNotActive": "Консультация уже завершена",
+  "@errorConsultationNotActive": {
+    "description": "CONSULTATION_NOT_ACTIVE — действие недоступно для неактивной консультации"
+  },
+  "errorPaymentMethodNotFound": "Способ оплаты не найден",
+  "@errorPaymentMethodNotFound": {
+    "description": "PAYMENT_METHOD_NOT_FOUND — сохранённый способ оплаты не найден"
+  },
+  "errorPaymentNotFound": "Платёж не найден",
+  "@errorPaymentNotFound": {
+    "description": "PAYMENT_NOT_FOUND — платёж с таким идентификатором не найден"
+  },
+  "errorProviderDeclined": "Платёж отклонён банком",
+  "@errorProviderDeclined": {
+    "description": "PROVIDER_DECLINED — платёжный провайдер отклонил операцию"
+  },
+  "errorAlreadyPaid": "Уже оплачено",
+  "@errorAlreadyPaid": {
+    "description": "ALREADY_PAID — повторная попытка оплаты уже оплаченной консультации"
+  },
+  "errorReviewExists": "Вы уже оставили отзыв",
+  "@errorReviewExists": {
+    "description": "REVIEW_EXISTS — отзыв на эту консультацию уже оставлен"
+  },
+  "errorReviewNotFound": "Отзыв не найден",
+  "@errorReviewNotFound": {
+    "description": "REVIEW_NOT_FOUND — отзыв с таким идентификатором не найден"
+  },
+  "errorNotificationNotFound": "Уведомление не найдено",
+  "@errorNotificationNotFound": {
+    "description": "NOTIFICATION_NOT_FOUND — уведомление с таким идентификатором не найдено"
+  },
+  "errorDeviceNotFound": "Устройство не найдено",
+  "@errorDeviceNotFound": {
+    "description": "DEVICE_NOT_FOUND — устройство для push-уведомлений не зарегистрировано"
+  },
+  "errorTicketNotFound": "Обращение не найдено",
+  "@errorTicketNotFound": {
+    "description": "TICKET_NOT_FOUND — обращение в поддержку с таким идентификатором не найдено"
+  },
+  "errorTicketContactRequired": "Укажите контакт для связи",
+  "@errorTicketContactRequired": {
+    "description": "TICKET_CONTACT_REQUIRED — для анонимного обращения не указан контакт для ответа"
+  },
+  "errorTicketCategoryNotAllowed": "Эта категория недоступна для обращения",
+  "@errorTicketCategoryNotAllowed": {
+    "description": "TICKET_CATEGORY_NOT_ALLOWED — выбранная категория обращения недопустима"
+  },
+  "errorTicketAlreadyResolved": "Обращение уже решено",
+  "@errorTicketAlreadyResolved": {
+    "description": "TICKET_ALREADY_RESOLVED — обращение в поддержку уже закрыто как решённое"
+  },
+  "errorNetwork": "Нет соединения с сервером",
+  "@errorNetwork": {
+    "description": "NETWORK — клиентский код сетевого сбоя (таймаут, обрыв соединения, DNS)"
+  },
+  "splashTagline": "Поддержка рядом, когда она нужна",
+  "@splashTagline": {
+    "description": "Слоган под названием приложения на заставке"
+  },
+  "phoneScreenTitle": "Вход по номеру телефона",
+  "@phoneScreenTitle": {
+    "description": "Заголовок экрана ввода номера телефона"
+  },
+  "phoneScreenSubtitle": "Это займёт меньше минуты",
+  "@phoneScreenSubtitle": {
+    "description": "Подзаголовок экрана ввода номера телефона"
+  },
+  "phoneNumberLabel": "Номер телефона",
+  "@phoneNumberLabel": {
+    "description": "Подпись поля ввода номера телефона"
+  },
+  "phoneNumberHint": "+7 (7XX) XXX-XX-XX",
+  "@phoneNumberHint": {
+    "description": "Шаблон-подсказка маски номера телефона в поле ввода — формат цифр не зависит от языка интерфейса"
+  },
+  "phoneScreenHelper": "Пришлём одноразовый код по SMS",
+  "@phoneScreenHelper": {
+    "description": "Пояснение под полем ввода номера телефона"
+  },
+  "actionGetCode": "Получить код",
+  "@actionGetCode": {
+    "description": "Кнопка отправки SMS-кода на экране ввода номера телефона"
+  },
+  "codeScreenTitle": "Введите код из SMS",
+  "@codeScreenTitle": {
+    "description": "Заголовок экрана ввода SMS-кода"
+  },
+  "codeScreenSubtitle": "Код отправлен на номер {phone}",
+  "@codeScreenSubtitle": {
+    "description": "Подзаголовок экрана ввода SMS-кода — номер, на который отправлен код",
+    "placeholders": {
+      "phone": {
+        "type": "String"
+      }
+    }
+  },
+  "actionResendCode": "Отправить повторно",
+  "@actionResendCode": {
+    "description": "Кнопка повторной отправки SMS-кода, доступна после обратного отсчёта"
+  },
+  "resendCodeCountdown": "Отправить повторно через {seconds} с",
+  "@resendCodeCountdown": {
+    "description": "Текст кнопки повторной отправки SMS-кода во время обратного отсчёта (Р-10 — 45 секунд)",
+    "placeholders": {
+      "seconds": {
+        "type": "int"
+      }
+    }
   }
 }
