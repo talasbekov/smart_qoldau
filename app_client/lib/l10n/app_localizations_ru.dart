@@ -454,4 +454,131 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get hotlineName112 => 'Единая служба спасения';
+
+  @override
+  String get foundTitle => 'Специалист найден!';
+
+  @override
+  String get foundOnline => 'Сейчас на связи';
+
+  @override
+  String get foundStart => 'Начать консультацию';
+
+  @override
+  String get foundCancel => 'Отменить консультацию';
+
+  @override
+  String expertLanguages(String languages) {
+    return 'Языки: $languages';
+  }
+
+  @override
+  String get expertExperienceLabel => 'Опыт';
+
+  @override
+  String get experienceLessThanYear => 'менее года';
+
+  @override
+  String get experienceOneToThree => '1–3 года';
+
+  @override
+  String get experienceThreeToFive => '3–5 лет';
+
+  @override
+  String get experienceFiveToTen => '5–10 лет';
+
+  @override
+  String get experienceMoreThanTen => 'более 10 лет';
+
+  @override
+  String get paymentSheetTitle => 'Оплата консультации';
+
+  @override
+  String get paymentLineItem => 'Консультация';
+
+  @override
+  String get paymentEscrowNote =>
+      'Деньги замораживаются на карте и списываются только после состоявшейся консультации';
+
+  @override
+  String get paymentPay => 'Оплатить';
+
+  @override
+  String get paymentAddCard => 'Добавить карту';
+
+  @override
+  String get paymentNoCards => 'Пока нет привязанных карт';
+
+  @override
+  String get paymentDeclinedTitle => 'Платёж отклонён';
+
+  @override
+  String get paymentAnotherCard => 'Другая карта';
+
+  @override
+  String get cardsTitle => 'Мои карты';
+
+  @override
+  String get cardsEmpty => 'Карт пока нет';
+
+  @override
+  String get cardDeleteTitle => 'Открепить карту?';
+
+  @override
+  String cardDeleteBody(String maskedPan) {
+    return 'Карта $maskedPan больше не будет доступна для оплаты';
+  }
+
+  @override
+  String get actionDelete => 'Открепить';
+
+  @override
+  String get actionSave => 'Сохранить';
+
+  @override
+  String get addCardTitle => 'Новая карта';
+
+  @override
+  String get cardNumberLabel => 'Номер карты';
+
+  @override
+  String get cardExpiryLabel => 'Срок действия';
+
+  @override
+  String get cardHolderLabel => 'Имя на карте';
+
+  @override
+  String get cardNumberInvalid => 'Проверьте номер карты';
+
+  @override
+  String get cardExpiryInvalid => 'Срок действия в формате ММ/ГГ';
+
+  @override
+  String get cardHolderInvalid => 'Укажите имя, как на карте';
+
+  @override
+  String paymentDuration(num minutes) {
+    String _temp0 = intl.Intl.pluralLogic(
+      minutes,
+      locale: localeName,
+      other: '$minutes минуты',
+      many: '$minutes минут',
+      few: '$minutes минуты',
+      one: '$minutes минута',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String expertReviewsCount(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count отзыва',
+      many: '$count отзывов',
+      few: '$count отзыва',
+      one: '$count отзыв',
+    );
+    return '$_temp0';
+  }
 }

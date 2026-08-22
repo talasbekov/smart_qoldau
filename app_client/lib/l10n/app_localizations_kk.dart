@@ -451,4 +451,127 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get hotlineName112 => 'Бірыңғай құтқару қызметі';
+
+  @override
+  String get foundTitle => 'Маман табылды!';
+
+  @override
+  String get foundOnline => 'Қазір байланыста';
+
+  @override
+  String get foundStart => 'Кеңесті бастау';
+
+  @override
+  String get foundCancel => 'Кеңестен бас тарту';
+
+  @override
+  String expertLanguages(String languages) {
+    return 'Тілдері: $languages';
+  }
+
+  @override
+  String get expertExperienceLabel => 'Тәжірибесі';
+
+  @override
+  String get experienceLessThanYear => 'бір жылдан аз';
+
+  @override
+  String get experienceOneToThree => '1–3 жыл';
+
+  @override
+  String get experienceThreeToFive => '3–5 жыл';
+
+  @override
+  String get experienceFiveToTen => '5–10 жыл';
+
+  @override
+  String get experienceMoreThanTen => '10 жылдан астам';
+
+  @override
+  String get paymentSheetTitle => 'Кеңес ақысын төлеу';
+
+  @override
+  String get paymentLineItem => 'Кеңес';
+
+  @override
+  String get paymentEscrowNote =>
+      'Ақша картада бұғатталады және кеңес өткеннен кейін ғана есептен шығарылады';
+
+  @override
+  String get paymentPay => 'Төлеу';
+
+  @override
+  String get paymentAddCard => 'Карта қосу';
+
+  @override
+  String get paymentNoCards => 'Әзірге тіркелген карта жоқ';
+
+  @override
+  String get paymentDeclinedTitle => 'Төлем қабылданбады';
+
+  @override
+  String get paymentAnotherCard => 'Басқа карта';
+
+  @override
+  String get cardsTitle => 'Менің карталарым';
+
+  @override
+  String get cardsEmpty => 'Карталар әзірге жоқ';
+
+  @override
+  String get cardDeleteTitle => 'Картаны алып тастау керек пе?';
+
+  @override
+  String cardDeleteBody(String maskedPan) {
+    return '$maskedPan картасы бұдан былай төлеуге қолжетімсіз болады';
+  }
+
+  @override
+  String get actionDelete => 'Алып тастау';
+
+  @override
+  String get actionSave => 'Сақтау';
+
+  @override
+  String get addCardTitle => 'Жаңа карта';
+
+  @override
+  String get cardNumberLabel => 'Карта нөмірі';
+
+  @override
+  String get cardExpiryLabel => 'Жарамдылық мерзімі';
+
+  @override
+  String get cardHolderLabel => 'Картадағы аты';
+
+  @override
+  String get cardNumberInvalid => 'Карта нөмірін тексеріңіз';
+
+  @override
+  String get cardExpiryInvalid => 'Мерзімі АА/ЖЖ пішімінде';
+
+  @override
+  String get cardHolderInvalid => 'Картадағыдай атыңызды жазыңыз';
+
+  @override
+  String paymentDuration(num minutes) {
+    String _temp0 = intl.Intl.pluralLogic(
+      minutes,
+      locale: localeName,
+      other: '$minutes минут',
+      one: '$minutes минут',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String expertReviewsCount(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count пікір',
+      one: '$count пікір',
+    );
+    return '$_temp0';
+  }
 }

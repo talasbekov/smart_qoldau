@@ -51,6 +51,10 @@ abstract final class RoutePaths {
   /// Путь экрана «специалист найден» по заявке [requestId].
   static String found(String requestId) => '/found/$requestId';
 
+  /// Привязанные карты клиента и добавление новой (задача 12).
+  static const cards = '/cards';
+  static const cardsAdd = '/cards/add';
+
   /// Шаблон маршрута сессии консультации для регистрации в `GoRoute.path`.
   static const sessionPattern = '/session/:id';
 

@@ -22,7 +22,9 @@ import 'features/onboarding/ui/slides_screen.dart';
 import 'features/onboarding/ui/welcome_screen.dart';
 import 'features/profile/ui/profile_screen.dart';
 import 'features/session/ui/session_screen.dart';
-import 'features/found/ui/found_screen.dart';
+import 'features/payment/ui/add_card_screen.dart';
+import 'features/payment/ui/cards_screen.dart';
+import 'features/payment/ui/found_screen.dart';
 import 'features/shell/ui/app_shell.dart';
 import 'features/funnel/state/search_controller.dart';
 import 'features/funnel/ui/search_screen.dart';
@@ -174,6 +176,14 @@ GoRouter sqRouter(Ref ref) {
         path: RoutePaths.foundPattern,
         builder: (context, state) =>
             FoundScreen(requestId: state.pathParameters['requestId']!),
+      ),
+      GoRoute(
+        path: RoutePaths.cards,
+        builder: (context, state) => const CardsScreen(),
+      ),
+      GoRoute(
+        path: RoutePaths.cardsAdd,
+        builder: (context, state) => const AddCardScreen(),
       ),
       GoRoute(
         path: RoutePaths.sessionPattern,

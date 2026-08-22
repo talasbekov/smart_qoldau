@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../tokens.dart';
 
@@ -13,6 +14,8 @@ class SqTextField extends StatelessWidget {
     this.errorText,
     this.onChanged,
     this.keyboardType,
+    this.inputFormatters,
+    this.focusNode,
   });
 
   final String? label;
@@ -23,10 +26,20 @@ class SqTextField extends StatelessWidget {
   final ValueChanged<String>? onChanged;
   final TextInputType? keyboardType;
 
+  /// Форматтеры ввода (маски). Прямой проброс в [TextField]: маска номера
+  /// карты (задача 12) и телефона живёт в экране, а не в дизайн-системе —
+  /// здесь только канал для неё.
+  final List<TextInputFormatter>? inputFormatters;
+
+  /// Узел фокуса — нужен экранам с авто-переходом между полями формы.
+  final FocusNode? focusNode;
+
   @override
   Widget build(BuildContext context) {
     return TextField(
       controller: controller,
+      focusNode: focusNode,
+      inputFormatters: inputFormatters,
       obscureText: obscureText,
       onChanged: onChanged,
       keyboardType: keyboardType,

@@ -907,6 +907,210 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Единая служба спасения'**
   String get hotlineName112;
+
+  /// Заголовок экрана «специалист найден» (прототип 10-found.png)
+  ///
+  /// In ru, this message translates to:
+  /// **'Специалист найден!'**
+  String get foundTitle;
+
+  /// Подпись под именем специалиста на экране «специалист найден» — он доступен прямо сейчас
+  ///
+  /// In ru, this message translates to:
+  /// **'Сейчас на связи'**
+  String get foundOnline;
+
+  /// Кнопка перехода к оплате на экране «специалист найден»
+  ///
+  /// In ru, this message translates to:
+  /// **'Начать консультацию'**
+  String get foundStart;
+
+  /// Кнопка отказа от найденного специалиста: отменяет консультацию и возвращает на главную
+  ///
+  /// In ru, this message translates to:
+  /// **'Отменить консультацию'**
+  String get foundCancel;
+
+  /// Строка со списком языков специалиста
+  ///
+  /// In ru, this message translates to:
+  /// **'Языки: {languages}'**
+  String expertLanguages(String languages);
+
+  /// Подпись показателя опыта в карточке специалиста
+  ///
+  /// In ru, this message translates to:
+  /// **'Опыт'**
+  String get expertExperienceLabel;
+
+  /// Уровень опыта LESS_THAN_YEAR
+  ///
+  /// In ru, this message translates to:
+  /// **'менее года'**
+  String get experienceLessThanYear;
+
+  /// Уровень опыта ONE_TO_THREE
+  ///
+  /// In ru, this message translates to:
+  /// **'1–3 года'**
+  String get experienceOneToThree;
+
+  /// Уровень опыта THREE_TO_FIVE
+  ///
+  /// In ru, this message translates to:
+  /// **'3–5 лет'**
+  String get experienceThreeToFive;
+
+  /// Уровень опыта FIVE_TO_TEN
+  ///
+  /// In ru, this message translates to:
+  /// **'5–10 лет'**
+  String get experienceFiveToTen;
+
+  /// Уровень опыта MORE_THAN_TEN
+  ///
+  /// In ru, this message translates to:
+  /// **'более 10 лет'**
+  String get experienceMoreThanTen;
+
+  /// Заголовок шторки оплаты
+  ///
+  /// In ru, this message translates to:
+  /// **'Оплата консультации'**
+  String get paymentSheetTitle;
+
+  /// Название позиции в шторке оплаты
+  ///
+  /// In ru, this message translates to:
+  /// **'Консультация'**
+  String get paymentLineItem;
+
+  /// Пояснение эскроу-холда в шторке оплаты (Р-01)
+  ///
+  /// In ru, this message translates to:
+  /// **'Деньги замораживаются на карте и списываются только после состоявшейся консультации'**
+  String get paymentEscrowNote;
+
+  /// Кнопка оплаты в шторке
+  ///
+  /// In ru, this message translates to:
+  /// **'Оплатить'**
+  String get paymentPay;
+
+  /// Кнопка добавления карты — в шторке оплаты и на экране карт
+  ///
+  /// In ru, this message translates to:
+  /// **'Добавить карту'**
+  String get paymentAddCard;
+
+  /// Текст в шторке оплаты, когда у клиента нет ни одной карты
+  ///
+  /// In ru, this message translates to:
+  /// **'Пока нет привязанных карт'**
+  String get paymentNoCards;
+
+  /// Заголовок состояния PROVIDER_DECLINED в шторке оплаты
+  ///
+  /// In ru, this message translates to:
+  /// **'Платёж отклонён'**
+  String get paymentDeclinedTitle;
+
+  /// Кнопка выбора другой карты после отказа платежа
+  ///
+  /// In ru, this message translates to:
+  /// **'Другая карта'**
+  String get paymentAnotherCard;
+
+  /// Заголовок экрана привязанных карт
+  ///
+  /// In ru, this message translates to:
+  /// **'Мои карты'**
+  String get cardsTitle;
+
+  /// Пустое состояние экрана карт
+  ///
+  /// In ru, this message translates to:
+  /// **'Карт пока нет'**
+  String get cardsEmpty;
+
+  /// Заголовок подтверждения удаления карты
+  ///
+  /// In ru, this message translates to:
+  /// **'Открепить карту?'**
+  String get cardDeleteTitle;
+
+  /// Текст подтверждения удаления карты
+  ///
+  /// In ru, this message translates to:
+  /// **'Карта {maskedPan} больше не будет доступна для оплаты'**
+  String cardDeleteBody(String maskedPan);
+
+  /// Кнопка подтверждения удаления карты
+  ///
+  /// In ru, this message translates to:
+  /// **'Открепить'**
+  String get actionDelete;
+
+  /// Кнопка сохранения формы
+  ///
+  /// In ru, this message translates to:
+  /// **'Сохранить'**
+  String get actionSave;
+
+  /// Заголовок экрана добавления карты
+  ///
+  /// In ru, this message translates to:
+  /// **'Новая карта'**
+  String get addCardTitle;
+
+  /// Подпись поля номера карты
+  ///
+  /// In ru, this message translates to:
+  /// **'Номер карты'**
+  String get cardNumberLabel;
+
+  /// Подпись поля срока действия карты
+  ///
+  /// In ru, this message translates to:
+  /// **'Срок действия'**
+  String get cardExpiryLabel;
+
+  /// Подпись поля имени держателя карты
+  ///
+  /// In ru, this message translates to:
+  /// **'Имя на карте'**
+  String get cardHolderLabel;
+
+  /// Ошибка валидации номера карты (в т.ч. проверка Луна)
+  ///
+  /// In ru, this message translates to:
+  /// **'Проверьте номер карты'**
+  String get cardNumberInvalid;
+
+  /// Ошибка валидации срока действия карты
+  ///
+  /// In ru, this message translates to:
+  /// **'Срок действия в формате ММ/ГГ'**
+  String get cardExpiryInvalid;
+
+  /// Ошибка валидации имени держателя карты
+  ///
+  /// In ru, this message translates to:
+  /// **'Укажите имя, как на карте'**
+  String get cardHolderInvalid;
+
+  /// Длительность консультации в шторке оплаты
+  ///
+  /// In ru, this message translates to:
+  /// **'{minutes, plural, one{{minutes} минута} few{{minutes} минуты} many{{minutes} минут} other{{minutes} минуты}}'**
+  String paymentDuration(num minutes);
+
+  /// Число отзывов рядом с рейтингом специалиста
+  ///
+  /// In ru, this message translates to:
+  /// **'{count, plural, one{{count} отзыв} few{{count} отзыва} many{{count} отзывов} other{{count} отзыва}}'**
+  String expertReviewsCount(num count);
 }
 
 class _AppLocalizationsDelegate

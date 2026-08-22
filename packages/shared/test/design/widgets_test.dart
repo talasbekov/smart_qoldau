@@ -242,6 +242,31 @@ void main() {
       expect(typed, 'Дана');
     });
 
+    testWidgets(
+      'passes inputFormatters through to the inner TextField — маски (номер '
+      'карты, телефон) живут в экранах, дизайн-система только несёт их',
+      (tester) async {
+        final controller = TextEditingController();
+        addTearDown(controller.dispose);
+
+        await tester.pumpWidget(
+          _wrap(
+            SqTextField(
+              controller: controller,
+              inputFormatters: [
+                FilteringTextInputFormatter.digitsOnly,
+                LengthLimitingTextInputFormatter(4),
+              ],
+            ),
+          ),
+        );
+
+        await tester.enterText(find.byType(TextField), 'a1b2c3d4e5');
+
+        expect(controller.text, '1234');
+      },
+    );
+
     testWidgets('shows the error message when errorText is set', (
       tester,
     ) async {

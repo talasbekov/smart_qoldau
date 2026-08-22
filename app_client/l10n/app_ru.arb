@@ -559,5 +559,161 @@
   "hotlineName112": "Единая служба спасения",
   "@hotlineName112": {
     "description": "Название номера 112"
+  },
+  "foundTitle": "Специалист найден!",
+  "@foundTitle": {
+    "description": "Заголовок экрана «специалист найден» (прототип 10-found.png)"
+  },
+  "foundOnline": "Сейчас на связи",
+  "@foundOnline": {
+    "description": "Подпись под именем специалиста на экране «специалист найден» — он доступен прямо сейчас"
+  },
+  "foundStart": "Начать консультацию",
+  "@foundStart": {
+    "description": "Кнопка перехода к оплате на экране «специалист найден»"
+  },
+  "foundCancel": "Отменить консультацию",
+  "@foundCancel": {
+    "description": "Кнопка отказа от найденного специалиста: отменяет консультацию и возвращает на главную"
+  },
+  "expertLanguages": "Языки: {languages}",
+  "@expertLanguages": {
+    "description": "Строка со списком языков специалиста",
+    "placeholders": {
+      "languages": {
+        "type": "String"
+      }
+    }
+  },
+  "expertExperienceLabel": "Опыт",
+  "@expertExperienceLabel": {
+    "description": "Подпись показателя опыта в карточке специалиста"
+  },
+  "experienceLessThanYear": "менее года",
+  "@experienceLessThanYear": {
+    "description": "Уровень опыта LESS_THAN_YEAR"
+  },
+  "experienceOneToThree": "1–3 года",
+  "@experienceOneToThree": {
+    "description": "Уровень опыта ONE_TO_THREE"
+  },
+  "experienceThreeToFive": "3–5 лет",
+  "@experienceThreeToFive": {
+    "description": "Уровень опыта THREE_TO_FIVE"
+  },
+  "experienceFiveToTen": "5–10 лет",
+  "@experienceFiveToTen": {
+    "description": "Уровень опыта FIVE_TO_TEN"
+  },
+  "experienceMoreThanTen": "более 10 лет",
+  "@experienceMoreThanTen": {
+    "description": "Уровень опыта MORE_THAN_TEN"
+  },
+  "paymentSheetTitle": "Оплата консультации",
+  "@paymentSheetTitle": {
+    "description": "Заголовок шторки оплаты"
+  },
+  "paymentLineItem": "Консультация",
+  "@paymentLineItem": {
+    "description": "Название позиции в шторке оплаты"
+  },
+  "paymentEscrowNote": "Деньги замораживаются на карте и списываются только после состоявшейся консультации",
+  "@paymentEscrowNote": {
+    "description": "Пояснение эскроу-холда в шторке оплаты (Р-01)"
+  },
+  "paymentPay": "Оплатить",
+  "@paymentPay": {
+    "description": "Кнопка оплаты в шторке"
+  },
+  "paymentAddCard": "Добавить карту",
+  "@paymentAddCard": {
+    "description": "Кнопка добавления карты — в шторке оплаты и на экране карт"
+  },
+  "paymentNoCards": "Пока нет привязанных карт",
+  "@paymentNoCards": {
+    "description": "Текст в шторке оплаты, когда у клиента нет ни одной карты"
+  },
+  "paymentDeclinedTitle": "Платёж отклонён",
+  "@paymentDeclinedTitle": {
+    "description": "Заголовок состояния PROVIDER_DECLINED в шторке оплаты"
+  },
+  "paymentAnotherCard": "Другая карта",
+  "@paymentAnotherCard": {
+    "description": "Кнопка выбора другой карты после отказа платежа"
+  },
+  "cardsTitle": "Мои карты",
+  "@cardsTitle": {
+    "description": "Заголовок экрана привязанных карт"
+  },
+  "cardsEmpty": "Карт пока нет",
+  "@cardsEmpty": {
+    "description": "Пустое состояние экрана карт"
+  },
+  "cardDeleteTitle": "Открепить карту?",
+  "@cardDeleteTitle": {
+    "description": "Заголовок подтверждения удаления карты"
+  },
+  "cardDeleteBody": "Карта {maskedPan} больше не будет доступна для оплаты",
+  "@cardDeleteBody": {
+    "description": "Текст подтверждения удаления карты",
+    "placeholders": {
+      "maskedPan": {
+        "type": "String"
+      }
+    }
+  },
+  "actionDelete": "Открепить",
+  "@actionDelete": {
+    "description": "Кнопка подтверждения удаления карты"
+  },
+  "actionSave": "Сохранить",
+  "@actionSave": {
+    "description": "Кнопка сохранения формы"
+  },
+  "addCardTitle": "Новая карта",
+  "@addCardTitle": {
+    "description": "Заголовок экрана добавления карты"
+  },
+  "cardNumberLabel": "Номер карты",
+  "@cardNumberLabel": {
+    "description": "Подпись поля номера карты"
+  },
+  "cardExpiryLabel": "Срок действия",
+  "@cardExpiryLabel": {
+    "description": "Подпись поля срока действия карты"
+  },
+  "cardHolderLabel": "Имя на карте",
+  "@cardHolderLabel": {
+    "description": "Подпись поля имени держателя карты"
+  },
+  "cardNumberInvalid": "Проверьте номер карты",
+  "@cardNumberInvalid": {
+    "description": "Ошибка валидации номера карты (в т.ч. проверка Луна)"
+  },
+  "cardExpiryInvalid": "Срок действия в формате ММ/ГГ",
+  "@cardExpiryInvalid": {
+    "description": "Ошибка валидации срока действия карты"
+  },
+  "cardHolderInvalid": "Укажите имя, как на карте",
+  "@cardHolderInvalid": {
+    "description": "Ошибка валидации имени держателя карты"
+  },
+  "paymentDuration": "{minutes, plural, one{{minutes} минута} few{{minutes} минуты} many{{minutes} минут} other{{minutes} минуты}}",
+  "@paymentDuration": {
+    "description": "Длительность консультации в шторке оплаты",
+    "placeholders": {
+      "minutes": {
+        "type": "num"
+      }
+    }
+  },
+  "expertReviewsCount": "{count, plural, one{{count} отзыв} few{{count} отзыва} many{{count} отзывов} other{{count} отзыва}}",
+  "@expertReviewsCount": {
+    "description": "Число отзывов рядом с рейтингом специалиста",
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
   }
 }
