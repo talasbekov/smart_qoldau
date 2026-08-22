@@ -23,6 +23,30 @@ MatchRequest _created() => const MatchRequest(
   clientCode: 4821,
 );
 
+ClientConsultation _activeConsultation() => ClientConsultation(
+  id: 'c-active',
+  status: ConsultationStatus.active,
+  format: SessionFormat.chat,
+  isEmergency: false,
+  startedAt: DateTime(2026, 8, 22, 10),
+  priceTiyn: 399000,
+  plannedDurationMin: 50,
+  paymentStatus: ConsultationPaymentStatus.held,
+  expert: const ExpertPublic(
+    id: 'e1',
+    displayName: 'Динара С.',
+    city: 'Алматы',
+    experience: ExperienceLevel.threeToFive,
+    priceTiyn: 399000,
+    languages: ['ru'],
+    formats: [SessionFormat.chat],
+    topicSlugs: ['anxiety-stress'],
+    workStatus: WorkStatus.accepting,
+    ratingAvg: 4.9,
+    ratingCount: 12,
+  ),
+);
+
 Widget _wrap(SqApi api) {
   final router = GoRouter(
     initialLocation: '${RoutePaths.topic}?slug=anxiety-stress',
@@ -38,6 +62,12 @@ Widget _wrap(SqApi api) {
         path: RoutePaths.searchPattern,
         builder: (context, state) => Scaffold(
           body: Text('sq-stub-search:${state.pathParameters['requestId']}'),
+        ),
+      ),
+      GoRoute(
+        path: RoutePaths.sessionPattern,
+        builder: (context, state) => Scaffold(
+          body: Text('sq-stub-session:${state.pathParameters['id']}'),
         ),
       ),
     ],
@@ -63,7 +93,10 @@ Future<void> _chooseFormat(WidgetTester tester, String label) async {
 }
 
 void main() {
-  setUpAll(() => registerFallbackValue(SessionFormat.chat));
+  setUpAll(() {
+    registerFallbackValue(SessionFormat.chat);
+    registerFallbackValue(ConsultationStatus.active);
+  });
 
   late MockSqApi api;
 
@@ -155,6 +188,88 @@ void main() {
 
     expect(find.text('У вас уже есть активная заявка'), findsOneWidget);
   });
+
+  testWidgets(
+    'ACTIVE_REQUEST_EXISTS с идущей консультацией предлагает перейти в неё',
+    (tester) async {
+      // Задача 17: раньше диалог был тупиком («у вас уже есть заявка» — и
+      // всё). Теперь, если у клиента есть АКТИВНАЯ консультация, ему дают
+      // в неё перейти; если её нет (заявка ещё ищет специалиста), кнопки
+      // не будет — эндпоинта «моя активная заявка» бэкенд не даёт.
+      when(
+        () => api.createRequest(
+          topicSlug: any(named: 'topicSlug'),
+          format: any(named: 'format'),
+          isEmergency: any(named: 'isEmergency'),
+          expertId: any(named: 'expertId'),
+        ),
+      ).thenThrow(
+        const ApiException(
+          ApiErrorCode.activeRequestExists,
+          'active request exists',
+          409,
+        ),
+      );
+      when(
+        () => api.consultations(
+          status: ConsultationStatus.active,
+          take: any(named: 'take'),
+          skip: any(named: 'skip'),
+        ),
+      ).thenAnswer((_) async => [_activeConsultation()]);
+
+      await tester.pumpWidget(_wrap(api));
+      await tester.pump();
+
+      await _chooseFormat(tester, 'Чат');
+      await tester.tap(find.text('Продолжить'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('У вас уже есть активная заявка'), findsOneWidget);
+
+      await tester.tap(find.text('Перейти к консультации'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('sq-stub-session:c-active'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'ACTIVE_REQUEST_EXISTS без активной консультации оставляет только пояснение',
+    (tester) async {
+      when(
+        () => api.createRequest(
+          topicSlug: any(named: 'topicSlug'),
+          format: any(named: 'format'),
+          isEmergency: any(named: 'isEmergency'),
+          expertId: any(named: 'expertId'),
+        ),
+      ).thenThrow(
+        const ApiException(
+          ApiErrorCode.activeRequestExists,
+          'active request exists',
+          409,
+        ),
+      );
+      when(
+        () => api.consultations(
+          status: ConsultationStatus.active,
+          take: any(named: 'take'),
+          skip: any(named: 'skip'),
+        ),
+      ).thenAnswer((_) async => []);
+
+      await tester.pumpWidget(_wrap(api));
+      await tester.pump();
+
+      await _chooseFormat(tester, 'Чат');
+      await tester.tap(find.text('Продолжить'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('У вас уже есть активная заявка'), findsOneWidget);
+      expect(find.text('Перейти к консультации'), findsNothing);
+    },
+  );
 
   testWidgets('сбой сети показывает ошибку и не блокирует кнопку навсегда', (
     tester,

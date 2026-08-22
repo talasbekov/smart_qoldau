@@ -802,4 +802,87 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get expertLoadMoreReviews => 'Показать ещё отзывы';
+
+  @override
+  String get consultationsActiveTab => 'Активные';
+
+  @override
+  String get consultationsHistoryTab => 'История';
+
+  @override
+  String get consultationsEmptyActive => 'Активных консультаций нет';
+
+  @override
+  String get consultationsEmptyHistory => 'История пока пуста';
+
+  @override
+  String get consultationContinue => 'Продолжить';
+
+  @override
+  String get consultationCancel => 'Отменить';
+
+  @override
+  String get consultationRepeat => 'Повторить запись';
+
+  @override
+  String get consultationDetailsTitle => 'Консультация';
+
+  @override
+  String get consultationLoadMore => 'Показать ещё';
+
+  @override
+  String get paymentStatusHeld => 'Деньги заморожены';
+
+  @override
+  String get paymentStatusCaptured => 'Оплачено';
+
+  @override
+  String get paymentStatusVoided => 'Возвращено';
+
+  @override
+  String get paymentStatusFailed => 'Оплата не прошла';
+
+  @override
+  String get paymentStatusUnpaid => 'Ожидает оплаты';
+
+  @override
+  String paymentPaidWithCard(String maskedPan) {
+    return 'Оплачено картой $maskedPan';
+  }
+
+  @override
+  String get consultationStatusActive => 'Идёт';
+
+  @override
+  String get consultationStatusCompleted => 'Завершена';
+
+  @override
+  String get consultationStatusCancelled => 'Отменена';
+
+  @override
+  String get outcomeCompleted => 'Состоялась';
+
+  @override
+  String get outcomeClientNoShow => 'Вы не подключились';
+
+  @override
+  String get outcomeClientCancelled => 'Отменена вами';
+
+  @override
+  String get outcomeTechIssue => 'Технический сбой';
+
+  @override
+  String get myReviewTitle => 'Ваш отзыв';
+
+  @override
+  String get reviewDeleteTitle => 'Удалить отзыв?';
+
+  @override
+  String get reviewDeleteBody => 'Рейтинг специалиста будет пересчитан';
+
+  @override
+  String get reviewDelete => 'Удалить отзыв';
+
+  @override
+  String get funnelActiveRequestGoTo => 'Перейти к консультации';
 }

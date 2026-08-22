@@ -13,6 +13,7 @@ import 'features/auth/ui/splash_screen.dart';
 import 'features/catalog/ui/catalog_screen.dart';
 import 'features/catalog/ui/expert_screen.dart';
 import 'features/catalog/ui/favorites_screen.dart';
+import 'features/consultations/ui/consultation_details_screen.dart';
 import 'features/consultations/ui/consultations_screen.dart';
 import 'features/emergency/ui/danger_screen.dart';
 import 'features/emergency/ui/hotlines_screen.dart';
@@ -249,6 +250,14 @@ GoRouter sqRouter(Ref ref) {
               GoRoute(
                 path: RoutePaths.consultations,
                 builder: (context, state) => const ConsultationsScreen(),
+                routes: [
+                  GoRoute(
+                    path: ':id',
+                    builder: (context, state) => ConsultationDetailsScreen(
+                      consultationId: state.pathParameters['id']!,
+                    ),
+                  ),
+                ],
               ),
             ],
           ),

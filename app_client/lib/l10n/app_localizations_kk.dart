@@ -795,4 +795,87 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get expertLoadMoreReviews => 'Тағы пікірлерді көрсету';
+
+  @override
+  String get consultationsActiveTab => 'Белсенді';
+
+  @override
+  String get consultationsHistoryTab => 'Тарих';
+
+  @override
+  String get consultationsEmptyActive => 'Белсенді кеңестер жоқ';
+
+  @override
+  String get consultationsEmptyHistory => 'Тарих әзірге бос';
+
+  @override
+  String get consultationContinue => 'Жалғастыру';
+
+  @override
+  String get consultationCancel => 'Тоқтату';
+
+  @override
+  String get consultationRepeat => 'Қайта жазылу';
+
+  @override
+  String get consultationDetailsTitle => 'Кеңес';
+
+  @override
+  String get consultationLoadMore => 'Тағы көрсету';
+
+  @override
+  String get paymentStatusHeld => 'Ақша бұғатталған';
+
+  @override
+  String get paymentStatusCaptured => 'Төленген';
+
+  @override
+  String get paymentStatusVoided => 'Қайтарылған';
+
+  @override
+  String get paymentStatusFailed => 'Төлем өтпеді';
+
+  @override
+  String get paymentStatusUnpaid => 'Төлемді күтуде';
+
+  @override
+  String paymentPaidWithCard(String maskedPan) {
+    return '$maskedPan картасымен төленген';
+  }
+
+  @override
+  String get consultationStatusActive => 'Жүріп жатыр';
+
+  @override
+  String get consultationStatusCompleted => 'Аяқталды';
+
+  @override
+  String get consultationStatusCancelled => 'Тоқтатылды';
+
+  @override
+  String get outcomeCompleted => 'Өтті';
+
+  @override
+  String get outcomeClientNoShow => 'Сіз қосылмадыңыз';
+
+  @override
+  String get outcomeClientCancelled => 'Сіз тоқтаттыңыз';
+
+  @override
+  String get outcomeTechIssue => 'Техникалық ақау';
+
+  @override
+  String get myReviewTitle => 'Сіздің пікіріңіз';
+
+  @override
+  String get reviewDeleteTitle => 'Пікірді жою керек пе?';
+
+  @override
+  String get reviewDeleteBody => 'Маманның рейтингі қайта есептеледі';
+
+  @override
+  String get reviewDelete => 'Пікірді жою';
+
+  @override
+  String get funnelActiveRequestGoTo => 'Кеңеске өту';
 }

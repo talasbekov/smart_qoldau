@@ -9,6 +9,7 @@ import 'package:shared/shared.dart';
 
 import '../../../core/error_text.dart';
 import '../../../core/route_paths.dart';
+import '../../consultations/data/consultations_repository.dart';
 import '../../../l10n/app_localizations.dart';
 import '../state/funnel_controller.dart';
 import '../state/search_controller.dart';
@@ -77,12 +78,28 @@ class _TopicScreenState extends ConsumerState<TopicScreen> {
     }
   }
 
-  /// Диалог по `ACTIVE_REQUEST_EXISTS` (409). Переход на уже существующую
-  /// заявку добавляет задача 17 (там появляется список консультаций,
-  /// из которого её идентификатор вообще можно узнать) — сейчас диалог
-  /// объясняет причину и возвращает пользователя на главную.
+  /// Диалог по `ACTIVE_REQUEST_EXISTS` (409).
+  ///
+  /// Если у клиента уже есть АКТИВНАЯ консультация — предлагаем перейти в
+  /// неё. Если её нет (заявка ещё ищет специалиста), кнопки не будет:
+  /// эндпоинта «моя активная заявка» бэкенд не даёт, а угадывать её
+  /// идентификатор неоткуда — диалог остаётся объяснением.
   Future<void> _showActiveRequestDialog() async {
     final l10n = AppLocalizations.of(context)!;
+
+    ClientConsultation? active;
+    try {
+      final list = await ref
+          .read(consultationsRepositoryProvider)
+          .list(status: ConsultationStatus.active, take: 1);
+      active = list.isEmpty ? null : list.first;
+    } catch (_) {
+      // Не смогли узнать про активную консультацию — показываем диалог без
+      // перехода, он всё равно объясняет причину отказа.
+      active = null;
+    }
+    if (!mounted) return;
+
     await showDialog<void>(
       context: context,
       builder: (dialogContext) => AlertDialog(
@@ -93,6 +110,14 @@ class _TopicScreenState extends ConsumerState<TopicScreen> {
             onPressed: () => Navigator.of(dialogContext).pop(),
             child: Text(l10n.actionClose),
           ),
+          if (active != null)
+            TextButton(
+              onPressed: () {
+                Navigator.of(dialogContext).pop();
+                context.go(RoutePaths.session(active!.id));
+              },
+              child: Text(l10n.funnelActiveRequestGoTo),
+            ),
         ],
       ),
     );

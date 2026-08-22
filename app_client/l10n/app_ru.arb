@@ -1004,5 +1004,118 @@
   "expertLoadMoreReviews": "Показать ещё отзывы",
   "@expertLoadMoreReviews": {
     "description": "Кнопка догрузки ленты отзывов"
+  },
+  "consultationsActiveTab": "Активные",
+  "@consultationsActiveTab": {
+    "description": "Вкладка активных консультаций"
+  },
+  "consultationsHistoryTab": "История",
+  "@consultationsHistoryTab": {
+    "description": "Вкладка истории консультаций"
+  },
+  "consultationsEmptyActive": "Активных консультаций нет",
+  "@consultationsEmptyActive": {
+    "description": "Пустая вкладка активных консультаций"
+  },
+  "consultationsEmptyHistory": "История пока пуста",
+  "@consultationsEmptyHistory": {
+    "description": "Пустая вкладка истории консультаций"
+  },
+  "consultationContinue": "Продолжить",
+  "@consultationContinue": {
+    "description": "Кнопка возврата в активную консультацию"
+  },
+  "consultationCancel": "Отменить",
+  "@consultationCancel": {
+    "description": "Кнопка отмены активной консультации"
+  },
+  "consultationRepeat": "Повторить запись",
+  "@consultationRepeat": {
+    "description": "Кнопка повторной записи к тому же специалисту"
+  },
+  "consultationDetailsTitle": "Консультация",
+  "@consultationDetailsTitle": {
+    "description": "Заголовок экрана деталей консультации"
+  },
+  "consultationLoadMore": "Показать ещё",
+  "@consultationLoadMore": {
+    "description": "Кнопка догрузки списка консультаций"
+  },
+  "paymentStatusHeld": "Деньги заморожены",
+  "@paymentStatusHeld": {
+    "description": "Платёжный статус HELD"
+  },
+  "paymentStatusCaptured": "Оплачено",
+  "@paymentStatusCaptured": {
+    "description": "Платёжный статус CAPTURED"
+  },
+  "paymentStatusVoided": "Возвращено",
+  "@paymentStatusVoided": {
+    "description": "Платёжный статус VOIDED"
+  },
+  "paymentStatusFailed": "Оплата не прошла",
+  "@paymentStatusFailed": {
+    "description": "Платёжный статус FAILED"
+  },
+  "paymentStatusUnpaid": "Ожидает оплаты",
+  "@paymentStatusUnpaid": {
+    "description": "Платёжный статус UNPAID"
+  },
+  "paymentPaidWithCard": "Оплачено картой {maskedPan}",
+  "@paymentPaidWithCard": {
+    "description": "Строка с маской карты в деталях консультации",
+    "placeholders": {
+      "maskedPan": {
+        "type": "String"
+      }
+    }
+  },
+  "consultationStatusActive": "Идёт",
+  "@consultationStatusActive": {
+    "description": "Статус консультации ACTIVE"
+  },
+  "consultationStatusCompleted": "Завершена",
+  "@consultationStatusCompleted": {
+    "description": "Статус консультации COMPLETED"
+  },
+  "consultationStatusCancelled": "Отменена",
+  "@consultationStatusCancelled": {
+    "description": "Статус консультации CANCELLED"
+  },
+  "outcomeCompleted": "Состоялась",
+  "@outcomeCompleted": {
+    "description": "Исход COMPLETED"
+  },
+  "outcomeClientNoShow": "Вы не подключились",
+  "@outcomeClientNoShow": {
+    "description": "Исход CLIENT_NO_SHOW"
+  },
+  "outcomeClientCancelled": "Отменена вами",
+  "@outcomeClientCancelled": {
+    "description": "Исход CLIENT_CANCELLED"
+  },
+  "outcomeTechIssue": "Технический сбой",
+  "@outcomeTechIssue": {
+    "description": "Исход TECH_ISSUE"
+  },
+  "myReviewTitle": "Ваш отзыв",
+  "@myReviewTitle": {
+    "description": "Заголовок блока собственного отзыва в деталях консультации"
+  },
+  "reviewDeleteTitle": "Удалить отзыв?",
+  "@reviewDeleteTitle": {
+    "description": "Заголовок подтверждения удаления отзыва"
+  },
+  "reviewDeleteBody": "Рейтинг специалиста будет пересчитан",
+  "@reviewDeleteBody": {
+    "description": "Текст подтверждения удаления отзыва (ТЗ §5.7)"
+  },
+  "reviewDelete": "Удалить отзыв",
+  "@reviewDelete": {
+    "description": "Кнопка удаления своего отзыва"
+  },
+  "funnelActiveRequestGoTo": "Перейти к консультации",
+  "@funnelActiveRequestGoTo": {
+    "description": "Кнопка перехода к уже идущей консультации из диалога ACTIVE_REQUEST_EXISTS"
   }
 }

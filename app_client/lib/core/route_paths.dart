@@ -27,6 +27,11 @@ abstract final class RoutePaths {
   static const consultations = '/consultations';
   static const profile = '/profile';
 
+  /// Детали консультации — вложенный маршрут вкладки «Консультации».
+  static const consultationDetailsPattern = '/consultations/:id';
+
+  static String consultationDetails(String id) => '/consultations/$id';
+
   /// Профиль специалиста и избранное — вложенные маршруты вкладки
   /// «Каталог»: у них есть путь-родитель `/catalog`, поэтому системное
   /// «назад» возвращает во вкладку, а не выбрасывает из приложения.

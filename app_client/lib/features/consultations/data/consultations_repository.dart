@@ -22,6 +22,22 @@ class ConsultationsRepository {
   /// `GET /v1/consultations/{id}`.
   Future<ClientConsultation> byId(String id) => _api.consultationById(id);
 
+  /// `POST /v1/consultations/{id}/cancel` — отмена консультации клиентом
+  /// (БП-03).
+  Future<ClientConsultation> cancel(String id) => _api.cancelConsultation(id);
+
+  /// `GET /v1/consultations/{id}/payment` — статус платежа. `null`, если
+  /// платежа нет (`PAYMENT_NOT_FOUND`, 404) — обычная ветка для
+  /// неоплаченной консультации, а не ошибка экрана.
+  Future<PaymentStatusInfo?> payment(String id) async {
+    try {
+      return await _api.consultationPayment(id);
+    } on ApiException catch (error) {
+      if (error.code == ApiErrorCode.paymentNotFound) return null;
+      rethrow;
+    }
+  }
+
   /// `GET /v1/consultations?as=client` — список консультаций клиента.
   Future<List<ClientConsultation>> list({
     ConsultationStatus? status,

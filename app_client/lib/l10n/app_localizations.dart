@@ -1537,6 +1537,168 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Показать ещё отзывы'**
   String get expertLoadMoreReviews;
+
+  /// Вкладка активных консультаций
+  ///
+  /// In ru, this message translates to:
+  /// **'Активные'**
+  String get consultationsActiveTab;
+
+  /// Вкладка истории консультаций
+  ///
+  /// In ru, this message translates to:
+  /// **'История'**
+  String get consultationsHistoryTab;
+
+  /// Пустая вкладка активных консультаций
+  ///
+  /// In ru, this message translates to:
+  /// **'Активных консультаций нет'**
+  String get consultationsEmptyActive;
+
+  /// Пустая вкладка истории консультаций
+  ///
+  /// In ru, this message translates to:
+  /// **'История пока пуста'**
+  String get consultationsEmptyHistory;
+
+  /// Кнопка возврата в активную консультацию
+  ///
+  /// In ru, this message translates to:
+  /// **'Продолжить'**
+  String get consultationContinue;
+
+  /// Кнопка отмены активной консультации
+  ///
+  /// In ru, this message translates to:
+  /// **'Отменить'**
+  String get consultationCancel;
+
+  /// Кнопка повторной записи к тому же специалисту
+  ///
+  /// In ru, this message translates to:
+  /// **'Повторить запись'**
+  String get consultationRepeat;
+
+  /// Заголовок экрана деталей консультации
+  ///
+  /// In ru, this message translates to:
+  /// **'Консультация'**
+  String get consultationDetailsTitle;
+
+  /// Кнопка догрузки списка консультаций
+  ///
+  /// In ru, this message translates to:
+  /// **'Показать ещё'**
+  String get consultationLoadMore;
+
+  /// Платёжный статус HELD
+  ///
+  /// In ru, this message translates to:
+  /// **'Деньги заморожены'**
+  String get paymentStatusHeld;
+
+  /// Платёжный статус CAPTURED
+  ///
+  /// In ru, this message translates to:
+  /// **'Оплачено'**
+  String get paymentStatusCaptured;
+
+  /// Платёжный статус VOIDED
+  ///
+  /// In ru, this message translates to:
+  /// **'Возвращено'**
+  String get paymentStatusVoided;
+
+  /// Платёжный статус FAILED
+  ///
+  /// In ru, this message translates to:
+  /// **'Оплата не прошла'**
+  String get paymentStatusFailed;
+
+  /// Платёжный статус UNPAID
+  ///
+  /// In ru, this message translates to:
+  /// **'Ожидает оплаты'**
+  String get paymentStatusUnpaid;
+
+  /// Строка с маской карты в деталях консультации
+  ///
+  /// In ru, this message translates to:
+  /// **'Оплачено картой {maskedPan}'**
+  String paymentPaidWithCard(String maskedPan);
+
+  /// Статус консультации ACTIVE
+  ///
+  /// In ru, this message translates to:
+  /// **'Идёт'**
+  String get consultationStatusActive;
+
+  /// Статус консультации COMPLETED
+  ///
+  /// In ru, this message translates to:
+  /// **'Завершена'**
+  String get consultationStatusCompleted;
+
+  /// Статус консультации CANCELLED
+  ///
+  /// In ru, this message translates to:
+  /// **'Отменена'**
+  String get consultationStatusCancelled;
+
+  /// Исход COMPLETED
+  ///
+  /// In ru, this message translates to:
+  /// **'Состоялась'**
+  String get outcomeCompleted;
+
+  /// Исход CLIENT_NO_SHOW
+  ///
+  /// In ru, this message translates to:
+  /// **'Вы не подключились'**
+  String get outcomeClientNoShow;
+
+  /// Исход CLIENT_CANCELLED
+  ///
+  /// In ru, this message translates to:
+  /// **'Отменена вами'**
+  String get outcomeClientCancelled;
+
+  /// Исход TECH_ISSUE
+  ///
+  /// In ru, this message translates to:
+  /// **'Технический сбой'**
+  String get outcomeTechIssue;
+
+  /// Заголовок блока собственного отзыва в деталях консультации
+  ///
+  /// In ru, this message translates to:
+  /// **'Ваш отзыв'**
+  String get myReviewTitle;
+
+  /// Заголовок подтверждения удаления отзыва
+  ///
+  /// In ru, this message translates to:
+  /// **'Удалить отзыв?'**
+  String get reviewDeleteTitle;
+
+  /// Текст подтверждения удаления отзыва (ТЗ §5.7)
+  ///
+  /// In ru, this message translates to:
+  /// **'Рейтинг специалиста будет пересчитан'**
+  String get reviewDeleteBody;
+
+  /// Кнопка удаления своего отзыва
+  ///
+  /// In ru, this message translates to:
+  /// **'Удалить отзыв'**
+  String get reviewDelete;
+
+  /// Кнопка перехода к уже идущей консультации из диалога ACTIVE_REQUEST_EXISTS
+  ///
+  /// In ru, this message translates to:
+  /// **'Перейти к консультации'**
+  String get funnelActiveRequestGoTo;
 }
 
 class _AppLocalizationsDelegate
