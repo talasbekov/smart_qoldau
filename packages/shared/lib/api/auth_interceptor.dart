@@ -2,15 +2,8 @@ import 'package:dio/dio.dart';
 
 import '../models/models.dart';
 import 'api_exception.dart';
-
-/// Читает текущую пару токенов, либо `null`, если пользователь ещё не вошёл
-/// (гость без токенов вообще не бывает — гостевой вход тоже выдаёт [Tokens],
-/// но до первого входа локальное хранилище может быть пустым).
-typedef TokenReader = Future<Tokens?> Function();
-
-/// Сохраняет новую пару токенов, полученную после успешного
-/// `/auth/refresh`.
-typedef TokenWriter = Future<void> Function(Tokens tokens);
+import 'sq_api_base.dart' show TokenReader;
+import 'token_refresher.dart';
 
 /// Ключ [RequestOptions.extra], которым помечается уже повторённый после
 /// рефреша запрос — не даёт уйти в повторный цикл, если и сам повтор снова
@@ -27,9 +20,15 @@ const _retriedAfterRefreshKey = 'sqAuthRetriedAfterRefresh';
 /// равно подставляется (он нужен `/auth/guest/convert`) — не обрабатывается
 /// только именно эта recovery-логика.
 ///
-/// Параллельные 401 от нескольких запросов используют один и тот же вызов
-/// рефреша ([_refreshInFlight]) — single-flight: пока первый рефреш не
-/// завершился, второй его не дублирует, а ждёт тот же `Future`.
+/// Собственно обновление токенов делегировано [_refresher] — ЕДИНСТВЕННОМУ
+/// в приложении владельцу `POST /auth/refresh` (см. `TokenRefresher`).
+/// Раньше single-flight был приватной деталью этого класса
+/// (`_refreshInFlight`), но у него появился ВТОРОЙ потребитель — шина
+/// реалтайм-событий, реагирующая на подозрительный разрыв WS (задача 8
+/// эпика E6, раунд правок 2) — и раздельные копии single-flight не
+/// координируют друг друга: она вызывает тот же `TokenRefresher.refresh()`,
+/// что и этот интерцептор, разделяя ОДИН И ТОТ ЖЕ инстанс через
+/// `SqApi.tokenRefresher`.
 class AuthInterceptor extends Interceptor {
   /// Создаёт интерцептор и сразу же подключает его к [dio] —
   /// конструирование и подключение намеренно не разделены отдельным
@@ -39,16 +38,14 @@ class AuthInterceptor extends Interceptor {
   /// `onError` никогда не вызывается — 401 тихо проходит мимо без рефреша,
   /// без ошибки и без предупреждения. Конструктор, который сам себя
   /// регистрирует в `dio.interceptors`, эту ошибку делает невозможной.
-  AuthInterceptor(this._dio, this._read, this._write, this._onLogout) {
+  AuthInterceptor(this._dio, this._read, this._refresher, this._onLogout) {
     _dio.interceptors.add(this);
   }
 
   final Dio _dio;
   final TokenReader _read;
-  final TokenWriter _write;
+  final TokenRefresher _refresher;
   final Future<void> Function() _onLogout;
-
-  Future<Tokens>? _refreshInFlight;
 
   @override
   void onRequest(
@@ -83,7 +80,7 @@ class AuthInterceptor extends Interceptor {
     //    этого запроса, а не выдуманная UNAUTHORIZED.
     final Tokens tokens;
     try {
-      tokens = await _refresh(_dio);
+      tokens = await _refresher.refresh();
     } catch (_) {
       await _onLogout();
       handler.reject(
@@ -112,22 +109,5 @@ class AuthInterceptor extends Interceptor {
     } on DioException catch (retryError) {
       handler.next(retryError);
     }
-  }
-
-  Future<Tokens> _refresh(Dio dio) {
-    return _refreshInFlight ??= _doRefresh(dio).whenComplete(() {
-      _refreshInFlight = null;
-    });
-  }
-
-  Future<Tokens> _doRefresh(Dio dio) async {
-    final current = await _read();
-    final response = await dio.post<Map<String, dynamic>>(
-      '/auth/refresh',
-      data: {'refreshToken': current?.refreshToken},
-    );
-    final tokens = Tokens.fromJson(response.data!);
-    await _write(tokens);
-    return tokens;
   }
 }

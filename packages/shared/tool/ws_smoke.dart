@@ -15,6 +15,11 @@
 // Запуск:
 //   dart run packages/shared/tool/ws_smoke.dart --token=<access>
 //   dart run packages/shared/tool/ws_smoke.dart --token=garbage
+//   # сценарий «рефреш при подключённом сокете» (Round 2 ревью, п.1) —
+//   # нужен ВТОРОЙ валидный токен той же или другой сессии (например,
+//   # второй вызов POST /v1/auth/guest, или accessToken, полученный через
+//   # POST /v1/auth/refresh реальным refreshToken):
+//   dart run packages/shared/tool/ws_smoke.dart --token=<access1> --token2=<access2>
 import 'dart:io';
 
 // Импорт напрямую из `events/sq_socket.dart`, а НЕ из барели
@@ -26,10 +31,13 @@ import 'package:shared/events/sq_socket.dart';
 
 Future<void> main(List<String> args) async {
   String? token;
+  String? token2;
   var wsBase = 'http://localhost:3000';
   for (final arg in args) {
     if (arg.startsWith('--token=')) {
       token = arg.substring('--token='.length);
+    } else if (arg.startsWith('--token2=')) {
+      token2 = arg.substring('--token2='.length);
     } else if (arg.startsWith('--ws-base=')) {
       wsBase = arg.substring('--ws-base='.length);
     }
@@ -37,7 +45,7 @@ Future<void> main(List<String> args) async {
   if (token == null) {
     stderr.writeln(
       'Использование: dart run ws_smoke.dart --token=<access> '
-      '[--ws-base=http://localhost:3000]',
+      '[--token2=<access2>] [--ws-base=http://localhost:3000]',
     );
     exitCode = 64;
     return;
@@ -45,6 +53,11 @@ Future<void> main(List<String> args) async {
 
   final socket = SocketIoSqSocket(wsBase: wsBase);
   final sub = socket.events.listen((raw) => print('событие: ${raw.$1}'));
+  final states = <SqConnectionState>[];
+  final stateSub = socket.connectionState.listen((s) {
+    states.add(s);
+    print('состояние: $s');
+  });
 
   await socket.connect(token);
   await Future<void>.delayed(const Duration(seconds: 2));
@@ -71,7 +84,34 @@ Future<void> main(List<String> args) async {
         : 'connect() повторно: DISCONNECTED',
   );
 
+  if (token2 != null) {
+    // Round 2 ревью, п.1 (Critical): молчаливый рефреш AuthInterceptor
+    // пишет новый токен, ПОКА сокет уже подключён старым — connect()
+    // вызывается ПОВТОРНО на уже живом сокете, БЕЗ предварительного
+    // явного disconnect(). До фикса это порождало ложный `disconnected`
+    // (преамбула connect() рвёт предыдущий живой сокет как побочный
+    // эффект) — connectSqEvents принимал его за отказ аутентификации и
+    // разлогинивал полностью исправную сессию.
+    states.clear();
+    await socket.connect(token2);
+    await Future<void>.delayed(const Duration(seconds: 2));
+    print(
+      socket.isConnected
+          ? 'connect(token2) без явного disconnect(): CONNECTED'
+          : 'connect(token2) без явного disconnect(): DISCONNECTED',
+    );
+    print(
+      states.contains(SqConnectionState.disconnected)
+          ? 'РЕГРЕССИЯ: connectionState показал disconnected при обычном '
+              'переподключении — выглядело бы как отказ аутентификации'
+          : 'OK: connectionState НЕ показал disconnected при '
+              'переподключении новым токеном — рефреш при подключённом '
+              'сокете не выглядит как отказ аутентификации',
+    );
+  }
+
   await sub.cancel();
+  await stateSub.cancel();
   await socket.disconnect();
   print('итоговый disconnect(): вызван, необработанных исключений нет');
 }

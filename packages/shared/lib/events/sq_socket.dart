@@ -133,9 +133,25 @@ class SocketIoSqSocket implements SqSocket {
       socket.onConnect(
         (_) => _connectionStateController.add(SqConnectionState.connected),
       );
-      socket.onDisconnect(
-        (_) => _connectionStateController.add(SqConnectionState.disconnected),
-      );
+      // ВАЖНО (Round 2 ревью задачи 8, п.1 — Critical): `socket_io_client`
+      // передаёт сюда ПРИЧИНУ разрыва (`Socket.onclose(reason)` в
+      // `socket.dart`) — `'io client disconnect'`, когда разрыв вызвали МЫ
+      // САМИ (наш `disconnect()`, включая преамбулу `connect()`, которая
+      // сначала сносит старый сокет перед созданием нового), и
+      // `'io server disconnect'`/причины движка (`'transport close'`,
+      // `'transport error'`, `'ping timeout'`) — когда разрыв пришёл
+      // ИЗВНЕ. Публиковать `disconnected` для 'io client disconnect' нельзя:
+      // КАЖДОЕ переподключение с новым токеном (в т.ч. штатный молчаливый
+      // рефреш через AuthInterceptor) само по себе рвёт живой сокет как
+      // побочный эффект своей преамбулы — если считать это «похожим на
+      // отказ аутентификации» (как раньше делал `connectSqEvents`), рутинный
+      // рефреш начинает сам себя дублировать вторым, уже нелегальным вызовом
+      // одноразового refresh-токена и заканчивается принудительным выходом
+      // из полностью исправной сессии (см. отчёт задачи 8, раунд правок 2).
+      socket.onDisconnect((reason) {
+        if (reason == 'io client disconnect') return;
+        _connectionStateController.add(SqConnectionState.disconnected);
+      });
       socket.onReconnectAttempt(
         (_) => _connectionStateController.add(SqConnectionState.connecting),
       );
@@ -148,10 +164,14 @@ class SocketIoSqSocket implements SqSocket {
     final socket = _socket;
     _socket = null;
     if (socket == null) return;
-    _zone.run(() {
-      socket.dispose();
-      _connectionStateController.add(SqConnectionState.disconnected);
-    });
+    // Не публикуем `disconnected` здесь напрямую — источник истины для
+    // "внешний ли это разрыв" один: фильтрующий `onDisconnect` выше,
+    // зарегистрированный на этом же сокете при его создании. Наш
+    // собственный `dispose()` — намеренный разрыв (`socket.io` сам пометит
+    // его как `'io client disconnect'`, если сокет вообще успел
+    // подключиться), и он обязан молчать по тем же причинам, что описаны
+    // в `connect()`.
+    _zone.run(() => socket.dispose());
   }
 
   @override

@@ -1,6 +1,20 @@
 import 'package:dio/dio.dart';
 
+import '../models/models.dart';
 import 'api_exception.dart';
+
+/// Читает текущую пару токенов, либо `null`, если пользователь ещё не вошёл
+/// (гость без токенов вообще не бывает — гостевой вход тоже выдаёт [Tokens],
+/// но до первого входа локальное хранилище может быть пустым).
+///
+/// Живёт здесь (а не в `auth_interceptor.dart`, где раньше был объявлен),
+/// потому что нужен и `AuthInterceptor`, и `TokenRefresher` — общая точка
+/// без цикла импортов между этими двумя файлами.
+typedef TokenReader = Future<Tokens?> Function();
+
+/// Сохраняет новую пару токенов, полученную после успешного
+/// `/auth/refresh`.
+typedef TokenWriter = Future<void> Function(Tokens tokens);
 
 /// Общая инфраструктура для всех модулей `SqApi`: HTTP-клиент и единая
 /// обёртка ошибок, на которые опираются миксины модулей (`on SqApiBase`) —

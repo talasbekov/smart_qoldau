@@ -2,6 +2,8 @@ import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http_mock_adapter/http_mock_adapter.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:shared/api/sq_api_auth.dart';
+import 'package:shared/api/sq_api_base.dart';
 import 'package:shared/shared.dart';
 
 /// Обёртка над `read`/`write`/`onLogout`, чтобы их можно было мокать
@@ -13,6 +15,17 @@ abstract class TokenGateway {
 }
 
 class MockTokenGateway extends Mock implements TokenGateway {}
+
+/// Минимальный носитель `SqApiAuth.refresh` для теста — ровно то же самое,
+/// что `SqApi` собирает сам себе внутри своего конструктора: `TokenRefresher`
+/// не переизобретает запрос `POST /auth/refresh`, а зовёт его через ЭТОТ
+/// метод, поэтому тест использует ровно ту же реализацию, что и прод.
+class _RefreshOnly extends SqApiBase with SqApiAuth {
+  _RefreshOnly(this.dio);
+
+  @override
+  final Dio dio;
+}
 
 Tokens _tokens(String access, String refresh) => Tokens(
       accessToken: access,
@@ -55,7 +68,12 @@ void main() {
     // Конструктор сам добавляет себя в dio.interceptors — раньше был
     // отдельный `.attach(dio)`, который можно было забыть вызвать (тогда
     // интерцептор выглядел рабочим, но 401 просто проходил мимо).
-    AuthInterceptor(dio, gateway.read, gateway.write, gateway.onLogout);
+    final refresher = TokenRefresher(
+      gateway.read,
+      gateway.write,
+      _RefreshOnly(dio).refresh,
+    );
+    AuthInterceptor(dio, gateway.read, refresher, gateway.onLogout);
   });
 
   test('refreshes once on 401 and retries the original request with the new token', () async {

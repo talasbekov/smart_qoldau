@@ -129,26 +129,53 @@ const int _authRetryBudget = 2;
 /// цикла навсегда запер бы `applying = true`, и шина перестала бы реагировать
 /// на дальнейшие смены токена).
 ///
-/// **Разрыв, похожий на отказ аутентификации** (Round 1 ревью, п.4):
-/// `enableReconnection()` у `socket_io_client` продолжает попытки СТАРЫМ
-/// токеном, зафиксированным в handshake на момент `connect()` — если разрыв
-/// вызван именно протухшим токеном (а не сетевым блипом), эти попытки
-/// обречены повторять один и тот же немедленный отказ бесконечно, и
-/// AuthInterceptor тут не помощник — он реагирует только на 401 у HTTP,
-/// а не на разрыв WS. Поэтому здесь отдельный слушатель `connectionState`:
-/// на каждый `disconnected` (пока в [tokenStore] ещё есть сессия) пробуем
-/// обновить токен через ТОТ ЖЕ REST-эндпоинт, которым пользуется
-/// `AuthInterceptor` ([refreshTokens] — не дублирование, а переиспользование
-/// `SqApi.refresh`), и просто записываем результат в [tokenStore] —
-/// переподключение запустится САМО через `accessTokenChanges`, отдельно
+/// **Разрыв, похожий на отказ аутентификации** (Round 1 ревью, п.4, чинено
+/// повторно в Round 2 — см. ниже): `enableReconnection()` у
+/// `socket_io_client` продолжает попытки СТАРЫМ токеном, зафиксированным в
+/// handshake на момент `connect()` — если разрыв вызван именно протухшим
+/// токеном (а не сетевым блипом), эти попытки обречены повторять один и тот
+/// же немедленный отказ бесконечно, и `AuthInterceptor` тут не помощник —
+/// он реагирует только на 401 у HTTP, а не на разрыв WS. Поэтому здесь
+/// отдельный слушатель `connectionState`: на каждый `disconnected` (пока в
+/// [tokenStore] ещё есть сессия) пробуем обновить токен через [refresh] и
+/// ждём, пока `accessTokenChanges` сам поднимет переподключение — отдельно
 /// вызывать `socket.connect` тут не нужно. Сбой именно с кодом
 /// [ApiErrorCode.network] НЕ считается решающим (сеть может быть временно
-/// недоступна — это не повод разлогинивать) и бюджет не трогает; любой другой сбой
-/// (в первую очередь `401` на сам `/auth/refresh` — рефреш-токен тоже
-/// мёртв) сразу считается финальным. Бюджет [_authRetryBudget] ограничивает
-/// число ПОДРЯД идущих попыток без успешного `connected` между ними —
-/// исчерпание вызывает [onSessionInvalid] (тот же путь, что и
-/// принудительный логаут в [sqApiProvider]).
+/// недоступна — это не повод разлогинивать) и бюджет не трогает; любой
+/// другой сбой (в первую очередь `401` на сам `/auth/refresh` —
+/// refresh-токен тоже мёртв) сразу считается финальным. Бюджет
+/// [_authRetryBudget] ограничивает число ПОДРЯД идущих попыток без
+/// успешного `connected` между ними — исчерпание вызывает [onSessionInvalid]
+/// (тот же путь, что и принудительный логаут в [sqApiProvider]).
+///
+/// **Round 2 ревью, п.1 (Critical) — ложный сигнал от нашего же
+/// переподключения.** `SqSocket.connect()` начинается с `await
+/// disconnect()`: КАЖДОЕ переподключение (в т.ч. штатный молчаливый рефреш)
+/// само рвёт живой сокет как побочный эффект своей преамбулы. Раньше
+/// `SocketIoSqSocket` публиковал `disconnected` для ЛЮБОГО разрыва, включая
+/// этот намеренный — тогда штатный рефреш выглядел отсюда как «разрыв,
+/// похожий на отказ аутентификации», запускал ВТОРОЙ, уже нелегальный
+/// рефреш уже потраченным (бэкенд ротирует refresh-токены одноразово)
+/// refresh-токеном, получал честный `401` и по ошибке разлогинивал
+/// абсолютно исправную сессию. Починено на уровне транспорта:
+/// `SocketIoSqSocket` теперь публикует `disconnected` только когда
+/// `socket_io_client` сообщает причину разрыва, отличную от `'io client
+/// disconnect'` (см. `sq_socket.dart`) — то есть только для разрывов,
+/// пришедших ИЗВНЕ (сервер/сеть), а не порождённых нашей же преамбулой
+/// `connect()`/явным `disconnect()`.
+///
+/// **Round 2 ревью, п.2 (Critical) — обход single-flight рефреша.** Эта
+/// функция раньше звала `SqApi.refresh` напрямую, минуя single-flight
+/// `AuthInterceptor`. Рефреш, вызванный HTTP-401, и рефреш, вызванный
+/// разрывом WS, гонялись за один ОДНОРАЗОВЫЙ refresh-токен без всякой
+/// координации — проигравший получал `401` и снова приводил к ложному
+/// разлогину. Починено заведением единственного на клиент владельца
+/// обновления токенов — `TokenRefresher` (`packages/shared`), которым
+/// пользуется и `AuthInterceptor`, и эта функция через ОДИН И ТОТ ЖЕ
+/// инстанс (`SqApi.tokenRefresher`, см. [sqEventsProvider]). [refresh] —
+/// это `TokenRefresher.refresh`: без аргументов (сам читает актуальный
+/// refresh-токен) и уже сам пишет результат в [TokenStore] — эта функция
+/// больше не пишет токены повторно.
 ///
 /// Вынесена отдельной верхнеуровневой функцией (не прямо в тело
 /// `Provider`-фабрики) ради юнит-теста на фейковых [SqSocket]/[TokenStore] —
@@ -157,7 +184,7 @@ const int _authRetryBudget = 2;
 ({SqEvents events, Future<void> Function() dispose}) connectSqEvents(
   TokenStore tokenStore,
   SqSocket socket, {
-  required Future<Tokens> Function(String refreshToken) refreshTokens,
+  required Future<Tokens> Function() refresh,
   required void Function() onSessionInvalid,
 }) {
   final events = SqEvents(socket);
@@ -222,8 +249,11 @@ const int _authRetryBudget = 2;
       authRetryBudget--;
 
       try {
-        final fresh = await refreshTokens(tokens.refreshToken);
-        await tokenStore.write(fresh);
+        // TokenRefresher.refresh() сам пишет результат в TokenStore —
+        // переподключение запускается САМО через accessTokenChanges, здесь
+        // писать токены повторно не нужно (и нельзя: второй write() того
+        // же значения — лишняя, хоть и безобидная, реакция шины).
+        await refresh();
       } on ApiException catch (e) {
         if (e.code == ApiErrorCode.network) {
           return; // сеть сейчас недоступна — не наш случай, ничего не решаем
@@ -255,6 +285,13 @@ const int _authRetryBudget = 2;
 /// `packages/shared/lib/events`). Экраны читают `ref.watch(sqEventsProvider)
 /// .stream`/`.forConsultation(id)`; соединение поднимается/рвётся
 /// автоматически вместе с сессией (см. [connectSqEvents]).
+///
+/// `refresh: api.tokenRefresher.refresh` — намеренно НЕ `api.refresh`
+/// (тот принимает конкретный refresh-токен и не координируется ни с чем):
+/// `api.tokenRefresher` — ОДИН И ТОТ ЖЕ инстанс `TokenRefresher`, которым
+/// внутри пользуется `AuthInterceptor` этого же `SqApi` — так HTTP-401 и
+/// разрыв WS делят один single-flight, а не гоняются за один одноразовый
+/// refresh-токен независимо (Round 2 ревью задачи 8, п.2).
 final sqEventsProvider = Provider<SqEvents>((ref) {
   final tokenStore = ref.watch(tokenStoreProvider);
   final api = ref.watch(sqApiProvider);
@@ -262,7 +299,7 @@ final sqEventsProvider = Provider<SqEvents>((ref) {
   final connection = connectSqEvents(
     tokenStore,
     socket,
-    refreshTokens: api.refresh,
+    refresh: api.tokenRefresher.refresh,
     onSessionInvalid: () =>
         ref.read(sessionInvalidatedProvider.notifier).state++,
   );

@@ -84,18 +84,18 @@ Tokens _tokens(String access) => Tokens(
 
 /// Обёртка над [connectSqEvents] с безобидными дефолтами для тестов,
 /// которым п.4 (проактивный рефреш) не важен — не должен вызываться вовсе,
-/// если тест сам не переопределил [refreshTokens].
+/// если тест сам не переопределил [refresh].
 ({SqEvents events, Future<void> Function() dispose}) _connect(
   TokenStore store,
   SqSocket socket, {
-  Future<Tokens> Function(String refreshToken)? refreshTokens,
+  Future<Tokens> Function()? refresh,
   void Function()? onSessionInvalid,
 }) => connectSqEvents(
   store,
   socket,
-  refreshTokens:
-      refreshTokens ??
-      (_) async => throw StateError('refreshTokens не должен был вызваться'),
+  refresh:
+      refresh ??
+      () async => throw StateError('refresh не должен был вызваться'),
   onSessionInvalid: onSessionInvalid ?? () {},
 );
 
@@ -224,21 +224,25 @@ void main() {
     );
   });
 
-  group('connectSqEvents — разрыв, похожий на отказ аутентификации (Round 1, п.4)', () {
+  group('connectSqEvents — разрыв, похожий на отказ аутентификации (Round 1 п.4, Round 2 п.1/2)', () {
     test(
-      'разрыв связи запускает обновление токена через переданный refreshTokens '
+      'разрыв связи запускает обновление токена через переданный refresh '
       'и переподключение свежим токеном',
       () async {
         final store = TokenStore(_FakeSecureStore());
         await store.write(_tokens('old'));
         final socket = _FakeSqSocket();
         var invalidated = false;
+        // Фейк здесь стоит на месте TokenRefresher.refresh — как и он,
+        // сам пишет результат в TokenStore (connectSqEvents больше этого
+        // не делает, см. Round 2 п.2).
         final connection = connectSqEvents(
           store,
           socket,
-          refreshTokens: (refreshToken) async {
-            expect(refreshToken, 'refresh-old');
-            return _tokens('fresh');
+          refresh: () async {
+            final fresh = _tokens('fresh');
+            await store.write(fresh);
+            return fresh;
           },
           onSessionInvalid: () => invalidated = true,
         );
@@ -267,7 +271,7 @@ void main() {
         final connection = connectSqEvents(
           store,
           socket,
-          refreshTokens: (_) async => throw const ApiException(
+          refresh: () async => throw const ApiException(
             ApiErrorCode.unauthorized,
             'refresh-токен тоже мёртв',
             401,
@@ -297,7 +301,7 @@ void main() {
         final connection = connectSqEvents(
           store,
           socket,
-          refreshTokens: (_) async =>
+          refresh: () async =>
               throw const ApiException(ApiErrorCode.network, 'нет сети', 0),
           onSessionInvalid: () => invalidated = true,
         );
@@ -329,9 +333,11 @@ void main() {
         final connection = connectSqEvents(
           store,
           socket,
-          refreshTokens: (_) async {
+          refresh: () async {
             refreshCalls++;
-            return _tokens('fresh-$refreshCalls');
+            final fresh = _tokens('fresh-$refreshCalls');
+            await store.write(fresh);
+            return fresh;
           },
           onSessionInvalid: () => invalidated = true,
         );
@@ -367,9 +373,11 @@ void main() {
         final connection = connectSqEvents(
           store,
           socket,
-          refreshTokens: (_) async {
+          refresh: () async {
             refreshCalls++;
-            return _tokens('fresh-$refreshCalls');
+            final fresh = _tokens('fresh-$refreshCalls');
+            await store.write(fresh);
+            return fresh;
           },
           onSessionInvalid: () => invalidated = true,
         );
@@ -404,7 +412,7 @@ void main() {
       final connection = connectSqEvents(
         store,
         socket,
-        refreshTokens: (_) async {
+        refresh: () async {
           refreshCalls++;
           return _tokens('should-not-happen');
         },
@@ -418,5 +426,57 @@ void main() {
       expect(refreshCalls, 0);
       await connection.dispose();
     });
+
+    test(
+      'обычный молчаливый рефреш, который НЕ порождает событие '
+      'connectionState (корректный транспорт), не запускает refresh() '
+      'повторно',
+      () async {
+        // Round 2 ревью, п.1 (Critical): исходный баг был в том, что
+        // SocketIoSqSocket публиковал `disconnected` для КАЖДОГО
+        // переподключения (в т.ч. штатного молчаливого рефреша — его
+        // преамбула connect() сама рвёт предыдущий живой сокет), и
+        // connectSqEvents принимал это за отказ аутентификации. Фикс —
+        // целиком на уровне транспорта (`SocketIoSqSocket` больше не
+        // публикует `disconnected` для причины `'io client disconnect'`,
+        // см. `sq_socket.dart`); авторитетная проверка ИМЕННО этого —
+        // `packages/shared/test/events/socket_io_sq_socket_test.dart`
+        // (реальный `SocketIoSqSocket` против локального сервера).
+        //
+        // Здесь же — дополнение с другой стороны контракта: ДАН
+        // корректно ведущий себя транспорт (не публикующий ничего лишнего
+        // при обычном reconnect), `connectSqEvents` обязан молчать сам по
+        // себе, а не находить собственный повод вызвать refresh() —
+        // ловит регресс, если кто-то однажды подвяжет реакцию не к
+        // `connectionState`, а напрямую к `accessTokenChanges`.
+        final store = TokenStore(_FakeSecureStore());
+        await store.write(_tokens('old'));
+        final socket = _FakeSqSocket();
+        var invalidated = false;
+        var refreshCalls = 0;
+        final connection = connectSqEvents(
+          store,
+          socket,
+          refresh: () async {
+            refreshCalls++;
+            return _tokens('should-not-be-called');
+          },
+          onSessionInvalid: () => invalidated = true,
+        );
+        await pumpEventQueue();
+        expect(socket.connectCalls, ['old']);
+
+        // Штатный молчаливый рефреш: пишет новый токен, но НЕ эмитит
+        // никакого connectionState — именно так теперь ведёт себя
+        // корректный транспорт при обычном reconnect.
+        await store.write(_tokens('new'));
+        await pumpEventQueue();
+
+        expect(socket.connectCalls, ['old', 'new']);
+        expect(refreshCalls, 0);
+        expect(invalidated, isFalse);
+        await connection.dispose();
+      },
+    );
   });
 }
