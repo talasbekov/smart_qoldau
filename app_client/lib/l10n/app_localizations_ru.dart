@@ -717,4 +717,89 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get reviewRating5 => 'Отлично';
+
+  @override
+  String get catalogTitle => 'Специалисты';
+
+  @override
+  String get catalogFilters => 'Фильтры';
+
+  @override
+  String get catalogEmpty => 'По этим фильтрам никого не нашлось';
+
+  @override
+  String get catalogResetFilters => 'Сбросить фильтры';
+
+  @override
+  String get filterTopic => 'Тема';
+
+  @override
+  String get filterLanguage => 'Язык';
+
+  @override
+  String get filterFormat => 'Формат';
+
+  @override
+  String get filterSort => 'Сортировка';
+
+  @override
+  String get filterAny => 'Любой';
+
+  @override
+  String get sortPriceAsc => 'Сначала дешевле';
+
+  @override
+  String get sortPriceDesc => 'Сначала дороже';
+
+  @override
+  String get sortRating => 'По рейтингу';
+
+  @override
+  String get actionApply => 'Применить';
+
+  @override
+  String get languageRu => 'Русский';
+
+  @override
+  String get languageKz => 'Казахский';
+
+  @override
+  String get languageEn => 'Английский';
+
+  @override
+  String get favoritesTitle => 'Избранное';
+
+  @override
+  String get favoritesEmpty => 'Пока никого не добавили';
+
+  @override
+  String get expertTopicsTitle => 'Темы';
+
+  @override
+  String get expertReviewsTitle => 'Отзывы';
+
+  @override
+  String get expertNoReviews => 'Отзывов пока нет';
+
+  @override
+  String get expertReplyPrefix => 'Ответ специалиста';
+
+  @override
+  String get expertBook => 'Записаться';
+
+  @override
+  String get expertPriceLabel => 'Консультация';
+
+  @override
+  String get expertUnavailableTitle => 'Специалист сейчас недоступен';
+
+  @override
+  String get expertUnavailableBody =>
+      'Можно подобрать другого свободного специалиста по этой же теме';
+
+  @override
+  String get expertPickAutomatically => 'Подобрать автоматически';
+
+  @override
+  String get expertLoadMoreReviews => 'Показать ещё отзывы';
 }

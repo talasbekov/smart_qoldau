@@ -27,6 +27,15 @@ abstract final class RoutePaths {
   static const consultations = '/consultations';
   static const profile = '/profile';
 
+  /// Профиль специалиста и избранное — вложенные маршруты вкладки
+  /// «Каталог»: у них есть путь-родитель `/catalog`, поэтому системное
+  /// «назад» возвращает во вкладку, а не выбрасывает из приложения.
+  static const expertPattern = '/catalog/expert/:id';
+
+  static String expert(String id) => '/catalog/expert/$id';
+
+  static const favorites = '/catalog/favorites';
+
   /// Экстренный сценарий (БП-02): скрининг «угрожает ли опасность».
   static const emergency = '/emergency';
 

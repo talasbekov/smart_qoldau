@@ -1369,6 +1369,174 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Отлично'**
   String get reviewRating5;
+
+  /// Заголовок экрана каталога
+  ///
+  /// In ru, this message translates to:
+  /// **'Специалисты'**
+  String get catalogTitle;
+
+  /// Кнопка открытия шторки фильтров каталога
+  ///
+  /// In ru, this message translates to:
+  /// **'Фильтры'**
+  String get catalogFilters;
+
+  /// Пустой каталог
+  ///
+  /// In ru, this message translates to:
+  /// **'По этим фильтрам никого не нашлось'**
+  String get catalogEmpty;
+
+  /// Кнопка сброса фильтров каталога
+  ///
+  /// In ru, this message translates to:
+  /// **'Сбросить фильтры'**
+  String get catalogResetFilters;
+
+  /// Подпись фильтра по теме
+  ///
+  /// In ru, this message translates to:
+  /// **'Тема'**
+  String get filterTopic;
+
+  /// Подпись фильтра по языку
+  ///
+  /// In ru, this message translates to:
+  /// **'Язык'**
+  String get filterLanguage;
+
+  /// Подпись фильтра по формату
+  ///
+  /// In ru, this message translates to:
+  /// **'Формат'**
+  String get filterFormat;
+
+  /// Подпись выбора сортировки
+  ///
+  /// In ru, this message translates to:
+  /// **'Сортировка'**
+  String get filterSort;
+
+  /// Значение фильтра «без ограничения»
+  ///
+  /// In ru, this message translates to:
+  /// **'Любой'**
+  String get filterAny;
+
+  /// Сортировка каталога по возрастанию цены
+  ///
+  /// In ru, this message translates to:
+  /// **'Сначала дешевле'**
+  String get sortPriceAsc;
+
+  /// Сортировка каталога по убыванию цены
+  ///
+  /// In ru, this message translates to:
+  /// **'Сначала дороже'**
+  String get sortPriceDesc;
+
+  /// Сортировка каталога по рейтингу
+  ///
+  /// In ru, this message translates to:
+  /// **'По рейтингу'**
+  String get sortRating;
+
+  /// Кнопка применения фильтров
+  ///
+  /// In ru, this message translates to:
+  /// **'Применить'**
+  String get actionApply;
+
+  /// Язык консультации: русский
+  ///
+  /// In ru, this message translates to:
+  /// **'Русский'**
+  String get languageRu;
+
+  /// Язык консультации: казахский
+  ///
+  /// In ru, this message translates to:
+  /// **'Казахский'**
+  String get languageKz;
+
+  /// Язык консультации: английский
+  ///
+  /// In ru, this message translates to:
+  /// **'Английский'**
+  String get languageEn;
+
+  /// Заголовок экрана избранных специалистов
+  ///
+  /// In ru, this message translates to:
+  /// **'Избранное'**
+  String get favoritesTitle;
+
+  /// Пустое избранное
+  ///
+  /// In ru, this message translates to:
+  /// **'Пока никого не добавили'**
+  String get favoritesEmpty;
+
+  /// Заголовок блока тем в профиле специалиста
+  ///
+  /// In ru, this message translates to:
+  /// **'Темы'**
+  String get expertTopicsTitle;
+
+  /// Заголовок ленты отзывов в профиле специалиста
+  ///
+  /// In ru, this message translates to:
+  /// **'Отзывы'**
+  String get expertReviewsTitle;
+
+  /// Пустая лента отзывов
+  ///
+  /// In ru, this message translates to:
+  /// **'Отзывов пока нет'**
+  String get expertNoReviews;
+
+  /// Подпись ответа специалиста на отзыв
+  ///
+  /// In ru, this message translates to:
+  /// **'Ответ специалиста'**
+  String get expertReplyPrefix;
+
+  /// Кнопка адресной записи к специалисту
+  ///
+  /// In ru, this message translates to:
+  /// **'Записаться'**
+  String get expertBook;
+
+  /// Подпись цены в профиле специалиста
+  ///
+  /// In ru, this message translates to:
+  /// **'Консультация'**
+  String get expertPriceLabel;
+
+  /// Заголовок диалога при EXPERT_UNAVAILABLE
+  ///
+  /// In ru, this message translates to:
+  /// **'Специалист сейчас недоступен'**
+  String get expertUnavailableTitle;
+
+  /// Текст диалога при EXPERT_UNAVAILABLE
+  ///
+  /// In ru, this message translates to:
+  /// **'Можно подобрать другого свободного специалиста по этой же теме'**
+  String get expertUnavailableBody;
+
+  /// Кнопка автоподбора вместо недоступного специалиста
+  ///
+  /// In ru, this message translates to:
+  /// **'Подобрать автоматически'**
+  String get expertPickAutomatically;
+
+  /// Кнопка догрузки ленты отзывов
+  ///
+  /// In ru, this message translates to:
+  /// **'Показать ещё отзывы'**
+  String get expertLoadMoreReviews;
 }
 
 class _AppLocalizationsDelegate

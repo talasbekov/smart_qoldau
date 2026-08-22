@@ -11,6 +11,8 @@ import 'core/route_paths.dart';
 import 'features/auth/state/auth_controller.dart';
 import 'features/auth/ui/splash_screen.dart';
 import 'features/catalog/ui/catalog_screen.dart';
+import 'features/catalog/ui/expert_screen.dart';
+import 'features/catalog/ui/favorites_screen.dart';
 import 'features/consultations/ui/consultations_screen.dart';
 import 'features/emergency/ui/danger_screen.dart';
 import 'features/emergency/ui/hotlines_screen.dart';
@@ -225,6 +227,20 @@ GoRouter sqRouter(Ref ref) {
               GoRoute(
                 path: RoutePaths.catalog,
                 builder: (context, state) => const CatalogScreen(),
+                // Вложенные маршруты ветви, а не отдельные верхнеуровневые:
+                // так системное «назад» из профиля возвращает во вкладку
+                // каталога, а не выбрасывает из приложения (урок задачи 7).
+                routes: [
+                  GoRoute(
+                    path: 'expert/:id',
+                    builder: (context, state) =>
+                        ExpertScreen(expertId: state.pathParameters['id']!),
+                  ),
+                  GoRoute(
+                    path: 'favorites',
+                    builder: (context, state) => const FavoritesScreen(),
+                  ),
+                ],
               ),
             ],
           ),

@@ -892,5 +892,117 @@
   "reviewRating5": "Отлично",
   "@reviewRating5": {
     "description": "Подпись под пятью звёздами"
+  },
+  "catalogTitle": "Специалисты",
+  "@catalogTitle": {
+    "description": "Заголовок экрана каталога"
+  },
+  "catalogFilters": "Фильтры",
+  "@catalogFilters": {
+    "description": "Кнопка открытия шторки фильтров каталога"
+  },
+  "catalogEmpty": "По этим фильтрам никого не нашлось",
+  "@catalogEmpty": {
+    "description": "Пустой каталог"
+  },
+  "catalogResetFilters": "Сбросить фильтры",
+  "@catalogResetFilters": {
+    "description": "Кнопка сброса фильтров каталога"
+  },
+  "filterTopic": "Тема",
+  "@filterTopic": {
+    "description": "Подпись фильтра по теме"
+  },
+  "filterLanguage": "Язык",
+  "@filterLanguage": {
+    "description": "Подпись фильтра по языку"
+  },
+  "filterFormat": "Формат",
+  "@filterFormat": {
+    "description": "Подпись фильтра по формату"
+  },
+  "filterSort": "Сортировка",
+  "@filterSort": {
+    "description": "Подпись выбора сортировки"
+  },
+  "filterAny": "Любой",
+  "@filterAny": {
+    "description": "Значение фильтра «без ограничения»"
+  },
+  "sortPriceAsc": "Сначала дешевле",
+  "@sortPriceAsc": {
+    "description": "Сортировка каталога по возрастанию цены"
+  },
+  "sortPriceDesc": "Сначала дороже",
+  "@sortPriceDesc": {
+    "description": "Сортировка каталога по убыванию цены"
+  },
+  "sortRating": "По рейтингу",
+  "@sortRating": {
+    "description": "Сортировка каталога по рейтингу"
+  },
+  "actionApply": "Применить",
+  "@actionApply": {
+    "description": "Кнопка применения фильтров"
+  },
+  "languageRu": "Русский",
+  "@languageRu": {
+    "description": "Язык консультации: русский"
+  },
+  "languageKz": "Казахский",
+  "@languageKz": {
+    "description": "Язык консультации: казахский"
+  },
+  "languageEn": "Английский",
+  "@languageEn": {
+    "description": "Язык консультации: английский"
+  },
+  "favoritesTitle": "Избранное",
+  "@favoritesTitle": {
+    "description": "Заголовок экрана избранных специалистов"
+  },
+  "favoritesEmpty": "Пока никого не добавили",
+  "@favoritesEmpty": {
+    "description": "Пустое избранное"
+  },
+  "expertTopicsTitle": "Темы",
+  "@expertTopicsTitle": {
+    "description": "Заголовок блока тем в профиле специалиста"
+  },
+  "expertReviewsTitle": "Отзывы",
+  "@expertReviewsTitle": {
+    "description": "Заголовок ленты отзывов в профиле специалиста"
+  },
+  "expertNoReviews": "Отзывов пока нет",
+  "@expertNoReviews": {
+    "description": "Пустая лента отзывов"
+  },
+  "expertReplyPrefix": "Ответ специалиста",
+  "@expertReplyPrefix": {
+    "description": "Подпись ответа специалиста на отзыв"
+  },
+  "expertBook": "Записаться",
+  "@expertBook": {
+    "description": "Кнопка адресной записи к специалисту"
+  },
+  "expertPriceLabel": "Консультация",
+  "@expertPriceLabel": {
+    "description": "Подпись цены в профиле специалиста"
+  },
+  "expertUnavailableTitle": "Специалист сейчас недоступен",
+  "@expertUnavailableTitle": {
+    "description": "Заголовок диалога при EXPERT_UNAVAILABLE"
+  },
+  "expertUnavailableBody": "Можно подобрать другого свободного специалиста по этой же теме",
+  "@expertUnavailableBody": {
+    "description": "Текст диалога при EXPERT_UNAVAILABLE"
+  },
+  "expertPickAutomatically": "Подобрать автоматически",
+  "@expertPickAutomatically": {
+    "description": "Кнопка автоподбора вместо недоступного специалиста"
+  },
+  "expertLoadMoreReviews": "Показать ещё отзывы",
+  "@expertLoadMoreReviews": {
+    "description": "Кнопка догрузки ленты отзывов"
   }
 }

@@ -710,4 +710,89 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get reviewRating5 => 'Тамаша';
+
+  @override
+  String get catalogTitle => 'Мамандар';
+
+  @override
+  String get catalogFilters => 'Сүзгілер';
+
+  @override
+  String get catalogEmpty => 'Бұл сүзгілер бойынша ешкім табылмады';
+
+  @override
+  String get catalogResetFilters => 'Сүзгілерді тазалау';
+
+  @override
+  String get filterTopic => 'Тақырып';
+
+  @override
+  String get filterLanguage => 'Тіл';
+
+  @override
+  String get filterFormat => 'Формат';
+
+  @override
+  String get filterSort => 'Сұрыптау';
+
+  @override
+  String get filterAny => 'Кез келген';
+
+  @override
+  String get sortPriceAsc => 'Алдымен арзаны';
+
+  @override
+  String get sortPriceDesc => 'Алдымен қымбаты';
+
+  @override
+  String get sortRating => 'Рейтинг бойынша';
+
+  @override
+  String get actionApply => 'Қолдану';
+
+  @override
+  String get languageRu => 'Орысша';
+
+  @override
+  String get languageKz => 'Қазақша';
+
+  @override
+  String get languageEn => 'Ағылшынша';
+
+  @override
+  String get favoritesTitle => 'Таңдаулылар';
+
+  @override
+  String get favoritesEmpty => 'Әзірге ешкім қосылмаған';
+
+  @override
+  String get expertTopicsTitle => 'Тақырыптар';
+
+  @override
+  String get expertReviewsTitle => 'Пікірлер';
+
+  @override
+  String get expertNoReviews => 'Пікірлер әзірге жоқ';
+
+  @override
+  String get expertReplyPrefix => 'Маманның жауабы';
+
+  @override
+  String get expertBook => 'Жазылу';
+
+  @override
+  String get expertPriceLabel => 'Кеңес';
+
+  @override
+  String get expertUnavailableTitle => 'Маман қазір қолжетімсіз';
+
+  @override
+  String get expertUnavailableBody =>
+      'Осы тақырып бойынша басқа бос маманды таңдауға болады';
+
+  @override
+  String get expertPickAutomatically => 'Автоматты түрде таңдау';
+
+  @override
+  String get expertLoadMoreReviews => 'Тағы пікірлерді көрсету';
 }
