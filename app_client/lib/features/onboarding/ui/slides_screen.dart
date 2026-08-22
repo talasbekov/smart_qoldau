@@ -73,8 +73,12 @@ class _SlidesScreenState extends ConsumerState<SlidesScreen> {
     setState(() => _finishing = true);
     try {
       await _finish();
-    } catch (_) {
-      // Намеренно молча — см. комментарий выше.
+    } catch (error, stack) {
+      // Молча для пользователя (см. комментарий выше) — но не для
+      // разработчика: без явного следа в логе настоящая программная
+      // ошибка (`TypeError`/`StateError`) внутри `_finish()` терялась бы
+      // неотличимо от ожидаемого сбоя записи в `SharedPreferences`.
+      debugPrint('SlidesScreen: _finish() не удался: $error\n$stack');
     } finally {
       if (mounted) setState(() => _finishing = false);
     }
@@ -105,8 +109,12 @@ class _SlidesScreenState extends ConsumerState<SlidesScreen> {
         duration: const Duration(milliseconds: 250),
         curve: Curves.easeOut,
       );
-    } catch (_) {
-      // Намеренно молча — см. комментарий у [_guardedFinish].
+    } catch (error, stack) {
+      // Молча для пользователя, со следом в логе — см. комментарий у
+      // [_guardedFinish].
+      debugPrint(
+        'SlidesScreen: переход между слайдами не удался: $error\n$stack',
+      );
     } finally {
       if (mounted) setState(() => _finishing = false);
     }

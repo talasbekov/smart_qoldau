@@ -7,6 +7,8 @@
 // реализация через `permissionServiceProvider` — тест проверяет реальное
 // поведение экрана (какие разрешения и в каком порядке запрошены), а не
 // поведение мока.
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -29,11 +31,28 @@ class _FakePermissionService implements PermissionService {
 }
 
 /// [PermissionService], у которого `request` всегда падает — имитирует
-/// сбой самого запроса разрешения у платформы.
+/// сбой самого запроса разрешения у платформы (не отказ пользователя,
+/// который вообще не бросает исключение).
 class _ThrowingPermissionService implements PermissionService {
   @override
   Future<void> request(SqPermission permission) {
     throw Exception('permission request failed');
+  }
+}
+
+/// [OnboardingFlags], у которого `setAskedPermissions` зависает до тех
+/// пор, пока тест сам не откроет [gate] — нужен, чтобы поймать состояние
+/// экрана СЕРЕДИНЕ операции «Позже» (аналог `_DelayedOnboardingFlags` в
+/// `slides_screen_test.dart`).
+class _DelayedOnboardingFlags extends OnboardingFlags {
+  _DelayedOnboardingFlags(super.prefs, this.gate);
+
+  final Completer<void> gate;
+
+  @override
+  Future<void> setAskedPermissions(bool value) async {
+    await gate.future;
+    return super.setAskedPermissions(value);
   }
 }
 
@@ -42,11 +61,17 @@ Future<SharedPreferences> _prefs() async {
   return SharedPreferences.getInstance();
 }
 
-Widget _wrap(Widget child, SharedPreferences prefs, PermissionService service) {
+Widget _wrap(
+  Widget child,
+  SharedPreferences prefs,
+  PermissionService service, {
+  OnboardingFlags? flags,
+}) {
   return ProviderScope(
     overrides: [
       sharedPreferencesProvider.overrideWithValue(prefs),
       permissionServiceProvider.overrideWithValue(service),
+      if (flags != null) onboardingFlagsProvider.overrideWithValue(flags),
     ],
     child: MaterialApp(
       localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -55,6 +80,9 @@ Widget _wrap(Widget child, SharedPreferences prefs, PermissionService service) {
     ),
   );
 }
+
+final _allowButtonKey = find.byKey(const Key('sq-permissions-allow-button'));
+final _laterButtonKey = find.byKey(const Key('sq-permissions-later-button'));
 
 void main() {
   testWidgets(
@@ -118,7 +146,7 @@ void main() {
   );
 
   testWidgets(
-    'исключение при запросе разрешения сбрасывает _requesting — «Разрешить»/«Позже» не остаются заблокированными навсегда',
+    'исключение при запросе разрешения показывает SnackBar и всё равно продолжает — БП-10 запрещает запирать онбординг из-за сбоя разрешений',
     (tester) async {
       final prefs = await _prefs();
       var finished = false;
@@ -137,18 +165,22 @@ void main() {
       await tester.tap(find.text(l10n.actionAllow));
       await tester.pumpAndSettle();
 
-      // Экран сам гасит исключение (см. комментарий у `_allow`) — ничего
-      // не должно долететь до тестовой зоны как необработанное, и
-      // onFinished() не вызывается, раз попытка провалилась.
+      // Ничего не должно долететь до тестовой зоны как необработанное —
+      // экран сам ловит исключение и показывает SnackBar (см. `_allow`).
       expect(tester.takeException(), isNull);
-      expect(finished, isFalse);
+      expect(
+        find.widgetWithText(SnackBar, l10n.errorGeneric),
+        findsOneWidget,
+        reason:
+            'сбой самого запроса — не отказ пользователя — должен быть виден',
+      );
 
-      final allowButton = tester.widget<SqButton>(
-        find.widgetWithText(SqButton, l10n.actionAllow),
-      );
-      final laterButton = tester.widget<SqButton>(
-        find.widgetWithText(SqButton, l10n.actionLater),
-      );
+      // И всё равно продолжает: отказ/сбой разрешений не блокирует вход.
+      expect(OnboardingFlags(prefs).askedPermissions, isTrue);
+      expect(finished, isTrue);
+
+      final allowButton = tester.widget<SqButton>(_allowButtonKey);
+      final laterButton = tester.widget<SqButton>(_laterButtonKey);
       expect(
         allowButton.onPressed,
         isNotNull,
@@ -158,6 +190,51 @@ void main() {
       );
       expect(laterButton.onPressed, isNotNull);
       expect(allowButton.loading, isFalse);
+    },
+  );
+
+  testWidgets(
+    '«Позже» крутит индикатор только на своей кнопке и блокирует обе на время операции',
+    (tester) async {
+      final prefs = await _prefs();
+      final gate = Completer<void>();
+
+      await tester.pumpWidget(
+        _wrap(
+          PermissionsScreen(onFinished: () {}),
+          prefs,
+          _FakePermissionService(),
+          flags: _DelayedOnboardingFlags(prefs, gate),
+        ),
+      );
+
+      final l10n = AppLocalizations.of(
+        tester.element(find.byType(PermissionsScreen)),
+      )!;
+      await tester.tap(find.text(l10n.actionLater));
+      await tester.pump();
+
+      final allowButton = tester.widget<SqButton>(_allowButtonKey);
+      final laterButton = tester.widget<SqButton>(_laterButtonKey);
+
+      expect(
+        allowButton.onPressed,
+        isNull,
+        reason: 'обе кнопки блокируются на время любой операции',
+      );
+      expect(laterButton.onPressed, isNull);
+      expect(
+        allowButton.loading,
+        isFalse,
+        reason: '«Позже» не должна крутить спиннер на кнопке "Разрешить"',
+      );
+      expect(laterButton.loading, isTrue);
+
+      gate.complete();
+      await tester.pumpAndSettle();
+
+      expect(tester.widget<SqButton>(_allowButtonKey).onPressed, isNotNull);
+      expect(tester.widget<SqButton>(_laterButtonKey).onPressed, isNotNull);
     },
   );
 }
