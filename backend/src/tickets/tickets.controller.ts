@@ -24,6 +24,9 @@ import { JwtPayload } from '../auth/jwt.strategy';
 import { TicketsService } from './tickets.service';
 import { CreateTicketDto } from './dto/create-ticket.dto';
 import { ListTicketsDto } from './dto/list-tickets.dto';
+import { Throttle } from '@nestjs/throttler';
+import { THROTTLE } from '../common/throttle/throttle.constants';
+import { IpThrottlerGuard } from '../common/throttle/throttle.guards';
 import {
   TicketCreatedDto,
   TicketDetailDto,
@@ -36,7 +39,10 @@ export class TicketsController {
   constructor(private tickets: TicketsService) {}
 
   @Post()
-  @UseGuards(OptionalJwtAuthGuard)
+  // Эндпоинт неаутентифицированный и принимает 4200 символов: на него сядет
+  // форма поддержки лендинга (см. THROTTLE.createTicket).
+  @UseGuards(IpThrottlerGuard, OptionalJwtAuthGuard)
+  @Throttle({ default: THROTTLE.createTicket })
   @ApiBearerAuth()
   @ApiOperation({
     summary:

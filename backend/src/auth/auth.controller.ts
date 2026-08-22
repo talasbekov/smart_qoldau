@@ -22,6 +22,9 @@ import { JwtAuthGuard } from './jwt-auth.guard';
 import { CurrentUser } from './current-user.decorator';
 import { JwtPayload } from './jwt.strategy';
 import { apiError } from '../common/filters/app-exception.filter';
+import { Throttle } from '@nestjs/throttler';
+import { THROTTLE } from '../common/throttle/throttle.constants';
+import { PhoneThrottlerGuard } from '../common/throttle/throttle.guards';
 
 @ApiTags('auth')
 @Controller('auth')
@@ -29,6 +32,9 @@ export class AuthController {
   constructor(private authService: AuthService) {}
 
   @Post('request-code')
+  // Платные SMS: лимит по НОМЕРУ, а не по IP — платит проект.
+  @UseGuards(PhoneThrottlerGuard)
+  @Throttle({ default: THROTTLE.smsRequest })
   @HttpCode(204)
   @ApiOperation({ summary: 'Запросить SMS-код входа' })
   @ApiNoContentResponse({
@@ -45,6 +51,10 @@ export class AuthController {
   }
 
   @Post('verify-code')
+  // Дополняет счётчик попыток в SmsCode: тот считает попытки на код, этот —
+  // на номер, и переживает запрос нового кода.
+  @UseGuards(PhoneThrottlerGuard)
+  @Throttle({ default: THROTTLE.smsVerify })
   @HttpCode(200)
   @ApiOperation({ summary: 'Подтвердить SMS-код и получить токены' })
   @ApiOkResponse({

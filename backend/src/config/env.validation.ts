@@ -29,4 +29,7 @@ export const envValidationSchema = Joi.object({
   PUSH_PROVIDER: Joi.string().valid('mock').default('mock'),
   PAYMENT_WEBHOOK_SECRET: Joi.string().min(32).required(),
   PAYOUT_WEBHOOK_SECRET: Joi.string().min(32).required(),
+  // Точечный выключатель лимитов для спеков, которые честно делают десятки
+  // запросов подряд (нагрузочные и сквозные). В боевой среде — всегда true.
+  THROTTLE_ENABLED: Joi.string().valid('true', 'false').default('true'),
 });

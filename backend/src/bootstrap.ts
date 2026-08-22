@@ -4,6 +4,7 @@ import {
   ValidationPipe,
 } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import helmet from 'helmet';
 import { AppExceptionFilter } from './common/filters/app-exception.filter';
 
 // Общий для /v1/docs и backend/scripts/dump-openapi.ts конфиг — контракт,
@@ -15,6 +16,10 @@ export const swaggerConfig = new DocumentBuilder()
   .build();
 
 export function configureApp(app: INestApplication): void {
+  // Базовые заголовки безопасности. CSP выключен: единственная HTML-страница
+  // проекта — Swagger UI на /v1/docs, и дефолтная политика helmet ломает
+  // его инлайновые скрипты; API-ответам CSP не нужен.
+  app.use(helmet({ contentSecurityPolicy: false }));
   app.setGlobalPrefix('v1');
   app.useGlobalFilters(new AppExceptionFilter());
   app.useGlobalPipes(

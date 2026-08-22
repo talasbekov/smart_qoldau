@@ -17,6 +17,7 @@ import { ExpertsModule } from './experts/experts.module';
 import { VerificationModule } from './verification/verification.module';
 import { ScheduleModule } from './schedule/schedule.module';
 import { ClockModule } from './common/clock/clock.module';
+import { ThrottleModule } from './common/throttle/throttle.module';
 import { MatchingModule } from './matching/matching.module';
 import { RequestsModule } from './requests/requests.module';
 import { WsModule } from './ws/ws.module';
@@ -40,6 +41,7 @@ import { TicketsModule } from './tickets/tickets.module';
       validationSchema: envValidationSchema,
     }),
     NestScheduleModule.forRoot(),
+    ThrottleModule,
     ClockModule,
     PrismaModule,
     RedisModule,

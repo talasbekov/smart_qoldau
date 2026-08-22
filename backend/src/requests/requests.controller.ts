@@ -23,6 +23,9 @@ import { RequestDto } from './dto/request.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CurrentUser } from '../auth/current-user.decorator';
 import { JwtPayload } from '../auth/jwt.strategy';
+import { Throttle } from '@nestjs/throttler';
+import { THROTTLE } from '../common/throttle/throttle.constants';
+import { UserThrottlerGuard } from '../common/throttle/throttle.guards';
 
 @ApiTags('requests')
 @Controller('requests')
@@ -30,8 +33,13 @@ export class RequestsController {
   constructor(private requestsService: RequestsService) {}
 
   @Post()
+  // Каждая заявка тянет платные SMS экспертам, а кнопка «Попробовать снова»
+  // позволяет крутить их без предела (см. THROTTLE.createRequest).
+  // Порядок guard'ов важен: сначала JWT (иначе троттлер не увидит
+  // пользователя и посчитает всех за одним NAT как одного), затем лимит.
+  @UseGuards(JwtAuthGuard, UserThrottlerGuard)
+  @Throttle({ default: THROTTLE.createRequest })
   @HttpCode(201)
-  @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Создать заявку на консультацию (БП-01)' })
   @ApiCreatedResponse({ description: 'Заявка создана', type: RequestDto })
