@@ -224,7 +224,7 @@ void main() {
     );
   });
 
-  group('connectSqEvents — разрыв, похожий на отказ аутентификации (Round 1 п.4, Round 2 п.1/2)', () {
+  group('connectSqEvents — разрыв, похожий на отказ аутентификации (Round 1 п.4, Round 2 п.1/2, Round 3 п.1)', () {
     test(
       'разрыв связи запускает обновление токена через переданный refresh '
       'и переподключение свежим токеном',
@@ -261,8 +261,102 @@ void main() {
     );
 
     test(
-      'провал рефреша с НЕ-сетевым кодом (мёртвый refresh-токен) очищает '
-      'сессию и сигналит sessionInvalidatedProvider',
+      'провал рефреша с 401 (мёртвый refresh-токен) расходует бюджет, но '
+      'НЕ инвалидирует сессию сразу — только при исчерпании (Round 3, п.1)',
+      () async {
+        // До Round 3 один-единственный 401 немедленно чистил сессию, не
+        // дожидаясь исчерпания бюджета. Теперь 401 — «приговор», но
+        // списывает лишь ОДНУ попытку; инвалидация приходит только когда
+        // бюджет исчерпан (см. отдельный тест «бюджет попыток ограничен»
+        // ниже).
+        final store = TokenStore(_FakeSecureStore());
+        await store.write(_tokens('old'));
+        final socket = _FakeSqSocket();
+        var invalidated = false;
+        var refreshCalls = 0;
+        final connection = connectSqEvents(
+          store,
+          socket,
+          refresh: () async {
+            refreshCalls++;
+            throw const ApiException(
+              ApiErrorCode.unauthorized,
+              'refresh-токен тоже мёртв',
+              401,
+            );
+          },
+          onSessionInvalid: () => invalidated = true,
+        );
+        await pumpEventQueue();
+
+        socket.pushConnectionState(SqConnectionState.connected);
+        socket.pushConnectionState(SqConnectionState.disconnected);
+        await pumpEventQueue();
+
+        expect(refreshCalls, 1);
+        expect(invalidated, isFalse);
+        expect(
+          (await store.read())?.accessToken,
+          'old',
+          reason: 'одна неудачная попытка бюджет не исчерпывает',
+        );
+        await connection.dispose();
+      },
+    );
+
+    test(
+      'три подряд разрыва, где рефреш падает СЕТЕВОЙ ошибкой, НЕ тратят '
+      'бюджет и не инвалидируют сессию (Round 3, п.1 — регресс раунда 2: '
+      'обычные обрывы связи в метро не должны разлогинивать)',
+      () async {
+        final store = TokenStore(_FakeSecureStore());
+        await store.write(_tokens('old'));
+        final socket = _FakeSqSocket();
+        var invalidated = false;
+        var refreshCalls = 0;
+        final connection = connectSqEvents(
+          store,
+          socket,
+          refresh: () async {
+            refreshCalls++;
+            throw const ApiException(
+              ApiErrorCode.network,
+              'нет сети',
+              0,
+            );
+          },
+          onSessionInvalid: () => invalidated = true,
+        );
+        await pumpEventQueue();
+
+        socket.pushConnectionState(SqConnectionState.disconnected);
+        await pumpEventQueue();
+        socket.pushConnectionState(SqConnectionState.disconnected);
+        await pumpEventQueue();
+        socket.pushConnectionState(SqConnectionState.disconnected);
+        await pumpEventQueue();
+
+        expect(
+          refreshCalls,
+          3,
+          reason:
+              'все три попытки должны были реально случиться — бюджет с '
+              'сетевых сбоев не расходуется, а значит и не мог '
+              'преждевременно оборвать серию попыток',
+        );
+        expect(invalidated, isFalse);
+        expect(
+          (await store.read())?.accessToken,
+          'old',
+          reason: 'сессия жива — сеть может вернуться сама',
+        );
+        await connection.dispose();
+      },
+    );
+
+    test(
+      'провал рефреша с 5xx (не 401) тоже НЕ тратит бюджет и не '
+      'инвалидирует — «попробуем позже», как и сетевая ошибка',
       () async {
         final store = TokenStore(_FakeSecureStore());
         await store.write(_tokens('old'));
@@ -272,20 +366,19 @@ void main() {
           store,
           socket,
           refresh: () async => throw const ApiException(
-            ApiErrorCode.unauthorized,
-            'refresh-токен тоже мёртв',
-            401,
+            ApiErrorCode.internal,
+            'бэкенд временно недоступен',
+            500,
           ),
           onSessionInvalid: () => invalidated = true,
         );
         await pumpEventQueue();
 
-        socket.pushConnectionState(SqConnectionState.connected);
         socket.pushConnectionState(SqConnectionState.disconnected);
         await pumpEventQueue();
 
-        expect(invalidated, isTrue);
-        expect(await store.read(), isNull);
+        expect(invalidated, isFalse);
+        expect((await store.read())?.accessToken, 'old');
         await connection.dispose();
       },
     );
@@ -322,8 +415,10 @@ void main() {
     );
 
     test(
-      'бюджет попыток ограничен: несколько разрывов подряд без успешного '
-      'connected между ними в итоге инвалидируют сессию',
+      'бюджет попыток ограничен: несколько РЕАЛЬНЫХ отказов аутентификации '
+      '(401) подряд без успешного connected между ними в итоге инвалидируют '
+      'сессию (Round 3, п.1 — раньше это ошибочно достигалось и success-, и '
+      'network-исходами тоже, теперь только настоящим 401)',
       () async {
         final store = TokenStore(_FakeSecureStore());
         await store.write(_tokens('old'));
@@ -335,9 +430,11 @@ void main() {
           socket,
           refresh: () async {
             refreshCalls++;
-            final fresh = _tokens('fresh-$refreshCalls');
-            await store.write(fresh);
-            return fresh;
+            throw const ApiException(
+              ApiErrorCode.unauthorized,
+              'refresh-токен тоже мёртв',
+              401,
+            );
           },
           onSessionInvalid: () => invalidated = true,
         );
@@ -362,8 +459,8 @@ void main() {
     );
 
     test(
-      'успешный connected сбрасывает бюджет — новая серия разрывов снова '
-      'получает полный запас попыток',
+      'успешный connected сбрасывает бюджет — новая серия РЕАЛЬНЫХ отказов '
+      'аутентификации (401) снова получает полный запас попыток',
       () async {
         final store = TokenStore(_FakeSecureStore());
         await store.write(_tokens('old'));
@@ -375,9 +472,11 @@ void main() {
           socket,
           refresh: () async {
             refreshCalls++;
-            final fresh = _tokens('fresh-$refreshCalls');
-            await store.write(fresh);
-            return fresh;
+            throw const ApiException(
+              ApiErrorCode.unauthorized,
+              'refresh-токен тоже мёртв',
+              401,
+            );
           },
           onSessionInvalid: () => invalidated = true,
         );

@@ -23,8 +23,14 @@ mixin SqApiAuth on SqApiBase {
 
   /// `POST /auth/refresh` — обновить пару токенов по refresh-токену.
   ///
-  /// Обычно рефреш выполняет `AuthInterceptor` сам, на 401 — этот метод
-  /// нужен для ручного вызова (например, при запуске приложения).
+  /// Этот метод только строит сам HTTP-запрос — координацию поверх него
+  /// (single-flight, персист результата) берёт на себя `TokenRefresher`
+  /// (`token_refresher.dart`), единственный владелец обновления токенов на
+  /// клиент: им пользуются и `AuthInterceptor` (реагирует на HTTP-401), и
+  /// шина реалтайм-событий (реагирует на разрыв, похожий на отказ
+  /// аутентификации) — через один и тот же инстанс, чтобы не гоняться за
+  /// одним и тем же одноразовым refresh-токеном независимо. Вызывать этот
+  /// метод напрямую в обход `TokenRefresher` не следует.
   Future<Tokens> refresh(String refreshToken) => guard(() async {
         final response = await dio.post<Map<String, dynamic>>(
           SqEndpoints.authRefresh,
