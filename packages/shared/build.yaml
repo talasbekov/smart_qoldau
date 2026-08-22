@@ -1,0 +1,14 @@
+targets:
+  $default:
+    builders:
+      json_serializable:
+        options:
+          # Модели вкладывают друг друга (например, ClientConsultation.expert,
+          # NotificationsPage.items) — без explicit_to_json генератор кладёт в
+          # toJson() сами вложенные объекты как есть и полагается на то, что
+          # их развернёт dart:convert при финальном jsonEncode. Это работает
+          # для реальных запросов через Dio (он вызывает jsonEncode сам), но
+          # ломает прямые сравнения toJson() в тестах и любой код, читающий
+          # toJson() напрямую. explicit_to_json заставляет генератор звать
+          # .toJson() рекурсивно сразу — результат везде одинаково "плоский".
+          explicit_to_json: true

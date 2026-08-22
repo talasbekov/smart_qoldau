@@ -11,11 +11,25 @@ dependencies:
   flutter:
     sdk: flutter
   google_fonts: ^8.2.1
+  dio: ^5.11.0
+  freezed_annotation: ^3.1.0
+  json_annotation: ^4.12.0
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^6.0.0
+  build_runner: ^2.16.0
+  # freezed 3.x (стабильный на момент написания) генерирует конструкторные
+  # параметры коллекций как `final List<T> x` без `this.` — этот модификатор
+  # `final` на обычном формальном параметре Dart 3.13 отклоняет как
+  # extraneous_modifier (грамматика ужесточилась). Зафиксировано на
+  # 4.0.0-dev.3 — первой версии, которая это уже не генерирует; следить за
+  # выходом стабильного freezed 4.0.0 и снять пин.
+  freezed: 4.0.0-dev.3
+  json_serializable: ^6.14.1
+  http_mock_adapter: ^0.6.1
+  mocktail: ^1.0.5
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec

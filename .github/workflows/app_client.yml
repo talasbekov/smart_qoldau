@@ -19,6 +19,14 @@ jobs:
           else
             echo "build_runner ещё не подключён (генераторы появятся в задаче 4 эпика E6) — шаг пропущен"
           fi
+      - name: Check freezed/json_serializable codegen is committed (packages/shared only)
+        if: matrix.package == 'packages/shared'
+        run: |
+          git add --intent-to-add -- lib
+          git diff --exit-code -- lib || {
+            echo "::error::*.freezed.dart/*.g.dart в packages/shared разошлись с исходниками — перегенерируй (dart run build_runner build --delete-conflicting-outputs) и закоммить"
+            exit 1
+          }
       - name: Check l10n codegen is committed (app_client only)
         if: matrix.package == 'app_client'
         run: |

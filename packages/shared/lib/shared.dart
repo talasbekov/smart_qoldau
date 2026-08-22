@@ -6,6 +6,10 @@
 /// загружается и доступен потребителям.
 library;
 
+export 'api/api_exception.dart';
+export 'api/auth_interceptor.dart';
+export 'api/sq_api.dart';
+export 'api/sq_endpoints.dart';
 export 'design/tokens.dart';
 export 'design/theme.dart';
 export 'design/widgets/avatar.dart';
@@ -20,5 +24,6 @@ export 'design/widgets/rating_stars.dart';
 export 'design/widgets/text_field.dart';
 export 'format/locale.dart';
 export 'format/money.dart';
+export 'models/models.dart';
 
 const String sharedPackageMarker = 'smartqoldau-shared';
