@@ -42,26 +42,53 @@ class _SlidesScreenState extends ConsumerState<SlidesScreen> {
   final _controller = PageController();
   int _currentPage = 0;
 
+  /// Блокирует «Пропустить»/«Далее»/«Начать» на время перехода — что
+  /// финального (запись флага в `SharedPreferences`), что промежуточного
+  /// (анимация `PageController.nextPage`) — тот же guard, что `_requesting`
+  /// на `PermissionsScreen`: без него быстрый двойной тап по одной и той же
+  /// кнопке мог бы дважды дёрнуть переход.
+  bool _finishing = false;
+
   @override
   void dispose() {
     _controller.dispose();
     super.dispose();
   }
 
+  /// Общий guard-обёртка вокруг [_finish] — вызывается и «Пропустить»
+  /// (с любого слайда), и «Начать» (только с последнего).
+  Future<void> _guardedFinish() async {
+    if (_finishing) return;
+    setState(() => _finishing = true);
+    await _finish();
+    if (mounted) setState(() => _finishing = false);
+  }
+
   Future<void> _finish() async {
     await ref.read(onboardingFlagsProvider).setSeenSlides(true);
+    // Мониторинг за `mounted` — как в `PermissionsScreen._finish()`: экран
+    // сам никуда не навигирует, но задача 7 повесит на `onFinished`
+    // настоящую навигацию, и звать колбэк после `await` на уже
+    // размонтированном виджете (например, если пользователь успел уйти с
+    // экрана другим путём, пока ждали запись в `SharedPreferences`) —
+    // ошибка, которую стоит исключить сейчас, а не когда она станет видна
+    // только через реальный роутер.
+    if (!mounted) return;
     widget.onFinished();
   }
 
-  void _next(int slideCount) {
+  Future<void> _next(int slideCount) async {
+    if (_finishing) return;
     if (_currentPage == slideCount - 1) {
-      _finish();
-    } else {
-      _controller.nextPage(
-        duration: const Duration(milliseconds: 250),
-        curve: Curves.easeOut,
-      );
+      await _guardedFinish();
+      return;
     }
+    setState(() => _finishing = true);
+    await _controller.nextPage(
+      duration: const Duration(milliseconds: 250),
+      curve: Curves.easeOut,
+    );
+    if (mounted) setState(() => _finishing = false);
   }
 
   @override
@@ -95,7 +122,7 @@ class _SlidesScreenState extends ConsumerState<SlidesScreen> {
               child: Padding(
                 padding: const EdgeInsets.all(SqSpacing.s),
                 child: TextButton(
-                  onPressed: _finish,
+                  onPressed: _finishing ? null : _guardedFinish,
                   child: Text(l10n.slidesSkip),
                 ),
               ),
@@ -116,7 +143,8 @@ class _SlidesScreenState extends ConsumerState<SlidesScreen> {
                 label: _currentPage == slides.length - 1
                     ? l10n.slidesStart
                     : l10n.slidesNext,
-                onPressed: () => _next(slides.length),
+                loading: _finishing && _currentPage == slides.length - 1,
+                onPressed: _finishing ? null : () => _next(slides.length),
               ),
             ),
           ],

@@ -33,6 +33,14 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
   }
 
   Future<void> _continueAnonymously() async {
+    // Guard внутри самого обработчика, а не только через `onPressed: null`
+    // у кнопки: `onPressed`, захваченный в уже построенном дереве, не
+    // обновится до следующего перестроения (`pump`), поэтому быстрый
+    // повторный тап ДО первого кадра после `setState` мог бы вызвать этот
+    // метод второй раз, даже пока кнопка визуально уже заблокирована — тот
+    // же приём, что `_finishing` в `SlidesScreen`/`_requesting` в
+    // `PermissionsScreen`.
+    if (_continuingAnonymously) return;
     setState(() => _continuingAnonymously = true);
     try {
       await ref.read(authControllerProvider.notifier).continueAsGuest();
@@ -72,11 +80,13 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
               ),
               const Spacer(),
               SqButton(
+                key: const Key('sq-welcome-phone-button'),
                 label: l10n.actionLoginByPhone,
                 onPressed: _continuingAnonymously ? null : _loginByPhone,
               ),
               const SizedBox(height: SqSpacing.m),
               SqButton(
+                key: const Key('sq-welcome-guest-button'),
                 kind: SqButtonKind.secondary,
                 label: l10n.actionContinueAnonymously,
                 loading: _continuingAnonymously,
