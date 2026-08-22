@@ -12,6 +12,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:app_client/core/locale_controller.dart';
 import 'package:app_client/core/providers.dart';
 import 'package:app_client/core/route_paths.dart';
+import 'package:app_client/features/catalog/state/catalog_controller.dart';
 import 'package:app_client/features/catalog/ui/catalog_screen.dart';
 import 'package:app_client/l10n/app_localizations.dart';
 
@@ -80,7 +81,9 @@ void main() {
 
   setUp(() {
     api = MockSqApi();
-    when(() => api.favorites()).thenAnswer((_) async => []);
+    when(
+      () => api.favorites(take: any(named: 'take'), skip: any(named: 'skip')),
+    ).thenAnswer((_) async => []);
     when(() => api.addFavorite(any())).thenAnswer((_) async {});
     when(() => api.removeFavorite(any())).thenAnswer((_) async {});
     when(() => api.topics(locale: any(named: 'locale'))).thenAnswer(
@@ -95,6 +98,8 @@ void main() {
         language: any(named: 'language'),
         format: any(named: 'format'),
         sort: any(named: 'sort'),
+        take: any(named: 'take'),
+        skip: any(named: 'skip'),
       ),
     ).thenAnswer((_) async => [_expert('e1', 'Динара С.')]);
   });
@@ -122,6 +127,8 @@ void main() {
         language: any(named: 'language'),
         format: any(named: 'format'),
         sort: any(named: 'sort'),
+        take: any(named: 'take'),
+        skip: any(named: 'skip'),
       ),
     ).thenAnswer((invocation) async {
       final topic = invocation.namedArguments[#topic];
@@ -163,6 +170,8 @@ void main() {
         language: null,
         format: SessionFormat.video,
         sort: null,
+        take: catalogPageSize,
+        skip: 0,
       ),
     ).called(1);
   });
@@ -197,6 +206,8 @@ void main() {
         language: any(named: 'language'),
         format: any(named: 'format'),
         sort: any(named: 'sort'),
+        take: any(named: 'take'),
+        skip: any(named: 'skip'),
       ),
     ).thenAnswer((_) async {
       calls++;

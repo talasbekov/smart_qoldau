@@ -51,6 +51,8 @@ void main() {
         language: any(named: 'language'),
         format: any(named: 'format'),
         sort: any(named: 'sort'),
+        take: any(named: 'take'),
+        skip: any(named: 'skip'),
       ),
     ).thenAnswer((_) async => [_expert('e1'), _expert('e2')]);
   });
@@ -65,6 +67,8 @@ void main() {
         language: null,
         format: null,
         sort: null,
+        take: catalogPageSize,
+        skip: 0,
       ),
     ).called(1);
     expect(container.read(catalogControllerProvider).requireValue.length, 2);
@@ -89,6 +93,8 @@ void main() {
         language: 'kz',
         format: SessionFormat.video,
         sort: null,
+        take: catalogPageSize,
+        skip: 0,
       ),
     ).called(1);
   });
@@ -106,6 +112,8 @@ void main() {
         language: null,
         format: null,
         sort: 'rating',
+        take: catalogPageSize,
+        skip: 0,
       ),
     ).called(1);
   });
@@ -126,6 +134,8 @@ void main() {
         language: null,
         format: null,
         sort: null,
+        take: catalogPageSize,
+        skip: 0,
       ),
     ).called(2);
   });
@@ -154,6 +164,8 @@ void main() {
         language: any(named: 'language'),
         format: any(named: 'format'),
         sort: any(named: 'sort'),
+        take: any(named: 'take'),
+        skip: any(named: 'skip'),
       ),
     ).thenAnswer((_) async => [expensive, cheap]);
 
@@ -164,6 +176,70 @@ void main() {
     expect(list.map((e) => e.id), ['expensive', 'cheap']);
   });
 
+  test('loadMore дописывает следующую страницу без дублей', () async {
+    // Каталог приходит страницами по 20 (E11a, задача 7): без догрузки
+    // клиент показывал бы только первые двадцать записей.
+    final firstPage = List.generate(20, (i) => _expert('p1-$i'));
+    final secondPage = [
+      // Сервер может вернуть пересечение при одновременном добавлении
+      // эксперта: дубли обязаны отсеиваться по id.
+      firstPage.last,
+      _expert('p2-0'),
+    ];
+    when(
+      () => api.experts(
+        topic: any(named: 'topic'),
+        language: any(named: 'language'),
+        format: any(named: 'format'),
+        sort: any(named: 'sort'),
+        take: any(named: 'take'),
+        skip: 0,
+      ),
+    ).thenAnswer((_) async => firstPage);
+    when(
+      () => api.experts(
+        topic: any(named: 'topic'),
+        language: any(named: 'language'),
+        format: any(named: 'format'),
+        sort: any(named: 'sort'),
+        take: any(named: 'take'),
+        skip: 20,
+      ),
+    ).thenAnswer((_) async => secondPage);
+
+    final container = _container(api);
+    await container.read(catalogControllerProvider.future);
+
+    await container.read(catalogControllerProvider.notifier).loadMore();
+
+    final list = container.read(catalogControllerProvider).requireValue;
+    expect(list.length, 21);
+    expect(list.map((e) => e.id).toSet().length, 21);
+  });
+
+  test('неполная страница означает конец списка', () async {
+    when(
+      () => api.experts(
+        topic: any(named: 'topic'),
+        language: any(named: 'language'),
+        format: any(named: 'format'),
+        sort: any(named: 'sort'),
+        take: any(named: 'take'),
+        skip: any(named: 'skip'),
+      ),
+    ).thenAnswer((_) async => [_expert('e1')]);
+
+    final container = _container(api);
+    await container.read(catalogControllerProvider.future);
+
+    expect(
+      container.read(catalogControllerProvider.notifier).hasMore,
+      isFalse,
+      reason: 'отдельного признака «есть ещё» у эндпоинта нет — судим по '
+          'неполной странице',
+    );
+  });
+
   test('ошибка сети даёт состояние ошибки, повтор возвращает список', () async {
     var calls = 0;
     when(
@@ -172,6 +248,8 @@ void main() {
         language: any(named: 'language'),
         format: any(named: 'format'),
         sort: any(named: 'sort'),
+        take: any(named: 'take'),
+        skip: any(named: 'skip'),
       ),
     ).thenAnswer((_) async {
       calls++;

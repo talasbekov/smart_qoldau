@@ -344,6 +344,25 @@
               ],
               "type": "string"
             }
+          },
+          {
+            "name": "take",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "maximum": 100,
+              "default": 20,
+              "type": "number"
+            }
+          },
+          {
+            "name": "skip",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": 0,
+              "type": "number"
+            }
           }
         ],
         "responses": {
@@ -2806,7 +2825,27 @@
     "/v1/favorites": {
       "get": {
         "operationId": "FavoritesController_getFavorites",
-        "parameters": [],
+        "parameters": [
+          {
+            "name": "take",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "maximum": 100,
+              "default": 20,
+              "type": "number"
+            }
+          },
+          {
+            "name": "skip",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": 0,
+              "type": "number"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Список избранных экспертов (скрытые/заблокированные выпадают)",
@@ -4456,7 +4495,7 @@
           "code": {
             "type": "string",
             "example": "123456",
-            "description": "Код из приложения или код восстановления"
+            "description": "Код из приложения (6 цифр) или код восстановления (32 hex-символа)"
           }
         },
         "required": [

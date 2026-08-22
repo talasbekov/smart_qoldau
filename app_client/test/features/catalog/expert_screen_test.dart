@@ -124,7 +124,9 @@ void main() {
     when(
       () => api.expertReviews('e1', take: any(named: 'take'), skip: any(named: 'skip')),
     ).thenAnswer((_) async => _reviews(items: [_review('очень помогла')]));
-    when(() => api.favorites()).thenAnswer((_) async => []);
+    when(
+      () => api.favorites(take: any(named: 'take'), skip: any(named: 'skip')),
+    ).thenAnswer((_) async => []);
     when(() => api.addFavorite(any())).thenAnswer((_) async {});
     when(() => api.removeFavorite(any())).thenAnswer((_) async {});
     when(() => api.topics(locale: any(named: 'locale'))).thenAnswer(

@@ -35,10 +35,18 @@ export class FavoritesService {
   // favorites по userId (сортировка по createdAt desc), затем experts по
   // ids с фильтром публичности (VERIFIED + не blocked). Скрытые/удалённые
   // эксперты выпадают из выдачи, связка в БД остаётся.
-  async getFavorites(userId: string): Promise<ExpertPublicDto[]> {
+  async getFavorites(
+    userId: string,
+    page: { take?: number; skip?: number } = {},
+  ): Promise<ExpertPublicDto[]> {
     const favorites = await this.prisma.favorite.findMany({
       where: { userId },
-      orderBy: { createdAt: 'desc' },
+      // Вторичный ключ `expertId`: две записи, добавленные в одну
+      // миллисекунду, иначе меняли бы порядок между запросами и
+      // «прыгали» между страницами.
+      orderBy: [{ createdAt: 'desc' }, { expertId: 'asc' }],
+      take: page.take ?? 20,
+      skip: page.skip ?? 0,
     });
     if (favorites.length === 0) return [];
 

@@ -2,6 +2,7 @@
 library;
 
 import 'dart:async';
+import 'dart:developer' as developer;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared/shared.dart';
@@ -81,29 +82,76 @@ final catalogFiltersProvider =
       CatalogFiltersController.new,
     );
 
+/// Размер страницы каталога. Совпадает с умолчанием бэкенда (E11a,
+/// задача 7): просить больше — значит упереться в его потолок в 100.
+const catalogPageSize = 20;
+
 class CatalogController extends AsyncNotifier<List<ExpertPublic>> {
+  /// Есть ли ещё страницы. `false`, когда последняя страница пришла
+  /// неполной — отдельного признака у эндпоинта нет.
+  bool hasMore = true;
+
+  bool _loadingMore = false;
+
   @override
   FutureOr<List<ExpertPublic>> build() {
     // `watch`, а не `read`: смена фильтров обязана перезапрашивать выдачу.
     final filters = ref.watch(catalogFiltersProvider);
-    return _load(filters);
+    hasMore = true;
+    return _load(filters, skip: 0);
   }
 
-  Future<List<ExpertPublic>> _load(CatalogFilters filters) =>
-      ref
-          .read(catalogRepositoryProvider)
-          .experts(
-            topic: filters.topicSlug,
-            language: filters.language,
-            format: filters.format,
-            sort: filters.sort?.wireValue,
-          );
+  Future<List<ExpertPublic>> _load(
+    CatalogFilters filters, {
+    required int skip,
+  }) async {
+    final page = await ref
+        .read(catalogRepositoryProvider)
+        .experts(
+          topic: filters.topicSlug,
+          language: filters.language,
+          format: filters.format,
+          sort: filters.sort?.wireValue,
+          take: catalogPageSize,
+          skip: skip,
+        );
+    hasMore = page.length == catalogPageSize;
+    return page;
+  }
+
+  /// Догружает следующую страницу и дописывает её в конец. Дубли
+  /// отсеиваются по id: порядок на сервере детерминирован, но повторный
+  /// тап по кнопке не должен удваивать карточки.
+  Future<void> loadMore() async {
+    final current = state.valueOrNull;
+    if (current == null || _loadingMore || !hasMore) return;
+    _loadingMore = true;
+    try {
+      final page = await _load(
+        ref.read(catalogFiltersProvider),
+        skip: current.length,
+      );
+      final ids = current.map((expert) => expert.id).toSet();
+      state = AsyncData([
+        ...current,
+        ...page.where((expert) => !ids.contains(expert.id)),
+      ]);
+    } catch (error) {
+      developer.log(
+        'догрузка каталога не удалась: ${error.runtimeType}',
+        name: 'CatalogController',
+      );
+    } finally {
+      _loadingMore = false;
+    }
+  }
 
   /// «Повторить» на экране ошибки.
   Future<void> retry() async {
     state = const AsyncLoading();
+    hasMore = true;
     state = await AsyncValue.guard(
-      () => _load(ref.read(catalogFiltersProvider)),
+      () => _load(ref.read(catalogFiltersProvider), skip: 0),
     );
   }
 }

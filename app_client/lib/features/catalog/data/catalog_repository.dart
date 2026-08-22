@@ -11,21 +11,26 @@ class CatalogRepository {
 
   final SqApi _api;
 
-  /// `GET /v1/experts` — каталог целиком под текущие фильтры.
+  /// `GET /v1/experts` — страница каталога под текущие фильтры.
   ///
-  /// Пагинации у эндпоинта нет (см. `ListExpertsDto` бэкенда: только
-  /// фильтры и сортировка), поэтому и в клиенте её нет — список приходит
-  /// одним куском, а порядок задаёт сервер.
+  /// Пагинация появилась в E11a (задача 7): без `take` бэкенд отдаёт
+  /// первые 20 записей, максимум 100. Порядок задаёт сервер и он
+  /// детерминирован (вторичный ключ `id`), поэтому страницы можно просто
+  /// склеивать.
   Future<List<ExpertPublic>> experts({
     String? topic,
     String? language,
     SessionFormat? format,
     String? sort,
+    int? take,
+    int? skip,
   }) => _api.experts(
     topic: topic,
     language: language,
     format: format,
     sort: sort,
+    take: take,
+    skip: skip,
   );
 
   /// `GET /v1/experts/{id}` — публичная карточка.
@@ -35,8 +40,9 @@ class CatalogRepository {
   Future<ExpertReviews> reviews(String id, {int? take, int? skip}) =>
       _api.expertReviews(id, take: take, skip: skip);
 
-  /// `GET /v1/favorites`.
-  Future<List<ExpertPublic>> favorites() => _api.favorites();
+  /// `GET /v1/favorites` — страница избранного (E11a, задача 7).
+  Future<List<ExpertPublic>> favorites({int? take, int? skip}) =>
+      _api.favorites(take: take, skip: skip);
 
   /// `PUT /v1/favorites/{expertId}` — идемпотентно.
   Future<void> addFavorite(String expertId) => _api.addFavorite(expertId);

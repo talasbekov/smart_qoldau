@@ -95,6 +95,17 @@ class CatalogScreen extends ConsumerWidget {
                         onTap: () =>
                             context.push(RoutePaths.expert(expert.id)),
                       ),
+                    // Каталог приходит страницами по 20 (E11a, задача 7).
+                    if (ref.read(catalogControllerProvider.notifier).hasMore)
+                      Center(
+                        child: TextButton(
+                          key: const Key('sq-catalog-load-more'),
+                          onPressed: () => ref
+                              .read(catalogControllerProvider.notifier)
+                              .loadMore(),
+                          child: Text(l10n.consultationLoadMore),
+                        ),
+                      ),
                   ],
                 ),
         ),

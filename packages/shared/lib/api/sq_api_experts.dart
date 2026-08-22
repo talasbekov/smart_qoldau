@@ -17,11 +17,17 @@ mixin SqApiExperts on SqApiBase {
 
   /// `GET /experts` — публичный список экспертов (VERIFIED, не
   /// заблокированные), с фильтрами каталога.
+  ///
+  /// Пагинация появилась в E11a (задача 7): без `take` бэкенд отдаёт
+  /// первую страницу (20 записей), максимум — 100. Раньше запрос
+  /// возвращал весь каталог целиком.
   Future<List<ExpertPublic>> experts({
     String? topic,
     String? language,
     SessionFormat? format,
     String? sort,
+    int? take,
+    int? skip,
   }) =>
       guard(() async {
         final response = await dio.get<List<dynamic>>(
@@ -31,6 +37,8 @@ mixin SqApiExperts on SqApiBase {
             'language': ?language,
             if (format != null) 'format': format.wireValue,
             'sort': ?sort,
+            'take': ?take,
+            'skip': ?skip,
           },
         );
         return response.data!
@@ -59,9 +67,14 @@ mixin SqApiExperts on SqApiBase {
         return ExpertReviews.fromJson(response.data!);
       });
 
-  /// `GET /favorites` — список избранных экспертов.
-  Future<List<ExpertPublic>> favorites() => guard(() async {
-        final response = await dio.get<List<dynamic>>(SqEndpoints.favorites);
+  /// `GET /favorites` — список избранных экспертов (постранично, E11a
+  /// задача 7: без параметров — первая страница из 20).
+  Future<List<ExpertPublic>> favorites({int? take, int? skip}) =>
+      guard(() async {
+        final response = await dio.get<List<dynamic>>(
+          SqEndpoints.favorites,
+          queryParameters: {'take': ?take, 'skip': ?skip},
+        );
         return response.data!
             .map((e) => ExpertPublic.fromJson(e as Map<String, dynamic>))
             .toList();

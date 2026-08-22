@@ -9,10 +9,45 @@ import 'package:shared/shared.dart';
 
 import '../data/catalog_repository.dart';
 
+/// Размер страницы избранного — как у каталога и как умолчание бэкенда.
+const favoritesPageSize = 20;
+
 class FavoritesController extends AsyncNotifier<List<ExpertPublic>> {
+  bool hasMore = true;
+  bool _loadingMore = false;
+
   @override
-  FutureOr<List<ExpertPublic>> build() =>
-      ref.read(catalogRepositoryProvider).favorites();
+  FutureOr<List<ExpertPublic>> build() => _page(skip: 0);
+
+  Future<List<ExpertPublic>> _page({required int skip}) async {
+    final page = await ref
+        .read(catalogRepositoryProvider)
+        .favorites(take: favoritesPageSize, skip: skip);
+    hasMore = page.length == favoritesPageSize;
+    return page;
+  }
+
+  /// Догружает следующую страницу избранного (E11a, задача 7).
+  Future<void> loadMore() async {
+    final current = state.valueOrNull;
+    if (current == null || _loadingMore || !hasMore) return;
+    _loadingMore = true;
+    try {
+      final page = await _page(skip: current.length);
+      final ids = current.map((expert) => expert.id).toSet();
+      state = AsyncData([
+        ...current,
+        ...page.where((expert) => !ids.contains(expert.id)),
+      ]);
+    } catch (error) {
+      developer.log(
+        'догрузка избранного не удалась: ${error.runtimeType}',
+        name: 'FavoritesController',
+      );
+    } finally {
+      _loadingMore = false;
+    }
+  }
 
   bool contains(String expertId) =>
       state.valueOrNull?.any((expert) => expert.id == expertId) ?? false;
@@ -58,9 +93,8 @@ class FavoritesController extends AsyncNotifier<List<ExpertPublic>> {
 
   Future<void> reload() async {
     state = const AsyncLoading();
-    state = await AsyncValue.guard(
-      () => ref.read(catalogRepositoryProvider).favorites(),
-    );
+    hasMore = true;
+    state = await AsyncValue.guard(() => _page(skip: 0));
   }
 }
 

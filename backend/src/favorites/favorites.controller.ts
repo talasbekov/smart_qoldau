@@ -1,6 +1,7 @@
 import {
   Controller,
   Put,
+  Query,
   Delete,
   Get,
   Param,
@@ -19,6 +20,7 @@ import { CurrentUser } from '../auth/current-user.decorator';
 import { JwtPayload } from '../auth/jwt.strategy';
 import { FavoritesService } from './favorites.service';
 import { ExpertPublicDto } from '../experts/dto/expert-public.dto';
+import { ListFavoritesDto } from './dto/list-favorites.dto';
 
 @ApiTags('favorites')
 @ApiBearerAuth()
@@ -59,7 +61,8 @@ export class FavoritesController {
   })
   async getFavorites(
     @CurrentUser() user: JwtPayload,
+    @Query() query: ListFavoritesDto,
   ): Promise<ExpertPublicDto[]> {
-    return this.favorites.getFavorites(user.sub);
+    return this.favorites.getFavorites(user.sub, query);
   }
 }

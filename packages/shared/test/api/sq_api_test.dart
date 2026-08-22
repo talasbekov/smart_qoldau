@@ -147,6 +147,40 @@ void main() {
       expect(result, isEmpty);
     });
 
+    test(
+      'experts() sends take/skip alongside filters — без них бэкенд отдаёт '
+      'только первую страницу (E11a, задача 7)',
+      () async {
+        adapter.onGet(
+          '/experts',
+          (server) => server.reply(200, []),
+          queryParameters: {
+            'topic': 'anxiety-stress',
+            'sort': 'rating',
+            'take': 20,
+            'skip': 20,
+          },
+        );
+
+        await api.experts(
+          topic: 'anxiety-stress',
+          sort: 'rating',
+          take: 20,
+          skip: 20,
+        );
+      },
+    );
+
+    test('favorites() sends take/skip with the documented key names', () async {
+      adapter.onGet(
+        '/favorites',
+        (server) => server.reply(200, []),
+        queryParameters: {'take': 10, 'skip': 30},
+      );
+
+      await api.favorites(take: 10, skip: 30);
+    });
+
     test('consultations() sends as/status/take/skip with the documented key names', () async {
       adapter.onGet(
         '/consultations',

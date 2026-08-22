@@ -59,6 +59,16 @@ class FavoritesScreen extends ConsumerWidget {
                         onTap: () =>
                             context.push(RoutePaths.expert(expert.id)),
                       ),
+                    if (ref.read(favoritesControllerProvider.notifier).hasMore)
+                      Center(
+                        child: TextButton(
+                          key: const Key('sq-favorites-load-more'),
+                          onPressed: () => ref
+                              .read(favoritesControllerProvider.notifier)
+                              .loadMore(),
+                          child: Text(l10n.consultationLoadMore),
+                        ),
+                      ),
                   ],
                 ),
         ),

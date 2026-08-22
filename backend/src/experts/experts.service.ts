@@ -220,21 +220,24 @@ export class ExpertsService {
     if (filters.language) where.languages = { has: filters.language };
     if (filters.format) where.formats = { has: filters.format };
 
-    const orderBy:
-      | Prisma.ExpertOrderByWithRelationInput
-      | Prisma.ExpertOrderByWithRelationInput[]
-      | undefined =
+    // Вторичный ключ `id` обязателен в КАЖДОМ варианте сортировки: без
+    // него две страницы с равной ценой (или равным рейтингом) могут
+    // содержать одного эксперта дважды и потерять другого — порядок между
+    // запросами не гарантирован (тот же дефект ловили ревью E9 и E8a).
+    const orderBy: Prisma.ExpertOrderByWithRelationInput[] =
       filters.sort === 'price_asc'
-        ? { priceTiyn: 'asc' }
+        ? [{ priceTiyn: 'asc' }, { id: 'asc' }]
         : filters.sort === 'price_desc'
-          ? { priceTiyn: 'desc' }
+          ? [{ priceTiyn: 'desc' }, { id: 'asc' }]
           : filters.sort === 'rating'
-            ? [{ ratingAvg: 'desc' }, { priceTiyn: 'asc' }]
-            : undefined;
+            ? [{ ratingAvg: 'desc' }, { priceTiyn: 'asc' }, { id: 'asc' }]
+            : [{ id: 'asc' }];
 
     const experts = await this.prisma.expert.findMany({
       where,
       orderBy,
+      take: filters.take ?? 20,
+      skip: filters.skip ?? 0,
       include: { topics: { include: { topic: true } } },
     });
     return experts.map((e) => this.toPublicDto(e));
