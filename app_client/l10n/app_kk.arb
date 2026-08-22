@@ -168,5 +168,17 @@
   "cardExpiryInvalid": "Мерзімі АА/ЖЖ пішімінде",
   "cardHolderInvalid": "Картадағыдай атыңызды жазыңыз",
   "paymentDuration": "{minutes, plural, one{{minutes} минут} other{{minutes} минут}}",
-  "expertReviewsCount": "{count, plural, one{{count} пікір} other{{count} пікір}}"
+  "expertReviewsCount": "{count, plural, one{{count} пікір} other{{count} пікір}}",
+  "chatInputHint": "Хабарлама жазыңыз...",
+  "chatConfidentialNotice": "Мұнда ашық сөйлесуге болады. Барлық хабарламалар құпия",
+  "chatSending": "жіберілуде",
+  "chatFailed": "жіберілмеді",
+  "chatPeerTyping": "жазып жатыр…",
+  "chatInputDisabled": "Кеңес аяқталды — енді жазуға болмайды",
+  "sessionOnline": "Байланыста",
+  "sessionRemaining": "{time} қалды",
+  "sessionTimeUp": "Кеңес уақыты аяқталды",
+  "sessionCancelTitle": "Кеңесті тоқтату керек пе?",
+  "sessionCancelBody": "Уақыт басқа пайдаланушыға босайды",
+  "sessionMenuCancel": "Кеңесті тоқтату"
 }

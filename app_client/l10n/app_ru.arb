@@ -715,5 +715,58 @@
         "type": "num"
       }
     }
+  },
+  "chatInputHint": "Напишите сообщение...",
+  "@chatInputHint": {
+    "description": "Плейсхолдер поля ввода сообщения в чате консультации"
+  },
+  "chatConfidentialNotice": "Здесь безопасно говорить открыто. Все сообщения конфиденциальны",
+  "@chatConfidentialNotice": {
+    "description": "Плашка о конфиденциальности над перепиской (прототип 12-chat.png)"
+  },
+  "chatSending": "отправляется",
+  "@chatSending": {
+    "description": "Статус сообщения, пока не пришло подтверждение от сервера"
+  },
+  "chatFailed": "не отправлено",
+  "@chatFailed": {
+    "description": "Статус сообщения, если сервер отклонил отправку"
+  },
+  "chatPeerTyping": "печатает…",
+  "@chatPeerTyping": {
+    "description": "Индикатор набора текста собеседником"
+  },
+  "chatInputDisabled": "Консультация завершена — писать больше нельзя",
+  "@chatInputDisabled": {
+    "description": "Подпись вместо поля ввода, когда консультация не активна"
+  },
+  "sessionOnline": "На связи",
+  "@sessionOnline": {
+    "description": "Статус специалиста в шапке сессии"
+  },
+  "sessionRemaining": "Осталось {time}",
+  "@sessionRemaining": {
+    "description": "Оставшееся время консультации в шапке сессии",
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "sessionTimeUp": "Время консультации истекло",
+  "@sessionTimeUp": {
+    "description": "Шапка сессии, когда плановое время вышло: сессию это не закрывает — исход фиксирует специалист"
+  },
+  "sessionCancelTitle": "Отменить консультацию?",
+  "@sessionCancelTitle": {
+    "description": "Заголовок подтверждения отмены консультации (БП-03)"
+  },
+  "sessionCancelBody": "Время освободится для другого пользователя",
+  "@sessionCancelBody": {
+    "description": "Текст подтверждения отмены консультации"
+  },
+  "sessionMenuCancel": "Отменить консультацию",
+  "@sessionMenuCancel": {
+    "description": "Пункт меню сессии: отменить консультацию"
   }
 }

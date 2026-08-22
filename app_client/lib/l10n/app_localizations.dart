@@ -1111,6 +1111,78 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'{count, plural, one{{count} отзыв} few{{count} отзыва} many{{count} отзывов} other{{count} отзыва}}'**
   String expertReviewsCount(num count);
+
+  /// Плейсхолдер поля ввода сообщения в чате консультации
+  ///
+  /// In ru, this message translates to:
+  /// **'Напишите сообщение...'**
+  String get chatInputHint;
+
+  /// Плашка о конфиденциальности над перепиской (прототип 12-chat.png)
+  ///
+  /// In ru, this message translates to:
+  /// **'Здесь безопасно говорить открыто. Все сообщения конфиденциальны'**
+  String get chatConfidentialNotice;
+
+  /// Статус сообщения, пока не пришло подтверждение от сервера
+  ///
+  /// In ru, this message translates to:
+  /// **'отправляется'**
+  String get chatSending;
+
+  /// Статус сообщения, если сервер отклонил отправку
+  ///
+  /// In ru, this message translates to:
+  /// **'не отправлено'**
+  String get chatFailed;
+
+  /// Индикатор набора текста собеседником
+  ///
+  /// In ru, this message translates to:
+  /// **'печатает…'**
+  String get chatPeerTyping;
+
+  /// Подпись вместо поля ввода, когда консультация не активна
+  ///
+  /// In ru, this message translates to:
+  /// **'Консультация завершена — писать больше нельзя'**
+  String get chatInputDisabled;
+
+  /// Статус специалиста в шапке сессии
+  ///
+  /// In ru, this message translates to:
+  /// **'На связи'**
+  String get sessionOnline;
+
+  /// Оставшееся время консультации в шапке сессии
+  ///
+  /// In ru, this message translates to:
+  /// **'Осталось {time}'**
+  String sessionRemaining(String time);
+
+  /// Шапка сессии, когда плановое время вышло: сессию это не закрывает — исход фиксирует специалист
+  ///
+  /// In ru, this message translates to:
+  /// **'Время консультации истекло'**
+  String get sessionTimeUp;
+
+  /// Заголовок подтверждения отмены консультации (БП-03)
+  ///
+  /// In ru, this message translates to:
+  /// **'Отменить консультацию?'**
+  String get sessionCancelTitle;
+
+  /// Текст подтверждения отмены консультации
+  ///
+  /// In ru, this message translates to:
+  /// **'Время освободится для другого пользователя'**
+  String get sessionCancelBody;
+
+  /// Пункт меню сессии: отменить консультацию
+  ///
+  /// In ru, this message translates to:
+  /// **'Отменить консультацию'**
+  String get sessionMenuCancel;
 }
 
 class _AppLocalizationsDelegate

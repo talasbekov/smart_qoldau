@@ -574,4 +574,43 @@ class AppLocalizationsKk extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get chatInputHint => 'Хабарлама жазыңыз...';
+
+  @override
+  String get chatConfidentialNotice =>
+      'Мұнда ашық сөйлесуге болады. Барлық хабарламалар құпия';
+
+  @override
+  String get chatSending => 'жіберілуде';
+
+  @override
+  String get chatFailed => 'жіберілмеді';
+
+  @override
+  String get chatPeerTyping => 'жазып жатыр…';
+
+  @override
+  String get chatInputDisabled => 'Кеңес аяқталды — енді жазуға болмайды';
+
+  @override
+  String get sessionOnline => 'Байланыста';
+
+  @override
+  String sessionRemaining(String time) {
+    return '$time қалды';
+  }
+
+  @override
+  String get sessionTimeUp => 'Кеңес уақыты аяқталды';
+
+  @override
+  String get sessionCancelTitle => 'Кеңесті тоқтату керек пе?';
+
+  @override
+  String get sessionCancelBody => 'Уақыт басқа пайдаланушыға босайды';
+
+  @override
+  String get sessionMenuCancel => 'Кеңесті тоқтату';
 }

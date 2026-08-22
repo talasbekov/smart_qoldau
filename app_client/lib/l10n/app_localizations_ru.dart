@@ -581,4 +581,44 @@ class AppLocalizationsRu extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get chatInputHint => 'Напишите сообщение...';
+
+  @override
+  String get chatConfidentialNotice =>
+      'Здесь безопасно говорить открыто. Все сообщения конфиденциальны';
+
+  @override
+  String get chatSending => 'отправляется';
+
+  @override
+  String get chatFailed => 'не отправлено';
+
+  @override
+  String get chatPeerTyping => 'печатает…';
+
+  @override
+  String get chatInputDisabled =>
+      'Консультация завершена — писать больше нельзя';
+
+  @override
+  String get sessionOnline => 'На связи';
+
+  @override
+  String sessionRemaining(String time) {
+    return 'Осталось $time';
+  }
+
+  @override
+  String get sessionTimeUp => 'Время консультации истекло';
+
+  @override
+  String get sessionCancelTitle => 'Отменить консультацию?';
+
+  @override
+  String get sessionCancelBody => 'Время освободится для другого пользователя';
+
+  @override
+  String get sessionMenuCancel => 'Отменить консультацию';
 }
