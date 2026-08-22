@@ -28,8 +28,25 @@ abstract final class RoutePaths {
   /// Экстренный сценарий (Р-16) — заглушка до задачи 11 эпика E6.
   static const emergency = '/emergency';
 
-  /// Экран темы (`?slug=<slug>`) — заглушка до задачи 10 эпика E6.
+  /// Экстренный сценарий: список горячих линий (Р-16) — заглушка до
+  /// задачи 11 эпика E6, но экран поиска уводит сюда уже сейчас, когда
+  /// заявка закрылась статусом `CALLBACK_REQUESTED`.
+  static const emergencyHotlines = '/emergency/hotlines';
+
+  /// Экран темы (`?slug=<slug>`): подтверждение темы и выбор формата.
   static const topic = '/topic';
+
+  /// Шаблон маршрута экрана поиска специалиста для `GoRoute.path`.
+  static const searchPattern = '/search/:requestId';
+
+  /// Путь экрана поиска по заявке [requestId].
+  static String search(String requestId) => '/search/$requestId';
+
+  /// Шаблон маршрута экрана «специалист найден» (задача 12 эпика E6).
+  static const foundPattern = '/found/:requestId';
+
+  /// Путь экрана «специалист найден» по заявке [requestId].
+  static String found(String requestId) => '/found/$requestId';
 
   /// Шаблон маршрута сессии консультации для регистрации в `GoRoute.path`.
   static const sessionPattern = '/session/:id';

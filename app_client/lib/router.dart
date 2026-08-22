@@ -5,6 +5,7 @@ library;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shared/shared.dart';
 
 import 'core/route_paths.dart';
 import 'features/auth/state/auth_controller.dart';
@@ -19,8 +20,11 @@ import 'features/onboarding/ui/slides_screen.dart';
 import 'features/onboarding/ui/welcome_screen.dart';
 import 'features/profile/ui/profile_screen.dart';
 import 'features/session/ui/session_screen.dart';
+import 'features/found/ui/found_screen.dart';
 import 'features/shell/ui/app_shell.dart';
-import 'features/topic/ui/topic_screen.dart';
+import 'features/funnel/state/search_controller.dart';
+import 'features/funnel/ui/search_screen.dart';
+import 'features/funnel/ui/topic_screen.dart';
 
 /// Пути, на которых пользователь обязан ОСТАВАТЬСЯ, пока не выполнено их
 /// условие (см. [_redirect]), и с которых он обязан УЙТИ, как только оно
@@ -127,9 +131,43 @@ GoRouter sqRouter(Ref ref) {
         builder: (context, state) => const EmergencyScreen(),
       ),
       GoRoute(
+        // Список горячих линий Р-16 — пока тот же экран-заглушка, что и
+        // `/emergency`: настоящий добавляет задача 11 эпика E6. Маршрут
+        // зарегистрирован уже сейчас, потому что экран поиска уводит сюда
+        // при статусе заявки `CALLBACK_REQUESTED`.
+        path: RoutePaths.emergencyHotlines,
+        builder: (context, state) => const EmergencyScreen(),
+      ),
+      GoRoute(
         path: RoutePaths.topic,
+        builder: (context, state) => TopicScreen(
+          slug: state.uri.queryParameters['slug'],
+          // Название темы передаёт главный экран через `extra` — справочник
+          // тем у него уже загружен, отдельного запроса ради одной строки
+          // не нужно. При переходе по прямой ссылке `extra` пуст, и экран
+          // покажет сам slug.
+          topicName: (state.extra as Topic?)?.name,
+        ),
+      ),
+      GoRoute(
+        path: RoutePaths.searchPattern,
+        builder: (context, state) {
+          final requestId = state.pathParameters['requestId']!;
+          // `extra` несёт тему и формат (их нет в `GET /requests/{id}`,
+          // см. `SearchArgs`). При открытии по прямой ссылке его нет —
+          // поиск работает, но без счётчика «Сейчас онлайн».
+          final args = state.extra as SearchArgs?;
+          return SearchScreen(
+            args: args?.requestId == requestId
+                ? args!
+                : SearchArgs(requestId: requestId),
+          );
+        },
+      ),
+      GoRoute(
+        path: RoutePaths.foundPattern,
         builder: (context, state) =>
-            TopicScreen(slug: state.uri.queryParameters['slug']),
+            FoundScreen(requestId: state.pathParameters['requestId']!),
       ),
       GoRoute(
         path: RoutePaths.sessionPattern,

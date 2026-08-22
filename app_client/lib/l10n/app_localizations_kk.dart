@@ -300,4 +300,83 @@ class AppLocalizationsKk extends AppLocalizations {
   @override
   String get emergencyDisclaimerText =>
       'Платформа шұғыл қызметтерді алмастырмайды. Егер өмірге немесе денсаулыққа қауіп төнсе, тікелей хабарласыңыз:';
+
+  @override
+  String get topicTitle => 'Сізді не мазалайтынын айтыңыз';
+
+  @override
+  String get topicSubtitle =>
+      'Тақырыпты тексеріп, қарым-қатынас форматын таңдаңыз — біз қолайлы маман табамыз';
+
+  @override
+  String get topicFormatLabel => 'Қарым-қатынас форматы';
+
+  @override
+  String get topicFormatNotChosen => 'Форматты таңдаңыз';
+
+  @override
+  String get formatChat => 'Чат';
+
+  @override
+  String get formatAudio => 'Аудио';
+
+  @override
+  String get formatVideo => 'Бейне';
+
+  @override
+  String get formatSheetTitle => 'Сізге қалай ыңғайлы?';
+
+  @override
+  String get formatSheetCaption => '50 минут · бағасы маманға байланысты';
+
+  @override
+  String get funnelActiveRequestTitle => 'Сізде белсенді өтінім бар';
+
+  @override
+  String get funnelActiveRequestBody =>
+      'Оның жауабын күтіңіз немесе жаңасын құру үшін оны тоқтатыңыз';
+
+  @override
+  String get searchTitle => 'Сізге қолайлы психологты таңдап жатырмыз';
+
+  @override
+  String get searchSubtitle => 'Бұл 2 минуттан аспайды';
+
+  @override
+  String get searchHint =>
+      'Біз мамандығын, тілін және қазіргі қолжетімділігін ескереміз';
+
+  @override
+  String get searchElapsedLabel => 'Іздеу жүріп жатыр';
+
+  @override
+  String get searchEncouragement =>
+      'Көмекке жүгініп, сіз маңызды қадам жасадыңыз';
+
+  @override
+  String get searchCancel => 'Іздеуді тоқтату';
+
+  @override
+  String get noExpertsTitle => 'Қазір бос мамандар жоқ';
+
+  @override
+  String get noExpertsBody =>
+      'Бірнеше минуттан кейін қайталап көріңіз немесе басты бетке оралыңыз';
+
+  @override
+  String get actionTryAgain => 'Қайта көру';
+
+  @override
+  String get actionGoHome => 'Басты бетке';
+
+  @override
+  String searchOnlineCount(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count маман',
+      one: '$count маман',
+    );
+    return 'Қазір желіде: $_temp0';
+  }
 }

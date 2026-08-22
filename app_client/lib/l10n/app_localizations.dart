@@ -649,6 +649,138 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Платформа не заменяет экстренные службы. Если жизни или здоровью угрожает опасность, звоните напрямую:'**
   String get emergencyDisclaimerText;
+
+  /// Заголовок экрана подтверждения темы (прототип 08-topic.png)
+  ///
+  /// In ru, this message translates to:
+  /// **'Расскажите, что вас тревожит'**
+  String get topicTitle;
+
+  /// Пояснение под заголовком экрана темы
+  ///
+  /// In ru, this message translates to:
+  /// **'Проверьте тему и выберите формат общения — мы подберём подходящего специалиста'**
+  String get topicSubtitle;
+
+  /// Подпись блока выбора формата консультации на экране темы
+  ///
+  /// In ru, this message translates to:
+  /// **'Формат общения'**
+  String get topicFormatLabel;
+
+  /// Подпись кнопки выбора формата, пока формат не выбран
+  ///
+  /// In ru, this message translates to:
+  /// **'Выберите формат'**
+  String get topicFormatNotChosen;
+
+  /// Название формата консультации: переписка
+  ///
+  /// In ru, this message translates to:
+  /// **'Чат'**
+  String get formatChat;
+
+  /// Название формата консультации: аудиозвонок
+  ///
+  /// In ru, this message translates to:
+  /// **'Аудио'**
+  String get formatAudio;
+
+  /// Название формата консультации: видеозвонок
+  ///
+  /// In ru, this message translates to:
+  /// **'Видео'**
+  String get formatVideo;
+
+  /// Заголовок шторки выбора формата консультации
+  ///
+  /// In ru, this message translates to:
+  /// **'Как вам удобно общаться?'**
+  String get formatSheetTitle;
+
+  /// Пояснение под каждым вариантом формата: длительность и что цена индивидуальна
+  ///
+  /// In ru, this message translates to:
+  /// **'50 минут · цена зависит от специалиста'**
+  String get formatSheetCaption;
+
+  /// Заголовок диалога при ответе ACTIVE_REQUEST_EXISTS на создание заявки
+  ///
+  /// In ru, this message translates to:
+  /// **'У вас уже есть активная заявка'**
+  String get funnelActiveRequestTitle;
+
+  /// Текст диалога при ответе ACTIVE_REQUEST_EXISTS
+  ///
+  /// In ru, this message translates to:
+  /// **'Дождитесь ответа по ней или отмените её, чтобы создать новую'**
+  String get funnelActiveRequestBody;
+
+  /// Заголовок экрана поиска специалиста (прототип 09-search.png)
+  ///
+  /// In ru, this message translates to:
+  /// **'Подбираем для вас подходящего психолога'**
+  String get searchTitle;
+
+  /// Пояснение под заголовком экрана поиска
+  ///
+  /// In ru, this message translates to:
+  /// **'Это займёт не более 2 минут'**
+  String get searchSubtitle;
+
+  /// Второе пояснение на экране поиска — по какому принципу идёт подбор
+  ///
+  /// In ru, this message translates to:
+  /// **'Мы учитываем специализацию, язык и текущую доступность специалиста'**
+  String get searchHint;
+
+  /// Подпись над таймером прошедшего времени на экране поиска
+  ///
+  /// In ru, this message translates to:
+  /// **'Идёт поиск'**
+  String get searchElapsedLabel;
+
+  /// Поддерживающая строка внизу экрана поиска
+  ///
+  /// In ru, this message translates to:
+  /// **'Вы уже сделали важный шаг, обратившись за помощью'**
+  String get searchEncouragement;
+
+  /// Кнопка отмены заявки на экране поиска
+  ///
+  /// In ru, this message translates to:
+  /// **'Отменить поиск'**
+  String get searchCancel;
+
+  /// Заголовок экрана, когда заявка закрылась статусом NO_EXPERTS
+  ///
+  /// In ru, this message translates to:
+  /// **'Сейчас нет свободных специалистов'**
+  String get noExpertsTitle;
+
+  /// Текст экрана NO_EXPERTS
+  ///
+  /// In ru, this message translates to:
+  /// **'Попробуйте ещё раз через несколько минут или вернитесь на главную'**
+  String get noExpertsBody;
+
+  /// Кнопка пересоздания заявки на экране «нет свободных специалистов»
+  ///
+  /// In ru, this message translates to:
+  /// **'Попробовать снова'**
+  String get actionTryAgain;
+
+  /// Кнопка возврата на главный экран
+  ///
+  /// In ru, this message translates to:
+  /// **'На главную'**
+  String get actionGoHome;
+
+  /// Счётчик доступных специалистов на экране поиска (GET /matching/online-count, задача 9). Форма слова зависит от числа — в русском их четыре
+  ///
+  /// In ru, this message translates to:
+  /// **'Сейчас онлайн: {count, plural, one{{count} специалист} few{{count} специалиста} many{{count} специалистов} other{{count} специалиста}}'**
+  String searchOnlineCount(num count);
 }
 
 class _AppLocalizationsDelegate

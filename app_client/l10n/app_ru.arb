@@ -377,5 +377,98 @@
   "emergencyDisclaimerText": "Платформа не заменяет экстренные службы. Если жизни или здоровью угрожает опасность, звоните напрямую:",
   "@emergencyDisclaimerText": {
     "description": "Локализованный текст SqEmergencyDisclaimer.disclaimerText (ТЗ §4.3) — виджет из packages/shared не может зависеть от l10n приложения, значение передаётся явно"
+  },
+  "topicTitle": "Расскажите, что вас тревожит",
+  "@topicTitle": {
+    "description": "Заголовок экрана подтверждения темы (прототип 08-topic.png)"
+  },
+  "topicSubtitle": "Проверьте тему и выберите формат общения — мы подберём подходящего специалиста",
+  "@topicSubtitle": {
+    "description": "Пояснение под заголовком экрана темы"
+  },
+  "topicFormatLabel": "Формат общения",
+  "@topicFormatLabel": {
+    "description": "Подпись блока выбора формата консультации на экране темы"
+  },
+  "topicFormatNotChosen": "Выберите формат",
+  "@topicFormatNotChosen": {
+    "description": "Подпись кнопки выбора формата, пока формат не выбран"
+  },
+  "formatChat": "Чат",
+  "@formatChat": {
+    "description": "Название формата консультации: переписка"
+  },
+  "formatAudio": "Аудио",
+  "@formatAudio": {
+    "description": "Название формата консультации: аудиозвонок"
+  },
+  "formatVideo": "Видео",
+  "@formatVideo": {
+    "description": "Название формата консультации: видеозвонок"
+  },
+  "formatSheetTitle": "Как вам удобно общаться?",
+  "@formatSheetTitle": {
+    "description": "Заголовок шторки выбора формата консультации"
+  },
+  "formatSheetCaption": "50 минут · цена зависит от специалиста",
+  "@formatSheetCaption": {
+    "description": "Пояснение под каждым вариантом формата: длительность и что цена индивидуальна"
+  },
+  "funnelActiveRequestTitle": "У вас уже есть активная заявка",
+  "@funnelActiveRequestTitle": {
+    "description": "Заголовок диалога при ответе ACTIVE_REQUEST_EXISTS на создание заявки"
+  },
+  "funnelActiveRequestBody": "Дождитесь ответа по ней или отмените её, чтобы создать новую",
+  "@funnelActiveRequestBody": {
+    "description": "Текст диалога при ответе ACTIVE_REQUEST_EXISTS"
+  },
+  "searchTitle": "Подбираем для вас подходящего психолога",
+  "@searchTitle": {
+    "description": "Заголовок экрана поиска специалиста (прототип 09-search.png)"
+  },
+  "searchSubtitle": "Это займёт не более 2 минут",
+  "@searchSubtitle": {
+    "description": "Пояснение под заголовком экрана поиска"
+  },
+  "searchHint": "Мы учитываем специализацию, язык и текущую доступность специалиста",
+  "@searchHint": {
+    "description": "Второе пояснение на экране поиска — по какому принципу идёт подбор"
+  },
+  "searchElapsedLabel": "Идёт поиск",
+  "@searchElapsedLabel": {
+    "description": "Подпись над таймером прошедшего времени на экране поиска"
+  },
+  "searchEncouragement": "Вы уже сделали важный шаг, обратившись за помощью",
+  "@searchEncouragement": {
+    "description": "Поддерживающая строка внизу экрана поиска"
+  },
+  "searchCancel": "Отменить поиск",
+  "@searchCancel": {
+    "description": "Кнопка отмены заявки на экране поиска"
+  },
+  "noExpertsTitle": "Сейчас нет свободных специалистов",
+  "@noExpertsTitle": {
+    "description": "Заголовок экрана, когда заявка закрылась статусом NO_EXPERTS"
+  },
+  "noExpertsBody": "Попробуйте ещё раз через несколько минут или вернитесь на главную",
+  "@noExpertsBody": {
+    "description": "Текст экрана NO_EXPERTS"
+  },
+  "actionTryAgain": "Попробовать снова",
+  "@actionTryAgain": {
+    "description": "Кнопка пересоздания заявки на экране «нет свободных специалистов»"
+  },
+  "actionGoHome": "На главную",
+  "@actionGoHome": {
+    "description": "Кнопка возврата на главный экран"
+  },
+  "searchOnlineCount": "Сейчас онлайн: {count, plural, one{{count} специалист} few{{count} специалиста} many{{count} специалистов} other{{count} специалиста}}",
+  "@searchOnlineCount": {
+    "description": "Счётчик доступных специалистов на экране поиска (GET /matching/online-count, задача 9). Форма слова зависит от числа — в русском их четыре",
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
   }
 }

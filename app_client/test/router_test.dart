@@ -28,7 +28,7 @@ import 'package:app_client/features/home/ui/home_screen.dart';
 import 'package:app_client/features/onboarding/state/onboarding_flags.dart';
 import 'package:app_client/features/onboarding/ui/slides_screen.dart';
 import 'package:app_client/features/profile/ui/profile_screen.dart';
-import 'package:app_client/features/topic/ui/topic_screen.dart';
+import 'package:app_client/features/funnel/ui/topic_screen.dart';
 import 'package:app_client/l10n/app_localizations.dart';
 import 'package:app_client/router.dart';
 

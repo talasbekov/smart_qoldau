@@ -107,6 +107,9 @@ class _HomeContent extends StatelessWidget {
               path: RoutePaths.topic,
               queryParameters: {'slug': topic.slug},
             ).toString(),
+            // Название темы едет с собой: экран темы показывает его сразу,
+            // не перезапрашивая справочник ради одной строки.
+            extra: topic,
           ),
         ),
         const SizedBox(height: SqSpacing.l),

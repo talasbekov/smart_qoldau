@@ -301,4 +301,85 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get emergencyDisclaimerText =>
       'Платформа не заменяет экстренные службы. Если жизни или здоровью угрожает опасность, звоните напрямую:';
+
+  @override
+  String get topicTitle => 'Расскажите, что вас тревожит';
+
+  @override
+  String get topicSubtitle =>
+      'Проверьте тему и выберите формат общения — мы подберём подходящего специалиста';
+
+  @override
+  String get topicFormatLabel => 'Формат общения';
+
+  @override
+  String get topicFormatNotChosen => 'Выберите формат';
+
+  @override
+  String get formatChat => 'Чат';
+
+  @override
+  String get formatAudio => 'Аудио';
+
+  @override
+  String get formatVideo => 'Видео';
+
+  @override
+  String get formatSheetTitle => 'Как вам удобно общаться?';
+
+  @override
+  String get formatSheetCaption => '50 минут · цена зависит от специалиста';
+
+  @override
+  String get funnelActiveRequestTitle => 'У вас уже есть активная заявка';
+
+  @override
+  String get funnelActiveRequestBody =>
+      'Дождитесь ответа по ней или отмените её, чтобы создать новую';
+
+  @override
+  String get searchTitle => 'Подбираем для вас подходящего психолога';
+
+  @override
+  String get searchSubtitle => 'Это займёт не более 2 минут';
+
+  @override
+  String get searchHint =>
+      'Мы учитываем специализацию, язык и текущую доступность специалиста';
+
+  @override
+  String get searchElapsedLabel => 'Идёт поиск';
+
+  @override
+  String get searchEncouragement =>
+      'Вы уже сделали важный шаг, обратившись за помощью';
+
+  @override
+  String get searchCancel => 'Отменить поиск';
+
+  @override
+  String get noExpertsTitle => 'Сейчас нет свободных специалистов';
+
+  @override
+  String get noExpertsBody =>
+      'Попробуйте ещё раз через несколько минут или вернитесь на главную';
+
+  @override
+  String get actionTryAgain => 'Попробовать снова';
+
+  @override
+  String get actionGoHome => 'На главную';
+
+  @override
+  String searchOnlineCount(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count специалиста',
+      many: '$count специалистов',
+      few: '$count специалиста',
+      one: '$count специалист',
+    );
+    return 'Сейчас онлайн: $_temp0';
+  }
 }
