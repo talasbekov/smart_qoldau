@@ -10,7 +10,6 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  google_fonts: ^8.2.1
   dio: ^5.11.0
   freezed_annotation: ^3.1.0
   json_annotation: ^4.12.0
@@ -37,6 +36,8 @@ dev_dependencies:
   # выходом стабильного freezed 4.0.0 и снять пин.
   freezed: 4.0.0-dev.3
   json_serializable: ^6.14.1
+  # Тест задачи 21 читает секцию fonts из этого же pubspec.
+  yaml: ^3.1.2
   http_mock_adapter: ^0.6.1
   mocktail: ^1.0.5
 
@@ -76,3 +77,17 @@ flutter:
   #
   # For details regarding fonts in packages, see
   # https://flutter.dev/to/font-from-package
+  # Inter забандлен в пакет (задача 21 эпика E6): интерфейс не зависит от
+  # сети, а тесты не печатают предупреждений о неудачной загрузке шрифта.
+  # Лицензия — assets/fonts/OFL.txt (SIL OFL 1.1).
+  fonts:
+    - family: Inter
+      fonts:
+        - asset: assets/fonts/Inter-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/Inter-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/Inter-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/Inter-Bold.ttf
+          weight: 700

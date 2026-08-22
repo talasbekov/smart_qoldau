@@ -1,10 +1,6 @@
-import 'dart:async';
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:shared/shared.dart';
 
 /// Оборачивает виджет в минимальное дерево, достаточное для рендера
@@ -17,111 +13,6 @@ Widget _wrap(Widget child) {
 }
 
 void main() {
-  setUpAll(() {
-    // Тестовое окружение не имеет доступа к сети: без этого флага
-    // google_fonts пытается скачать Inter по HTTP при каждом обращении
-    // к шрифту, которого ещё нет в кеше пакета.
-    GoogleFonts.config.allowRuntimeFetching = false;
-  });
-
-  // google_fonts НЕ кеширует провалившиеся попытки загрузки шрифта — кеш
-  // (`_loadedFonts`) чистится в catch-блоке при любой ошибке, кешируются
-  // только успешные загрузки (см. его исходники и
-  // load_font_if_necessary_test.dart, кейс "does not call http if config is
-  // false"). Поэтому `GoogleFonts.inter()`, вызванный на каждый ребилд
-  // виджета, при `allowRuntimeFetching = false` печатал бы через debugPrint
-  // предупреждение "unable to load font ... not found in the application
-  // assets" на КАЖДОМ тесте — фактическая защита от этого шума не в
-  // прогреве, а в `SqTypography`/`sqTheme()` (`packages/shared/lib/design/
-  // tokens.dart`, `theme.dart`): там `GoogleFonts.inter()` теперь
-  // вычисляется один раз и мемоизируется (`static final` / кеш ThemeData),
-  // так что за весь прогон файла он реально вызывается ровно по одному разу
-  // на начертание (w400/w600/w700 — всё, что использует SqTypography).
-  //
-  // Прогрев ниже — единственное место, где это единоразовое обращение
-  // происходит; здесь же оно перехватывается и проверяется. Глушим именно
-  // Zone.print (а не глобальный `debugPrint`): переопределять сам
-  // `debugPrint` в тестах с виджетами нельзя, тестовый биндинг Flutter
-  // проверяет после каждого testWidgets, что debug-переменные foundation
-  // не изменены, и падает на инварианте, если это не так.
-  //
-  // Важная деталь окружения (см. фикс-репорт в task-2-report.md): в тестах
-  // Flutter-*пакета* (не приложения) `path_provider` не зарегистрирован —
-  // обращение к его platform channel без мока никогда не отвечает, и
-  // google_fonts, ожидая ответ перед тем как проверить оффлайн-кеш на
-  // диске, зависает в фоне и не доходит до debugPrint в течение жизни
-  // теста. Из-за этого раньше прогрев мог казаться «сработавшим» просто
-  // потому, что предупреждение никогда не печаталось в принципе — это
-  // делало проверку недостоверной. Мокаем канал `path_provider`, чтобы
-  // google_fonts детерминированно и быстро доходил до реальной ветки
-  // «офлайн, локального кеша нет», и подавление с проверкой ниже
-  // действительно что-то тестировали, а не полагались на гонку.
-  //
-  // Ограничение: этот прогрев — единственное место, где происходит
-  // единоразовый вызов. Выборочный прогон (`flutter test --plain-name
-  // "SqButton"`), который его исключает, увидит непрогретое предупреждение.
-  // Полное требование «вывод чист» проверяется прогоном всего файла/пакета.
-  testWidgets(
-    'прогревает кеш google_fonts и подтверждает, что подавляется именно '
-    'его офлайн-предупреждение',
-    (tester) async {
-      const pathProviderChannel = MethodChannel(
-        'plugins.flutter.io/path_provider',
-      );
-      tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
-        pathProviderChannel,
-        (call) async => Directory.systemTemp.path,
-      );
-      // Автоматическая пост-тестовая уборка Flutter не снимает хендлеры,
-      // установленные автором теста на произвольных каналах (она сбрасывает
-      // только то, что ставит сама) — снимаем его явно, иначе он молча
-      // провисит на все оставшиеся тесты файла и подменит path_provider
-      // любому будущему тесту, которому понадобится настоящий провайдер.
-      addTearDown(
-        () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
-          pathProviderChannel,
-          null,
-        ),
-      );
-
-      final suppressed = <String>[];
-      final quietZone = ZoneSpecification(
-        print: (self, parent, zone, message) {
-          suppressed.add(message);
-        },
-      );
-      await Zone.current.fork(specification: quietZone).run(() async {
-        await tester.pumpWidget(_wrap(const SizedBox.shrink()));
-        // pumpAndSettle, а не одиночный pump: реальный round-trip через
-        // мокнутый platform channel может занять больше одного цикла
-        // микрозадач, а debugPrint из google_fonts должен долистаться
-        // именно внутри этой заглушённой Zone, а не в следующем тесте.
-        await tester.pumpAndSettle();
-      });
-
-      // Канарейка: если google_fonts перестанет печатать это предупреждение
-      // (например, поменяется формат сообщения или логика кеширования при
-      // апдейте пакета), проверки ниже покраснеют вместо того, чтобы
-      // молча перестать что-либо ловить.
-      expect(
-        suppressed,
-        isNotEmpty,
-        reason:
-            'ожидали хотя бы одно подавленное сообщение офлайн-фолбэка '
-            'google_fonts',
-      );
-      expect(
-        suppressed.any(
-          (message) => message.contains('google_fonts was unable to load font'),
-        ),
-        isTrue,
-        reason:
-            'ожидали характерное сообщение google_fonts об отсутствии '
-            'шрифта в assets; его текст мог поменяться при апдейте пакета',
-      );
-    },
-  );
-
   group('SqColors', () {
     test('matches the prototype hex values', () {
       expect(SqColors.primary, const Color(0xFF0F766E));
