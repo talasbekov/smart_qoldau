@@ -68,12 +68,21 @@ class LocaleController extends Notifier<Locale> {
     final prefs = ref.watch(sharedPreferencesProvider);
     final saved = prefs.getString(_localePrefsKey);
     if (saved != null) {
-      return Locale(saved);
+      return _narrowToSupported(saved);
     }
 
     final system = ref.watch(systemLocaleProvider);
-    return system.languageCode == 'kk' ? const Locale('kk') : const Locale('ru');
+    return _narrowToSupported(system.languageCode);
   }
+
+  /// Сужает произвольный код языка до одной из двух реально поддерживаемых
+  /// локалей приложения. Применяется как к сохранённому в
+  /// [SharedPreferences] значению, так и к системной локали — источник
+  /// значения не должен решать, попадёт ли в [MaterialApp.locale] код,
+  /// которого нет в `supportedLocales` (на нём `lookupAppLocalizations`
+  /// бросает `FlutterError`).
+  Locale _narrowToSupported(String languageCode) =>
+      languageCode == 'kk' ? const Locale('kk') : const Locale('ru');
 
   /// Меняет локаль интерфейса: персистит выбор и лучшим усилием сообщает
   /// об этом бэкенду. Язык интерфейса не должен зависеть от сети — любая

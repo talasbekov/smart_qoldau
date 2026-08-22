@@ -19,7 +19,6 @@ class SqClientApp extends ConsumerWidget {
     final locale = ref.watch(localeControllerProvider);
 
     return MaterialApp(
-      title: 'SmartQoldau',
       onGenerateTitle: (context) => AppLocalizations.of(context)!.appTitle,
       theme: sqTheme(),
       locale: locale,

@@ -65,6 +65,15 @@ void main() {
       expect(container.read(localeControllerProvider), const Locale('ru'));
     });
 
+    test('мусорное сохранённое значение откатывается на русский, а не падает', () async {
+      final container = await _makeContainer(
+        initialPrefs: {'sq.locale': 'zz'},
+        systemLocale: const Locale('kk'),
+      );
+
+      expect(container.read(localeControllerProvider), const Locale('ru'));
+    });
+
     test('setLocale персистит выбор в SharedPreferences', () async {
       final container = await _makeContainer();
 

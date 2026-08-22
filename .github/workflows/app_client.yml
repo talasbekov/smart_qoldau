@@ -19,5 +19,13 @@ jobs:
           else
             echo "build_runner ещё не подключён (генераторы появятся в задаче 4 эпика E6) — шаг пропущен"
           fi
+      - name: Check l10n codegen is committed (app_client only)
+        if: matrix.package == 'app_client'
+        run: |
+          flutter gen-l10n
+          git diff --exit-code -- lib/l10n || {
+            echo "::error::lib/l10n/*.dart разошёлся с l10n/*.arb — перегенерируй (flutter gen-l10n) и закоммить"
+            exit 1
+          }
       - run: flutter analyze
       - run: flutter test

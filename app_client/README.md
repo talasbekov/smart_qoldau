@@ -79,3 +79,21 @@ flutter run -d chrome --dart-define=API_BASE_URL=http://localhost:3000/v1
 flutter test      # из app_client/ и из packages/shared/
 flutter analyze   # 0 issues
 ```
+
+Используем `dart analyze`, а не `flutter analyze` — репозиторий лежит по пути
+с кириллицей, а `flutter analyze` падает на нём с `FormatException` в
+LSP-канале `analysis_server` (подтверждённый дефект окружения, к коду
+отношения не имеет).
+
+**Симптом:** сразу после свежего `git clone` (или в CI) `flutter test` в
+`app_client` шумно перерезолвит зависимости перед каждым прогоном —
+печатает `Resolving dependencies... / Downloading packages... / Got
+dependencies! / N packages have newer versions...` вместо того, чтобы сразу
+перейти к тестам. **Причина:** эвристика `flutter_tools`, решающая, можно ли
+пропустить `pub get`, сравнивает время модификации `pubspec.yaml` с
+`pubspec.lock`/`.dart_tool/package_config.json` — а git не хранит mtime
+файлов, поэтому на свежем клоне порядок временных меток случаен и заранее
+не гарантирован. **Обход:** один раз выполнить `flutter pub get`, после
+которого больше не редактировать `pubspec.yaml` вручную — тогда `pubspec.lock`
+гарантированно окажется новее и последующие `flutter test` будут тихими; если
+нужно — можно принудительно `touch pubspec.lock .dart_tool/package_config.json`.
