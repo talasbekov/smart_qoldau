@@ -90,6 +90,7 @@ describe('OpenAPI (e2e)', () => {
       '/v1/admin/tickets/{id}',
       '/v1/admin/tickets/{id}/reply',
       '/v1/admin/tickets/{id}/resolve',
+      '/v1/matching/online-count',
     ])
       expect(paths).toContain(p);
   });

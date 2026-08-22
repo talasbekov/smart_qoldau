@@ -1190,6 +1190,69 @@
         ]
       }
     },
+    "/v1/matching/online-count": {
+      "get": {
+        "operationId": "MatchingController_onlineCount",
+        "summary": "Счётчик доступных сейчас экспертов для экрана поиска (ТЗ §5.3, БП-01)",
+        "parameters": [
+          {
+            "name": "topicSlug",
+            "required": true,
+            "in": "query",
+            "description": "Slug темы из справочника /v1/topics",
+            "schema": {
+              "example": "anxiety-stress",
+              "type": "string"
+            }
+          },
+          {
+            "name": "format",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "enum": [
+                "chat",
+                "audio",
+                "video"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "name": "urgentOnly",
+            "required": false,
+            "in": "query",
+            "description": "Только эксперты с acceptsUrgent=true (экстренный поиск, БП-02)",
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Число подходящих экспертов онлайн (без PII)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OnlineCountDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED"
+          }
+        },
+        "tags": [
+          "matching"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/consultations/{id}/messages": {
       "get": {
         "operationId": "ChatController_messages",
@@ -4302,6 +4365,19 @@
         },
         "required": [
           "acceptsUrgent"
+        ]
+      },
+      "OnlineCountDto": {
+        "type": "object",
+        "properties": {
+          "count": {
+            "type": "number",
+            "example": 3,
+            "description": "Число подходящих экспертов онлайн"
+          }
+        },
+        "required": [
+          "count"
         ]
       },
       "MessageDto": {

@@ -41,9 +41,8 @@ mixin SqApiRequests on SqApiBase {
       });
 
   /// `GET /matching/online-count` — число доступных под фильтр экспертов
-  /// онлайн. Бэкенд-роут появляется в задаче 9 эпика E6 (см.
-  /// `SqEndpoints.excludedFromContractTest`) — до тех пор вызов этого метода
-  /// вернёт `NOT_FOUND`.
+  /// онлайн (для экрана поиска, ТЗ §5.3, БП-01). Реализовано в задаче 9
+  /// эпика E6; ответ — только `{count}`, без id экспертов.
   Future<OnlineCount> onlineCount({
     required String topicSlug,
     required SessionFormat format,

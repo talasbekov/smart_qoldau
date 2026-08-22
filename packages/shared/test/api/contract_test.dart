@@ -45,12 +45,12 @@ void main() {
     );
   });
 
-  test('the task-9 exclusion is exactly the online-count endpoint', () {
-    // Сторожевой тест: не даёт исключению незаметно "распухнуть" другими
-    // путями — как только бэкенд задачи 9 добавит /matching/online-count в
-    // openapi.json, исключение нужно снять (см. SqEndpoints).
-    expect(SqEndpoints.excludedFromContractTest, {
-      ('GET', '/matching/online-count'),
-    });
+  test('исключений из контрактного теста больше нет (задача 9 закрыта)', () {
+    // Сторожевой тест: раньше здесь стояло единственное исключение —
+    // /matching/online-count, пока бэкенд задачи 9 эпика E6 его не
+    // реализовал. Теперь список пуст; появление новой записи здесь —
+    // сигнал начать новый цикл "реализация отстаёт от контракта", а не
+    // тихо мириться с расхождением.
+    expect(SqEndpoints.excludedFromContractTest, isEmpty);
   });
 }

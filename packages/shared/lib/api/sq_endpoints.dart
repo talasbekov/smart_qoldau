@@ -27,8 +27,6 @@ abstract final class SqEndpoints {
   static String requestById(String id) => '/requests/$id';
   static String requestCancel(String id) => '/requests/$id/cancel';
 
-  /// Задача 9 эпика E6 добавляет сам бэкенд-роут — см.
-  /// [excludedFromContractTest].
   static const matchingOnlineCount = '/matching/online-count';
 
   // --- консультации ---
@@ -102,14 +100,8 @@ abstract final class SqEndpoints {
   ];
 
   /// Исключены из проверки контрактным тестом, потому что бэкенд ещё не
-  /// реализует этот путь.
-  ///
-  /// `GET /matching/online-count` реализует задача 9 эпика E6 (см.
-  /// `.superpowers/sdd/2026-08-22-план-E6-приложение-клиента/task-9-brief.md`)
-  /// — она же обязана снять эту запись. НЕ убирать её раньше: на момент
-  /// задачи 4 `docs/openapi.json` этого пути не содержит, и контрактный тест
-  /// упадёт.
-  static const Set<(String method, String path)> excludedFromContractTest = {
-    ('GET', matchingOnlineCount),
-  };
+  /// реализует соответствующий путь. Задача 9 эпика E6 реализовала
+  /// `/matching/online-count` — исключений больше нет.
+  static const Set<(String method, String path)> excludedFromContractTest =
+      {};
 }
