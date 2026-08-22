@@ -9,6 +9,7 @@ import { NotificationsController } from './notifications.controller';
 import { PushProviderPort } from './provider/push-provider.port';
 import { MockPushProvider } from './provider/mock-push.provider';
 import { OfferPushFallbackService } from './offer-push-fallback.service';
+import { SmsBudgetService } from './sms-budget.service';
 
 // EventsService — @Global() WsModule, явный импорт не нужен. AuthModule —
 // источник SMS_PROVIDER_TOKEN (SMS-fallback критичных уведомлений, задача 5).
@@ -18,8 +19,9 @@ import { OfferPushFallbackService } from './offer-push-fallback.service';
   providers: [
     NotificationsService,
     OfferPushFallbackService,
+    SmsBudgetService,
     { provide: PushProviderPort, useClass: MockPushProvider },
   ],
-  exports: [NotificationsService, OfferPushFallbackService],
+  exports: [NotificationsService, OfferPushFallbackService, SmsBudgetService],
 })
 export class NotificationsModule {}

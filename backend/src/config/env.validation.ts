@@ -32,4 +32,9 @@ export const envValidationSchema = Joi.object({
   // Точечный выключатель лимитов для спеков, которые честно делают десятки
   // запросов подряд (нагрузочные и сквозные). В боевой среде — всегда true.
   THROTTLE_ENABLED: Joi.string().valid('true', 'false').default('true'),
+  // Бюджет платных SMS-добивок (E11a, задача 2). Значения — потолки, а не
+  // цели: нормальный день до них не доходит.
+  SMS_EXPERT_COOLDOWN_SEC: Joi.number().default(300),
+  SMS_EXPERT_DAILY_MAX: Joi.number().default(20),
+  SMS_GLOBAL_DAILY_MAX: Joi.number().default(2000),
 });

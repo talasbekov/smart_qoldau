@@ -5,6 +5,7 @@ import { ClockService } from '../common/clock/clock.service';
 import { AuditService } from '../audit/audit.service';
 import { SMS_PROVIDER_TOKEN, SmsProvider } from '../auth/sms/sms.provider';
 import { CRITICAL_TYPES } from './notification-templates';
+import { SmsBudgetService } from './sms-budget.service';
 
 // SMS-добивка критичного пуша (E9, задача 5, §11.6): если за 10с эксперт не
 // подтвердил доставку пуша (POST /v1/notifications/:id/ack) — ровно ОДНО SMS
@@ -34,6 +35,7 @@ export class OfferPushFallbackService {
     private clock: ClockService,
     private audit: AuditService,
     @Inject(SMS_PROVIDER_TOKEN) private sms: SmsProvider,
+    private budget: SmsBudgetService,
   ) {}
 
   // Возвращает число обработанных записей — для единообразия с другими
@@ -105,6 +107,25 @@ export class OfferPushFallbackService {
       this.logger.warn(
         `SMS-fallback уведомления ${notification.id}: у пользователя ${notification.userId} нет телефона`,
       );
+      return;
+    }
+
+    // Бюджет проверяется ПОСЛЕ всех остальных условий: списывать лимит на
+    // уведомление, которое всё равно не ушло бы (оффер уже не PENDING, у
+    // пользователя нет телефона), значило бы обкрадывать тех, кому SMS
+    // действительно нужно.
+    const decision = await this.budget.explainConsume(notification.userId);
+    if (!decision.allowed) {
+      // Отказ бюджета НЕ должен выглядеть как доставка: smsFallbackAt уже
+      // проставлен (окно fallback закрыто), поэтому различие фиксируется в
+      // audit отдельным переходом с названием сработавшего предела.
+      await this.audit.log({
+        actorType: 'system',
+        entity: 'notification',
+        entityId: notification.id,
+        transition: 'notification.sms_budget_exceeded',
+        payload: { offerId, limit: decision.limit },
+      });
       return;
     }
 
