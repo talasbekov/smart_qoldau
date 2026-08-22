@@ -46,21 +46,54 @@ class PermissionsScreen extends ConsumerStatefulWidget {
 class _PermissionsScreenState extends ConsumerState<PermissionsScreen> {
   bool _requesting = false;
 
+  /// `if (_requesting) return;` в начале — тот же приём, что
+  /// `_continueAnonymously` на `WelcomeScreen`/`_guardedFinish` на
+  /// `SlidesScreen`: `onPressed`, захваченный в уже построенном дереве, не
+  /// обновится до следующего `pump()`, поэтому без внутреннего guard'а
+  /// быстрый повторный тап по «Разрешить» до первого кадра после `setState`
+  /// мог бы запустить второй, независимый набор запросов разрешений.
+  ///
+  /// `await`-цепочка — в `try/catch/finally`, по образцу
+  /// `_continueAnonymously` на `WelcomeScreen`: если `PermissionService
+  /// .request` (или сам [_finish]) бросит, `_requesting` обязан
+  /// сброситься всё равно — иначе «Разрешить»/«Позже» останутся
+  /// заблокированы навсегда. Исключение гасится молча: отказ и так не
+  /// блокирует вход (см. шапку файла), поэтому сбой запроса — тем более
+  /// не повод ронять экран или показывать ошибку.
   Future<void> _allow() async {
+    if (_requesting) return;
     setState(() => _requesting = true);
-    final service = ref.read(permissionServiceProvider);
-    await service.request(SqPermission.microphone);
-    await service.request(SqPermission.camera);
-    await service.request(SqPermission.notifications);
-    await _finish();
+    try {
+      final service = ref.read(permissionServiceProvider);
+      await service.request(SqPermission.microphone);
+      await service.request(SqPermission.camera);
+      await service.request(SqPermission.notifications);
+      await _finish();
+    } catch (_) {
+      // Намеренно молча — см. комментарий выше.
+    } finally {
+      if (mounted) setState(() => _requesting = false);
+    }
   }
 
-  Future<void> _later() => _finish();
+  /// Тот же guard и та же гарантия сброса флага, что в [_allow] — «Позже»
+  /// ничего не запрашивает, но без собственного guard'а был бы уязвим к
+  /// точно такому же двойному тапу по самому себе.
+  Future<void> _later() async {
+    if (_requesting) return;
+    setState(() => _requesting = true);
+    try {
+      await _finish();
+    } catch (_) {
+      // Намеренно молча — см. комментарий у [_allow].
+    } finally {
+      if (mounted) setState(() => _requesting = false);
+    }
+  }
 
   Future<void> _finish() async {
     await ref.read(onboardingFlagsProvider).setAskedPermissions(true);
     if (!mounted) return;
-    setState(() => _requesting = false);
     widget.onFinished();
   }
 

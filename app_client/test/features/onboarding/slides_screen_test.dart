@@ -41,6 +41,17 @@ class _DelayedOnboardingFlags extends OnboardingFlags {
   }
 }
 
+/// [OnboardingFlags], у которого `setSeenSlides` всегда падает — имитирует
+/// сбой записи в `SharedPreferences` (например, инвалидацию хранилища).
+class _ThrowingOnboardingFlags extends OnboardingFlags {
+  _ThrowingOnboardingFlags(super.prefs);
+
+  @override
+  Future<void> setSeenSlides(bool value) {
+    throw Exception('sq.onboarding.slides write failed');
+  }
+}
+
 Widget _wrap(Widget child, SharedPreferences prefs, {OnboardingFlags? flags}) {
   return ProviderScope(
     overrides: [
@@ -148,6 +159,39 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(finishedCount, 1);
+    },
+  );
+
+  testWidgets(
+    'исключение при записи флага сбрасывает _finishing — "Пропустить" не остаётся заблокирована навсегда',
+    (tester) async {
+      final prefs = await _prefs();
+      await tester.pumpWidget(
+        _wrap(
+          SlidesScreen(onFinished: () {}),
+          prefs,
+          flags: _ThrowingOnboardingFlags(prefs),
+        ),
+      );
+
+      final l10n = AppLocalizations.of(
+        tester.element(find.byType(SlidesScreen)),
+      )!;
+      await tester.tap(find.text(l10n.slidesSkip));
+      await tester.pumpAndSettle();
+
+      // Экран сам гасит исключение (см. комментарий у `_guardedFinish`) —
+      // ничего не должно долететь до тестовой зоны как необработанное.
+      expect(tester.takeException(), isNull);
+
+      final skipButton = tester.widget<TextButton>(find.byType(TextButton));
+      expect(
+        skipButton.onPressed,
+        isNotNull,
+        reason:
+            'без finally вокруг _finish() флаг _finishing остался бы '
+            'true навсегда, и кнопка "Пропустить" — заблокированной',
+      );
     },
   );
 

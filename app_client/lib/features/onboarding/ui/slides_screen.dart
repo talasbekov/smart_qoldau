@@ -57,11 +57,27 @@ class _SlidesScreenState extends ConsumerState<SlidesScreen> {
 
   /// Общий guard-обёртка вокруг [_finish] — вызывается и «Пропустить»
   /// (с любого слайда), и «Начать» (только с последнего).
+  ///
+  /// `await` внутри — в `try/catch/finally`, по образцу
+  /// `_continueAnonymously` на `WelcomeScreen`: если `setSeenSlides` (или
+  /// сам [_finish]) бросит исключение (например, инвалидация
+  /// `SharedPreferences`), `_finishing` обязан сброситься всё равно —
+  /// иначе экран навсегда останется с заблокированными
+  /// «Пропустить»/«Далее»/«Начать» без единого способа восстановиться.
+  /// Само исключение гасится молча (как несостоявшаяся запись
+  /// `sq.locale` в `LocaleController.setLocale`) — записи флага прогресса
+  /// не критичны для пользователя настолько, чтобы экран падал или
+  /// показывал ошибку из-за них; хуже, если это заблокирует кнопки.
   Future<void> _guardedFinish() async {
     if (_finishing) return;
     setState(() => _finishing = true);
-    await _finish();
-    if (mounted) setState(() => _finishing = false);
+    try {
+      await _finish();
+    } catch (_) {
+      // Намеренно молча — см. комментарий выше.
+    } finally {
+      if (mounted) setState(() => _finishing = false);
+    }
   }
 
   Future<void> _finish() async {
@@ -84,11 +100,16 @@ class _SlidesScreenState extends ConsumerState<SlidesScreen> {
       return;
     }
     setState(() => _finishing = true);
-    await _controller.nextPage(
-      duration: const Duration(milliseconds: 250),
-      curve: Curves.easeOut,
-    );
-    if (mounted) setState(() => _finishing = false);
+    try {
+      await _controller.nextPage(
+        duration: const Duration(milliseconds: 250),
+        curve: Curves.easeOut,
+      );
+    } catch (_) {
+      // Намеренно молча — см. комментарий у [_guardedFinish].
+    } finally {
+      if (mounted) setState(() => _finishing = false);
+    }
   }
 
   @override

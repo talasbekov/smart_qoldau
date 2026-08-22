@@ -10,6 +10,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared/shared.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:app_client/core/locale_controller.dart';
@@ -24,6 +25,15 @@ class _FakePermissionService implements PermissionService {
   @override
   Future<void> request(SqPermission permission) async {
     requested.add(permission);
+  }
+}
+
+/// [PermissionService], у которого `request` всегда падает — имитирует
+/// сбой самого запроса разрешения у платформы.
+class _ThrowingPermissionService implements PermissionService {
+  @override
+  Future<void> request(SqPermission permission) {
+    throw Exception('permission request failed');
   }
 }
 
@@ -104,6 +114,50 @@ void main() {
       ]);
       expect(OnboardingFlags(prefs).askedPermissions, isTrue);
       expect(finished, isTrue);
+    },
+  );
+
+  testWidgets(
+    'исключение при запросе разрешения сбрасывает _requesting — «Разрешить»/«Позже» не остаются заблокированными навсегда',
+    (tester) async {
+      final prefs = await _prefs();
+      var finished = false;
+
+      await tester.pumpWidget(
+        _wrap(
+          PermissionsScreen(onFinished: () => finished = true),
+          prefs,
+          _ThrowingPermissionService(),
+        ),
+      );
+
+      final l10n = AppLocalizations.of(
+        tester.element(find.byType(PermissionsScreen)),
+      )!;
+      await tester.tap(find.text(l10n.actionAllow));
+      await tester.pumpAndSettle();
+
+      // Экран сам гасит исключение (см. комментарий у `_allow`) — ничего
+      // не должно долететь до тестовой зоны как необработанное, и
+      // onFinished() не вызывается, раз попытка провалилась.
+      expect(tester.takeException(), isNull);
+      expect(finished, isFalse);
+
+      final allowButton = tester.widget<SqButton>(
+        find.widgetWithText(SqButton, l10n.actionAllow),
+      );
+      final laterButton = tester.widget<SqButton>(
+        find.widgetWithText(SqButton, l10n.actionLater),
+      );
+      expect(
+        allowButton.onPressed,
+        isNotNull,
+        reason:
+            'без finally вокруг _allow() флаг _requesting остался бы true '
+            'навсегда, и обе кнопки — заблокированными',
+      );
+      expect(laterButton.onPressed, isNotNull);
+      expect(allowButton.loading, isFalse);
     },
   );
 }
