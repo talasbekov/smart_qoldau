@@ -99,9 +99,34 @@ void main() {
     api = MockSqApi();
     socket = _FakeSqSocket();
     addTearDown(socket.dispose);
+    // По умолчанию плановых записей нет — тесты ниже про ACTIVE.
+    when(
+      () => api.consultations(
+        status: ConsultationStatus.scheduled,
+        take: any(named: 'take'),
+        skip: any(named: 'skip'),
+      ),
+    ).thenAnswer((_) async => []);
   });
 
-  test('активная вкладка запрашивает только ACTIVE', () async {
+  test('активная вкладка запрашивает и SCHEDULED, и ACTIVE', () async {
+    // Плановая запись и идущая консультация для клиента — одно и то же
+    // «предстоит», поэтому вкладка тянет оба статуса (E6b).
+    when(
+      () => api.consultations(
+        status: ConsultationStatus.scheduled,
+        take: any(named: 'take'),
+        skip: any(named: 'skip'),
+      ),
+    ).thenAnswer(
+      (_) async => [
+        _consultation(
+          'c0',
+          status: ConsultationStatus.scheduled,
+          startedAt: DateTime(2026, 8, 25, 15),
+        ),
+      ],
+    );
     when(
       () => api.consultations(
         status: ConsultationStatus.active,
@@ -128,7 +153,9 @@ void main() {
       consultationsControllerProvider(ConsultationsTab.active).future,
     );
 
-    expect(list.map((c) => c.id), ['c1']);
+    // Ближайшая по времени плановая идёт первой — список активной вкладки
+    // отсортирован по началу.
+    expect(list.map((c) => c.id), ['c0', 'c1']);
     verifyNever(
       () => api.consultations(
         status: ConsultationStatus.completed,
@@ -271,13 +298,15 @@ void main() {
       container.read(provider).requireValue.single.paymentStatus,
       ConsultationPaymentStatus.captured,
     );
+    // Ровно один круг сети на статус вкладки и ни одного лишнего после
+    // события: два вызова — это SCHEDULED и ACTIVE первой загрузки.
     verify(
       () => api.consultations(
         status: any(named: 'status'),
         take: any(named: 'take'),
         skip: any(named: 'skip'),
       ),
-    ).called(1);
+    ).called(2);
   });
 
   test('отмена в гонке (409 CONSULTATION_NOT_ACTIVE) не роняет экран', () async {

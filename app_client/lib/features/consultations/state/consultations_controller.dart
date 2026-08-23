@@ -45,7 +45,12 @@ class ConsultationsController
   }
 
   List<ConsultationStatus> get _statuses => switch (arg) {
-    ConsultationsTab.active => [ConsultationStatus.active],
+    // Плановые записи живут на той же вкладке, что и идущие сейчас: для
+    // клиента это одно и то же — «предстоит».
+    ConsultationsTab.active => [
+      ConsultationStatus.scheduled,
+      ConsultationStatus.active,
+    ],
     ConsultationsTab.history => [
       ConsultationStatus.completed,
       ConsultationStatus.cancelled,
@@ -133,6 +138,7 @@ class ConsultationsController
       outcome: event.outcome ?? item.outcome,
       paymentStatus: event.paymentStatus ?? item.paymentStatus,
       format: event.format ?? item.format,
+      startedAt: event.startedAt ?? item.startedAt,
     );
 
     // Консультация ушла из этой вкладки (например, активная завершилась) —

@@ -50,6 +50,11 @@ sealed class SqEvent {
           paymentStatus:
               _consultationPaymentStatus(json['paymentStatus'] as String?),
           format: _sessionFormat(json['format'] as String?),
+          // Перенос плановой записи второй стороной (E6b) меняет время —
+          // без него карточка показывала бы старое до перезагрузки.
+          startedAt: json['startedAt'] == null
+              ? null
+              : DateTime.parse(json['startedAt'] as String),
         ),
       'chat.message' => ChatMessageEvent(ChatMessage.fromJson(json)),
       'chat.typing' => ChatTypingEvent(
@@ -101,6 +106,7 @@ final class ConsultationUpdated extends SqEvent {
     this.outcome,
     this.paymentStatus,
     this.format,
+    this.startedAt,
   });
 
   final String id;
@@ -109,9 +115,13 @@ final class ConsultationUpdated extends SqEvent {
   final ConsultationPaymentStatus? paymentStatus;
   final SessionFormat? format;
 
+  /// Новое время начала после переноса; `null` — время не менялось.
+  final DateTime? startedAt;
+
   @override
   String toString() => 'ConsultationUpdated(id: $id, status: $status, '
-      'outcome: $outcome, paymentStatus: $paymentStatus, format: $format)';
+      'outcome: $outcome, paymentStatus: $paymentStatus, format: $format, '
+      'startedAt: $startedAt)';
 }
 
 /// `chat.message` — новое сообщение чата консультации.
