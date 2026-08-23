@@ -245,70 +245,6 @@
         ]
       }
     },
-    "/v1/experts/{id}/slots": {
-      "get": {
-        "operationId": "SlotsController_list",
-        "summary": "Свободные слоты специалиста (горизонт 14 дней)",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "format": "uuid",
-              "type": "string"
-            }
-          },
-          {
-            "name": "from",
-            "required": false,
-            "in": "query",
-            "schema": {
-              "example": "2026-08-25T00:00:00.000Z",
-              "type": "string"
-            }
-          },
-          {
-            "name": "to",
-            "required": false,
-            "in": "query",
-            "schema": {
-              "example": "2026-09-08T00:00:00.000Z",
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/SlotsResponseDto"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "SLOTS_RANGE_TOO_WIDE"
-          },
-          "401": {
-            "description": "UNAUTHORIZED"
-          },
-          "404": {
-            "description": "EXPERT_NOT_FOUND"
-          }
-        },
-        "tags": [
-          "booking"
-        ],
-        "security": [
-          {
-            "bearer": []
-          }
-        ]
-      }
-    },
     "/v1/experts": {
       "post": {
         "operationId": "ExpertsController_create",
@@ -1983,6 +1919,65 @@
         ]
       }
     },
+    "/v1/bookings": {
+      "post": {
+        "operationId": "BookingController_create",
+        "summary": "Записаться к специалисту на слот",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateBookingDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Такая запись уже есть — повторный запрос идемпотентен",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BookingResultDto"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "Запись создана",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BookingResultDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "SLOT_OUT_OF_RANGE | EXPERT_TOPIC_MISMATCH"
+          },
+          "401": {
+            "description": "UNAUTHORIZED"
+          },
+          "404": {
+            "description": "EXPERT_NOT_FOUND | TOPIC_NOT_FOUND"
+          },
+          "409": {
+            "description": "SLOT_TAKEN | SLOT_UNAVAILABLE"
+          }
+        },
+        "tags": [
+          "booking"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/payment-methods": {
       "post": {
         "operationId": "PaymentMethodsController_add",
@@ -2344,6 +2339,70 @@
         },
         "tags": [
           "notifications"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/experts/{id}/slots": {
+      "get": {
+        "operationId": "SlotsController_list",
+        "summary": "Свободные слоты специалиста (горизонт 14 дней)",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "name": "from",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "example": "2026-08-25T00:00:00.000Z",
+              "type": "string"
+            }
+          },
+          {
+            "name": "to",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "example": "2026-09-08T00:00:00.000Z",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SlotsResponseDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "SLOTS_RANGE_TOO_WIDE"
+          },
+          "401": {
+            "description": "UNAUTHORIZED"
+          },
+          "404": {
+            "description": "EXPERT_NOT_FOUND"
+          }
+        },
+        "tags": [
+          "booking"
         ],
         "security": [
           {
@@ -4387,33 +4446,6 @@
           "code"
         ]
       },
-      "SlotDto": {
-        "type": "object",
-        "properties": {
-          "startAt": {
-            "type": "string",
-            "example": "2026-08-25T04:00:00.000Z",
-            "description": "Начало слота в UTC; клиент показывает его по Алматы"
-          }
-        },
-        "required": [
-          "startAt"
-        ]
-      },
-      "SlotsResponseDto": {
-        "type": "object",
-        "properties": {
-          "items": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/SlotDto"
-            }
-          }
-        },
-        "required": [
-          "items"
-        ]
-      },
       "CreateExpertDto": {
         "type": "object",
         "properties": {
@@ -5612,6 +5644,81 @@
         "type": "object",
         "properties": {}
       },
+      "CreateBookingDto": {
+        "type": "object",
+        "properties": {
+          "expertId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "topicSlug": {
+            "type": "string",
+            "example": "anxiety-stress"
+          },
+          "format": {
+            "type": "string",
+            "enum": [
+              "chat",
+              "audio",
+              "video"
+            ]
+          },
+          "slotStartAt": {
+            "type": "string",
+            "example": "2026-08-25T10:00:00.000Z",
+            "description": "UTC"
+          },
+          "paymentMethodId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "required": [
+          "expertId",
+          "topicSlug",
+          "format",
+          "slotStartAt",
+          "paymentMethodId"
+        ]
+      },
+      "BookingResultDto": {
+        "type": "object",
+        "properties": {
+          "consultationId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "startedAt": {
+            "type": "string",
+            "example": "2026-08-25T10:00:00.000Z"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "SCHEDULED",
+              "ACTIVE",
+              "COMPLETED",
+              "CANCELLED"
+            ]
+          },
+          "paymentStatus": {
+            "type": "string",
+            "enum": [
+              "UNPAID",
+              "HELD",
+              "CAPTURED",
+              "VOIDED",
+              "FAILED"
+            ]
+          }
+        },
+        "required": [
+          "consultationId",
+          "startedAt",
+          "status",
+          "paymentStatus"
+        ]
+      },
       "AddPaymentMethodDto": {
         "type": "object",
         "properties": {
@@ -5842,6 +5949,33 @@
             }
           }
         }
+      },
+      "SlotDto": {
+        "type": "object",
+        "properties": {
+          "startAt": {
+            "type": "string",
+            "example": "2026-08-25T04:00:00.000Z",
+            "description": "Начало слота в UTC; клиент показывает его по Алматы"
+          }
+        },
+        "required": [
+          "startAt"
+        ]
+      },
+      "SlotsResponseDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SlotDto"
+            }
+          }
+        },
+        "required": [
+          "items"
+        ]
       },
       "ScheduleExceptionDto": {
         "type": "object",

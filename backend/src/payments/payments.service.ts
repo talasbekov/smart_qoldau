@@ -63,7 +63,12 @@ export class PaymentsService {
     if (role !== 'client') {
       apiError('CONSULTATION_NOT_FOUND', 'Консультация не найдена', 404);
     }
-    if (consultation.status !== ConsultationStatus.ACTIVE) {
+    // Плановая консультация (E6b) оплачивается в момент записи, когда она
+    // ещё SCHEDULED: холд ставится заранее, а списание идёт по исходу.
+    if (
+      consultation.status !== ConsultationStatus.ACTIVE &&
+      consultation.status !== ConsultationStatus.SCHEDULED
+    ) {
       apiError('CONSULTATION_NOT_ACTIVE', 'Консультация не активна', 409);
     }
 

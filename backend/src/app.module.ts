@@ -51,7 +51,6 @@ import { MaintenanceModule } from './maintenance/maintenance.module';
     TopicsModule,
     AuthModule,
     StorageModule,
-    BookingModule,
     PresenceModule,
     ExpertsModule,
     VerificationModule,
@@ -66,6 +65,9 @@ import { MaintenanceModule } from './maintenance/maintenance.module';
     ReviewsModule,
     LedgerModule,
     PaymentsModule,
+    // После PaymentsModule/ConsultationsModule: BookingModule опирается
+    // на их провайдеры (E6b).
+    BookingModule,
     PayoutsModule,
     DevicesModule,
     NotificationsModule,

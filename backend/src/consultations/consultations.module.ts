@@ -9,6 +9,9 @@ import { ChatModule } from '../chat/chat.module';
 import { PaymentsModule } from '../payments/payments.module';
 import { NotificationsModule } from '../notifications/notifications.module';
 import { ConsultationsService } from './consultations.service';
+import { BookingModule } from '../booking/booking.module';
+import { BookingController } from '../booking/booking.controller';
+import { BookingService } from '../booking/booking.service';
 import { ConsultationsController } from './consultations.controller';
 import { NotesController } from './notes.controller';
 import { NoShowService } from './no-show.service';
@@ -36,9 +39,13 @@ import { NoShowService } from './no-show.service';
     forwardRef(() => ChatModule),
     forwardRef(() => PaymentsModule),
     NotificationsModule,
+    // Слоты для записи (E6b): BookingService живёт здесь, потому что ему
+    // нужен PaymentsService, а Payments↔Consultations уже связаны
+    // forwardRef — третий участник цикла ломает разрешение зависимостей.
+    BookingModule,
   ],
-  controllers: [ConsultationsController, NotesController],
-  providers: [ConsultationsService, NoShowService],
+  controllers: [ConsultationsController, NotesController, BookingController],
+  providers: [ConsultationsService, NoShowService, BookingService],
   exports: [ConsultationsService, NoShowService],
 })
 export class ConsultationsModule {}

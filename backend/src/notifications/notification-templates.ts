@@ -12,6 +12,10 @@ export const NOTIFICATION_TYPES = [
   'payout.rejected',
   'consultation.cancelled',
   'consultation.no_show_hint',
+  // Плановые консультации (E6b): запись, перенос, напоминание Р-15.
+  'consultation.booked',
+  'consultation.rescheduled',
+  'consultation.reminder',
   'verification.approved',
   'verification.rejected',
   'chat.message',
@@ -70,6 +74,36 @@ const TEMPLATES: Record<
     kz: {
       title: 'Консультация тоқтатылды',
       body: 'Клиент консультациядан бас тартты',
+    },
+  },
+  'consultation.booked': {
+    ru: {
+      title: 'Новая запись',
+      body: 'Клиент записался на консультацию — подробности в приложении',
+    },
+    kz: {
+      title: 'Жаңа жазылу',
+      body: 'Клиент консультацияға жазылды — толығырақ қосымшада',
+    },
+  },
+  'consultation.rescheduled': {
+    ru: {
+      title: 'Время консультации изменилось',
+      body: 'Откройте приложение, чтобы увидеть новое время',
+    },
+    kz: {
+      title: 'Консультация уақыты өзгерді',
+      body: 'Жаңа уақытты көру үшін қосымшаны ашыңыз',
+    },
+  },
+  'consultation.reminder': {
+    ru: {
+      title: 'Консультация через 15 минут',
+      body: 'Подключитесь к сессии в приложении',
+    },
+    kz: {
+      title: '15 минуттан кейін консультация',
+      body: 'Қосымшада сессияға қосылыңыз',
     },
   },
   'consultation.no_show_hint': {

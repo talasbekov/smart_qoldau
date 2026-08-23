@@ -363,6 +363,11 @@ model Consultation {
   @@index([expertId, status])
   // Рабочий запрос sweep'а плановых: status = 'SCHEDULED' AND started_at <= now().
   @@index([status, startedAt])
+  // Плюс частичный уникальный индекс consultations_expert_slot_uq
+  // (raw SQL в миграции 20260823120000_scheduled_slot_unique):
+  //   UNIQUE(expert_id, started_at) WHERE status IN ('SCHEDULED','ACTIVE').
+  // Он и есть защита от гонки двух клиентов на один слот — проверка перед
+  // вставкой под нагрузкой даёт двойную запись.
   @@map("consultations")
 }
 

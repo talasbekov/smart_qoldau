@@ -79,7 +79,11 @@ describe('Схема плановой консультации (e2e)', () => {
     await app.close();
   });
 
-  const consultationData = (requestId: string, status: ConsultationStatus) => ({
+  const consultationData = (
+    requestId: string,
+    status: ConsultationStatus,
+    startedAt = new Date('2026-08-25T10:00:00Z'),
+  ) => ({
     requestId,
     clientUserId: userId,
     clientCode: 1234,
@@ -88,7 +92,7 @@ describe('Схема плановой консультации (e2e)', () => {
     format: 'chat',
     priceTiyn: 399000,
     status,
-    startedAt: new Date('2026-08-25T10:00:00Z'),
+    startedAt,
   });
 
   it('консультация создаётся в статусе SCHEDULED с пустым remindedAt', async () => {
@@ -110,9 +114,12 @@ describe('Схема плановой консультации (e2e)', () => {
 
   it('мгновенная консультация по-прежнему ACTIVE — регресс модели', async () => {
     const created = await prisma.consultation.create({
+      // Другое время: частичный уникальный индекс (E6b, задача 4) не
+      // позволяет двум незакрытым консультациям занимать один слот.
       data: consultationData(
         `sched-schema-active-${expertId}`,
         ConsultationStatus.ACTIVE,
+        new Date('2026-08-25T11:00:00Z'),
       ),
     });
     expect(created.status).toBe('ACTIVE');
