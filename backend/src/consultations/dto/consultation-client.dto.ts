@@ -42,4 +42,9 @@ export class ConsultationClientDto {
 
   @ApiProperty({ type: ExpertPublicDto })
   expert: ExpertPublicDto;
+
+  // Идентификатор оставленного отзыва (E2a): без него клиент вынужден был
+  // помнить его локально и терял при переустановке приложения.
+  @ApiProperty({ format: 'uuid', nullable: true })
+  reviewId: string | null;
 }

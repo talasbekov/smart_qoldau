@@ -3,6 +3,7 @@ import {
   Expert,
   ExperienceLevel,
   Prisma,
+  ProfileFieldStatus,
   VerificationStatus,
   WorkStatus,
 } from '@prisma/client';
@@ -308,6 +309,16 @@ export class ExpertsService {
       workStatus: expert.workStatus,
       ratingAvg: expert.ratingAvg,
       ratingCount: expert.ratingCount,
+      // Наружу — только одобренное. PENDING и REJECTED не видны никогда, и
+      // ключи проверяемых значений тоже: они служебные.
+      photoUrl:
+        expert.photoStatus === ProfileFieldStatus.APPROVED && expert.photoKey
+          ? this.storage.avatarUrl(expert.photoKey)
+          : null,
+      about:
+        expert.aboutStatus === ProfileFieldStatus.APPROVED
+          ? expert.about
+          : null,
     };
   }
 

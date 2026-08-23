@@ -17,6 +17,9 @@ export class ReviewCreatedDto {
   @ApiPropertyOptional({ nullable: true })
   publicText: string | null;
 
+  @ApiProperty({ isArray: true, example: ['attentive'] })
+  tags: string[];
+
   @ApiProperty()
   createdAt: Date;
 }

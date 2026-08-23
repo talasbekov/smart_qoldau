@@ -39,4 +39,12 @@ export class ExpertPublicDto {
 
   @ApiProperty({ description: 'Количество PUBLISHED-отзывов' })
   ratingCount: number;
+
+  // Публичный контент профиля (E2a). Отдаётся ТОЛЬКО одобренное значение:
+  // ни то, что на проверке, ни отклонённое наружу не показывается.
+  @ApiProperty({ nullable: true, description: 'Одобренная фотография' })
+  photoUrl: string | null;
+
+  @ApiProperty({ nullable: true, description: 'Одобренный текст «о себе»' })
+  about: string | null;
 }

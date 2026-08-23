@@ -506,10 +506,16 @@ export class ConsultationsService {
   private async toClientDto(
     consultation: Consultation,
   ): Promise<ConsultationClientDto> {
-    const expert = await this.prisma.expert.findUniqueOrThrow({
-      where: { id: consultation.expertId },
-      include: { topics: { include: { topic: true } } },
-    });
+    const [expert, review] = await Promise.all([
+      this.prisma.expert.findUniqueOrThrow({
+        where: { id: consultation.expertId },
+        include: { topics: { include: { topic: true } } },
+      }),
+      this.prisma.review.findUnique({
+        where: { consultationId: consultation.id },
+        select: { id: true },
+      }),
+    ]);
     return {
       id: consultation.id,
       status: consultation.status,
@@ -522,6 +528,7 @@ export class ConsultationsService {
       plannedDurationMin: consultation.plannedDurationMin,
       paymentStatus: consultation.paymentStatus,
       expert: this.experts.toPublicDto(expert),
+      reviewId: review?.id ?? null,
     };
   }
 

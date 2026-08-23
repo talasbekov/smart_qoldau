@@ -1,5 +1,8 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
+  ArrayMaxSize,
+  ArrayUnique,
+  IsArray,
   IsInt,
   IsOptional,
   IsString,
@@ -26,4 +29,20 @@ export class CreateReviewDto {
   @IsString()
   @MaxLength(2000)
   privateText?: string;
+
+  // Закрытый словарь по оценке (E2a): свободный ввод не принимается —
+  // это был бы второй канал публичного текста в обход модерации. Сама
+  // принадлежность набору проверяется в сервисе: она зависит от rating.
+  @ApiPropertyOptional({
+    isArray: true,
+    maxItems: 3,
+    example: ['attentive', 'helped_figure_out'],
+    description: 'Коды тегов из набора выставленной оценки',
+  })
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(3)
+  @ArrayUnique()
+  @IsString({ each: true })
+  tags?: string[];
 }

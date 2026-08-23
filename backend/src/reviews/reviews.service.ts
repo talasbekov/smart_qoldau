@@ -12,6 +12,7 @@ import { AuditService } from '../audit/audit.service';
 import { ConsultationsService } from '../consultations/consultations.service';
 import { ExpertsService } from '../experts/experts.service';
 import { apiError } from '../common/filters/app-exception.filter';
+import { isTagAllowed } from './review-tags';
 import {
   RATING_THRESHOLD_AVG,
   RATING_THRESHOLD_COUNT,
@@ -54,6 +55,8 @@ export class ReviewsService {
     if (role !== 'client')
       apiError('FORBIDDEN', 'Только клиент может оставить отзыв', 403);
 
+    const tags = this.checkTags(dto.rating, dto.tags);
+
     if (
       consultation.status !== ConsultationStatus.COMPLETED ||
       consultation.outcome !== ConsultationOutcome.COMPLETED
@@ -76,6 +79,7 @@ export class ReviewsService {
             rating: dto.rating,
             publicText: dto.publicText,
             privateText: dto.privateText,
+            tags,
           },
         });
         await this.recalcExpertRating(tx, consultation.expertId);
@@ -107,8 +111,25 @@ export class ReviewsService {
       consultationId: review.consultationId,
       rating: review.rating,
       publicText: review.publicText,
+      tags: review.tags,
       createdAt: review.createdAt,
     };
+  }
+
+  // Тег обязан принадлежать набору выставленной оценки: набор четвёрки при
+  // единице бессмысленен, а свободный ввод не принимается вовсе.
+  private checkTags(rating: number, tags: string[] | undefined): string[] {
+    if (!tags?.length) return [];
+    for (const tag of tags) {
+      if (!isTagAllowed(rating, tag)) {
+        apiError(
+          'REVIEW_TAG_NOT_ALLOWED',
+          `Тег «${tag}» не относится к оценке ${rating}`,
+          400,
+        );
+      }
+    }
+    return tags;
   }
 
   // Удаление отзыва автором-клиентом. Чужой отзыв -> 404 REVIEW_NOT_FOUND
@@ -300,6 +321,7 @@ export class ReviewsService {
           rating: true,
           publicText: true,
           expertReply: true,
+          tags: true,
           createdAt: true,
         },
       }),

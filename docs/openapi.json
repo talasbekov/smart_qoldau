@@ -4640,6 +4640,16 @@
           "ratingCount": {
             "type": "number",
             "description": "Количество PUBLISHED-отзывов"
+          },
+          "photoUrl": {
+            "type": "string",
+            "nullable": true,
+            "description": "Одобренная фотография"
+          },
+          "about": {
+            "type": "string",
+            "nullable": true,
+            "description": "Одобренный текст «о себе»"
           }
         },
         "required": [
@@ -4653,7 +4663,9 @@
           "topicSlugs",
           "workStatus",
           "ratingAvg",
-          "ratingCount"
+          "ratingCount",
+          "photoUrl",
+          "about"
         ]
       },
       "QueueDocumentDto": {
@@ -5236,6 +5248,11 @@
           },
           "expert": {
             "$ref": "#/components/schemas/ExpertPublicDto"
+          },
+          "reviewId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
           }
         },
         "required": [
@@ -5247,7 +5264,8 @@
           "priceTiyn",
           "plannedDurationMin",
           "paymentStatus",
-          "expert"
+          "expert",
+          "reviewId"
         ]
       },
       "ConsultationExpertDto": {
@@ -6042,6 +6060,18 @@
           "privateText": {
             "type": "string",
             "maxLength": 2000
+          },
+          "tags": {
+            "maxItems": 3,
+            "example": [
+              "attentive",
+              "helped_figure_out"
+            ],
+            "description": "Коды тегов из набора выставленной оценки",
+            "type": "array",
+            "items": {
+              "type": "array"
+            }
           }
         },
         "required": [
@@ -6068,6 +6098,15 @@
             "type": "string",
             "nullable": true
           },
+          "tags": {
+            "example": [
+              "attentive"
+            ],
+            "type": "array",
+            "items": {
+              "type": "array"
+            }
+          },
           "createdAt": {
             "format": "date-time",
             "type": "string"
@@ -6077,6 +6116,7 @@
           "id",
           "consultationId",
           "rating",
+          "tags",
           "createdAt"
         ]
       },
@@ -6120,6 +6160,15 @@
             "type": "string",
             "nullable": true
           },
+          "tags": {
+            "example": [
+              "attentive"
+            ],
+            "type": "array",
+            "items": {
+              "type": "array"
+            }
+          },
           "createdAt": {
             "format": "date-time",
             "type": "string"
@@ -6127,6 +6176,7 @@
         },
         "required": [
           "rating",
+          "tags",
           "createdAt"
         ]
       },
