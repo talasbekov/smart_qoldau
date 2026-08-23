@@ -961,10 +961,6 @@
   "@expertReplyPrefix": {
     "description": "Подпись ответа специалиста на отзыв"
   },
-  "expertBook": "Записаться",
-  "@expertBook": {
-    "description": "Кнопка адресной записи к специалисту"
-  },
   "expertPriceLabel": "Консультация",
   "@expertPriceLabel": {
     "description": "Подпись цены в профиле специалиста"
@@ -1346,5 +1342,66 @@
   "reviewTagsHint": "Что было важно?",
   "@reviewTagsHint": {
     "description": "Подпись над тегами оценки"
+  },
+  "bookingTitle": "Выбор времени",
+  "@bookingTitle": {
+    "description": "Плановые консультации (E6b)"
+  },
+  "bookingTimezoneNote": "Время указано по Алматы",
+  "@bookingTimezoneNote": {
+    "description": "Плановые консультации (E6b)"
+  },
+  "bookingNoSlotsDay": "В этот день свободного времени нет",
+  "@bookingNoSlotsDay": {
+    "description": "Плановые консультации (E6b)"
+  },
+  "bookingChooseCard": "Выберите карту",
+  "@bookingChooseCard": {
+    "description": "Плановые консультации (E6b)"
+  },
+  "bookingConfirm": "Записаться",
+  "@bookingConfirm": {
+    "description": "Плановые консультации (E6b)"
+  },
+  "bookingSlotTaken": "Это время только что заняли",
+  "@bookingSlotTaken": {
+    "description": "Плановые консультации (E6b)"
+  },
+  "rescheduleTitle": "Перенос консультации",
+  "@rescheduleTitle": {
+    "description": "Плановые консультации (E6b)"
+  },
+  "rescheduleConfirm": "Перенести",
+  "@rescheduleConfirm": {
+    "description": "Плановые консультации (E6b)"
+  },
+  "consultationScheduled": "Запланирована",
+  "@consultationScheduled": {
+    "description": "Плановые консультации (E6b)"
+  },
+  "consultationCancelLateWarning": "Отмена менее чем за 2 часа учитывается в счётчике отмен. Три отмены за 30 дней отключают автоподбор.",
+  "@consultationCancelLateWarning": {
+    "description": "Плановые консультации (E6b)"
+  },
+  "consultationStartsIn": "Через {duration}",
+  "@consultationStartsIn": {
+    "description": "Плановые консультации (E6b)",
+    "placeholders": {
+      "duration": {
+        "type": "String"
+      }
+    }
+  },
+  "bookingActionSchedule": "Записаться на время",
+  "@bookingActionSchedule": {
+    "description": "Плановые консультации (E6b)"
+  },
+  "bookingActionNow": "Связаться сейчас",
+  "@bookingActionNow": {
+    "description": "Плановые консультации (E6b)"
+  },
+  "outcomeExpertCancelled": "Отменена специалистом",
+  "@outcomeExpertCancelled": {
+    "description": "Исход: отмена специалистом (E6b)"
   }
 }

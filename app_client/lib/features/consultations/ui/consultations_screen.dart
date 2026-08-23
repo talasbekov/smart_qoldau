@@ -8,6 +8,7 @@ import 'package:go_router/go_router.dart';
 import 'package:shared/shared.dart';
 
 import '../../../core/error_text.dart';
+import '../../../core/providers.dart';
 import '../../../core/route_paths.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../funnel/state/search_controller.dart';
@@ -100,7 +101,20 @@ class _ConsultationsList extends ConsumerWidget {
     WidgetRef ref,
     ClientConsultation consultation,
   ) async {
-    if (!await confirmCancelConsultation(context)) return;
+    // Плановую отменяют по-разному в зависимости от того, сколько
+    // осталось: клиент должен узнать про счётчик отмен до нажатия.
+    final minutesLeft =
+        consultation.status == ConsultationStatus.scheduled
+        ? consultation.startedAt
+              .difference(ref.read(nowProvider)())
+              .inMinutes
+        : null;
+    if (!await confirmCancelConsultation(
+      context,
+      minutesUntilStart: minutesLeft,
+    )) {
+      return;
+    }
     if (!context.mounted) return;
     try {
       await ref
@@ -192,9 +206,17 @@ class _ConsultationsList extends ConsumerWidget {
                   for (final consultation in list)
                     ConsultationCard(
                       consultation: consultation,
+                      now: ref.read(nowProvider)(),
                       onTap: () => context.push(
                         RoutePaths.consultationDetails(consultation.id),
                       ),
+                      onReschedule:
+                          consultation.status == ConsultationStatus.scheduled
+                          ? () => context.push(
+                              RoutePaths.reschedule(consultation.id),
+                              extra: consultation,
+                            )
+                          : null,
                       onContinue: consultation.status ==
                               ConsultationStatus.active
                           ? () => context.push(
@@ -202,7 +224,9 @@ class _ConsultationsList extends ConsumerWidget {
                             )
                           : null,
                       onCancel:
-                          consultation.status == ConsultationStatus.active
+                          consultation.status == ConsultationStatus.active ||
+                              consultation.status ==
+                                  ConsultationStatus.scheduled
                           ? () => _cancel(context, ref, consultation)
                           : null,
                       onPay: consultation.paymentStatus ==

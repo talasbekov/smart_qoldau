@@ -18,6 +18,9 @@ abstract final class SqEndpoints {
   static String expertById(String id) => '/experts/$id';
   static String expertReviews(String id) => '/experts/$id/reviews';
 
+  /// Слоты для записи (E6b).
+  static String expertSlots(String id) => '/experts/$id/slots';
+
   // --- избранное ---
   static const favorites = '/favorites';
   static String favoriteExpert(String expertId) => '/favorites/$expertId';
@@ -33,6 +36,10 @@ abstract final class SqEndpoints {
   static const consultations = '/consultations';
   static String consultationById(String id) => '/consultations/$id';
   static String consultationCancel(String id) => '/consultations/$id/cancel';
+
+  /// Перенос плановой консультации (E6b).
+  static String consultationReschedule(String id) =>
+      '/consultations/$id/reschedule';
   static String consultationMessages(String id) =>
       '/consultations/$id/messages';
   static String consultationMediaToken(String id) =>
@@ -43,6 +50,9 @@ abstract final class SqEndpoints {
 
   // --- отзывы ---
   static String reviewById(String id) => '/reviews/$id';
+
+  /// Запись к специалисту на слот (E6b).
+  static const String bookings = '/bookings';
 
   // --- способы оплаты ---
   static const paymentMethods = '/payment-methods';
@@ -71,6 +81,7 @@ abstract final class SqEndpoints {
     ('GET', experts),
     ('GET', '/experts/{id}'),
     ('GET', '/experts/{id}/reviews'),
+    ('GET', '/experts/{id}/slots'),
     ('GET', favorites),
     ('PUT', '/favorites/{expertId}'),
     ('DELETE', '/favorites/{expertId}'),
@@ -80,6 +91,8 @@ abstract final class SqEndpoints {
     ('GET', consultations),
     ('GET', '/consultations/{id}'),
     ('POST', '/consultations/{id}/cancel'),
+    ('POST', '/consultations/{id}/reschedule'),
+    ('POST', bookings),
     ('GET', '/consultations/{id}/messages'),
     ('POST', '/consultations/{id}/media-token'),
     ('POST', '/consultations/{id}/pay'),

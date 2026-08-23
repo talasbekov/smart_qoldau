@@ -53,6 +53,11 @@ final tokenStoreProvider = Provider<TokenStore>((ref) {
 /// только в одну сторону: `features` → `core`.
 final sessionInvalidatedProvider = StateProvider<int>((ref) => 0);
 
+/// Часы приложения — точка внедрения времени для тестов. В проде это
+/// `DateTime.now`; экраны записи (E6b) считают по ним и горизонт, и
+/// отсчёт «через 2 ч 15 мин».
+final nowProvider = Provider<DateTime Function()>((ref) => DateTime.now);
+
 /// Единая точка входа в бэкенд SmartQoldau.
 ///
 /// `onLogout` не вызывает `AuthController` напрямую (см.

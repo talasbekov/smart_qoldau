@@ -48,6 +48,7 @@ Map<String, dynamic> _$ClientConsultationToJson(
 };
 
 const _$ConsultationStatusEnumMap = {
+  ConsultationStatus.scheduled: 'SCHEDULED',
   ConsultationStatus.active: 'ACTIVE',
   ConsultationStatus.completed: 'COMPLETED',
   ConsultationStatus.cancelled: 'CANCELLED',
@@ -58,6 +59,7 @@ const _$ConsultationOutcomeEnumMap = {
   ConsultationOutcome.clientNoShow: 'CLIENT_NO_SHOW',
   ConsultationOutcome.clientCancelled: 'CLIENT_CANCELLED',
   ConsultationOutcome.techIssue: 'TECH_ISSUE',
+  ConsultationOutcome.expertCancelled: 'EXPERT_CANCELLED',
 };
 
 const _$SessionFormatEnumMap = {

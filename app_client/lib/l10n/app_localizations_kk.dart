@@ -763,9 +763,6 @@ class AppLocalizationsKk extends AppLocalizations {
   String get expertReplyPrefix => 'Маманның жауабы';
 
   @override
-  String get expertBook => 'Жазылу';
-
-  @override
   String get expertPriceLabel => 'Кеңес';
 
   @override
@@ -1055,4 +1052,49 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get reviewTagsHint => 'Не маңызды болды?';
+
+  @override
+  String get bookingTitle => 'Уақытты таңдау';
+
+  @override
+  String get bookingTimezoneNote => 'Уақыт Алматы бойынша көрсетілген';
+
+  @override
+  String get bookingNoSlotsDay => 'Бұл күні бос уақыт жоқ';
+
+  @override
+  String get bookingChooseCard => 'Картаны таңдаңыз';
+
+  @override
+  String get bookingConfirm => 'Жазылу';
+
+  @override
+  String get bookingSlotTaken => 'Бұл уақытты жаңа ғана алып қойды';
+
+  @override
+  String get rescheduleTitle => 'Консультацияны ауыстыру';
+
+  @override
+  String get rescheduleConfirm => 'Ауыстыру';
+
+  @override
+  String get consultationScheduled => 'Жоспарланған';
+
+  @override
+  String get consultationCancelLateWarning =>
+      '2 сағаттан аз уақыт қалғанда бас тарту есепке алынады. 30 күнде үш рет бас тарту автоматты іріктеуді өшіреді.';
+
+  @override
+  String consultationStartsIn(String duration) {
+    return '$duration кейін';
+  }
+
+  @override
+  String get bookingActionSchedule => 'Уақытқа жазылу';
+
+  @override
+  String get bookingActionNow => 'Қазір байланысу';
+
+  @override
+  String get outcomeExpertCancelled => 'Маман бас тартты';
 }

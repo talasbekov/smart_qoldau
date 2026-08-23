@@ -250,6 +250,7 @@ class ChatController extends AutoDisposeFamilyAsyncNotifier<ChatState, String> {
     ConsultationOutcome.clientNoShow => 'CLIENT_NO_SHOW',
     ConsultationOutcome.clientCancelled => 'CLIENT_CANCELLED',
     ConsultationOutcome.techIssue => 'TECH_ISSUE',
+    ConsultationOutcome.expertCancelled => 'EXPERT_CANCELLED',
   };
 
   String _statusWire(ConsultationStatus status) => status.wireValue;

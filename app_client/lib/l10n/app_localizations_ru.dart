@@ -770,9 +770,6 @@ class AppLocalizationsRu extends AppLocalizations {
   String get expertReplyPrefix => 'Ответ специалиста';
 
   @override
-  String get expertBook => 'Записаться';
-
-  @override
   String get expertPriceLabel => 'Консультация';
 
   @override
@@ -1061,4 +1058,49 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get reviewTagsHint => 'Что было важно?';
+
+  @override
+  String get bookingTitle => 'Выбор времени';
+
+  @override
+  String get bookingTimezoneNote => 'Время указано по Алматы';
+
+  @override
+  String get bookingNoSlotsDay => 'В этот день свободного времени нет';
+
+  @override
+  String get bookingChooseCard => 'Выберите карту';
+
+  @override
+  String get bookingConfirm => 'Записаться';
+
+  @override
+  String get bookingSlotTaken => 'Это время только что заняли';
+
+  @override
+  String get rescheduleTitle => 'Перенос консультации';
+
+  @override
+  String get rescheduleConfirm => 'Перенести';
+
+  @override
+  String get consultationScheduled => 'Запланирована';
+
+  @override
+  String get consultationCancelLateWarning =>
+      'Отмена менее чем за 2 часа учитывается в счётчике отмен. Три отмены за 30 дней отключают автоподбор.';
+
+  @override
+  String consultationStartsIn(String duration) {
+    return 'Через $duration';
+  }
+
+  @override
+  String get bookingActionSchedule => 'Записаться на время';
+
+  @override
+  String get bookingActionNow => 'Связаться сейчас';
+
+  @override
+  String get outcomeExpertCancelled => 'Отменена специалистом';
 }

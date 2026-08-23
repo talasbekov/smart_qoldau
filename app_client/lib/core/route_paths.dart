@@ -56,6 +56,16 @@ abstract final class RoutePaths {
   /// «назад» возвращает во вкладку, а не выбрасывает из приложения.
   static const expertPattern = '/catalog/expert/:id';
 
+  /// Выбор времени записи к специалисту (E6b).
+  static const bookingPattern = '/catalog/expert/:id/booking';
+
+  static String booking(String expertId) => '/catalog/expert/$expertId/booking';
+
+  /// Перенос плановой консультации (E6b).
+  static const reschedulePattern = '/consultations/:id/reschedule';
+
+  static String reschedule(String id) => '/consultations/$id/reschedule';
+
   static String expert(String id) => '/catalog/expert/$id';
 
   static const favorites = '/catalog/favorites';

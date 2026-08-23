@@ -1472,12 +1472,6 @@ abstract class AppLocalizations {
   /// **'Ответ специалиста'**
   String get expertReplyPrefix;
 
-  /// Кнопка адресной записи к специалисту
-  ///
-  /// In ru, this message translates to:
-  /// **'Записаться'**
-  String get expertBook;
-
   /// Подпись цены в профиле специалиста
   ///
   /// In ru, this message translates to:
@@ -2035,6 +2029,90 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Что было важно?'**
   String get reviewTagsHint;
+
+  /// Плановые консультации (E6b)
+  ///
+  /// In ru, this message translates to:
+  /// **'Выбор времени'**
+  String get bookingTitle;
+
+  /// Плановые консультации (E6b)
+  ///
+  /// In ru, this message translates to:
+  /// **'Время указано по Алматы'**
+  String get bookingTimezoneNote;
+
+  /// Плановые консультации (E6b)
+  ///
+  /// In ru, this message translates to:
+  /// **'В этот день свободного времени нет'**
+  String get bookingNoSlotsDay;
+
+  /// Плановые консультации (E6b)
+  ///
+  /// In ru, this message translates to:
+  /// **'Выберите карту'**
+  String get bookingChooseCard;
+
+  /// Плановые консультации (E6b)
+  ///
+  /// In ru, this message translates to:
+  /// **'Записаться'**
+  String get bookingConfirm;
+
+  /// Плановые консультации (E6b)
+  ///
+  /// In ru, this message translates to:
+  /// **'Это время только что заняли'**
+  String get bookingSlotTaken;
+
+  /// Плановые консультации (E6b)
+  ///
+  /// In ru, this message translates to:
+  /// **'Перенос консультации'**
+  String get rescheduleTitle;
+
+  /// Плановые консультации (E6b)
+  ///
+  /// In ru, this message translates to:
+  /// **'Перенести'**
+  String get rescheduleConfirm;
+
+  /// Плановые консультации (E6b)
+  ///
+  /// In ru, this message translates to:
+  /// **'Запланирована'**
+  String get consultationScheduled;
+
+  /// Плановые консультации (E6b)
+  ///
+  /// In ru, this message translates to:
+  /// **'Отмена менее чем за 2 часа учитывается в счётчике отмен. Три отмены за 30 дней отключают автоподбор.'**
+  String get consultationCancelLateWarning;
+
+  /// Плановые консультации (E6b)
+  ///
+  /// In ru, this message translates to:
+  /// **'Через {duration}'**
+  String consultationStartsIn(String duration);
+
+  /// Плановые консультации (E6b)
+  ///
+  /// In ru, this message translates to:
+  /// **'Записаться на время'**
+  String get bookingActionSchedule;
+
+  /// Плановые консультации (E6b)
+  ///
+  /// In ru, this message translates to:
+  /// **'Связаться сейчас'**
+  String get bookingActionNow;
+
+  /// Исход: отмена специалистом (E6b)
+  ///
+  /// In ru, this message translates to:
+  /// **'Отменена специалистом'**
+  String get outcomeExpertCancelled;
 }
 
 class _AppLocalizationsDelegate

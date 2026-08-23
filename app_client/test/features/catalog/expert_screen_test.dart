@@ -102,8 +102,10 @@ Future<void> _book(
   String formatLabel, {
   String topicSlug = 'anxiety-stress',
 }) async {
-  await _scrollTo(tester, find.text('Записаться'));
-  await tester.tap(find.text('Записаться'));
+  // Мгновенная консультация — вторая кнопка: «Записаться» с E6b ведёт на
+  // выбор времени, а не создаёт заявку немедленно.
+  await _scrollTo(tester, find.text('Связаться сейчас'));
+  await tester.tap(find.text('Связаться сейчас'));
   await tester.pumpAndSettle();
   await tester.tap(find.text(formatLabel));
   await tester.pumpAndSettle();
@@ -216,7 +218,7 @@ void main() {
     expect(find.text('второй отзыв'), findsOneWidget);
   });
 
-  testWidgets('«Записаться» создаёт адресную заявку и уводит на поиск', (
+  testWidgets('«Связаться сейчас» создаёт адресную заявку и уводит на поиск', (
     tester,
   ) async {
     await tester.pumpWidget(await _wrap(api));

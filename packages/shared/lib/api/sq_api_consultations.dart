@@ -118,6 +118,64 @@ mixin SqApiConsultations on SqApiBase {
         return ReviewCreated.fromJson(response.data!);
       });
 
+  /// `GET /experts/{id}/slots` — свободные слоты специалиста (E6b).
+  /// Диапазон шире 14 дней бэкенд отклоняет.
+  Future<List<Slot>> slots(
+    String expertId, {
+    required DateTime from,
+    required DateTime to,
+  }) =>
+      guard(() async {
+        final response = await dio.get<Map<String, dynamic>>(
+          SqEndpoints.expertSlots(expertId),
+          queryParameters: {
+            'from': from.toUtc().toIso8601String(),
+            'to': to.toUtc().toIso8601String(),
+          },
+        );
+        final items = response.data!['items'] as List<dynamic>;
+        return items
+            .map((e) => Slot.fromJson(e as Map<String, dynamic>))
+            .toList();
+      });
+
+  /// `POST /bookings` — запись на слот. Повторный идентичный запрос
+  /// бэкенд отдаёт со статусом 200 и той же записью.
+  Future<BookingResult> createBooking({
+    required String expertId,
+    required String topicSlug,
+    required SessionFormat format,
+    required DateTime slotStartAt,
+    required String paymentMethodId,
+  }) =>
+      guard(() async {
+        final response = await dio.post<Map<String, dynamic>>(
+          SqEndpoints.bookings,
+          data: {
+            'expertId': expertId,
+            'topicSlug': topicSlug,
+            'format': format.wireValue,
+            'slotStartAt': slotStartAt.toUtc().toIso8601String(),
+            'paymentMethodId': paymentMethodId,
+          },
+        );
+        return BookingResult.fromJson(response.data!);
+      });
+
+  /// `POST /consultations/{id}/reschedule` — перенос плановой записи.
+  /// Холд не пересоздаётся, поэтому шторка оплаты здесь не нужна.
+  Future<BookingResult> reschedule(
+    String consultationId,
+    DateTime slotStartAt,
+  ) =>
+      guard(() async {
+        final response = await dio.post<Map<String, dynamic>>(
+          SqEndpoints.consultationReschedule(consultationId),
+          data: {'slotStartAt': slotStartAt.toUtc().toIso8601String()},
+        );
+        return BookingResult.fromJson(response.data!);
+      });
+
   /// `DELETE /reviews/{id}` — удаление своего отзыва.
   Future<void> deleteReview(String id) => guard(() async {
         await dio.delete<void>(SqEndpoints.reviewById(id));

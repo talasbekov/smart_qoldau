@@ -18,6 +18,7 @@ import '../../../l10n/app_localizations.dart';
 import '../../funnel/data/requests_repository.dart';
 import '../../funnel/state/search_controller.dart';
 import '../../funnel/ui/format_sheet.dart';
+import '../../booking/ui/booking_args.dart';
 import '../../funnel/ui/topic_picker_sheet.dart';
 import '../../payment/ui/found_screen.dart' show experienceLabel;
 import '../state/catalog_controller.dart';
@@ -38,12 +39,40 @@ class _ExpertScreenState extends ConsumerState<ExpertScreen> {
   bool _booking = false;
   String? _error;
 
-  /// «Записаться»: формат спрашиваем шторкой, тему берём первой из
-  /// специализаций специалиста, если она одна, иначе спрашиваем — заявка
-  /// без темы бэкендом не принимается.
+  /// «Записаться на время» (E6b): формат и тема нужны и здесь — запись
+  /// создаётся сразу с ними, без цепочки офферов.
+  Future<void> _schedule(ExpertPublic expert) async {
+    final choice = await _askFormatAndTopic(expert);
+    if (choice == null || !mounted) return;
+
+    context.push(
+      RoutePaths.booking(expert.id),
+      extra: BookingArgs(
+        expertId: expert.id,
+        topicSlug: choice.topicSlug,
+        format: choice.format,
+      ),
+    );
+  }
+
+  /// «Связаться сейчас»: мгновенная адресная заявка — она имеет смысл,
+  /// только пока специалист принимает.
   Future<void> _book(ExpertPublic expert) async {
+    final choice = await _askFormatAndTopic(expert);
+    if (choice == null || !mounted) return;
+
+    await _createRequest(
+      topicSlug: choice.topicSlug,
+      format: choice.format,
+      expertId: expert.id,
+    );
+  }
+
+  Future<({String topicSlug, SessionFormat format})?> _askFormatAndTopic(
+    ExpertPublic expert,
+  ) async {
     final format = await showFormatSheet(context);
-    if (format == null || !mounted) return;
+    if (format == null || !mounted) return null;
 
     // Тема берётся, в порядке убывания надёжности: из фильтра каталога
     // (клиент только что искал именно по ней), из единственной
@@ -53,15 +82,11 @@ class _ExpertScreenState extends ConsumerState<ExpertScreen> {
         (expert.topicSlugs.length == 1 ? expert.topicSlugs.single : null);
     if (topicSlug == null) {
       final topic = await showTopicPickerSheet(context);
-      if (topic == null || !mounted) return;
+      if (topic == null || !mounted) return null;
       topicSlug = topic.slug;
     }
 
-    await _createRequest(
-      topicSlug: topicSlug,
-      format: format,
-      expertId: expert.id,
-    );
+    return (topicSlug: topicSlug, format: format);
   }
 
   Future<void> _createRequest({
@@ -234,9 +259,22 @@ class _ExpertScreenState extends ConsumerState<ExpertScreen> {
               const SizedBox(height: SqSpacing.xl),
               SqButton(
                 key: const Key('sq-expert-book'),
-                label: l10n.expertBook,
+                label: l10n.bookingActionSchedule,
+                onPressed: _booking ? null : () => _schedule(state.expert),
+              ),
+              const SizedBox(height: SqSpacing.m),
+              // Мгновенная консультация имеет смысл, только пока
+              // специалист принимает заявки прямо сейчас.
+              SqButton(
+                key: const Key('sq-expert-book-now'),
+                kind: SqButtonKind.secondary,
+                label: l10n.bookingActionNow,
                 loading: _booking,
-                onPressed: _booking ? null : () => _book(state.expert),
+                onPressed:
+                    _booking ||
+                        state.expert.workStatus != WorkStatus.accepting
+                    ? null
+                    : () => _book(state.expert),
               ),
             ],
           ),

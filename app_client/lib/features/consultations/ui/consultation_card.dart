@@ -11,6 +11,7 @@ String consultationStatusLabel(
   AppLocalizations l10n,
   ConsultationStatus status,
 ) => switch (status) {
+  ConsultationStatus.scheduled => l10n.consultationScheduled,
   ConsultationStatus.active => l10n.consultationStatusActive,
   ConsultationStatus.completed => l10n.consultationStatusCompleted,
   ConsultationStatus.cancelled => l10n.consultationStatusCancelled,
@@ -25,6 +26,7 @@ String consultationOutcomeLabel(
   ConsultationOutcome.clientNoShow => l10n.outcomeClientNoShow,
   ConsultationOutcome.clientCancelled => l10n.outcomeClientCancelled,
   ConsultationOutcome.techIssue => l10n.outcomeTechIssue,
+  ConsultationOutcome.expertCancelled => l10n.outcomeExpertCancelled,
 };
 
 /// Локализованный платёжный статус — клиенту, а не бухгалтерии: «HELD»
@@ -59,21 +61,42 @@ String formatAlmatyDateTime(DateTime value) {
       '${two(local.hour)}:${two(local.minute)}';
 }
 
+/// Человекочитаемый отсчёт до начала: «2 ч 15 мин», «45 мин».
+String? startsInLabel(
+  AppLocalizations l10n,
+  DateTime startedAt,
+  DateTime now,
+) {
+  final left = startedAt.difference(now);
+  if (left.isNegative) return null;
+  final hours = left.inHours;
+  final minutes = left.inMinutes % 60;
+  final text = hours > 0 ? '$hours ч $minutes мин' : '$minutes мин';
+  return l10n.consultationStartsIn(text);
+}
+
 class ConsultationCard extends StatelessWidget {
   const ConsultationCard({
     super.key,
     required this.consultation,
     required this.onTap,
+    this.now,
     this.onContinue,
     this.onCancel,
+    this.onReschedule,
     this.onPay,
     this.onRepeat,
   });
 
   final ClientConsultation consultation;
   final VoidCallback onTap;
+
+  /// Момент отсчёта до начала плановой записи; `null` — отсчёт не рисуется.
+  final DateTime? now;
+
   final VoidCallback? onContinue;
   final VoidCallback? onCancel;
+  final VoidCallback? onReschedule;
   final VoidCallback? onPay;
   final VoidCallback? onRepeat;
 
@@ -149,8 +172,22 @@ class ConsultationCard extends StatelessWidget {
                   ),
                 ],
               ),
+              if (consultation.status == ConsultationStatus.scheduled &&
+                  now != null)
+                if (startsInLabel(l10n, consultation.startedAt, now!)
+                    case final countdown?) ...[
+                  const SizedBox(height: SqSpacing.xs),
+                  Text(
+                    countdown,
+                    key: Key('sq-consultation-countdown-${consultation.id}'),
+                    style: SqTypography.caption.copyWith(
+                      color: SqColors.textSecondary,
+                    ),
+                  ),
+                ],
               if (onContinue != null ||
                   onCancel != null ||
+                  onReschedule != null ||
                   onPay != null ||
                   onRepeat != null) ...[
                 const SizedBox(height: SqSpacing.m),
@@ -174,6 +211,14 @@ class ConsultationCard extends StatelessWidget {
                         key: Key('sq-consultation-repeat-${consultation.id}'),
                         onPressed: onRepeat,
                         child: Text(l10n.consultationRepeat),
+                      ),
+                    if (onReschedule != null)
+                      TextButton(
+                        key: Key(
+                          'sq-consultation-reschedule-${consultation.id}',
+                        ),
+                        onPressed: onReschedule,
+                        child: Text(l10n.rescheduleConfirm),
                       ),
                     if (onCancel != null)
                       TextButton(

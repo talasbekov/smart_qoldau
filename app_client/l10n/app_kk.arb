@@ -229,7 +229,6 @@
   "expertReviewsTitle": "Пікірлер",
   "expertNoReviews": "Пікірлер әзірге жоқ",
   "expertReplyPrefix": "Маманның жауабы",
-  "expertBook": "Жазылу",
   "expertPriceLabel": "Кеңес",
   "expertUnavailableTitle": "Маман қазір қолжетімсіз",
   "expertUnavailableBody": "Осы тақырып бойынша басқа бос маманды таңдауға болады",
@@ -322,5 +321,19 @@
   "reviewTagHelpedFigureOut": "Түсінуге көмектесті",
   "reviewTagProfessional": "Кәсіби",
   "reviewTagExceededExpectations": "Күткеннен де жақсы",
-  "reviewTagsHint": "Не маңызды болды?"
+  "reviewTagsHint": "Не маңызды болды?",
+  "bookingTitle": "Уақытты таңдау",
+  "bookingTimezoneNote": "Уақыт Алматы бойынша көрсетілген",
+  "bookingNoSlotsDay": "Бұл күні бос уақыт жоқ",
+  "bookingChooseCard": "Картаны таңдаңыз",
+  "bookingConfirm": "Жазылу",
+  "bookingSlotTaken": "Бұл уақытты жаңа ғана алып қойды",
+  "rescheduleTitle": "Консультацияны ауыстыру",
+  "rescheduleConfirm": "Ауыстыру",
+  "consultationScheduled": "Жоспарланған",
+  "consultationCancelLateWarning": "2 сағаттан аз уақыт қалғанда бас тарту есепке алынады. 30 күнде үш рет бас тарту автоматты іріктеуді өшіреді.",
+  "consultationStartsIn": "{duration} кейін",
+  "bookingActionSchedule": "Уақытқа жазылу",
+  "bookingActionNow": "Қазір байланысу",
+  "outcomeExpertCancelled": "Маман бас тартты"
 }

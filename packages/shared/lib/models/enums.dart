@@ -16,6 +16,10 @@ enum RequestStatus {
 
 /// Статус консультации (`ConsultationClientDto.status` бэкенда).
 enum ConsultationStatus {
+  /// Плановая запись на слот (E6b): время выбрано, консультация ещё не
+  /// началась.
+  @JsonValue('SCHEDULED')
+  scheduled,
   @JsonValue('ACTIVE')
   active,
   @JsonValue('COMPLETED')
@@ -28,6 +32,7 @@ enum ConsultationStatus {
 /// нет модели с собственным `toJson` (например, фильтр `GET /consultations`).
 extension ConsultationStatusWire on ConsultationStatus {
   String get wireValue => switch (this) {
+        ConsultationStatus.scheduled => 'SCHEDULED',
         ConsultationStatus.active => 'ACTIVE',
         ConsultationStatus.completed => 'COMPLETED',
         ConsultationStatus.cancelled => 'CANCELLED',
@@ -44,6 +49,9 @@ enum ConsultationOutcome {
   clientCancelled,
   @JsonValue('TECH_ISSUE')
   techIssue,
+  /// Отмена специалистом (E6b): клиенту полный возврат.
+  @JsonValue('EXPERT_CANCELLED')
+  expertCancelled,
 }
 
 /// Статус оплаты консультации (`ConsultationClientDto.paymentStatus`).

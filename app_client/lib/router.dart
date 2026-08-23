@@ -12,6 +12,8 @@ import 'core/route_paths.dart';
 import 'features/auth/state/auth_controller.dart';
 import 'features/auth/ui/splash_screen.dart';
 import 'features/catalog/ui/catalog_screen.dart';
+import 'features/booking/ui/booking_args.dart';
+import 'features/booking/ui/slot_picker_screen.dart';
 import 'features/catalog/ui/expert_screen.dart';
 import 'features/catalog/ui/favorites_screen.dart';
 import 'features/consultations/ui/consultation_details_screen.dart';
@@ -282,6 +284,26 @@ GoRouter sqRouter(Ref ref) {
                     path: 'expert/:id',
                     builder: (context, state) =>
                         ExpertScreen(expertId: state.pathParameters['id']!),
+                    routes: [
+                      // Выбор времени записи (E6b): тема и формат приходят
+                      // в extra — из пути их не восстановить, а без них
+                      // запись бэкенд не примет.
+                      GoRoute(
+                        path: 'booking',
+                        builder: (context, state) {
+                          final args = state.extra as BookingArgs?;
+                          final expertId = state.pathParameters['id']!;
+                          if (args == null) {
+                            return ExpertScreen(expertId: expertId);
+                          }
+                          return SlotPickerScreen(
+                            expertId: expertId,
+                            topicSlug: args.topicSlug,
+                            format: args.format,
+                          );
+                        },
+                      ),
+                    ],
                   ),
                   GoRoute(
                     path: 'favorites',
@@ -302,6 +324,29 @@ GoRouter sqRouter(Ref ref) {
                     builder: (context, state) => ConsultationDetailsScreen(
                       consultationId: state.pathParameters['id']!,
                     ),
+                    routes: [
+                      // Перенос — тот же выбор слота, но без шторки
+                      // оплаты: холд уже стоит (E6b).
+                      GoRoute(
+                        path: 'reschedule',
+                        builder: (context, state) {
+                          final consultation =
+                              state.extra as ClientConsultation?;
+                          final id = state.pathParameters['id']!;
+                          if (consultation == null) {
+                            return ConsultationDetailsScreen(
+                              consultationId: id,
+                            );
+                          }
+                          return SlotPickerScreen(
+                            expertId: consultation.expert.id,
+                            topicSlug: consultation.expert.topicSlugs.first,
+                            format: consultation.format,
+                            consultationId: id,
+                          );
+                        },
+                      ),
+                    ],
                   ),
                 ],
               ),
