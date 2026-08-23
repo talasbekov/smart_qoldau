@@ -245,6 +245,70 @@
         ]
       }
     },
+    "/v1/experts/{id}/slots": {
+      "get": {
+        "operationId": "SlotsController_list",
+        "summary": "Свободные слоты специалиста (горизонт 14 дней)",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "name": "from",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "example": "2026-08-25T00:00:00.000Z",
+              "type": "string"
+            }
+          },
+          {
+            "name": "to",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "example": "2026-09-08T00:00:00.000Z",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SlotsResponseDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "SLOTS_RANGE_TOO_WIDE"
+          },
+          "401": {
+            "description": "UNAUTHORIZED"
+          },
+          "404": {
+            "description": "EXPERT_NOT_FOUND"
+          }
+        },
+        "tags": [
+          "booking"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/experts": {
       "post": {
         "operationId": "ExpertsController_create",
@@ -4321,6 +4385,33 @@
         "required": [
           "phone",
           "code"
+        ]
+      },
+      "SlotDto": {
+        "type": "object",
+        "properties": {
+          "startAt": {
+            "type": "string",
+            "example": "2026-08-25T04:00:00.000Z",
+            "description": "Начало слота в UTC; клиент показывает его по Алматы"
+          }
+        },
+        "required": [
+          "startAt"
+        ]
+      },
+      "SlotsResponseDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SlotDto"
+            }
+          }
+        },
+        "required": [
+          "items"
         ]
       },
       "CreateExpertDto": {

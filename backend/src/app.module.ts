@@ -12,6 +12,7 @@ import { AuthModule } from './auth/auth.module';
 import { AuditModule } from './audit/audit.module';
 import { RedisModule } from './redis/redis.module';
 import { StorageModule } from './storage/storage.module';
+import { BookingModule } from './booking/booking.module';
 import { PresenceModule } from './presence/presence.module';
 import { ExpertsModule } from './experts/experts.module';
 import { VerificationModule } from './verification/verification.module';
@@ -50,6 +51,7 @@ import { MaintenanceModule } from './maintenance/maintenance.module';
     TopicsModule,
     AuthModule,
     StorageModule,
+    BookingModule,
     PresenceModule,
     ExpertsModule,
     VerificationModule,
