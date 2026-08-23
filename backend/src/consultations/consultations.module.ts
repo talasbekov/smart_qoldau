@@ -15,6 +15,7 @@ import { BookingService } from '../booking/booking.service';
 import { ConsultationsController } from './consultations.controller';
 import { NotesController } from './notes.controller';
 import { NoShowService } from './no-show.service';
+import { ScheduledSweepService } from './scheduled-sweep.service';
 
 // Односторонняя зависимость: ConsultationsModule НЕ импортирует
 // RequestsModule (во избежание циклической зависимости) — RequestsModule
@@ -45,7 +46,12 @@ import { NoShowService } from './no-show.service';
     BookingModule,
   ],
   controllers: [ConsultationsController, NotesController, BookingController],
-  providers: [ConsultationsService, NoShowService, BookingService],
-  exports: [ConsultationsService, NoShowService],
+  providers: [
+    ConsultationsService,
+    NoShowService,
+    BookingService,
+    ScheduledSweepService,
+  ],
+  exports: [ScheduledSweepService, ConsultationsService, NoShowService],
 })
 export class ConsultationsModule {}

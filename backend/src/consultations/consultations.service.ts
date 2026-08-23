@@ -130,6 +130,12 @@ export class ConsultationsService {
   // как в ExpertsService.updateWorkStatus (E2 Task 6): presence сначала,
   // БД потом; БД упала -> компенсация обратно в presence ТОЛЬКО если эксперт
   // был ACCEPTING (иначе он и так не был доступен — компенсировать нечего).
+  /// Тот же перевод в BUSY для sweep плановых консультаций (Р-13, E6b):
+  /// в момент слота специалист занят так же, как при мгновенном матче.
+  markExpertBusy(expertId: string): Promise<void> {
+    return this.setExpertBusy(expertId);
+  }
+
   private async setExpertBusy(expertId: string): Promise<void> {
     const expert = await this.prisma.expert.findUniqueOrThrow({
       where: { id: expertId },
