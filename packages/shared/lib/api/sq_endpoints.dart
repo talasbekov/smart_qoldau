@@ -92,6 +92,7 @@ abstract final class SqEndpoints {
     ('GET', notifications),
     ('POST', notificationsRead),
     ('POST', devices),
+    ('DELETE', devices),
     ('PATCH', meLocale),
     ('POST', tickets),
     ('GET', tickets),

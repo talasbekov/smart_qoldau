@@ -76,8 +76,9 @@ describe('OpenAPI (e2e)', () => {
       '/v1/admin/payouts',
       '/v1/admin/payouts/{id}/approve',
       '/v1/admin/payouts/{id}/reject',
+      // Токен ушёл из пути в тело (E11a, задача 9): маршрут с токеном в
+      // URL удалён целиком, а не оставлен рядом.
       '/v1/devices',
-      '/v1/devices/{token}',
       '/v1/me/locale',
       '/v1/notifications',
       '/v1/notifications/read',

@@ -3288,22 +3288,21 @@
             "bearer": []
           }
         ]
-      }
-    },
-    "/v1/devices/{token}": {
+      },
       "delete": {
         "operationId": "DevicesController_remove",
         "summary": "Удаление push-токена (logout устройства)",
-        "parameters": [
-          {
-            "name": "token",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RemoveDeviceDto"
+              }
             }
           }
-        ],
+        },
         "responses": {
           "204": {
             "description": ""
@@ -5926,6 +5925,18 @@
           "platform",
           "token",
           "locale"
+        ]
+      },
+      "RemoveDeviceDto": {
+        "type": "object",
+        "properties": {
+          "token": {
+            "type": "string",
+            "description": "Push-токен устройства"
+          }
+        },
+        "required": [
+          "token"
         ]
       },
       "UpdateLocaleDto": {

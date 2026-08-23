@@ -3,7 +3,6 @@ import {
   Controller,
   Delete,
   HttpCode,
-  Param,
   Patch,
   Post,
   UseGuards,
@@ -15,7 +14,6 @@ import {
   ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
-  ApiParam,
   ApiTags,
 } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -24,6 +22,7 @@ import { JwtPayload } from '../auth/jwt.strategy';
 import { DevicesService } from './devices.service';
 import { RegisterDeviceDto } from './dto/register-device.dto';
 import { DeviceDto } from './dto/device.dto';
+import { RemoveDeviceDto } from './dto/remove-device.dto';
 import { UpdateLocaleDto } from './dto/update-locale.dto';
 
 // Доступно любому авторизованному пользователю, включая гостя (пуш о
@@ -51,17 +50,20 @@ export class DevicesController {
     };
   }
 
-  @Delete('devices/:token')
+  // Токен уходит ТЕЛОМ запроса, а не путём (E11a, задача 9). Прежний
+  // маршрут DELETE /devices/:token удалён целиком, а не оставлен рядом:
+  // два пути к одному действию — дыра, про которую забудут (тем же
+  // принципом в E8a полностью убрали общий админ-токен).
+  @Delete('devices')
   @HttpCode(204)
   @ApiOperation({ summary: 'Удаление push-токена (logout устройства)' })
-  @ApiParam({ name: 'token' })
   @ApiNoContentResponse()
   @ApiNotFoundResponse({ description: 'DEVICE_NOT_FOUND' })
   async remove(
-    @Param('token') token: string,
+    @Body() dto: RemoveDeviceDto,
     @CurrentUser() user: JwtPayload,
   ): Promise<void> {
-    await this.devices.remove(user.sub, token);
+    await this.devices.remove(user.sub, dto.token);
   }
 
   @Patch('me/locale')

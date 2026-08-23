@@ -43,6 +43,15 @@ mixin SqApiNotifications on SqApiBase {
         );
       });
 
+  /// `DELETE /devices` — снять push-токен устройства (выход из аккаунта).
+  ///
+  /// Токен передаётся ТЕЛОМ, а не путём (E11a, задача 9): в пути он попадал
+  /// бы в access-логи, трейсы и историю прокси, а в паре с перепривязкой
+  /// токена при регистрации это давало бы угон пушей.
+  Future<void> deleteDevice(String token) => guard(() async {
+        await dio.delete<void>(SqEndpoints.devices, data: {'token': token});
+      });
+
   /// `PATCH /me/locale` — локаль пользователя (язык уведомлений).
   Future<void> updateLocale(String locale) => guard(() async {
         await dio.patch<void>(

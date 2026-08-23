@@ -130,18 +130,27 @@ describe('Регистрация устройств и локаль (E9, зад�
       .send({ platform: 'android', token: 'fcm-dev-3' })
       .expect(201);
 
-    const foreign = await authed(
-      'delete',
-      u2.accessToken,
-      '/v1/devices/fcm-dev-3',
-    ).expect(404);
+    // Токен уходит ТЕЛОМ (E11a, задача 9): в пути он попадал бы в
+    // access-логи nginx, трейсы APM и историю прокси.
+    const foreign = await authed('delete', u2.accessToken, '/v1/devices')
+      .send({ token: 'fcm-dev-3' })
+      .expect(404);
     expect(foreign.body.error.code).toBe('DEVICE_NOT_FOUND');
 
-    await authed('delete', u1.accessToken, '/v1/devices/fcm-dev-3').expect(204);
+    await authed('delete', u1.accessToken, '/v1/devices')
+      .send({ token: 'fcm-dev-3' })
+      .expect(204);
     expect(await prisma.device.count({ where: { token: 'fcm-dev-3' } })).toBe(
       0,
     );
 
+    await authed('delete', u1.accessToken, '/v1/devices')
+      .send({ token: 'fcm-dev-3' })
+      .expect(404);
+
+    // Старого маршрута с токеном в пути больше нет — именно нет, а не
+    // «оставлен для совместимости»: два пути к одному действию это дыра,
+    // про которую забудут.
     await authed('delete', u1.accessToken, '/v1/devices/fcm-dev-3').expect(404);
 
     await request(app.getHttpServer())
