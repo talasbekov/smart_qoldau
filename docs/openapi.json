@@ -1062,6 +1062,169 @@
         ]
       }
     },
+    "/v1/admin/profile-moderation": {
+      "get": {
+        "operationId": "ProfileModerationController_queue",
+        "summary": "Очередь фотографий и текстов на модерацию",
+        "parameters": [
+          {
+            "name": "take",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "maximum": 100,
+              "default": 20,
+              "type": "number"
+            }
+          },
+          {
+            "name": "skip",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": 0,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ModerationQueueDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED"
+          },
+          "403": {
+            "description": "FORBIDDEN — недостаточно прав"
+          }
+        },
+        "tags": [
+          "admin-profile-moderation"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/admin/profile-moderation/{expertId}/photo/decision": {
+      "post": {
+        "operationId": "ProfileModerationController_photoDecision",
+        "summary": "Решение по фотографии: approve/reject",
+        "parameters": [
+          {
+            "name": "expertId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ModerationDecisionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Решение зафиксировано"
+          },
+          "400": {
+            "description": "MODERATION_COMMENT_REQUIRED"
+          },
+          "401": {
+            "description": "UNAUTHORIZED"
+          },
+          "403": {
+            "description": "FORBIDDEN — недостаточно прав"
+          },
+          "404": {
+            "description": "EXPERT_NOT_FOUND"
+          },
+          "409": {
+            "description": "NOTHING_TO_MODERATE"
+          }
+        },
+        "tags": [
+          "admin-profile-moderation"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/admin/profile-moderation/{expertId}/about/decision": {
+      "post": {
+        "operationId": "ProfileModerationController_aboutDecision",
+        "summary": "Решение по тексту «о себе»: approve/reject",
+        "parameters": [
+          {
+            "name": "expertId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ModerationDecisionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Решение зафиксировано"
+          },
+          "400": {
+            "description": "MODERATION_COMMENT_REQUIRED"
+          },
+          "401": {
+            "description": "UNAUTHORIZED"
+          },
+          "403": {
+            "description": "FORBIDDEN — недостаточно прав"
+          },
+          "404": {
+            "description": "EXPERT_NOT_FOUND"
+          },
+          "409": {
+            "description": "NOTHING_TO_MODERATE"
+          }
+        },
+        "tags": [
+          "admin-profile-moderation"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/admin/auth/login": {
       "post": {
         "operationId": "AdminAuthController_login",
@@ -4611,6 +4774,75 @@
           "displayName",
           "ratingAvg",
           "ratingCount"
+        ]
+      },
+      "ModerationQueueItemDto": {
+        "type": "object",
+        "properties": {
+          "expertId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "photoPendingUrl": {
+            "type": "string",
+            "nullable": true,
+            "description": "Фото, ждущее решения"
+          },
+          "aboutPending": {
+            "type": "string",
+            "nullable": true,
+            "description": "Текст, ждущий решения"
+          },
+          "submittedAt": {
+            "format": "date-time",
+            "type": "string",
+            "description": "Момент регистрации анкеты — по нему очередь"
+          }
+        },
+        "required": [
+          "expertId",
+          "displayName",
+          "submittedAt"
+        ]
+      },
+      "ModerationQueueDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ModerationQueueItemDto"
+            }
+          },
+          "total": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "items",
+          "total"
+        ]
+      },
+      "ModerationDecisionDto": {
+        "type": "object",
+        "properties": {
+          "action": {
+            "type": "string",
+            "enum": [
+              "approve",
+              "reject"
+            ]
+          },
+          "comment": {
+            "type": "string",
+            "maxLength": 500
+          }
+        },
+        "required": [
+          "action"
         ]
       },
       "AdminLoginDto": {

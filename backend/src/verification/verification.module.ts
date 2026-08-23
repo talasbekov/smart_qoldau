@@ -5,6 +5,9 @@ import { NotificationsModule } from '../notifications/notifications.module';
 import { VerificationController } from './verification.controller';
 import { VerificationService } from './verification.service';
 import { AdminModule } from '../admin/admin.module';
+import { ExpertsModule } from '../experts/experts.module';
+import { ProfileModerationController } from './profile-moderation.controller';
+import { ProfileModerationQueueService } from './profile-moderation-queue.service';
 
 @Module({
   imports: [
@@ -15,8 +18,11 @@ import { AdminModule } from '../admin/admin.module';
     AuditModule,
     StorageModule,
     NotificationsModule,
+    // ProfileModerationService — общая машина переходов, её владелец
+    // ExpertsModule (E2a, задача 5).
+    ExpertsModule,
   ],
-  controllers: [VerificationController],
-  providers: [VerificationService],
+  controllers: [VerificationController, ProfileModerationController],
+  providers: [VerificationService, ProfileModerationQueueService],
 })
 export class VerificationModule {}
