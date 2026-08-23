@@ -7,7 +7,6 @@ import { apiError } from '../common/filters/app-exception.filter';
 import { OutboxService } from './outbox.service';
 import { NotificationsListDto } from './dto/notifications-list.dto';
 import {
-  CRITICAL_TYPES,
   NotificationLocale,
   NotificationType,
   renderTemplate,
