@@ -1655,6 +1655,7 @@
             "in": "query",
             "schema": {
               "enum": [
+                "SCHEDULED",
                 "ACTIVE",
                 "COMPLETED",
                 "CANCELLED"
@@ -2279,6 +2280,151 @@
         },
         "tags": [
           "notifications"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/experts/me/schedule/exceptions": {
+      "get": {
+        "operationId": "ScheduleExceptionsController_list",
+        "summary": "Исключения расписания за период",
+        "parameters": [
+          {
+            "name": "from",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "example": "2026-08-26",
+              "type": "string"
+            }
+          },
+          {
+            "name": "to",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "example": "2026-09-09",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ScheduleExceptionDto"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED"
+          },
+          "404": {
+            "description": "EXPERT_NOT_FOUND"
+          }
+        },
+        "tags": [
+          "experts"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/experts/me/schedule/exceptions/{date}": {
+      "put": {
+        "operationId": "ScheduleExceptionsController_upsert",
+        "summary": "Задать выходной или иные часы на дату",
+        "parameters": [
+          {
+            "name": "date",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "example": "2026-08-26",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpsertScheduleExceptionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScheduleExceptionDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "SCHEDULE_EXCEPTION_INVALID | SCHEDULE_EXCEPTION_PAST"
+          },
+          "401": {
+            "description": "UNAUTHORIZED"
+          },
+          "404": {
+            "description": "EXPERT_NOT_FOUND"
+          }
+        },
+        "tags": [
+          "experts"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "delete": {
+        "operationId": "ScheduleExceptionsController_remove",
+        "summary": "Снять исключение (идемпотентно)",
+        "parameters": [
+          {
+            "name": "date",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "example": "2026-08-26",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Исключение снято"
+          },
+          "401": {
+            "description": "UNAUTHORIZED"
+          },
+          "404": {
+            "description": "EXPERT_NOT_FOUND"
+          }
+        },
+        "tags": [
+          "experts"
         ],
         "security": [
           {
@@ -5200,6 +5346,7 @@
           "status": {
             "type": "string",
             "enum": [
+              "SCHEDULED",
               "ACTIVE",
               "COMPLETED",
               "CANCELLED"
@@ -5211,7 +5358,8 @@
               "COMPLETED",
               "CLIENT_NO_SHOW",
               "CLIENT_CANCELLED",
-              "TECH_ISSUE"
+              "TECH_ISSUE",
+              "EXPERT_CANCELLED"
             ]
           },
           "format": {
@@ -5278,6 +5426,7 @@
           "status": {
             "type": "string",
             "enum": [
+              "SCHEDULED",
               "ACTIVE",
               "COMPLETED",
               "CANCELLED"
@@ -5289,7 +5438,8 @@
               "COMPLETED",
               "CLIENT_NO_SHOW",
               "CLIENT_CANCELLED",
-              "TECH_ISSUE"
+              "TECH_ISSUE",
+              "EXPERT_CANCELLED"
             ]
           },
           "format": {
@@ -5354,7 +5504,8 @@
               "COMPLETED",
               "CLIENT_NO_SHOW",
               "CLIENT_CANCELLED",
-              "TECH_ISSUE"
+              "TECH_ISSUE",
+              "EXPERT_CANCELLED"
             ]
           }
         },
@@ -5600,6 +5751,56 @@
             }
           }
         }
+      },
+      "ScheduleExceptionDto": {
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string",
+            "example": "2026-08-26",
+            "description": "Дата по Алматы"
+          },
+          "isDayOff": {
+            "type": "boolean",
+            "description": "true — выходной целиком"
+          },
+          "startMin": {
+            "type": "number",
+            "nullable": true,
+            "description": "Минуты от полуночи"
+          },
+          "endMin": {
+            "type": "number",
+            "nullable": true
+          }
+        },
+        "required": [
+          "date",
+          "isDayOff"
+        ]
+      },
+      "UpsertScheduleExceptionDto": {
+        "type": "object",
+        "properties": {
+          "isDayOff": {
+            "type": "boolean"
+          },
+          "startMin": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1440,
+            "example": 720
+          },
+          "endMin": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1440,
+            "example": 960
+          }
+        },
+        "required": [
+          "isDayOff"
+        ]
       },
       "ScheduleDayDto": {
         "type": "object",

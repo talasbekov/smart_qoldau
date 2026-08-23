@@ -5,6 +5,7 @@ import { AuditService } from '../audit/audit.service';
 import { apiError } from '../common/filters/app-exception.filter';
 import { ScheduleDayDto, UpdateScheduleDto } from './dto/schedule-day.dto';
 import { UpdateAvailabilityDto } from './dto/availability.dto';
+import { ALMATY_OFFSET_MINUTES } from '../booking/booking.constants';
 
 const DEFAULT_START_MIN = 540; // 09:00
 const DEFAULT_END_MIN = 1080; // 18:00
@@ -109,6 +110,23 @@ export class ScheduleService {
   // по TZ Asia/Almaty (enabled -> интервал -> вне перерыва).
   async isWithinSchedule(expertId: string, date: Date): Promise<boolean> {
     const { weekday, minutes } = this.toAlmatyWeekdayMinutes(date);
+
+    // Исключение на дату перекрывает недельное расписание целиком (E6b):
+    // выходной закрывает день, иные часы заменяют собой окно, а не
+    // сужают его — специалист задал именно те часы, что хотел.
+    const exception = await this.prisma.scheduleException.findUnique({
+      where: {
+        expertId_date: { expertId, date: this.almatyDayStart(date) },
+      },
+    });
+    if (exception) {
+      if (exception.isDayOff) return false;
+      if (exception.startMin === null || exception.endMin === null) {
+        return false;
+      }
+      return minutes >= exception.startMin && minutes < exception.endMin;
+    }
+
     const row = await this.prisma.expertScheduleDay.findUnique({
       where: { expertId_weekday: { expertId, weekday } },
     });
@@ -118,6 +136,15 @@ export class ScheduleService {
       if (minutes >= row.breakStart && minutes < row.breakEnd) return false;
     }
     return true;
+  }
+
+  /// UTC-полночь календарного дня по Алматы — в этом виде хранится
+  /// `ScheduleException.date` (@db.Date).
+  private almatyDayStart(date: Date): Date {
+    const key = new Date(date.getTime() + ALMATY_OFFSET_MINUTES * 60_000)
+      .toISOString()
+      .slice(0, 10);
+    return new Date(`${key}T00:00:00.000Z`);
   }
 
   private toAlmatyWeekdayMinutes(date: Date): {
