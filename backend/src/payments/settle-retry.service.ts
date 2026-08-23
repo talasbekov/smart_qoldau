@@ -181,12 +181,18 @@ export class SettleRetryService {
     });
     if (agedPayments.length === 0) return 0;
 
+    // Плановая запись (E6b) до наступления слота живёт в SCHEDULED, а её
+    // холд стареет так же, как у мгновенной: при записи за две недели он
+    // истёк бы у банка раньше консультации. Исход у обеих ещё не наступил,
+    // поэтому перехолд обязан покрывать оба статуса.
     const activeIds = new Set(
       (
         await this.prisma.consultation.findMany({
           where: {
             id: { in: agedPayments.map((p) => p.consultationId) },
-            status: ConsultationStatus.ACTIVE,
+            status: {
+              in: [ConsultationStatus.ACTIVE, ConsultationStatus.SCHEDULED],
+            },
           },
           select: { id: true },
         })
