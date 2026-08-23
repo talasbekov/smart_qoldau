@@ -308,5 +308,19 @@
   "ticketCategoryOther": "Басқа",
   "actionSend": "Жіберу",
   "sessionMenuReport": "Мәселе туралы хабарлау",
-  "languageEnglish": "Ағылшынша"
+  "languageEnglish": "Ағылшынша",
+  "reviewTagNotHelpful": "Көмектеспеді",
+  "reviewTagLongWait": "Ұзақ күту",
+  "reviewTagBadConnection": "Байланыс нашар",
+  "reviewTagLittleUse": "Пайдасы аз",
+  "reviewTagDidNotUnderstand": "Мені түсінбеді",
+  "reviewTagTechnicalIssues": "Техникалық ақаулар",
+  "reviewTagAverage": "Орташа",
+  "reviewTagCouldBeBetter": "Жақсырақ болуы мүмкін еді",
+  "reviewTagStandard": "Қалыпты",
+  "reviewTagAttentive": "Мұқият",
+  "reviewTagHelpedFigureOut": "Түсінуге көмектесті",
+  "reviewTagProfessional": "Кәсіби",
+  "reviewTagExceededExpectations": "Күткеннен де жақсы",
+  "reviewTagsHint": "Не маңызды болды?"
 }

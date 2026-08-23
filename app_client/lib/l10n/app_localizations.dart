@@ -1951,6 +1951,90 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Английский'**
   String get languageEnglish;
+
+  /// Тег отзыва «Не помогло» (код not_helpful)
+  ///
+  /// In ru, this message translates to:
+  /// **'Не помогло'**
+  String get reviewTagNotHelpful;
+
+  /// Тег отзыва «Долгое ожидание» (код long_wait)
+  ///
+  /// In ru, this message translates to:
+  /// **'Долгое ожидание'**
+  String get reviewTagLongWait;
+
+  /// Тег отзыва «Плохая связь» (код bad_connection)
+  ///
+  /// In ru, this message translates to:
+  /// **'Плохая связь'**
+  String get reviewTagBadConnection;
+
+  /// Тег отзыва «Мало пользы» (код little_use)
+  ///
+  /// In ru, this message translates to:
+  /// **'Мало пользы'**
+  String get reviewTagLittleUse;
+
+  /// Тег отзыва «Не понял меня» (код did_not_understand)
+  ///
+  /// In ru, this message translates to:
+  /// **'Не понял меня'**
+  String get reviewTagDidNotUnderstand;
+
+  /// Тег отзыва «Технические проблемы» (код technical_issues)
+  ///
+  /// In ru, this message translates to:
+  /// **'Технические проблемы'**
+  String get reviewTagTechnicalIssues;
+
+  /// Тег отзыва «Средне» (код average)
+  ///
+  /// In ru, this message translates to:
+  /// **'Средне'**
+  String get reviewTagAverage;
+
+  /// Тег отзыва «Могло быть лучше» (код could_be_better)
+  ///
+  /// In ru, this message translates to:
+  /// **'Могло быть лучше'**
+  String get reviewTagCouldBeBetter;
+
+  /// Тег отзыва «Стандартно» (код standard)
+  ///
+  /// In ru, this message translates to:
+  /// **'Стандартно'**
+  String get reviewTagStandard;
+
+  /// Тег отзыва «Внимательный» (код attentive)
+  ///
+  /// In ru, this message translates to:
+  /// **'Внимательный'**
+  String get reviewTagAttentive;
+
+  /// Тег отзыва «Помог разобраться» (код helped_figure_out)
+  ///
+  /// In ru, this message translates to:
+  /// **'Помог разобраться'**
+  String get reviewTagHelpedFigureOut;
+
+  /// Тег отзыва «Профессионально» (код professional)
+  ///
+  /// In ru, this message translates to:
+  /// **'Профессионально'**
+  String get reviewTagProfessional;
+
+  /// Тег отзыва «Превзошёл ожидания» (код exceeded_expectations)
+  ///
+  /// In ru, this message translates to:
+  /// **'Превзошёл ожидания'**
+  String get reviewTagExceededExpectations;
+
+  /// Подпись над тегами оценки
+  ///
+  /// In ru, this message translates to:
+  /// **'Что было важно?'**
+  String get reviewTagsHint;
 }
 
 class _AppLocalizationsDelegate

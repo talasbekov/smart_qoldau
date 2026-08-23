@@ -18,6 +18,10 @@ void main() {
       'workStatus': 'ACCEPTING',
       'ratingAvg': 4.8,
       'ratingCount': 23,
+      // Публичный контент профиля (E2a): бэкенд отдаёт только одобренное,
+      // до модерации оба поля приходят как null.
+      'photoUrl': 'https://cdn.smartqoldau.kz/sq-avatars/a1b2.webp',
+      'about': 'Работаю с тревогой и выгоранием.',
     };
 
     test('round-trips through fromJson/toJson', () {
@@ -36,6 +40,11 @@ void main() {
       expect(expert.workStatus, WorkStatus.accepting);
       expect(expert.ratingAvg, 4.8);
       expect(expert.ratingCount, 23);
+      expect(
+        expert.photoUrl,
+        'https://cdn.smartqoldau.kz/sq-avatars/a1b2.webp',
+      );
+      expect(expert.about, 'Работаю с тревогой и выгоранием.');
       expect(expert.toJson(), json);
     });
   });
@@ -53,6 +62,10 @@ void main() {
       'workStatus': 'ACCEPTING',
       'ratingAvg': 4.8,
       'ratingCount': 23,
+      // Публичный контент профиля (E2a): бэкенд отдаёт только одобренное,
+      // до модерации оба поля приходят как null.
+      'photoUrl': 'https://cdn.smartqoldau.kz/sq-avatars/a1b2.webp',
+      'about': 'Работаю с тревогой и выгоранием.',
     };
     // outcome/endedAt присутствуют как null, а не отсутствуют — бэкенд
     // (ConsultationsService.toClientDto) всегда явно присваивает оба поля
@@ -71,6 +84,8 @@ void main() {
       'plannedDurationMin': 50,
       'paymentStatus': 'HELD',
       'expert': expertJson,
+      // reviewId приходит с бэкенда (E2a): до отзыва — null.
+      'reviewId': null,
     };
 
     test('round-trips through fromJson/toJson with a still-active consultation (outcome/endedAt null)', () {
@@ -87,6 +102,7 @@ void main() {
       expect(consultation.plannedDurationMin, 50);
       expect(consultation.paymentStatus, ConsultationPaymentStatus.held);
       expect(consultation.expert.id, expertJson['id']);
+      expect(consultation.reviewId, isNull);
       expect(consultation.toJson(), json);
     });
   });

@@ -1013,4 +1013,46 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get languageEnglish => 'Ағылшынша';
+
+  @override
+  String get reviewTagNotHelpful => 'Көмектеспеді';
+
+  @override
+  String get reviewTagLongWait => 'Ұзақ күту';
+
+  @override
+  String get reviewTagBadConnection => 'Байланыс нашар';
+
+  @override
+  String get reviewTagLittleUse => 'Пайдасы аз';
+
+  @override
+  String get reviewTagDidNotUnderstand => 'Мені түсінбеді';
+
+  @override
+  String get reviewTagTechnicalIssues => 'Техникалық ақаулар';
+
+  @override
+  String get reviewTagAverage => 'Орташа';
+
+  @override
+  String get reviewTagCouldBeBetter => 'Жақсырақ болуы мүмкін еді';
+
+  @override
+  String get reviewTagStandard => 'Қалыпты';
+
+  @override
+  String get reviewTagAttentive => 'Мұқият';
+
+  @override
+  String get reviewTagHelpedFigureOut => 'Түсінуге көмектесті';
+
+  @override
+  String get reviewTagProfessional => 'Кәсіби';
+
+  @override
+  String get reviewTagExceededExpectations => 'Күткеннен де жақсы';
+
+  @override
+  String get reviewTagsHint => 'Не маңызды болды?';
 }

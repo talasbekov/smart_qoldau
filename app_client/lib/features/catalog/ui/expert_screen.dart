@@ -266,7 +266,11 @@ class _Head extends StatelessWidget {
     return SqCard(
       child: Column(
         children: [
-          SqAvatar(name: expert.displayName, size: 72),
+          SqAvatar(
+            name: expert.displayName,
+            photoUrl: expert.photoUrl,
+            size: 72,
+          ),
           const SizedBox(height: SqSpacing.m),
           Text(expert.displayName, style: SqTypography.h2),
           const SizedBox(height: SqSpacing.xs),
@@ -293,6 +297,17 @@ class _Head extends StatelessWidget {
             ),
           ),
           Text(formatTenge(expert.priceTiyn), style: SqTypography.h2),
+          // Блок «о себе» рисуется только когда текст есть: пустой
+          // заголовок хуже отсутствующего.
+          if (expert.about case final about?) ...[
+            const SizedBox(height: SqSpacing.m),
+            Text(
+              about,
+              key: const Key('sq-expert-about'),
+              style: SqTypography.body,
+              textAlign: TextAlign.center,
+            ),
+          ],
         ],
       ),
     );

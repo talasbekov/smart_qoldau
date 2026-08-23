@@ -14,5 +14,6 @@ export 'notification.dart';
 export 'online_count.dart';
 export 'payment.dart';
 export 'review.dart';
+export 'review_tags.dart';
 export 'ticket.dart';
 export 'topic.dart';

@@ -20,11 +20,13 @@ class ReviewsRepository {
     required int rating,
     String? publicText,
     String? privateText,
+    List<String>? tags,
   }) => _api.createReview(
     consultationId,
     rating: rating,
     publicText: publicText,
     privateText: privateText,
+    tags: tags,
   );
 
   /// `DELETE /v1/reviews/{id}` — удалить свой отзыв (ТЗ §5.7). Использует

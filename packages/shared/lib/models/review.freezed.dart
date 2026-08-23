@@ -16,7 +16,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$ReviewCreated {
 
- String get id; String get consultationId; int get rating; String? get publicText; DateTime get createdAt;
+ String get id; String get consultationId; int get rating; String? get publicText; List<String> get tags; DateTime get createdAt;
 /// Create a copy of ReviewCreated
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -29,16 +29,16 @@ $ReviewCreatedCopyWith<ReviewCreated> get copyWith => _$ReviewCreatedCopyWithImp
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ReviewCreated&&(identical(other.id, id) || other.id == id)&&(identical(other.consultationId, consultationId) || other.consultationId == consultationId)&&(identical(other.rating, rating) || other.rating == rating)&&(identical(other.publicText, publicText) || other.publicText == publicText)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ReviewCreated&&(identical(other.id, id) || other.id == id)&&(identical(other.consultationId, consultationId) || other.consultationId == consultationId)&&(identical(other.rating, rating) || other.rating == rating)&&(identical(other.publicText, publicText) || other.publicText == publicText)&&const DeepCollectionEquality().equals(other.tags, tags)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,consultationId,rating,publicText,createdAt);
+int get hashCode => Object.hash(runtimeType,id,consultationId,rating,publicText,const DeepCollectionEquality().hash(tags),createdAt);
 
 @override
 String toString() {
-  return 'ReviewCreated(id: $id, consultationId: $consultationId, rating: $rating, publicText: $publicText, createdAt: $createdAt)';
+  return 'ReviewCreated(id: $id, consultationId: $consultationId, rating: $rating, publicText: $publicText, tags: $tags, createdAt: $createdAt)';
 }
 
 
@@ -49,7 +49,7 @@ abstract mixin class $ReviewCreatedCopyWith<$Res>  {
   factory $ReviewCreatedCopyWith(ReviewCreated value, $Res Function(ReviewCreated) _then) = _$ReviewCreatedCopyWithImpl;
 @useResult
 $Res call({
- String id, String consultationId, int rating, String? publicText, DateTime createdAt
+ String id, String consultationId, int rating, String? publicText, List<String> tags, DateTime createdAt
 });
 
 
@@ -66,13 +66,14 @@ class _$ReviewCreatedCopyWithImpl<$Res>
 
 /// Create a copy of ReviewCreated
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? consultationId = null,Object? rating = null,Object? publicText = freezed,Object? createdAt = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? consultationId = null,Object? rating = null,Object? publicText = freezed,Object? tags = null,Object? createdAt = null,}) {
   return _then(ReviewCreated(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,consultationId: null == consultationId ? _self.consultationId : consultationId // ignore: cast_nullable_to_non_nullable
 as String,rating: null == rating ? _self.rating : rating // ignore: cast_nullable_to_non_nullable
 as int,publicText: freezed == publicText ? _self.publicText : publicText // ignore: cast_nullable_to_non_nullable
-as String?,createdAt: null == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
+as String?,tags: null == tags ? _self.tags : tags // ignore: cast_nullable_to_non_nullable
+as List<String>,createdAt: null == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
 as DateTime,
   ));
 }
@@ -158,10 +159,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String consultationId,  int rating,  String? publicText,  DateTime createdAt)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String consultationId,  int rating,  String? publicText,  List<String> tags,  DateTime createdAt)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _ReviewCreated() when $default != null:
-return $default(_that.id,_that.consultationId,_that.rating,_that.publicText,_that.createdAt);case _:
+return $default(_that.id,_that.consultationId,_that.rating,_that.publicText,_that.tags,_that.createdAt);case _:
   return orElse();
 
 }
@@ -179,10 +180,10 @@ return $default(_that.id,_that.consultationId,_that.rating,_that.publicText,_tha
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String consultationId,  int rating,  String? publicText,  DateTime createdAt)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String consultationId,  int rating,  String? publicText,  List<String> tags,  DateTime createdAt)  $default,) {final _that = this;
 switch (_that) {
 case _ReviewCreated():
-return $default(_that.id,_that.consultationId,_that.rating,_that.publicText,_that.createdAt);case _:
+return $default(_that.id,_that.consultationId,_that.rating,_that.publicText,_that.tags,_that.createdAt);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -199,10 +200,10 @@ return $default(_that.id,_that.consultationId,_that.rating,_that.publicText,_tha
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String consultationId,  int rating,  String? publicText,  DateTime createdAt)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String consultationId,  int rating,  String? publicText,  List<String> tags,  DateTime createdAt)?  $default,) {final _that = this;
 switch (_that) {
 case _ReviewCreated() when $default != null:
-return $default(_that.id,_that.consultationId,_that.rating,_that.publicText,_that.createdAt);case _:
+return $default(_that.id,_that.consultationId,_that.rating,_that.publicText,_that.tags,_that.createdAt);case _:
   return null;
 
 }
@@ -214,13 +215,20 @@ return $default(_that.id,_that.consultationId,_that.rating,_that.publicText,_tha
 @JsonSerializable()
 
 class _ReviewCreated implements ReviewCreated {
-  const _ReviewCreated({required this.id, required this.consultationId, required this.rating, this.publicText, required this.createdAt});
+  const _ReviewCreated({required this.id, required this.consultationId, required this.rating, this.publicText,  List<String> tags = const <String>[], required this.createdAt}): _tags = tags;
   factory _ReviewCreated.fromJson(Map<String, dynamic> json) => _$ReviewCreatedFromJson(json);
 
 @override final  String id;
 @override final  String consultationId;
 @override final  int rating;
 @override final  String? publicText;
+ final  List<String> _tags;
+@override@JsonKey() List<String> get tags {
+  if (_tags is EqualUnmodifiableListView) return _tags;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(_tags);
+}
+
 @override final  DateTime createdAt;
 
 /// Create a copy of ReviewCreated
@@ -236,16 +244,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ReviewCreated&&(identical(other.id, id) || other.id == id)&&(identical(other.consultationId, consultationId) || other.consultationId == consultationId)&&(identical(other.rating, rating) || other.rating == rating)&&(identical(other.publicText, publicText) || other.publicText == publicText)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ReviewCreated&&(identical(other.id, id) || other.id == id)&&(identical(other.consultationId, consultationId) || other.consultationId == consultationId)&&(identical(other.rating, rating) || other.rating == rating)&&(identical(other.publicText, publicText) || other.publicText == publicText)&&const DeepCollectionEquality().equals(other._tags, _tags)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,consultationId,rating,publicText,createdAt);
+int get hashCode => Object.hash(runtimeType,id,consultationId,rating,publicText,const DeepCollectionEquality().hash(_tags),createdAt);
 
 @override
 String toString() {
-  return 'ReviewCreated(id: $id, consultationId: $consultationId, rating: $rating, publicText: $publicText, createdAt: $createdAt)';
+  return 'ReviewCreated(id: $id, consultationId: $consultationId, rating: $rating, publicText: $publicText, tags: $tags, createdAt: $createdAt)';
 }
 
 
@@ -256,7 +264,7 @@ abstract mixin class _$ReviewCreatedCopyWith<$Res> implements $ReviewCreatedCopy
   factory _$ReviewCreatedCopyWith(_ReviewCreated value, $Res Function(_ReviewCreated) _then) = __$ReviewCreatedCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String consultationId, int rating, String? publicText, DateTime createdAt
+ String id, String consultationId, int rating, String? publicText, List<String> tags, DateTime createdAt
 });
 
 
@@ -273,13 +281,14 @@ class __$ReviewCreatedCopyWithImpl<$Res>
 
 /// Create a copy of ReviewCreated
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? consultationId = null,Object? rating = null,Object? publicText = freezed,Object? createdAt = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? consultationId = null,Object? rating = null,Object? publicText = freezed,Object? tags = null,Object? createdAt = null,}) {
   return _then(_ReviewCreated(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,consultationId: null == consultationId ? _self.consultationId : consultationId // ignore: cast_nullable_to_non_nullable
 as String,rating: null == rating ? _self.rating : rating // ignore: cast_nullable_to_non_nullable
 as int,publicText: freezed == publicText ? _self.publicText : publicText // ignore: cast_nullable_to_non_nullable
-as String?,createdAt: null == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
+as String?,tags: null == tags ? _self._tags : tags // ignore: cast_nullable_to_non_nullable
+as List<String>,createdAt: null == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
 as DateTime,
   ));
 }
@@ -291,7 +300,8 @@ as DateTime,
 /// @nodoc
 mixin _$ReviewItem {
 
- int get rating; String? get publicText; String? get expertReply; DateTime get createdAt;
+ int get rating; String? get publicText; String? get expertReply;/// Коды тегов из [reviewTagsFor]; подписи живут в локализации клиента.
+ List<String> get tags; DateTime get createdAt;
 /// Create a copy of ReviewItem
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -304,16 +314,16 @@ $ReviewItemCopyWith<ReviewItem> get copyWith => _$ReviewItemCopyWithImpl<ReviewI
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ReviewItem&&(identical(other.rating, rating) || other.rating == rating)&&(identical(other.publicText, publicText) || other.publicText == publicText)&&(identical(other.expertReply, expertReply) || other.expertReply == expertReply)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ReviewItem&&(identical(other.rating, rating) || other.rating == rating)&&(identical(other.publicText, publicText) || other.publicText == publicText)&&(identical(other.expertReply, expertReply) || other.expertReply == expertReply)&&const DeepCollectionEquality().equals(other.tags, tags)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,rating,publicText,expertReply,createdAt);
+int get hashCode => Object.hash(runtimeType,rating,publicText,expertReply,const DeepCollectionEquality().hash(tags),createdAt);
 
 @override
 String toString() {
-  return 'ReviewItem(rating: $rating, publicText: $publicText, expertReply: $expertReply, createdAt: $createdAt)';
+  return 'ReviewItem(rating: $rating, publicText: $publicText, expertReply: $expertReply, tags: $tags, createdAt: $createdAt)';
 }
 
 
@@ -324,7 +334,7 @@ abstract mixin class $ReviewItemCopyWith<$Res>  {
   factory $ReviewItemCopyWith(ReviewItem value, $Res Function(ReviewItem) _then) = _$ReviewItemCopyWithImpl;
 @useResult
 $Res call({
- int rating, String? publicText, String? expertReply, DateTime createdAt
+ int rating, String? publicText, String? expertReply, List<String> tags, DateTime createdAt
 });
 
 
@@ -341,12 +351,13 @@ class _$ReviewItemCopyWithImpl<$Res>
 
 /// Create a copy of ReviewItem
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? rating = null,Object? publicText = freezed,Object? expertReply = freezed,Object? createdAt = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? rating = null,Object? publicText = freezed,Object? expertReply = freezed,Object? tags = null,Object? createdAt = null,}) {
   return _then(ReviewItem(
 rating: null == rating ? _self.rating : rating // ignore: cast_nullable_to_non_nullable
 as int,publicText: freezed == publicText ? _self.publicText : publicText // ignore: cast_nullable_to_non_nullable
 as String?,expertReply: freezed == expertReply ? _self.expertReply : expertReply // ignore: cast_nullable_to_non_nullable
-as String?,createdAt: null == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
+as String?,tags: null == tags ? _self.tags : tags // ignore: cast_nullable_to_non_nullable
+as List<String>,createdAt: null == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
 as DateTime,
   ));
 }
@@ -432,10 +443,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int rating,  String? publicText,  String? expertReply,  DateTime createdAt)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int rating,  String? publicText,  String? expertReply,  List<String> tags,  DateTime createdAt)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _ReviewItem() when $default != null:
-return $default(_that.rating,_that.publicText,_that.expertReply,_that.createdAt);case _:
+return $default(_that.rating,_that.publicText,_that.expertReply,_that.tags,_that.createdAt);case _:
   return orElse();
 
 }
@@ -453,10 +464,10 @@ return $default(_that.rating,_that.publicText,_that.expertReply,_that.createdAt)
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int rating,  String? publicText,  String? expertReply,  DateTime createdAt)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int rating,  String? publicText,  String? expertReply,  List<String> tags,  DateTime createdAt)  $default,) {final _that = this;
 switch (_that) {
 case _ReviewItem():
-return $default(_that.rating,_that.publicText,_that.expertReply,_that.createdAt);case _:
+return $default(_that.rating,_that.publicText,_that.expertReply,_that.tags,_that.createdAt);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -473,10 +484,10 @@ return $default(_that.rating,_that.publicText,_that.expertReply,_that.createdAt)
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int rating,  String? publicText,  String? expertReply,  DateTime createdAt)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int rating,  String? publicText,  String? expertReply,  List<String> tags,  DateTime createdAt)?  $default,) {final _that = this;
 switch (_that) {
 case _ReviewItem() when $default != null:
-return $default(_that.rating,_that.publicText,_that.expertReply,_that.createdAt);case _:
+return $default(_that.rating,_that.publicText,_that.expertReply,_that.tags,_that.createdAt);case _:
   return null;
 
 }
@@ -488,12 +499,21 @@ return $default(_that.rating,_that.publicText,_that.expertReply,_that.createdAt)
 @JsonSerializable()
 
 class _ReviewItem implements ReviewItem {
-  const _ReviewItem({required this.rating, this.publicText, this.expertReply, required this.createdAt});
+  const _ReviewItem({required this.rating, this.publicText, this.expertReply,  List<String> tags = const <String>[], required this.createdAt}): _tags = tags;
   factory _ReviewItem.fromJson(Map<String, dynamic> json) => _$ReviewItemFromJson(json);
 
 @override final  int rating;
 @override final  String? publicText;
 @override final  String? expertReply;
+/// Коды тегов из [reviewTagsFor]; подписи живут в локализации клиента.
+ final  List<String> _tags;
+/// Коды тегов из [reviewTagsFor]; подписи живут в локализации клиента.
+@override@JsonKey() List<String> get tags {
+  if (_tags is EqualUnmodifiableListView) return _tags;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(_tags);
+}
+
 @override final  DateTime createdAt;
 
 /// Create a copy of ReviewItem
@@ -509,16 +529,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ReviewItem&&(identical(other.rating, rating) || other.rating == rating)&&(identical(other.publicText, publicText) || other.publicText == publicText)&&(identical(other.expertReply, expertReply) || other.expertReply == expertReply)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ReviewItem&&(identical(other.rating, rating) || other.rating == rating)&&(identical(other.publicText, publicText) || other.publicText == publicText)&&(identical(other.expertReply, expertReply) || other.expertReply == expertReply)&&const DeepCollectionEquality().equals(other._tags, _tags)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,rating,publicText,expertReply,createdAt);
+int get hashCode => Object.hash(runtimeType,rating,publicText,expertReply,const DeepCollectionEquality().hash(_tags),createdAt);
 
 @override
 String toString() {
-  return 'ReviewItem(rating: $rating, publicText: $publicText, expertReply: $expertReply, createdAt: $createdAt)';
+  return 'ReviewItem(rating: $rating, publicText: $publicText, expertReply: $expertReply, tags: $tags, createdAt: $createdAt)';
 }
 
 
@@ -529,7 +549,7 @@ abstract mixin class _$ReviewItemCopyWith<$Res> implements $ReviewItemCopyWith<$
   factory _$ReviewItemCopyWith(_ReviewItem value, $Res Function(_ReviewItem) _then) = __$ReviewItemCopyWithImpl;
 @override @useResult
 $Res call({
- int rating, String? publicText, String? expertReply, DateTime createdAt
+ int rating, String? publicText, String? expertReply, List<String> tags, DateTime createdAt
 });
 
 
@@ -546,12 +566,13 @@ class __$ReviewItemCopyWithImpl<$Res>
 
 /// Create a copy of ReviewItem
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? rating = null,Object? publicText = freezed,Object? expertReply = freezed,Object? createdAt = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? rating = null,Object? publicText = freezed,Object? expertReply = freezed,Object? tags = null,Object? createdAt = null,}) {
   return _then(_ReviewItem(
 rating: null == rating ? _self.rating : rating // ignore: cast_nullable_to_non_nullable
 as int,publicText: freezed == publicText ? _self.publicText : publicText // ignore: cast_nullable_to_non_nullable
 as String?,expertReply: freezed == expertReply ? _self.expertReply : expertReply // ignore: cast_nullable_to_non_nullable
-as String?,createdAt: null == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
+as String?,tags: null == tags ? _self._tags : tags // ignore: cast_nullable_to_non_nullable
+as List<String>,createdAt: null == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
 as DateTime,
   ));
 }

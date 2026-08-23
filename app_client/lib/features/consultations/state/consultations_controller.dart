@@ -172,14 +172,16 @@ final consultationsControllerProvider =
       ConsultationsTab
     >(ConsultationsController.new);
 
-/// Состояние собственного отзыва по консультации: он есть локально
-/// (идентификатор сохранён при отправке) и его можно удалить (ТЗ §5.7).
+/// Состояние собственного отзыва по консультации: идентификатор приходит с
+/// бэкенда (`ConsultationClientDto.reviewId`, E2a), и его можно удалить
+/// (ТЗ §5.7).
 class MyReviewState {
   const MyReviewState({this.reviewId, this.deleting = false, this.errorCode});
 
-  /// `null` — по этой консультации отзыв с этого устройства не оставляли.
-  /// Эндпоинта «мой отзыв по консультации» бэкенд не даёт, поэтому знание
-  /// локальное и теряется при переустановке приложения.
+  /// `null` — отзыва по этой консультации нет. Значение приходит с
+  /// бэкенда, поэтому переустановка приложения его не теряет; локальная
+  /// запись осталась только фолбэком на время, пока консультация ещё не
+  /// загрузилась.
   final String? reviewId;
 
   final bool deleting;
@@ -189,7 +191,11 @@ class MyReviewState {
 class MyReviewController extends AutoDisposeFamilyNotifier<MyReviewState, String> {
   @override
   MyReviewState build(String arg) => MyReviewState(
-    reviewId: ref.watch(sharedPreferencesProvider).getString(reviewIdKey(arg)),
+    // Источник истины — DTO консультации; локальная запись подставляется,
+    // пока запрос не завершился (или если он не удался).
+    reviewId:
+        ref.watch(consultationProvider(arg)).valueOrNull?.reviewId ??
+        ref.watch(sharedPreferencesProvider).getString(reviewIdKey(arg)),
   );
 
   /// Удаляет свой отзыв. `REVIEW_NOT_FOUND` считается успехом: отзыва уже

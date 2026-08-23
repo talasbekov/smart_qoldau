@@ -117,6 +117,7 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
                   publicController: _public,
                   privateController: _private,
                   onRating: _notifier.setRating,
+                  onToggleTag: _notifier.toggleTag,
                   onPublicChanged: _notifier.setPublicText,
                   onPrivateChanged: _notifier.setPrivateText,
                   onSubmit: _submit,
@@ -135,6 +136,7 @@ class _Form extends StatelessWidget {
     required this.publicController,
     required this.privateController,
     required this.onRating,
+    required this.onToggleTag,
     required this.onPublicChanged,
     required this.onPrivateChanged,
     required this.onSubmit,
@@ -146,6 +148,7 @@ class _Form extends StatelessWidget {
   final TextEditingController publicController;
   final TextEditingController privateController;
   final ValueChanged<int> onRating;
+  final ValueChanged<String> onToggleTag;
   final ValueChanged<String> onPublicChanged;
   final ValueChanged<String> onPrivateChanged;
   final VoidCallback onSubmit;
@@ -220,6 +223,31 @@ class _Form extends StatelessWidget {
             style: SqTypography.title.copyWith(color: SqColors.primary),
             textAlign: TextAlign.center,
           ),
+          const SizedBox(height: SqSpacing.m),
+          Text(
+            l10n.reviewTagsHint,
+            style: SqTypography.caption.copyWith(
+              color: SqColors.textSecondary,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: SqSpacing.xs),
+          Wrap(
+            alignment: WrapAlignment.center,
+            spacing: SqSpacing.xs,
+            runSpacing: SqSpacing.xs,
+            children: [
+              for (final code in reviewTagsFor(review.rating))
+                GestureDetector(
+                  key: Key('sq-review-tag-$code'),
+                  onTap: () => onToggleTag(code),
+                  child: SqChip(
+                    label: _tagLabel(l10n, code),
+                    selected: review.tags.contains(code),
+                  ),
+                ),
+            ],
+          ),
         ],
         const SizedBox(height: SqSpacing.l),
         SqTextField(
@@ -267,6 +295,24 @@ class _Form extends StatelessWidget {
       ],
     );
   }
+
+  /// Подписи тегов живут в локализации, а не в коде и не в БД: иначе
+  /// казахская локаль получила бы русский текст.
+  String _tagLabel(AppLocalizations l10n, String code) => switch (code) {
+    'not_helpful' => l10n.reviewTagNotHelpful,
+    'long_wait' => l10n.reviewTagLongWait,
+    'bad_connection' => l10n.reviewTagBadConnection,
+    'little_use' => l10n.reviewTagLittleUse,
+    'did_not_understand' => l10n.reviewTagDidNotUnderstand,
+    'technical_issues' => l10n.reviewTagTechnicalIssues,
+    'average' => l10n.reviewTagAverage,
+    'could_be_better' => l10n.reviewTagCouldBeBetter,
+    'standard' => l10n.reviewTagStandard,
+    'attentive' => l10n.reviewTagAttentive,
+    'helped_figure_out' => l10n.reviewTagHelpedFigureOut,
+    'professional' => l10n.reviewTagProfessional,
+    _ => l10n.reviewTagExceededExpectations,
+  };
 
   String _ratingLabel(AppLocalizations l10n, int rating) => switch (rating) {
     1 => l10n.reviewRating1,

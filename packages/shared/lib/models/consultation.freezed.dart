@@ -16,7 +16,9 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$ClientConsultation {
 
- String get id; ConsultationStatus get status; ConsultationOutcome? get outcome; SessionFormat get format; bool get isEmergency; DateTime get startedAt; DateTime? get endedAt; int get priceTiyn; int get plannedDurationMin; ConsultationPaymentStatus get paymentStatus; ExpertPublic get expert;
+ String get id; ConsultationStatus get status; ConsultationOutcome? get outcome; SessionFormat get format; bool get isEmergency; DateTime get startedAt; DateTime? get endedAt; int get priceTiyn; int get plannedDurationMin; ConsultationPaymentStatus get paymentStatus; ExpertPublic get expert;/// Идентификатор оставленного отзыва; `null` — отзыва нет. Приходит с
+/// бэкенда (E2a), поэтому переустановка приложения его не теряет.
+ String? get reviewId;
 /// Create a copy of ClientConsultation
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -29,16 +31,16 @@ $ClientConsultationCopyWith<ClientConsultation> get copyWith => _$ClientConsulta
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ClientConsultation&&(identical(other.id, id) || other.id == id)&&(identical(other.status, status) || other.status == status)&&(identical(other.outcome, outcome) || other.outcome == outcome)&&(identical(other.format, format) || other.format == format)&&(identical(other.isEmergency, isEmergency) || other.isEmergency == isEmergency)&&(identical(other.startedAt, startedAt) || other.startedAt == startedAt)&&(identical(other.endedAt, endedAt) || other.endedAt == endedAt)&&(identical(other.priceTiyn, priceTiyn) || other.priceTiyn == priceTiyn)&&(identical(other.plannedDurationMin, plannedDurationMin) || other.plannedDurationMin == plannedDurationMin)&&(identical(other.paymentStatus, paymentStatus) || other.paymentStatus == paymentStatus)&&(identical(other.expert, expert) || other.expert == expert));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ClientConsultation&&(identical(other.id, id) || other.id == id)&&(identical(other.status, status) || other.status == status)&&(identical(other.outcome, outcome) || other.outcome == outcome)&&(identical(other.format, format) || other.format == format)&&(identical(other.isEmergency, isEmergency) || other.isEmergency == isEmergency)&&(identical(other.startedAt, startedAt) || other.startedAt == startedAt)&&(identical(other.endedAt, endedAt) || other.endedAt == endedAt)&&(identical(other.priceTiyn, priceTiyn) || other.priceTiyn == priceTiyn)&&(identical(other.plannedDurationMin, plannedDurationMin) || other.plannedDurationMin == plannedDurationMin)&&(identical(other.paymentStatus, paymentStatus) || other.paymentStatus == paymentStatus)&&(identical(other.expert, expert) || other.expert == expert)&&(identical(other.reviewId, reviewId) || other.reviewId == reviewId));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,status,outcome,format,isEmergency,startedAt,endedAt,priceTiyn,plannedDurationMin,paymentStatus,expert);
+int get hashCode => Object.hash(runtimeType,id,status,outcome,format,isEmergency,startedAt,endedAt,priceTiyn,plannedDurationMin,paymentStatus,expert,reviewId);
 
 @override
 String toString() {
-  return 'ClientConsultation(id: $id, status: $status, outcome: $outcome, format: $format, isEmergency: $isEmergency, startedAt: $startedAt, endedAt: $endedAt, priceTiyn: $priceTiyn, plannedDurationMin: $plannedDurationMin, paymentStatus: $paymentStatus, expert: $expert)';
+  return 'ClientConsultation(id: $id, status: $status, outcome: $outcome, format: $format, isEmergency: $isEmergency, startedAt: $startedAt, endedAt: $endedAt, priceTiyn: $priceTiyn, plannedDurationMin: $plannedDurationMin, paymentStatus: $paymentStatus, expert: $expert, reviewId: $reviewId)';
 }
 
 
@@ -49,7 +51,7 @@ abstract mixin class $ClientConsultationCopyWith<$Res>  {
   factory $ClientConsultationCopyWith(ClientConsultation value, $Res Function(ClientConsultation) _then) = _$ClientConsultationCopyWithImpl;
 @useResult
 $Res call({
- String id, ConsultationStatus status, ConsultationOutcome? outcome, SessionFormat format, bool isEmergency, DateTime startedAt, DateTime? endedAt, int priceTiyn, int plannedDurationMin, ConsultationPaymentStatus paymentStatus, ExpertPublic expert
+ String id, ConsultationStatus status, ConsultationOutcome? outcome, SessionFormat format, bool isEmergency, DateTime startedAt, DateTime? endedAt, int priceTiyn, int plannedDurationMin, ConsultationPaymentStatus paymentStatus, ExpertPublic expert, String? reviewId
 });
 
 
@@ -66,7 +68,7 @@ class _$ClientConsultationCopyWithImpl<$Res>
 
 /// Create a copy of ClientConsultation
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? status = null,Object? outcome = freezed,Object? format = null,Object? isEmergency = null,Object? startedAt = null,Object? endedAt = freezed,Object? priceTiyn = null,Object? plannedDurationMin = null,Object? paymentStatus = null,Object? expert = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? status = null,Object? outcome = freezed,Object? format = null,Object? isEmergency = null,Object? startedAt = null,Object? endedAt = freezed,Object? priceTiyn = null,Object? plannedDurationMin = null,Object? paymentStatus = null,Object? expert = null,Object? reviewId = freezed,}) {
   return _then(ClientConsultation(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
@@ -79,7 +81,8 @@ as DateTime?,priceTiyn: null == priceTiyn ? _self.priceTiyn : priceTiyn // ignor
 as int,plannedDurationMin: null == plannedDurationMin ? _self.plannedDurationMin : plannedDurationMin // ignore: cast_nullable_to_non_nullable
 as int,paymentStatus: null == paymentStatus ? _self.paymentStatus : paymentStatus // ignore: cast_nullable_to_non_nullable
 as ConsultationPaymentStatus,expert: null == expert ? _self.expert : expert // ignore: cast_nullable_to_non_nullable
-as ExpertPublic,
+as ExpertPublic,reviewId: freezed == reviewId ? _self.reviewId : reviewId // ignore: cast_nullable_to_non_nullable
+as String?,
   ));
 }
 /// Create a copy of ClientConsultation
@@ -173,10 +176,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  ConsultationStatus status,  ConsultationOutcome? outcome,  SessionFormat format,  bool isEmergency,  DateTime startedAt,  DateTime? endedAt,  int priceTiyn,  int plannedDurationMin,  ConsultationPaymentStatus paymentStatus,  ExpertPublic expert)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  ConsultationStatus status,  ConsultationOutcome? outcome,  SessionFormat format,  bool isEmergency,  DateTime startedAt,  DateTime? endedAt,  int priceTiyn,  int plannedDurationMin,  ConsultationPaymentStatus paymentStatus,  ExpertPublic expert,  String? reviewId)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _ClientConsultation() when $default != null:
-return $default(_that.id,_that.status,_that.outcome,_that.format,_that.isEmergency,_that.startedAt,_that.endedAt,_that.priceTiyn,_that.plannedDurationMin,_that.paymentStatus,_that.expert);case _:
+return $default(_that.id,_that.status,_that.outcome,_that.format,_that.isEmergency,_that.startedAt,_that.endedAt,_that.priceTiyn,_that.plannedDurationMin,_that.paymentStatus,_that.expert,_that.reviewId);case _:
   return orElse();
 
 }
@@ -194,10 +197,10 @@ return $default(_that.id,_that.status,_that.outcome,_that.format,_that.isEmergen
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  ConsultationStatus status,  ConsultationOutcome? outcome,  SessionFormat format,  bool isEmergency,  DateTime startedAt,  DateTime? endedAt,  int priceTiyn,  int plannedDurationMin,  ConsultationPaymentStatus paymentStatus,  ExpertPublic expert)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  ConsultationStatus status,  ConsultationOutcome? outcome,  SessionFormat format,  bool isEmergency,  DateTime startedAt,  DateTime? endedAt,  int priceTiyn,  int plannedDurationMin,  ConsultationPaymentStatus paymentStatus,  ExpertPublic expert,  String? reviewId)  $default,) {final _that = this;
 switch (_that) {
 case _ClientConsultation():
-return $default(_that.id,_that.status,_that.outcome,_that.format,_that.isEmergency,_that.startedAt,_that.endedAt,_that.priceTiyn,_that.plannedDurationMin,_that.paymentStatus,_that.expert);case _:
+return $default(_that.id,_that.status,_that.outcome,_that.format,_that.isEmergency,_that.startedAt,_that.endedAt,_that.priceTiyn,_that.plannedDurationMin,_that.paymentStatus,_that.expert,_that.reviewId);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -214,10 +217,10 @@ return $default(_that.id,_that.status,_that.outcome,_that.format,_that.isEmergen
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  ConsultationStatus status,  ConsultationOutcome? outcome,  SessionFormat format,  bool isEmergency,  DateTime startedAt,  DateTime? endedAt,  int priceTiyn,  int plannedDurationMin,  ConsultationPaymentStatus paymentStatus,  ExpertPublic expert)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  ConsultationStatus status,  ConsultationOutcome? outcome,  SessionFormat format,  bool isEmergency,  DateTime startedAt,  DateTime? endedAt,  int priceTiyn,  int plannedDurationMin,  ConsultationPaymentStatus paymentStatus,  ExpertPublic expert,  String? reviewId)?  $default,) {final _that = this;
 switch (_that) {
 case _ClientConsultation() when $default != null:
-return $default(_that.id,_that.status,_that.outcome,_that.format,_that.isEmergency,_that.startedAt,_that.endedAt,_that.priceTiyn,_that.plannedDurationMin,_that.paymentStatus,_that.expert);case _:
+return $default(_that.id,_that.status,_that.outcome,_that.format,_that.isEmergency,_that.startedAt,_that.endedAt,_that.priceTiyn,_that.plannedDurationMin,_that.paymentStatus,_that.expert,_that.reviewId);case _:
   return null;
 
 }
@@ -229,7 +232,7 @@ return $default(_that.id,_that.status,_that.outcome,_that.format,_that.isEmergen
 @JsonSerializable()
 
 class _ClientConsultation implements ClientConsultation {
-  const _ClientConsultation({required this.id, required this.status, this.outcome, required this.format, required this.isEmergency, required this.startedAt, this.endedAt, required this.priceTiyn, required this.plannedDurationMin, required this.paymentStatus, required this.expert});
+  const _ClientConsultation({required this.id, required this.status, this.outcome, required this.format, required this.isEmergency, required this.startedAt, this.endedAt, required this.priceTiyn, required this.plannedDurationMin, required this.paymentStatus, required this.expert, this.reviewId});
   factory _ClientConsultation.fromJson(Map<String, dynamic> json) => _$ClientConsultationFromJson(json);
 
 @override final  String id;
@@ -243,6 +246,9 @@ class _ClientConsultation implements ClientConsultation {
 @override final  int plannedDurationMin;
 @override final  ConsultationPaymentStatus paymentStatus;
 @override final  ExpertPublic expert;
+/// Идентификатор оставленного отзыва; `null` — отзыва нет. Приходит с
+/// бэкенда (E2a), поэтому переустановка приложения его не теряет.
+@override final  String? reviewId;
 
 /// Create a copy of ClientConsultation
 /// with the given fields replaced by the non-null parameter values.
@@ -257,16 +263,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ClientConsultation&&(identical(other.id, id) || other.id == id)&&(identical(other.status, status) || other.status == status)&&(identical(other.outcome, outcome) || other.outcome == outcome)&&(identical(other.format, format) || other.format == format)&&(identical(other.isEmergency, isEmergency) || other.isEmergency == isEmergency)&&(identical(other.startedAt, startedAt) || other.startedAt == startedAt)&&(identical(other.endedAt, endedAt) || other.endedAt == endedAt)&&(identical(other.priceTiyn, priceTiyn) || other.priceTiyn == priceTiyn)&&(identical(other.plannedDurationMin, plannedDurationMin) || other.plannedDurationMin == plannedDurationMin)&&(identical(other.paymentStatus, paymentStatus) || other.paymentStatus == paymentStatus)&&(identical(other.expert, expert) || other.expert == expert));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ClientConsultation&&(identical(other.id, id) || other.id == id)&&(identical(other.status, status) || other.status == status)&&(identical(other.outcome, outcome) || other.outcome == outcome)&&(identical(other.format, format) || other.format == format)&&(identical(other.isEmergency, isEmergency) || other.isEmergency == isEmergency)&&(identical(other.startedAt, startedAt) || other.startedAt == startedAt)&&(identical(other.endedAt, endedAt) || other.endedAt == endedAt)&&(identical(other.priceTiyn, priceTiyn) || other.priceTiyn == priceTiyn)&&(identical(other.plannedDurationMin, plannedDurationMin) || other.plannedDurationMin == plannedDurationMin)&&(identical(other.paymentStatus, paymentStatus) || other.paymentStatus == paymentStatus)&&(identical(other.expert, expert) || other.expert == expert)&&(identical(other.reviewId, reviewId) || other.reviewId == reviewId));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,status,outcome,format,isEmergency,startedAt,endedAt,priceTiyn,plannedDurationMin,paymentStatus,expert);
+int get hashCode => Object.hash(runtimeType,id,status,outcome,format,isEmergency,startedAt,endedAt,priceTiyn,plannedDurationMin,paymentStatus,expert,reviewId);
 
 @override
 String toString() {
-  return 'ClientConsultation(id: $id, status: $status, outcome: $outcome, format: $format, isEmergency: $isEmergency, startedAt: $startedAt, endedAt: $endedAt, priceTiyn: $priceTiyn, plannedDurationMin: $plannedDurationMin, paymentStatus: $paymentStatus, expert: $expert)';
+  return 'ClientConsultation(id: $id, status: $status, outcome: $outcome, format: $format, isEmergency: $isEmergency, startedAt: $startedAt, endedAt: $endedAt, priceTiyn: $priceTiyn, plannedDurationMin: $plannedDurationMin, paymentStatus: $paymentStatus, expert: $expert, reviewId: $reviewId)';
 }
 
 
@@ -277,7 +283,7 @@ abstract mixin class _$ClientConsultationCopyWith<$Res> implements $ClientConsul
   factory _$ClientConsultationCopyWith(_ClientConsultation value, $Res Function(_ClientConsultation) _then) = __$ClientConsultationCopyWithImpl;
 @override @useResult
 $Res call({
- String id, ConsultationStatus status, ConsultationOutcome? outcome, SessionFormat format, bool isEmergency, DateTime startedAt, DateTime? endedAt, int priceTiyn, int plannedDurationMin, ConsultationPaymentStatus paymentStatus, ExpertPublic expert
+ String id, ConsultationStatus status, ConsultationOutcome? outcome, SessionFormat format, bool isEmergency, DateTime startedAt, DateTime? endedAt, int priceTiyn, int plannedDurationMin, ConsultationPaymentStatus paymentStatus, ExpertPublic expert, String? reviewId
 });
 
 
@@ -294,7 +300,7 @@ class __$ClientConsultationCopyWithImpl<$Res>
 
 /// Create a copy of ClientConsultation
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? status = null,Object? outcome = freezed,Object? format = null,Object? isEmergency = null,Object? startedAt = null,Object? endedAt = freezed,Object? priceTiyn = null,Object? plannedDurationMin = null,Object? paymentStatus = null,Object? expert = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? status = null,Object? outcome = freezed,Object? format = null,Object? isEmergency = null,Object? startedAt = null,Object? endedAt = freezed,Object? priceTiyn = null,Object? plannedDurationMin = null,Object? paymentStatus = null,Object? expert = null,Object? reviewId = freezed,}) {
   return _then(_ClientConsultation(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
@@ -307,7 +313,8 @@ as DateTime?,priceTiyn: null == priceTiyn ? _self.priceTiyn : priceTiyn // ignor
 as int,plannedDurationMin: null == plannedDurationMin ? _self.plannedDurationMin : plannedDurationMin // ignore: cast_nullable_to_non_nullable
 as int,paymentStatus: null == paymentStatus ? _self.paymentStatus : paymentStatus // ignore: cast_nullable_to_non_nullable
 as ConsultationPaymentStatus,expert: null == expert ? _self.expert : expert // ignore: cast_nullable_to_non_nullable
-as ExpertPublic,
+as ExpertPublic,reviewId: freezed == reviewId ? _self.reviewId : reviewId // ignore: cast_nullable_to_non_nullable
+as String?,
   ));
 }
 

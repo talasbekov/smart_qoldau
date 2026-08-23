@@ -1019,4 +1019,46 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get languageEnglish => 'Английский';
+
+  @override
+  String get reviewTagNotHelpful => 'Не помогло';
+
+  @override
+  String get reviewTagLongWait => 'Долгое ожидание';
+
+  @override
+  String get reviewTagBadConnection => 'Плохая связь';
+
+  @override
+  String get reviewTagLittleUse => 'Мало пользы';
+
+  @override
+  String get reviewTagDidNotUnderstand => 'Не понял меня';
+
+  @override
+  String get reviewTagTechnicalIssues => 'Технические проблемы';
+
+  @override
+  String get reviewTagAverage => 'Средне';
+
+  @override
+  String get reviewTagCouldBeBetter => 'Могло быть лучше';
+
+  @override
+  String get reviewTagStandard => 'Стандартно';
+
+  @override
+  String get reviewTagAttentive => 'Внимательный';
+
+  @override
+  String get reviewTagHelpedFigureOut => 'Помог разобраться';
+
+  @override
+  String get reviewTagProfessional => 'Профессионально';
+
+  @override
+  String get reviewTagExceededExpectations => 'Превзошёл ожидания';
+
+  @override
+  String get reviewTagsHint => 'Что было важно?';
 }

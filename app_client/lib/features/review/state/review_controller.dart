@@ -28,6 +28,7 @@ class ReviewState {
     this.rating = 0,
     this.publicText = '',
     this.privateText = '',
+    this.tags = const [],
     this.phase = ReviewPhase.editing,
     this.errorCode,
   });
@@ -37,6 +38,10 @@ class ReviewState {
 
   final String publicText;
   final String privateText;
+
+  /// Выбранные коды тегов; набор зависит от [rating] и сбрасывается при
+  /// его смене.
+  final List<String> tags;
   final ReviewPhase phase;
   final String? errorCode;
 
@@ -46,6 +51,7 @@ class ReviewState {
     int? rating,
     String? publicText,
     String? privateText,
+    List<String>? tags,
     ReviewPhase? phase,
     String? errorCode,
     bool clearError = false,
@@ -53,6 +59,7 @@ class ReviewState {
     rating: rating ?? this.rating,
     publicText: publicText ?? this.publicText,
     privateText: privateText ?? this.privateText,
+    tags: tags ?? this.tags,
     phase: phase ?? this.phase,
     errorCode: clearError ? null : (errorCode ?? this.errorCode),
   );
@@ -63,8 +70,25 @@ class ReviewController
   @override
   ReviewState build(String arg) => const ReviewState();
 
-  void setRating(int rating) =>
-      state = state.copyWith(rating: rating, clearError: true);
+  /// Смена оценки снимает выбранные теги: набор четвёрки бессмысленен при
+  /// единице, и оставленный выбор бэкенд всё равно отверг бы.
+  void setRating(int rating) => state = state.copyWith(
+    rating: rating,
+    tags: const [],
+    clearError: true,
+  );
+
+  /// Повторный тап снимает выбор; больше [maxReviewTags] выбрать нельзя.
+  void toggleTag(String code) {
+    if (state.tags.contains(code)) {
+      state = state.copyWith(
+        tags: state.tags.where((tag) => tag != code).toList(),
+      );
+      return;
+    }
+    if (state.tags.length >= maxReviewTags) return;
+    state = state.copyWith(tags: [...state.tags, code]);
+  }
 
   void setPublicText(String value) => state = state.copyWith(publicText: value);
 
@@ -89,6 +113,7 @@ class ReviewController
             // в ленту специалиста пустым отзывом.
             publicText: _nullIfBlank(state.publicText),
             privateText: _nullIfBlank(state.privateText),
+            tags: state.tags.isEmpty ? null : state.tags,
           );
       await _rememberReviewed(reviewId: review.id);
       ref.read(analyticsProvider).track(

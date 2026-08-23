@@ -1290,5 +1290,61 @@
   "languageEnglish": "Английский",
   "@languageEnglish": {
     "description": "Язык консультации: английский"
+  },
+  "reviewTagNotHelpful": "Не помогло",
+  "@reviewTagNotHelpful": {
+    "description": "Тег отзыва «Не помогло» (код not_helpful)"
+  },
+  "reviewTagLongWait": "Долгое ожидание",
+  "@reviewTagLongWait": {
+    "description": "Тег отзыва «Долгое ожидание» (код long_wait)"
+  },
+  "reviewTagBadConnection": "Плохая связь",
+  "@reviewTagBadConnection": {
+    "description": "Тег отзыва «Плохая связь» (код bad_connection)"
+  },
+  "reviewTagLittleUse": "Мало пользы",
+  "@reviewTagLittleUse": {
+    "description": "Тег отзыва «Мало пользы» (код little_use)"
+  },
+  "reviewTagDidNotUnderstand": "Не понял меня",
+  "@reviewTagDidNotUnderstand": {
+    "description": "Тег отзыва «Не понял меня» (код did_not_understand)"
+  },
+  "reviewTagTechnicalIssues": "Технические проблемы",
+  "@reviewTagTechnicalIssues": {
+    "description": "Тег отзыва «Технические проблемы» (код technical_issues)"
+  },
+  "reviewTagAverage": "Средне",
+  "@reviewTagAverage": {
+    "description": "Тег отзыва «Средне» (код average)"
+  },
+  "reviewTagCouldBeBetter": "Могло быть лучше",
+  "@reviewTagCouldBeBetter": {
+    "description": "Тег отзыва «Могло быть лучше» (код could_be_better)"
+  },
+  "reviewTagStandard": "Стандартно",
+  "@reviewTagStandard": {
+    "description": "Тег отзыва «Стандартно» (код standard)"
+  },
+  "reviewTagAttentive": "Внимательный",
+  "@reviewTagAttentive": {
+    "description": "Тег отзыва «Внимательный» (код attentive)"
+  },
+  "reviewTagHelpedFigureOut": "Помог разобраться",
+  "@reviewTagHelpedFigureOut": {
+    "description": "Тег отзыва «Помог разобраться» (код helped_figure_out)"
+  },
+  "reviewTagProfessional": "Профессионально",
+  "@reviewTagProfessional": {
+    "description": "Тег отзыва «Профессионально» (код professional)"
+  },
+  "reviewTagExceededExpectations": "Превзошёл ожидания",
+  "@reviewTagExceededExpectations": {
+    "description": "Тег отзыва «Превзошёл ожидания» (код exceeded_expectations)"
+  },
+  "reviewTagsHint": "Что было важно?",
+  "@reviewTagsHint": {
+    "description": "Подпись над тегами оценки"
   }
 }

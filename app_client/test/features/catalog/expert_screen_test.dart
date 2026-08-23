@@ -317,4 +317,43 @@ void main() {
 
     expect(find.text('Динара С.'), findsOneWidget);
   });
+
+  testWidgets('текст «о себе» показывается, когда он есть', (tester) async {
+    when(() => api.expertById('e1')).thenAnswer(
+      (_) async => _expert().copyWith(
+        about: 'Работаю с тревогой и выгоранием, метод — КПТ.',
+      ),
+    );
+
+    await tester.pumpWidget(await _wrap(api));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text('Работаю с тревогой и выгоранием, метод — КПТ.'),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('при about == null блок не рисуется — без пустого заголовка', (
+    tester,
+  ) async {
+    await tester.pumpWidget(await _wrap(api));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('sq-expert-about')), findsNothing);
+  });
+
+  testWidgets('фотография из профиля попадает в аватар', (tester) async {
+    when(() => api.expertById('e1')).thenAnswer(
+      (_) async => _expert().copyWith(
+        photoUrl: 'https://cdn.smartqoldau.kz/sq-avatars/a1b2.webp',
+      ),
+    );
+
+    await tester.pumpWidget(await _wrap(api));
+    await tester.pumpAndSettle();
+
+    final avatar = tester.widget<SqAvatar>(find.byType(SqAvatar).first);
+    expect(avatar.photoUrl, 'https://cdn.smartqoldau.kz/sq-avatars/a1b2.webp');
+  });
 }

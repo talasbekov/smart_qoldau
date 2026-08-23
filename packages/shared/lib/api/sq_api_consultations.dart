@@ -101,6 +101,7 @@ mixin SqApiConsultations on SqApiBase {
     required int rating,
     String? publicText,
     String? privateText,
+    List<String>? tags,
   }) =>
       guard(() async {
         final response = await dio.post<Map<String, dynamic>>(
@@ -109,6 +110,9 @@ mixin SqApiConsultations on SqApiBase {
             'rating': rating,
             'publicText': ?publicText,
             'privateText': ?privateText,
+            // Пустой список не отправляем: бэкенд трактует отсутствие поля
+            // и пустой массив одинаково, а лишнего в теле быть не должно.
+            if (tags != null && tags.isNotEmpty) 'tags': tags,
           },
         );
         return ReviewCreated.fromJson(response.data!);

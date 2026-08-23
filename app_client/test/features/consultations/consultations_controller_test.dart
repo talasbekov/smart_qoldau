@@ -11,6 +11,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:app_client/core/locale_controller.dart';
 import 'package:app_client/core/providers.dart';
+import 'package:app_client/features/consultations/data/consultations_repository.dart';
 import 'package:app_client/features/consultations/state/consultations_controller.dart';
 import 'package:app_client/features/review/state/review_controller.dart';
 
@@ -317,6 +318,31 @@ void main() {
     expect(container.read(provider).hasError, isFalse);
     expect(container.read(provider).requireValue, isEmpty);
     expect(calls, 2, reason: 'список должен быть перечитан');
+  });
+
+  test('reviewId берётся из DTO, а не из локальной памяти', () async {
+    // После переустановки приложения локальной записи нет, а отзыв есть —
+    // раньше кнопка «Удалить отзыв» в этом случае просто не появлялась.
+    when(() => api.consultationById('c1')).thenAnswer(
+      (_) async => _consultation(
+        'c1',
+        status: ConsultationStatus.completed,
+        startedAt: DateTime(2026, 8, 22, 10),
+      ).copyWith(reviewId: 'rev-from-server'),
+    );
+    when(() => api.deleteReview('rev-from-server')).thenAnswer((_) async {});
+
+    final container = await _container(api: api, socket: socket);
+
+    // Провайдер консультации — источник reviewId.
+    await container.read(consultationProvider('c1').future);
+    expect(
+      container.read(myReviewControllerProvider('c1')).reviewId,
+      'rev-from-server',
+    );
+
+    await container.read(myReviewControllerProvider('c1').notifier).delete();
+    verify(() => api.deleteReview('rev-from-server')).called(1);
   });
 
   test('удаление отзыва снимает локальный флаг оценки', () async {

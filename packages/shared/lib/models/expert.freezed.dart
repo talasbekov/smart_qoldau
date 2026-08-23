@@ -16,7 +16,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$ExpertPublic {
 
- String get id; String get displayName; String get city; ExperienceLevel get experience; int get priceTiyn; List<String> get languages; List<SessionFormat> get formats; List<String> get topicSlugs; WorkStatus get workStatus; double get ratingAvg; int get ratingCount;
+ String get id; String get displayName; String get city; ExperienceLevel get experience; int get priceTiyn; List<String> get languages; List<SessionFormat> get formats; List<String> get topicSlugs; WorkStatus get workStatus; double get ratingAvg; int get ratingCount; String? get photoUrl; String? get about;
 /// Create a copy of ExpertPublic
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -29,16 +29,16 @@ $ExpertPublicCopyWith<ExpertPublic> get copyWith => _$ExpertPublicCopyWithImpl<E
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ExpertPublic&&(identical(other.id, id) || other.id == id)&&(identical(other.displayName, displayName) || other.displayName == displayName)&&(identical(other.city, city) || other.city == city)&&(identical(other.experience, experience) || other.experience == experience)&&(identical(other.priceTiyn, priceTiyn) || other.priceTiyn == priceTiyn)&&const DeepCollectionEquality().equals(other.languages, languages)&&const DeepCollectionEquality().equals(other.formats, formats)&&const DeepCollectionEquality().equals(other.topicSlugs, topicSlugs)&&(identical(other.workStatus, workStatus) || other.workStatus == workStatus)&&(identical(other.ratingAvg, ratingAvg) || other.ratingAvg == ratingAvg)&&(identical(other.ratingCount, ratingCount) || other.ratingCount == ratingCount));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ExpertPublic&&(identical(other.id, id) || other.id == id)&&(identical(other.displayName, displayName) || other.displayName == displayName)&&(identical(other.city, city) || other.city == city)&&(identical(other.experience, experience) || other.experience == experience)&&(identical(other.priceTiyn, priceTiyn) || other.priceTiyn == priceTiyn)&&const DeepCollectionEquality().equals(other.languages, languages)&&const DeepCollectionEquality().equals(other.formats, formats)&&const DeepCollectionEquality().equals(other.topicSlugs, topicSlugs)&&(identical(other.workStatus, workStatus) || other.workStatus == workStatus)&&(identical(other.ratingAvg, ratingAvg) || other.ratingAvg == ratingAvg)&&(identical(other.ratingCount, ratingCount) || other.ratingCount == ratingCount)&&(identical(other.photoUrl, photoUrl) || other.photoUrl == photoUrl)&&(identical(other.about, about) || other.about == about));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,displayName,city,experience,priceTiyn,const DeepCollectionEquality().hash(languages),const DeepCollectionEquality().hash(formats),const DeepCollectionEquality().hash(topicSlugs),workStatus,ratingAvg,ratingCount);
+int get hashCode => Object.hash(runtimeType,id,displayName,city,experience,priceTiyn,const DeepCollectionEquality().hash(languages),const DeepCollectionEquality().hash(formats),const DeepCollectionEquality().hash(topicSlugs),workStatus,ratingAvg,ratingCount,photoUrl,about);
 
 @override
 String toString() {
-  return 'ExpertPublic(id: $id, displayName: $displayName, city: $city, experience: $experience, priceTiyn: $priceTiyn, languages: $languages, formats: $formats, topicSlugs: $topicSlugs, workStatus: $workStatus, ratingAvg: $ratingAvg, ratingCount: $ratingCount)';
+  return 'ExpertPublic(id: $id, displayName: $displayName, city: $city, experience: $experience, priceTiyn: $priceTiyn, languages: $languages, formats: $formats, topicSlugs: $topicSlugs, workStatus: $workStatus, ratingAvg: $ratingAvg, ratingCount: $ratingCount, photoUrl: $photoUrl, about: $about)';
 }
 
 
@@ -49,7 +49,7 @@ abstract mixin class $ExpertPublicCopyWith<$Res>  {
   factory $ExpertPublicCopyWith(ExpertPublic value, $Res Function(ExpertPublic) _then) = _$ExpertPublicCopyWithImpl;
 @useResult
 $Res call({
- String id, String displayName, String city, ExperienceLevel experience, int priceTiyn, List<String> languages, List<SessionFormat> formats, List<String> topicSlugs, WorkStatus workStatus, double ratingAvg, int ratingCount
+ String id, String displayName, String city, ExperienceLevel experience, int priceTiyn, List<String> languages, List<SessionFormat> formats, List<String> topicSlugs, WorkStatus workStatus, double ratingAvg, int ratingCount, String? photoUrl, String? about
 });
 
 
@@ -66,7 +66,7 @@ class _$ExpertPublicCopyWithImpl<$Res>
 
 /// Create a copy of ExpertPublic
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? displayName = null,Object? city = null,Object? experience = null,Object? priceTiyn = null,Object? languages = null,Object? formats = null,Object? topicSlugs = null,Object? workStatus = null,Object? ratingAvg = null,Object? ratingCount = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? displayName = null,Object? city = null,Object? experience = null,Object? priceTiyn = null,Object? languages = null,Object? formats = null,Object? topicSlugs = null,Object? workStatus = null,Object? ratingAvg = null,Object? ratingCount = null,Object? photoUrl = freezed,Object? about = freezed,}) {
   return _then(ExpertPublic(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,displayName: null == displayName ? _self.displayName : displayName // ignore: cast_nullable_to_non_nullable
@@ -79,7 +79,9 @@ as List<SessionFormat>,topicSlugs: null == topicSlugs ? _self.topicSlugs : topic
 as List<String>,workStatus: null == workStatus ? _self.workStatus : workStatus // ignore: cast_nullable_to_non_nullable
 as WorkStatus,ratingAvg: null == ratingAvg ? _self.ratingAvg : ratingAvg // ignore: cast_nullable_to_non_nullable
 as double,ratingCount: null == ratingCount ? _self.ratingCount : ratingCount // ignore: cast_nullable_to_non_nullable
-as int,
+as int,photoUrl: freezed == photoUrl ? _self.photoUrl : photoUrl // ignore: cast_nullable_to_non_nullable
+as String?,about: freezed == about ? _self.about : about // ignore: cast_nullable_to_non_nullable
+as String?,
   ));
 }
 
@@ -164,10 +166,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String displayName,  String city,  ExperienceLevel experience,  int priceTiyn,  List<String> languages,  List<SessionFormat> formats,  List<String> topicSlugs,  WorkStatus workStatus,  double ratingAvg,  int ratingCount)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String displayName,  String city,  ExperienceLevel experience,  int priceTiyn,  List<String> languages,  List<SessionFormat> formats,  List<String> topicSlugs,  WorkStatus workStatus,  double ratingAvg,  int ratingCount,  String? photoUrl,  String? about)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _ExpertPublic() when $default != null:
-return $default(_that.id,_that.displayName,_that.city,_that.experience,_that.priceTiyn,_that.languages,_that.formats,_that.topicSlugs,_that.workStatus,_that.ratingAvg,_that.ratingCount);case _:
+return $default(_that.id,_that.displayName,_that.city,_that.experience,_that.priceTiyn,_that.languages,_that.formats,_that.topicSlugs,_that.workStatus,_that.ratingAvg,_that.ratingCount,_that.photoUrl,_that.about);case _:
   return orElse();
 
 }
@@ -185,10 +187,10 @@ return $default(_that.id,_that.displayName,_that.city,_that.experience,_that.pri
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String displayName,  String city,  ExperienceLevel experience,  int priceTiyn,  List<String> languages,  List<SessionFormat> formats,  List<String> topicSlugs,  WorkStatus workStatus,  double ratingAvg,  int ratingCount)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String displayName,  String city,  ExperienceLevel experience,  int priceTiyn,  List<String> languages,  List<SessionFormat> formats,  List<String> topicSlugs,  WorkStatus workStatus,  double ratingAvg,  int ratingCount,  String? photoUrl,  String? about)  $default,) {final _that = this;
 switch (_that) {
 case _ExpertPublic():
-return $default(_that.id,_that.displayName,_that.city,_that.experience,_that.priceTiyn,_that.languages,_that.formats,_that.topicSlugs,_that.workStatus,_that.ratingAvg,_that.ratingCount);case _:
+return $default(_that.id,_that.displayName,_that.city,_that.experience,_that.priceTiyn,_that.languages,_that.formats,_that.topicSlugs,_that.workStatus,_that.ratingAvg,_that.ratingCount,_that.photoUrl,_that.about);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -205,10 +207,10 @@ return $default(_that.id,_that.displayName,_that.city,_that.experience,_that.pri
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String displayName,  String city,  ExperienceLevel experience,  int priceTiyn,  List<String> languages,  List<SessionFormat> formats,  List<String> topicSlugs,  WorkStatus workStatus,  double ratingAvg,  int ratingCount)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String displayName,  String city,  ExperienceLevel experience,  int priceTiyn,  List<String> languages,  List<SessionFormat> formats,  List<String> topicSlugs,  WorkStatus workStatus,  double ratingAvg,  int ratingCount,  String? photoUrl,  String? about)?  $default,) {final _that = this;
 switch (_that) {
 case _ExpertPublic() when $default != null:
-return $default(_that.id,_that.displayName,_that.city,_that.experience,_that.priceTiyn,_that.languages,_that.formats,_that.topicSlugs,_that.workStatus,_that.ratingAvg,_that.ratingCount);case _:
+return $default(_that.id,_that.displayName,_that.city,_that.experience,_that.priceTiyn,_that.languages,_that.formats,_that.topicSlugs,_that.workStatus,_that.ratingAvg,_that.ratingCount,_that.photoUrl,_that.about);case _:
   return null;
 
 }
@@ -220,7 +222,7 @@ return $default(_that.id,_that.displayName,_that.city,_that.experience,_that.pri
 @JsonSerializable()
 
 class _ExpertPublic implements ExpertPublic {
-  const _ExpertPublic({required this.id, required this.displayName, required this.city, required this.experience, required this.priceTiyn, required  List<String> languages, required  List<SessionFormat> formats, required  List<String> topicSlugs, required this.workStatus, required this.ratingAvg, required this.ratingCount}): _languages = languages,_formats = formats,_topicSlugs = topicSlugs;
+  const _ExpertPublic({required this.id, required this.displayName, required this.city, required this.experience, required this.priceTiyn, required  List<String> languages, required  List<SessionFormat> formats, required  List<String> topicSlugs, required this.workStatus, required this.ratingAvg, required this.ratingCount, this.photoUrl, this.about}): _languages = languages,_formats = formats,_topicSlugs = topicSlugs;
   factory _ExpertPublic.fromJson(Map<String, dynamic> json) => _$ExpertPublicFromJson(json);
 
 @override final  String id;
@@ -252,6 +254,8 @@ class _ExpertPublic implements ExpertPublic {
 @override final  WorkStatus workStatus;
 @override final  double ratingAvg;
 @override final  int ratingCount;
+@override final  String? photoUrl;
+@override final  String? about;
 
 /// Create a copy of ExpertPublic
 /// with the given fields replaced by the non-null parameter values.
@@ -266,16 +270,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ExpertPublic&&(identical(other.id, id) || other.id == id)&&(identical(other.displayName, displayName) || other.displayName == displayName)&&(identical(other.city, city) || other.city == city)&&(identical(other.experience, experience) || other.experience == experience)&&(identical(other.priceTiyn, priceTiyn) || other.priceTiyn == priceTiyn)&&const DeepCollectionEquality().equals(other._languages, _languages)&&const DeepCollectionEquality().equals(other._formats, _formats)&&const DeepCollectionEquality().equals(other._topicSlugs, _topicSlugs)&&(identical(other.workStatus, workStatus) || other.workStatus == workStatus)&&(identical(other.ratingAvg, ratingAvg) || other.ratingAvg == ratingAvg)&&(identical(other.ratingCount, ratingCount) || other.ratingCount == ratingCount));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ExpertPublic&&(identical(other.id, id) || other.id == id)&&(identical(other.displayName, displayName) || other.displayName == displayName)&&(identical(other.city, city) || other.city == city)&&(identical(other.experience, experience) || other.experience == experience)&&(identical(other.priceTiyn, priceTiyn) || other.priceTiyn == priceTiyn)&&const DeepCollectionEquality().equals(other._languages, _languages)&&const DeepCollectionEquality().equals(other._formats, _formats)&&const DeepCollectionEquality().equals(other._topicSlugs, _topicSlugs)&&(identical(other.workStatus, workStatus) || other.workStatus == workStatus)&&(identical(other.ratingAvg, ratingAvg) || other.ratingAvg == ratingAvg)&&(identical(other.ratingCount, ratingCount) || other.ratingCount == ratingCount)&&(identical(other.photoUrl, photoUrl) || other.photoUrl == photoUrl)&&(identical(other.about, about) || other.about == about));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,displayName,city,experience,priceTiyn,const DeepCollectionEquality().hash(_languages),const DeepCollectionEquality().hash(_formats),const DeepCollectionEquality().hash(_topicSlugs),workStatus,ratingAvg,ratingCount);
+int get hashCode => Object.hash(runtimeType,id,displayName,city,experience,priceTiyn,const DeepCollectionEquality().hash(_languages),const DeepCollectionEquality().hash(_formats),const DeepCollectionEquality().hash(_topicSlugs),workStatus,ratingAvg,ratingCount,photoUrl,about);
 
 @override
 String toString() {
-  return 'ExpertPublic(id: $id, displayName: $displayName, city: $city, experience: $experience, priceTiyn: $priceTiyn, languages: $languages, formats: $formats, topicSlugs: $topicSlugs, workStatus: $workStatus, ratingAvg: $ratingAvg, ratingCount: $ratingCount)';
+  return 'ExpertPublic(id: $id, displayName: $displayName, city: $city, experience: $experience, priceTiyn: $priceTiyn, languages: $languages, formats: $formats, topicSlugs: $topicSlugs, workStatus: $workStatus, ratingAvg: $ratingAvg, ratingCount: $ratingCount, photoUrl: $photoUrl, about: $about)';
 }
 
 
@@ -286,7 +290,7 @@ abstract mixin class _$ExpertPublicCopyWith<$Res> implements $ExpertPublicCopyWi
   factory _$ExpertPublicCopyWith(_ExpertPublic value, $Res Function(_ExpertPublic) _then) = __$ExpertPublicCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String displayName, String city, ExperienceLevel experience, int priceTiyn, List<String> languages, List<SessionFormat> formats, List<String> topicSlugs, WorkStatus workStatus, double ratingAvg, int ratingCount
+ String id, String displayName, String city, ExperienceLevel experience, int priceTiyn, List<String> languages, List<SessionFormat> formats, List<String> topicSlugs, WorkStatus workStatus, double ratingAvg, int ratingCount, String? photoUrl, String? about
 });
 
 
@@ -303,7 +307,7 @@ class __$ExpertPublicCopyWithImpl<$Res>
 
 /// Create a copy of ExpertPublic
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? displayName = null,Object? city = null,Object? experience = null,Object? priceTiyn = null,Object? languages = null,Object? formats = null,Object? topicSlugs = null,Object? workStatus = null,Object? ratingAvg = null,Object? ratingCount = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? displayName = null,Object? city = null,Object? experience = null,Object? priceTiyn = null,Object? languages = null,Object? formats = null,Object? topicSlugs = null,Object? workStatus = null,Object? ratingAvg = null,Object? ratingCount = null,Object? photoUrl = freezed,Object? about = freezed,}) {
   return _then(_ExpertPublic(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,displayName: null == displayName ? _self.displayName : displayName // ignore: cast_nullable_to_non_nullable
@@ -316,7 +320,9 @@ as List<SessionFormat>,topicSlugs: null == topicSlugs ? _self._topicSlugs : topi
 as List<String>,workStatus: null == workStatus ? _self.workStatus : workStatus // ignore: cast_nullable_to_non_nullable
 as WorkStatus,ratingAvg: null == ratingAvg ? _self.ratingAvg : ratingAvg // ignore: cast_nullable_to_non_nullable
 as double,ratingCount: null == ratingCount ? _self.ratingCount : ratingCount // ignore: cast_nullable_to_non_nullable
-as int,
+as int,photoUrl: freezed == photoUrl ? _self.photoUrl : photoUrl // ignore: cast_nullable_to_non_nullable
+as String?,about: freezed == about ? _self.about : about // ignore: cast_nullable_to_non_nullable
+as String?,
   ));
 }
 

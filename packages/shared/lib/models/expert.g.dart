@@ -25,6 +25,8 @@ _ExpertPublic _$ExpertPublicFromJson(Map<String, dynamic> json) =>
       workStatus: $enumDecode(_$WorkStatusEnumMap, json['workStatus']),
       ratingAvg: (json['ratingAvg'] as num).toDouble(),
       ratingCount: (json['ratingCount'] as num).toInt(),
+      photoUrl: json['photoUrl'] as String?,
+      about: json['about'] as String?,
     );
 
 Map<String, dynamic> _$ExpertPublicToJson(
@@ -41,6 +43,8 @@ Map<String, dynamic> _$ExpertPublicToJson(
   'workStatus': _$WorkStatusEnumMap[instance.workStatus]!,
   'ratingAvg': instance.ratingAvg,
   'ratingCount': instance.ratingCount,
+  'photoUrl': instance.photoUrl,
+  'about': instance.about,
 };
 
 const _$ExperienceLevelEnumMap = {

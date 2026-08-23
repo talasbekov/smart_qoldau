@@ -12,6 +12,9 @@ _ReviewCreated _$ReviewCreatedFromJson(Map<String, dynamic> json) =>
       consultationId: json['consultationId'] as String,
       rating: (json['rating'] as num).toInt(),
       publicText: json['publicText'] as String?,
+      tags:
+          (json['tags'] as List<dynamic>?)?.map((e) => e as String).toList() ??
+          const <String>[],
       createdAt: DateTime.parse(json['createdAt'] as String),
     );
 
@@ -21,6 +24,7 @@ Map<String, dynamic> _$ReviewCreatedToJson(_ReviewCreated instance) =>
       'consultationId': instance.consultationId,
       'rating': instance.rating,
       'publicText': instance.publicText,
+      'tags': instance.tags,
       'createdAt': instance.createdAt.toIso8601String(),
     };
 
@@ -28,6 +32,9 @@ _ReviewItem _$ReviewItemFromJson(Map<String, dynamic> json) => _ReviewItem(
   rating: (json['rating'] as num).toInt(),
   publicText: json['publicText'] as String?,
   expertReply: json['expertReply'] as String?,
+  tags:
+      (json['tags'] as List<dynamic>?)?.map((e) => e as String).toList() ??
+      const <String>[],
   createdAt: DateTime.parse(json['createdAt'] as String),
 );
 
@@ -36,6 +43,7 @@ Map<String, dynamic> _$ReviewItemToJson(_ReviewItem instance) =>
       'rating': instance.rating,
       'publicText': instance.publicText,
       'expertReply': instance.expertReply,
+      'tags': instance.tags,
       'createdAt': instance.createdAt.toIso8601String(),
     };
 

@@ -27,6 +27,7 @@ _ClientConsultation _$ClientConsultationFromJson(Map<String, dynamic> json) =>
         json['paymentStatus'],
       ),
       expert: ExpertPublic.fromJson(json['expert'] as Map<String, dynamic>),
+      reviewId: json['reviewId'] as String?,
     );
 
 Map<String, dynamic> _$ClientConsultationToJson(
@@ -43,6 +44,7 @@ Map<String, dynamic> _$ClientConsultationToJson(
   'plannedDurationMin': instance.plannedDurationMin,
   'paymentStatus': _$ConsultationPaymentStatusEnumMap[instance.paymentStatus]!,
   'expert': instance.expert.toJson(),
+  'reviewId': instance.reviewId,
 };
 
 const _$ConsultationStatusEnumMap = {

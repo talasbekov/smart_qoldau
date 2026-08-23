@@ -91,6 +91,17 @@ Future<Widget> _wrap(SqApi api) async {
   );
 }
 
+/// Кнопка отправки лежит внизу ленивого списка: после появления тегов
+/// оценки (E2a) она перестала помещаться на экран без прокрутки.
+Future<void> _tapSubmit(WidgetTester tester) async {
+  await tester.scrollUntilVisible(
+    find.byKey(const Key('sq-review-submit')),
+    200,
+    scrollable: find.byType(Scrollable).first,
+  );
+  await tester.tap(find.byKey(const Key('sq-review-submit')));
+}
+
 /// Тап по [index]-й звезде (нумерация с 1).
 Future<void> _tapStar(WidgetTester tester, int index) async {
   await tester.tap(find.byKey(Key('sq-review-star-$index')));
@@ -113,6 +124,7 @@ void main() {
         rating: any(named: 'rating'),
         publicText: any(named: 'publicText'),
         privateText: any(named: 'privateText'),
+        tags: any(named: 'tags'),
       ),
     ).thenAnswer((_) async => _created());
     when(() => api.topics(locale: any(named: 'locale'))).thenAnswer(
@@ -136,7 +148,7 @@ void main() {
     await tester.pumpWidget(await _wrap(api));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('Завершить'));
+    await _tapSubmit(tester);
     await tester.pumpAndSettle();
 
     verifyNever(
@@ -145,6 +157,7 @@ void main() {
         rating: any(named: 'rating'),
         publicText: any(named: 'publicText'),
         privateText: any(named: 'privateText'),
+        tags: any(named: 'tags'),
       ),
     );
   });
@@ -166,7 +179,7 @@ void main() {
       find.byKey(const Key('sq-review-private')),
       'всё отлично',
     );
-    await tester.tap(find.text('Завершить'));
+    await _tapSubmit(tester);
     await tester.pumpAndSettle();
 
     verify(
@@ -193,6 +206,7 @@ void main() {
         rating: any(named: 'rating'),
         publicText: any(named: 'publicText'),
         privateText: any(named: 'privateText'),
+        tags: any(named: 'tags'),
       ),
     );
     expect(find.text('sq-stub-home'), findsOneWidget);
@@ -207,6 +221,7 @@ void main() {
         rating: any(named: 'rating'),
         publicText: any(named: 'publicText'),
         privateText: any(named: 'privateText'),
+        tags: any(named: 'tags'),
       ),
     ).thenThrow(
       const ApiException(ApiErrorCode.reviewExists, 'already', 409),
@@ -216,7 +231,7 @@ void main() {
     await tester.pumpAndSettle();
 
     await _tapStar(tester, 5);
-    await tester.tap(find.text('Завершить'));
+    await _tapSubmit(tester);
     await tester.pumpAndSettle();
 
     expect(find.text('Вы уже оценили эту консультацию'), findsOneWidget);
@@ -232,6 +247,7 @@ void main() {
         rating: any(named: 'rating'),
         publicText: any(named: 'publicText'),
         privateText: any(named: 'privateText'),
+        tags: any(named: 'tags'),
       ),
     ).thenThrow(const ApiException(ApiErrorCode.network, 'нет сети', 0));
 
@@ -239,7 +255,7 @@ void main() {
     await tester.pumpAndSettle();
 
     await _tapStar(tester, 3);
-    await tester.tap(find.text('Завершить'));
+    await _tapSubmit(tester);
     await tester.pumpAndSettle();
 
     expect(find.text('Нет соединения с сервером'), findsOneWidget);
