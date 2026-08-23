@@ -9,6 +9,7 @@ import { DocumentsService } from './documents.service';
 import { ExpertsPublicController } from './experts-public.controller';
 import { PhotoController } from './photo.controller';
 import { PhotoService } from './photo.service';
+import { ProfileModerationService } from './profile-moderation.service';
 
 @Module({
   imports: [AuditModule, StorageModule],
@@ -21,7 +22,13 @@ import { PhotoService } from './photo.service';
     DocumentsController,
     ExpertsPublicController,
   ],
-  providers: [ExpertsService, ExpertGuard, DocumentsService, PhotoService],
-  exports: [ExpertsService, ExpertGuard],
+  providers: [
+    ExpertsService,
+    ExpertGuard,
+    DocumentsService,
+    PhotoService,
+    ProfileModerationService,
+  ],
+  exports: [ExpertsService, ExpertGuard, ProfileModerationService],
 })
 export class ExpertsModule {}

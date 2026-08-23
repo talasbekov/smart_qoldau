@@ -4,6 +4,7 @@ import {
   IsIn,
   IsInt,
   IsOptional,
+  IsString,
   Length,
 } from 'class-validator';
 import { ExperienceLevel } from '@prisma/client';
@@ -60,4 +61,18 @@ export class UpdateExpertDto {
   @IsOptional()
   @ArrayNotEmpty()
   topicSlugs?: string[];
+
+  // Текст «о себе» — публичный контент, поэтому уходит на проверку, а не
+  // публикуется сразу. Пустая строка означает «снять текст», поэтому длина
+  // проверяется не декоратором, а в сервисе: `Length` не отличает снятие
+  // от слишком короткого текста.
+  @ApiPropertyOptional({
+    example: 'Работаю с тревогой и выгоранием, опираюсь на КПТ.',
+    description:
+      '10–1000 символов после trim; пустая строка снимает текст. ' +
+      'Уходит на модерацию, публикуется после одобрения',
+  })
+  @IsOptional()
+  @IsString()
+  about?: string;
 }

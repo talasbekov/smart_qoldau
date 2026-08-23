@@ -16,11 +16,14 @@ import { UpdateExpertDto } from './dto/update-expert.dto';
 import { WorkStatusDto } from './dto/work-status.dto';
 import { ExpertMeDto } from './dto/expert-me.dto';
 import { StorageService } from '../storage/storage.service';
+import { ProfileModerationService } from './profile-moderation.service';
 import { ExpertPublicDto } from './dto/expert-public.dto';
 import { ListExpertsDto } from './dto/list-experts.dto';
 
 const PRICE_MIN = 200_000;
 const PRICE_MAX = 1_500_000;
+const ABOUT_MIN = 10;
+const ABOUT_MAX = 1000;
 
 type ExpertWithTopics = Expert & { topics: { topic: { slug: string } }[] };
 
@@ -33,6 +36,7 @@ export class ExpertsService {
     private audit: AuditService,
     private presence: PresenceService,
     private storage: StorageService,
+    private moderation: ProfileModerationService,
   ) {}
 
   async findByUserId(userId: string): Promise<ExpertWithTopics | null> {
@@ -115,6 +119,7 @@ export class ExpertsService {
     if (dto.formats !== undefined) data.formats = dto.formats;
     if (dto.city !== undefined) data.city = dto.city;
     if (dto.languages !== undefined) data.languages = dto.languages;
+    if (dto.about !== undefined) Object.assign(data, this.aboutData(dto.about));
 
     await this.prisma.$transaction(async (tx) => {
       if (Object.keys(data).length > 0) {
@@ -304,6 +309,25 @@ export class ExpertsService {
       ratingAvg: expert.ratingAvg,
       ratingCount: expert.ratingCount,
     };
+  }
+
+  // «О себе» либо снимается целиком, либо уходит на проверку. Границы
+  // 10–1000 символов считаются после trim: текст из одних пробелов — это
+  // не текст, а его отсутствие с другим видом.
+  private aboutData(raw: string): Prisma.ExpertUpdateInput {
+    // Пустая строка — намеренное «снять текст». Строка из одних пробелов
+    // выглядит как текст, но им не является: это ошибка ввода, и молча
+    // снимать по ней опубликованный текст нельзя.
+    if (raw === '') return this.moderation.clearAboutData();
+    const value = raw.trim();
+    if (value.length < ABOUT_MIN || value.length > ABOUT_MAX) {
+      apiError(
+        'VALIDATION_FAILED',
+        `Текст «о себе» — от ${ABOUT_MIN} до ${ABOUT_MAX} символов`,
+        400,
+      );
+    }
+    return this.moderation.submitAboutData(value);
   }
 
   private checkPrice(priceTiyn: number): void {
