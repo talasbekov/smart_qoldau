@@ -151,6 +151,7 @@ model Expert {
   topics             ExpertTopic[]
   documents          ExpertDocument[]
   scheduleDays       ExpertScheduleDay[]
+  scheduleExceptions ScheduleException[]
   // По статусам ходит очередь модерации — выбирает только PENDING.
   @@index([photoStatus])
   @@index([aboutStatus])
@@ -164,6 +165,20 @@ model ExpertTopic {
   topic    Topic  @relation(fields: [topicId], references: [id])
   @@id([expertId, topicId])
   @@map("expert_topics")
+}
+
+// Исключение недельного расписания на конкретную дату (E6b): либо
+// выходной целиком, либо иные часы.
+model ScheduleException {
+  id       String   @id @default(uuid())
+  expertId String   @map("expert_id")
+  expert   Expert   @relation(fields: [expertId], references: [id])
+  date     DateTime @db.Date
+  isDayOff Boolean  @default(true) @map("is_day_off")
+  startMin Int?     @map("start_min")
+  endMin   Int?     @map("end_min")
+  @@unique([expertId, date])
+  @@map("schedule_exceptions")
 }
 
 model ExpertDocument {
@@ -268,6 +283,9 @@ model Favorite {
 }
 
 enum ConsultationStatus {
+  // Плановая запись на слот (E6b): согласие специалиста — его
+  // опубликованное расписание, поэтому цепочки офферов здесь нет.
+  SCHEDULED
   ACTIVE
   COMPLETED
   CANCELLED
@@ -301,6 +319,9 @@ enum ConsultationOutcome {
   CLIENT_NO_SHOW
   CLIENT_CANCELLED
   TECH_ISSUE
+  // Отмена специалистом (E6b): клиенту полный возврат, специалисту 0 ₸.
+  // TECH_ISSUE по смыслу не подходит — это не сбой.
+  EXPERT_CANCELLED
 }
 
 enum ReviewStatus {
@@ -332,11 +353,16 @@ model Consultation {
   clientJoinedAt     DateTime?           @map("client_joined_at")     // медиа-вебхук
   expertJoinedAt     DateTime?           @map("expert_joined_at")
   noShowNotifiedAt   DateTime?           @map("no_show_notified_at")
+  // Напоминание за 15 минут отправлено (Р-15). Без этого поля sweep после
+  // рестарта инстанса прислал бы напоминание второй раз.
+  remindedAt         DateTime?           @map("reminded_at")
   messages           ChatMessage[]
   note               ExpertNote?
   review             Review?
   @@index([clientUserId, status])
   @@index([expertId, status])
+  // Рабочий запрос sweep'а плановых: status = 'SCHEDULED' AND started_at <= now().
+  @@index([status, startedAt])
   @@map("consultations")
 }
 
