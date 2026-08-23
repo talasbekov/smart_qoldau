@@ -5,7 +5,9 @@ import {
   PutObjectCommand,
   GetObjectCommand,
   CreateBucketCommand,
+  DeleteObjectCommand,
   HeadBucketCommand,
+  PutBucketPolicyCommand,
 } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 
@@ -13,9 +15,20 @@ import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 export class StorageService implements OnModuleInit {
   private readonly s3: S3Client;
   private readonly bucket: string;
+  // Аватары держатся отдельно от документов верификации: документы
+  // зашифрованы и закрыты (ТЗ §6), фото раздаётся всем. Общий бакет — это
+  // либо ослабленная защита документов, либо сломанная раздача фото.
+  private readonly avatarsBucket: string;
+  private readonly publicBaseUrl: string;
 
   constructor(config: ConfigService) {
     this.bucket = config.getOrThrow('S3_BUCKET_DOCUMENTS');
+    this.avatarsBucket = config.getOrThrow('S3_BUCKET_AVATARS');
+    // В проде клиент ходит на публичный домен (CDN), а бэкенд пишет во
+    // внутренний адрес хранилища — по умолчанию это одно и то же.
+    this.publicBaseUrl = String(
+      config.get('S3_PUBLIC_BASE_URL') ?? config.getOrThrow('S3_ENDPOINT'),
+    ).replace(/\/+$/, '');
     this.s3 = new S3Client({
       endpoint: config.getOrThrow('S3_ENDPOINT'),
       region: 'us-east-1',
@@ -27,15 +40,42 @@ export class StorageService implements OnModuleInit {
     });
   }
 
-  onModuleInit() {
-    return this.ensureBucket();
+  async onModuleInit(): Promise<void> {
+    await this.ensureBucket();
+    await this.ensureAvatarsBucket();
   }
 
   async ensureBucket(): Promise<void> {
+    await this.ensureBucketExists(this.bucket);
+  }
+
+  /// Бакет аватаров плюс политика публичного чтения: без списка объектов
+  /// он защищён только неугадываемостью ключа, а ключ — UUID v4.
+  async ensureAvatarsBucket(): Promise<void> {
+    await this.ensureBucketExists(this.avatarsBucket);
+    await this.s3.send(
+      new PutBucketPolicyCommand({
+        Bucket: this.avatarsBucket,
+        Policy: JSON.stringify({
+          Version: '2012-10-17',
+          Statement: [
+            {
+              Effect: 'Allow',
+              Principal: '*',
+              Action: ['s3:GetObject'],
+              Resource: [`arn:aws:s3:::${this.avatarsBucket}/*`],
+            },
+          ],
+        }),
+      }),
+    );
+  }
+
+  private async ensureBucketExists(bucket: string): Promise<void> {
     try {
-      await this.s3.send(new HeadBucketCommand({ Bucket: this.bucket }));
+      await this.s3.send(new HeadBucketCommand({ Bucket: bucket }));
     } catch {
-      await this.s3.send(new CreateBucketCommand({ Bucket: this.bucket }));
+      await this.s3.send(new CreateBucketCommand({ Bucket: bucket }));
     }
   }
 
@@ -52,6 +92,31 @@ export class StorageService implements OnModuleInit {
         ContentType: contentType,
       }),
     );
+  }
+
+  async putAvatar(
+    key: string,
+    body: Buffer,
+    contentType: string,
+  ): Promise<void> {
+    await this.s3.send(
+      new PutObjectCommand({
+        Bucket: this.avatarsBucket,
+        Key: key,
+        Body: body,
+        ContentType: contentType,
+      }),
+    );
+  }
+
+  async deleteAvatar(key: string): Promise<void> {
+    await this.s3.send(
+      new DeleteObjectCommand({ Bucket: this.avatarsBucket, Key: key }),
+    );
+  }
+
+  avatarUrl(key: string): string {
+    return `${this.publicBaseUrl}/${this.avatarsBucket}/${key}`;
   }
 
   getSignedDownloadUrl(key: string, ttlSec = 300): Promise<string> {

@@ -9,6 +9,7 @@ describe('StorageService (MinIO)', () => {
       S3_ACCESS_KEY: 'sq-minio',
       S3_SECRET_KEY: 'sq-minio-secret',
       S3_BUCKET_DOCUMENTS: 'expert-documents-test',
+      S3_BUCKET_AVATARS: 'sq-avatars-test',
     });
     service = new StorageService(config);
     await service.ensureBucket();
