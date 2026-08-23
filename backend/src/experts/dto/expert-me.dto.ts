@@ -1,6 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import {
   ExperienceLevel,
+  ProfileFieldStatus,
   VerificationStatus,
   WorkStatus,
 } from '@prisma/client';
@@ -46,4 +47,25 @@ export class ExpertMeDto {
 
   @ApiProperty()
   acceptsUrgent: boolean;
+
+  // Публичный контент профиля (E2a). Владельцу видно и опубликованное
+  // значение, и статус проверки, и причина отказа — иначе он не понимает,
+  // почему фото не появилось.
+  @ApiProperty({
+    nullable: true,
+    description: 'Опубликованная фотография; во время проверки — прежняя',
+  })
+  photoUrl: string | null;
+
+  @ApiProperty({ enum: ProfileFieldStatus })
+  photoStatus: ProfileFieldStatus;
+
+  @ApiProperty({ nullable: true, description: 'Опубликованный текст «о себе»' })
+  about: string | null;
+
+  @ApiProperty({ enum: ProfileFieldStatus })
+  aboutStatus: ProfileFieldStatus;
+
+  @ApiProperty({ nullable: true, description: 'Причина последнего отказа' })
+  moderationComment: string | null;
 }

@@ -537,6 +537,82 @@
         ]
       }
     },
+    "/v1/experts/me/photo": {
+      "post": {
+        "operationId": "PhotoController_upload",
+        "summary": "Загрузить фотографию профиля (на модерацию)",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Фотография принята на проверку",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PhotoUploadedDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "PHOTO_INVALID"
+          },
+          "401": {
+            "description": "UNAUTHORIZED"
+          },
+          "404": {
+            "description": "EXPERT_NOT_FOUND"
+          }
+        },
+        "tags": [
+          "experts"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "delete": {
+        "operationId": "PhotoController_remove",
+        "summary": "Удалить фотографию профиля",
+        "parameters": [],
+        "responses": {
+          "204": {
+            "description": "Фотография удалена"
+          },
+          "401": {
+            "description": "UNAUTHORIZED"
+          },
+          "404": {
+            "description": "EXPERT_NOT_FOUND"
+          }
+        },
+        "tags": [
+          "experts"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/experts/me/documents/submit": {
       "post": {
         "operationId": "DocumentsController_submit",
@@ -4113,6 +4189,39 @@
           },
           "acceptsUrgent": {
             "type": "boolean"
+          },
+          "photoUrl": {
+            "type": "string",
+            "nullable": true,
+            "description": "Опубликованная фотография; во время проверки — прежняя"
+          },
+          "photoStatus": {
+            "type": "string",
+            "enum": [
+              "NONE",
+              "PENDING",
+              "APPROVED",
+              "REJECTED"
+            ]
+          },
+          "about": {
+            "type": "string",
+            "nullable": true,
+            "description": "Опубликованный текст «о себе»"
+          },
+          "aboutStatus": {
+            "type": "string",
+            "enum": [
+              "NONE",
+              "PENDING",
+              "APPROVED",
+              "REJECTED"
+            ]
+          },
+          "moderationComment": {
+            "type": "string",
+            "nullable": true,
+            "description": "Причина последнего отказа"
           }
         },
         "required": [
@@ -4128,7 +4237,12 @@
           "verificationStatus",
           "workStatus",
           "isBlocked",
-          "acceptsUrgent"
+          "acceptsUrgent",
+          "photoUrl",
+          "photoStatus",
+          "about",
+          "aboutStatus",
+          "moderationComment"
         ]
       },
       "UpdateExpertDto": {
@@ -4217,6 +4331,24 @@
         },
         "required": [
           "workStatus"
+        ]
+      },
+      "PhotoUploadedDto": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "NONE",
+              "PENDING",
+              "APPROVED",
+              "REJECTED"
+            ],
+            "example": "PENDING"
+          }
+        },
+        "required": [
+          "status"
         ]
       },
       "SubmitVerificationDto": {

@@ -15,6 +15,7 @@ import { CreateExpertDto } from './dto/create-expert.dto';
 import { UpdateExpertDto } from './dto/update-expert.dto';
 import { WorkStatusDto } from './dto/work-status.dto';
 import { ExpertMeDto } from './dto/expert-me.dto';
+import { StorageService } from '../storage/storage.service';
 import { ExpertPublicDto } from './dto/expert-public.dto';
 import { ListExpertsDto } from './dto/list-experts.dto';
 
@@ -31,6 +32,7 @@ export class ExpertsService {
     private prisma: PrismaService,
     private audit: AuditService,
     private presence: PresenceService,
+    private storage: StorageService,
   ) {}
 
   async findByUserId(userId: string): Promise<ExpertWithTopics | null> {
@@ -274,6 +276,15 @@ export class ExpertsService {
       workStatus: expert.workStatus,
       isBlocked: expert.isBlocked,
       acceptsUrgent: expert.acceptsUrgent,
+      // Владельцу отдаётся опубликованное значение: пока новое проверяется,
+      // в профиле продолжает работать прежнее.
+      photoUrl: expert.photoKey
+        ? this.storage.avatarUrl(expert.photoKey)
+        : null,
+      photoStatus: expert.photoStatus,
+      about: expert.about,
+      aboutStatus: expert.aboutStatus,
+      moderationComment: expert.moderationComment,
     };
   }
 

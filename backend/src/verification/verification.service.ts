@@ -301,6 +301,13 @@ export class VerificationService {
       workStatus: expert.workStatus,
       isBlocked: expert.isBlocked,
       acceptsUrgent: expert.acceptsUrgent,
+      photoUrl: expert.photoKey
+        ? this.storage.avatarUrl(expert.photoKey)
+        : null,
+      photoStatus: expert.photoStatus,
+      about: expert.about,
+      aboutStatus: expert.aboutStatus,
+      moderationComment: expert.moderationComment,
     };
   }
 }
