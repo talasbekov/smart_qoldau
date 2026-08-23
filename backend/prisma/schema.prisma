@@ -111,6 +111,14 @@ enum DocumentStatus {
   REUPLOAD_REQUIRED
 }
 
+// Состояние модерируемого поля публичного профиля (E2a).
+enum ProfileFieldStatus {
+  NONE
+  PENDING
+  APPROVED
+  REJECTED
+}
+
 model Expert {
   id                 String              @id @default(uuid())
   userId             String              @unique @map("user_id")
@@ -129,10 +137,23 @@ model Expert {
   acceptsUrgent      Boolean             @default(false) @map("accepts_urgent")
   ratingAvg          Float               @default(0) @map("rating_avg")
   ratingCount        Int                 @default(0) @map("rating_count")
+  // Публичный контент профиля (E2a). У фото и текста «о себе» два значения:
+  // опубликованное и то, что на проверке. Пока новое проверяется, профиль
+  // продолжает показывать старое (Р-18, перенесённый с документов на поля).
+  photoKey           String?             @map("photo_key")
+  photoPendingKey    String?             @map("photo_pending_key")
+  photoStatus        ProfileFieldStatus  @default(NONE) @map("photo_status")
+  about              String?
+  aboutPending       String?             @map("about_pending")
+  aboutStatus        ProfileFieldStatus  @default(NONE) @map("about_status")
+  moderationComment  String?             @map("moderation_comment") // причина последнего отказа
   createdAt          DateTime            @default(now()) @map("created_at")
   topics             ExpertTopic[]
   documents          ExpertDocument[]
   scheduleDays       ExpertScheduleDay[]
+  // По статусам ходит очередь модерации — выбирает только PENDING.
+  @@index([photoStatus])
+  @@index([aboutStatus])
   @@map("experts")
 }
 
@@ -347,6 +368,7 @@ model Review {
   expertId       String       @map("expert_id")
   rating         Int          // 1..5
   publicText     String?      @map("public_text")
+  tags           String[]     @default([]) // коды из REVIEW_TAGS, не подписи
   privateText    String?      @map("private_text") // видит только команда качества
   expertReply    String?      @map("expert_reply")
   status         ReviewStatus @default(PUBLISHED)
