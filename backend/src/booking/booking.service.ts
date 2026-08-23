@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { randomInt } from 'node:crypto';
 import {
+  ConsultationOutcome,
   ConsultationPaymentStatus,
   ConsultationStatus,
   RequestStatus,
@@ -13,6 +14,7 @@ import { ClockService } from '../common/clock/clock.service';
 import { EventsService } from '../ws/events.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { PaymentsService } from '../payments/payments.service';
+import { ConsultationsService } from '../consultations/consultations.service';
 import { apiError } from '../common/filters/app-exception.filter';
 import { SlotsService } from './slots.service';
 import { BookingResultDto, CreateBookingDto } from './dto/create-booking.dto';
@@ -37,6 +39,7 @@ export class BookingService {
     private clock: ClockService,
     private events: EventsService,
     private notifications: NotificationsService,
+    private consultations: ConsultationsService,
   ) {}
 
   async create(
@@ -210,6 +213,196 @@ export class BookingService {
         paymentStatus: held.paymentStatus,
       },
     };
+  }
+
+  /// Перенос доступен обеим сторонам: специалисту тоже случается сдвинуть
+  /// приём, и заставлять его отменять запись ради этого — хуже для клиента.
+  async reschedule(
+    consultationId: string,
+    userSub: string,
+    slotStartAt: string,
+  ): Promise<BookingResultDto> {
+    const { consultation } = await this.consultations.resolveParticipant(
+      consultationId,
+      userSub,
+    );
+    if (consultation.status !== ConsultationStatus.SCHEDULED) {
+      apiError(
+        'CONSULTATION_NOT_SCHEDULED',
+        'Переносить можно только запланированную консультацию',
+        409,
+      );
+    }
+
+    const slot = new Date(slotStartAt);
+    const now = this.clock.now();
+    if (
+      slot.getTime() < now.getTime() + LEAD_MINUTES * MS_PER_MINUTE ||
+      slot.getTime() > now.getTime() + HORIZON_DAYS * MS_PER_DAY
+    ) {
+      apiError('SLOT_OUT_OF_RANGE', 'Слот вне допустимого диапазона', 400);
+    }
+
+    const free = await this.slots.freeSlots(
+      consultation.expertId,
+      slot,
+      new Date(slot.getTime() + SESSION_MINUTES * MS_PER_MINUTE),
+    );
+    if (!free.some((s) => s.getTime() === slot.getTime())) {
+      const taken = await this.prisma.consultation.findFirst({
+        where: {
+          expertId: consultation.expertId,
+          startedAt: slot,
+          status: {
+            in: [ConsultationStatus.SCHEDULED, ConsultationStatus.ACTIVE],
+          },
+        },
+      });
+      if (taken) apiError('SLOT_TAKEN', 'Это время уже занято', 409);
+      apiError('SLOT_UNAVAILABLE', 'Слот недоступен', 409);
+    }
+
+    // Условный апдейт: два одновременных переноса не должны оба «успеть»,
+    // а гонку на сам слот ловит уникальный индекс.
+    const updated = await this.prisma.consultation
+      .updateMany({
+        where: {
+          id: consultationId,
+          status: ConsultationStatus.SCHEDULED,
+        },
+        // Напоминание считается заново: время изменилось.
+        data: { startedAt: slot, remindedAt: null },
+      })
+      .catch((e) => {
+        if (e instanceof PrismaClientKnownRequestError && e.code === 'P2002') {
+          apiError('SLOT_TAKEN', 'Это время уже занято', 409);
+        }
+        throw e;
+      });
+    if (updated.count === 0) {
+      apiError(
+        'CONSULTATION_NOT_SCHEDULED',
+        'Консультация уже не запланирована',
+        409,
+      );
+    }
+
+    await this.audit.log({
+      actorType: 'user',
+      actorId: userSub,
+      entity: 'consultation',
+      entityId: consultationId,
+      transition: 'consultation.rescheduled',
+      payload: { from: consultation.startedAt.toISOString(), to: slotStartAt },
+    });
+
+    // Уведомляется ВТОРАЯ сторона: инициатор и так знает, что сделал.
+    const initiatedByClient = userSub === consultation.clientUserId;
+    if (initiatedByClient) {
+      await this.notifications.dispatchToExpert(
+        consultation.expertId,
+        'consultation.rescheduled',
+        { consultationId },
+      );
+    } else {
+      await this.notifications.dispatch(
+        consultation.clientUserId,
+        'consultation.rescheduled',
+        { consultationId },
+      );
+    }
+
+    const payload = {
+      id: consultationId,
+      status: ConsultationStatus.SCHEDULED,
+      startedAt: slot.toISOString(),
+    };
+    this.events.emitToUser(
+      consultation.clientUserId,
+      'consultation.updated',
+      payload,
+    );
+    this.events.emitToExpert(
+      consultation.expertId,
+      'consultation.updated',
+      payload,
+    );
+
+    const fresh = await this.prisma.consultation.findUniqueOrThrow({
+      where: { id: consultationId },
+    });
+    return {
+      consultationId,
+      startedAt: fresh.startedAt.toISOString(),
+      status: fresh.status,
+      paymentStatus: fresh.paymentStatus,
+    };
+  }
+
+  /// Отмена специалистом: клиенту полный возврат, специалисту 0 ₸ — как
+  /// любой несостоявшийся исход (Р-01). Клиента такая отмена не штрафует.
+  async cancelByExpert(consultationId: string, userSub: string): Promise<void> {
+    const { consultation, role } = await this.consultations.resolveParticipant(
+      consultationId,
+      userSub,
+    );
+    if (role !== 'expert') {
+      apiError('CONSULTATION_NOT_FOUND', 'Консультация не найдена', 404);
+    }
+    if (consultation.status !== ConsultationStatus.SCHEDULED) {
+      apiError(
+        'CONSULTATION_NOT_SCHEDULED',
+        'Отменять можно только запланированную консультацию',
+        409,
+      );
+    }
+
+    const updated = await this.prisma.consultation.updateMany({
+      where: { id: consultationId, status: ConsultationStatus.SCHEDULED },
+      data: {
+        status: ConsultationStatus.CANCELLED,
+        outcome: ConsultationOutcome.EXPERT_CANCELLED,
+        endedAt: this.clock.now(),
+      },
+    });
+    if (updated.count === 0) {
+      apiError(
+        'CONSULTATION_NOT_SCHEDULED',
+        'Консультация уже не запланирована',
+        409,
+      );
+    }
+
+    await this.audit.log({
+      actorType: 'expert',
+      actorId: consultation.expertId,
+      entity: 'consultation',
+      entityId: consultationId,
+      transition: 'consultation.cancelled_by_expert',
+    });
+
+    await this.notifications.dispatch(
+      consultation.clientUserId,
+      'consultation.cancelled',
+      { consultationId },
+    );
+    const payload = {
+      id: consultationId,
+      status: ConsultationStatus.CANCELLED,
+      outcome: ConsultationOutcome.EXPERT_CANCELLED,
+    };
+    this.events.emitToUser(
+      consultation.clientUserId,
+      'consultation.updated',
+      payload,
+    );
+    this.events.emitToExpert(
+      consultation.expertId,
+      'consultation.updated',
+      payload,
+    );
+
+    await this.consultations.settlePublic(consultationId);
   }
 
   /// Откат несостоявшейся записи: слот обязан снова стать свободным, а

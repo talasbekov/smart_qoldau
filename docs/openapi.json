@@ -1783,6 +1783,96 @@
         ]
       }
     },
+    "/v1/consultations/{id}/reschedule": {
+      "post": {
+        "operationId": "ConsultationsController_reschedule",
+        "summary": "Перенести плановую консультацию на другой слот",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RescheduleDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Время изменено",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BookingResultDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "SLOT_OUT_OF_RANGE"
+          },
+          "404": {
+            "description": "CONSULTATION_NOT_FOUND"
+          },
+          "409": {
+            "description": "CONSULTATION_NOT_SCHEDULED | SLOT_TAKEN | SLOT_UNAVAILABLE"
+          }
+        },
+        "tags": [
+          "consultations"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/consultations/{id}/cancel-by-expert": {
+      "post": {
+        "operationId": "ConsultationsController_cancelByExpert",
+        "summary": "Отмена плановой консультации специалистом",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Консультация отменена"
+          },
+          "404": {
+            "description": "CONSULTATION_NOT_FOUND"
+          },
+          "409": {
+            "description": "CONSULTATION_NOT_SCHEDULED"
+          }
+        },
+        "tags": [
+          "consultations"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/consultations/{id}/cancel": {
       "post": {
         "operationId": "ConsultationsController_cancel",
@@ -5636,6 +5726,57 @@
           "outcome"
         ]
       },
+      "RescheduleDto": {
+        "type": "object",
+        "properties": {
+          "slotStartAt": {
+            "type": "string",
+            "example": "2026-08-25T12:00:00.000Z",
+            "description": "UTC"
+          }
+        },
+        "required": [
+          "slotStartAt"
+        ]
+      },
+      "BookingResultDto": {
+        "type": "object",
+        "properties": {
+          "consultationId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "startedAt": {
+            "type": "string",
+            "example": "2026-08-25T10:00:00.000Z"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "SCHEDULED",
+              "ACTIVE",
+              "COMPLETED",
+              "CANCELLED"
+            ]
+          },
+          "paymentStatus": {
+            "type": "string",
+            "enum": [
+              "UNPAID",
+              "HELD",
+              "CAPTURED",
+              "VOIDED",
+              "FAILED"
+            ]
+          }
+        },
+        "required": [
+          "consultationId",
+          "startedAt",
+          "status",
+          "paymentStatus"
+        ]
+      },
       "ExpertNoteDto": {
         "type": "object",
         "properties": {}
@@ -5679,44 +5820,6 @@
           "format",
           "slotStartAt",
           "paymentMethodId"
-        ]
-      },
-      "BookingResultDto": {
-        "type": "object",
-        "properties": {
-          "consultationId": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "startedAt": {
-            "type": "string",
-            "example": "2026-08-25T10:00:00.000Z"
-          },
-          "status": {
-            "type": "string",
-            "enum": [
-              "SCHEDULED",
-              "ACTIVE",
-              "COMPLETED",
-              "CANCELLED"
-            ]
-          },
-          "paymentStatus": {
-            "type": "string",
-            "enum": [
-              "UNPAID",
-              "HELD",
-              "CAPTURED",
-              "VOIDED",
-              "FAILED"
-            ]
-          }
-        },
-        "required": [
-          "consultationId",
-          "startedAt",
-          "status",
-          "paymentStatus"
         ]
       },
       "AddPaymentMethodDto": {

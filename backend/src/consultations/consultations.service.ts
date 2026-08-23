@@ -18,6 +18,7 @@ import { RedisService } from '../redis/redis.service';
 import { MessageCipher } from '../chat/message-cipher';
 import { NotificationsService } from '../notifications/notifications.service';
 import { apiError } from '../common/filters/app-exception.filter';
+import { LATE_CANCEL_HOURS } from '../booking/booking.constants';
 import { ListConsultationsDto } from './dto/list-consultations.dto';
 import { ConsultationClientDto } from './dto/consultation-client.dto';
 import { ConsultationExpertDto } from './dto/consultation-expert.dto';
@@ -289,8 +290,14 @@ export class ConsultationsService {
       apiError('FORBIDDEN', 'Только клиент может отменить консультацию', 403);
 
     const now = this.clock.now();
+    // Плановую отменяют из SCHEDULED, мгновенную — из ACTIVE (E6b).
+    const cancellable = [
+      ConsultationStatus.ACTIVE,
+      ConsultationStatus.SCHEDULED,
+    ];
+    const wasScheduled = consultation.status === ConsultationStatus.SCHEDULED;
     const result = await this.prisma.consultation.updateMany({
-      where: { id: consultationId, status: ConsultationStatus.ACTIVE },
+      where: { id: consultationId, status: { in: cancellable } },
       data: {
         status: ConsultationStatus.CANCELLED,
         outcome: ConsultationOutcome.CLIENT_CANCELLED,
@@ -304,7 +311,25 @@ export class ConsultationsService {
         409,
       );
 
-    await this.incrementClientAbuse(userSub);
+    // Отмена плановой раньше LATE_CANCEL_HOURS бесплатна: у специалиста
+    // остаётся время занять слот. Позже — тот же счётчик, что у no-show
+    // (Р-17). Отмена мгновенной консультации считается поздней всегда.
+    const lateThreshold =
+      consultation.startedAt.getTime() - LATE_CANCEL_HOURS * 3_600_000;
+    const isLate = !wasScheduled || now.getTime() >= lateThreshold;
+    if (isLate) {
+      await this.incrementClientAbuse(userSub);
+      if (wasScheduled) {
+        await this.audit.log({
+          actorType: 'user',
+          actorId: userSub,
+          entity: 'consultation',
+          entityId: consultationId,
+          transition: 'consultation.late_cancelled',
+          payload: { startedAt: consultation.startedAt.toISOString() },
+        });
+      }
+    }
 
     await this.returnExpertToAccepting(consultation.expertId);
 
@@ -343,6 +368,12 @@ export class ConsultationsService {
   // консультации, вне транзакции исхода. Сбой — лог + audit
   // payment.settle_failed, ретрай ЗДЕСЬ не делается (ретраит sweep-джоба,
   // Task 6); исход консультации НИКОГДА не откатывается из-за денег.
+  /// Тот же безопасный settle для плановых отмен (E6b): сбой денег не
+  /// откатывает уже зафиксированный исход консультации.
+  settlePublic(consultationId: string): Promise<void> {
+    return this.settleSafely(consultationId);
+  }
+
   private async settleSafely(consultationId: string): Promise<void> {
     try {
       await this.payments.settle(consultationId);

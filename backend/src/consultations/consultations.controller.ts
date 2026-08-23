@@ -10,6 +10,7 @@ import {
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
+  ApiBadRequestResponse,
   ApiConflictResponse,
   ApiExtraModels,
   ApiForbiddenResponse,
@@ -27,6 +28,9 @@ import { CompleteConsultationDto } from './dto/complete-consultation.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CurrentUser } from '../auth/current-user.decorator';
 import { JwtPayload } from '../auth/jwt.strategy';
+import { BookingService } from '../booking/booking.service';
+import { BookingResultDto } from '../booking/dto/create-booking.dto';
+import { RescheduleDto } from '../booking/dto/reschedule.dto';
 
 @ApiTags('consultations')
 @ApiBearerAuth()
@@ -34,7 +38,10 @@ import { JwtPayload } from '../auth/jwt.strategy';
 @UseGuards(JwtAuthGuard)
 @ApiExtraModels(ConsultationClientDto, ConsultationExpertDto)
 export class ConsultationsController {
-  constructor(private consultations: ConsultationsService) {}
+  constructor(
+    private consultations: ConsultationsService,
+    private booking: BookingService,
+  ) {}
 
   @Get(':id')
   @ApiOperation({
@@ -98,6 +105,36 @@ export class ConsultationsController {
     @Body() dto: CompleteConsultationDto,
   ): Promise<ConsultationExpertDto> {
     return this.consultations.complete(id, user.sub, dto.outcome);
+  }
+
+  @Post(':id/reschedule')
+  @HttpCode(200)
+  @ApiOperation({ summary: 'Перенести плановую консультацию на другой слот' })
+  @ApiOkResponse({ description: 'Время изменено', type: BookingResultDto })
+  @ApiBadRequestResponse({ description: 'SLOT_OUT_OF_RANGE' })
+  @ApiNotFoundResponse({ description: 'CONSULTATION_NOT_FOUND' })
+  @ApiConflictResponse({
+    description: 'CONSULTATION_NOT_SCHEDULED | SLOT_TAKEN | SLOT_UNAVAILABLE',
+  })
+  reschedule(
+    @Param('id') id: string,
+    @CurrentUser() user: JwtPayload,
+    @Body() dto: RescheduleDto,
+  ): Promise<BookingResultDto> {
+    return this.booking.reschedule(id, user.sub, dto.slotStartAt);
+  }
+
+  @Post(':id/cancel-by-expert')
+  @HttpCode(200)
+  @ApiOperation({ summary: 'Отмена плановой консультации специалистом' })
+  @ApiOkResponse({ description: 'Консультация отменена' })
+  @ApiNotFoundResponse({ description: 'CONSULTATION_NOT_FOUND' })
+  @ApiConflictResponse({ description: 'CONSULTATION_NOT_SCHEDULED' })
+  cancelByExpert(
+    @Param('id') id: string,
+    @CurrentUser() user: JwtPayload,
+  ): Promise<void> {
+    return this.booking.cancelByExpert(id, user.sub);
   }
 
   @Post(':id/cancel')
