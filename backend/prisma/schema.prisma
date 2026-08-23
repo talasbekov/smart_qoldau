@@ -557,6 +557,10 @@ model Notification {
   @@index([userId, createdAt])
   @@index([userId, readAt])
   @@index([type, pushDeliveredAt, smsFallbackAt]) // выборка sweep-fallback
+  // Частичный индекс под тот же sweep (E11a, задача 10): рабочее множество
+  // — единицы строк, а таблица растёт монотонно, и трёхколоночный btree
+  // выше сканирует лишнее. Создаётся вручную в миграции: частичные индексы
+  // Prisma в schema не выражает.
   @@map("notifications")
 }
 

@@ -33,6 +33,7 @@ import { DevicesModule } from './devices/devices.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { AdminModule } from './admin/admin.module';
 import { TicketsModule } from './tickets/tickets.module';
+import { MaintenanceModule } from './maintenance/maintenance.module';
 
 @Module({
   imports: [
@@ -68,6 +69,7 @@ import { TicketsModule } from './tickets/tickets.module';
     NotificationsModule,
     AdminModule,
     TicketsModule,
+    MaintenanceModule,
   ],
   controllers: [AppController],
   providers: [AppService],

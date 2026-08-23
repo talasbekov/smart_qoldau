@@ -45,4 +45,8 @@ export const envValidationSchema = Joi.object({
   // В dev по умолчанию false, в проде обязан быть true: сотрудник без
   // привязанной 2FA тогда видит только маршруты привязки.
   TOTP_REQUIRED: Joi.string().valid('true', 'false').default('false'),
+  // Ретенция (E11a, задача 10). Непрочитанные уведомления не удаляются
+  // никогда независимо от значения.
+  RETENTION_PROVIDER_EVENT_DAYS: Joi.number().default(30),
+  RETENTION_NOTIFICATION_DAYS: Joi.number().default(90),
 });
