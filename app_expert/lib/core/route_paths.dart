@@ -45,4 +45,8 @@ abstract final class RoutePaths {
   /// Исключения в расписании (задача 8 эпика E7) — календарь на 14 дней
   /// вперёд, тап по дню открывает шторку «выходной / другие часы».
   static const scheduleExceptions = '/schedule/exceptions';
+
+  /// Заявки и консультации (задача 12 эпика E7) — три вкладки: «Заявки»
+  /// (офферы), «Идёт сейчас»/«Плановые», «История».
+  static const consultations = '/consultations';
 }

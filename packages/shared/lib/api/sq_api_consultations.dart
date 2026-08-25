@@ -27,6 +27,31 @@ mixin SqApiConsultations on SqApiBase {
             .toList();
       });
 
+  /// `GET /consultations?as=expert` — список консультаций текущего
+  /// эксперта (E7 задача 12). PII-инвариант: `ConsultationExpertDto` несёт
+  /// только `clientCode`, без данных клиента.
+  Future<List<ConsultationExpertDto>> expertConsultations({
+    ConsultationStatus? status,
+    int? take,
+    int? skip,
+  }) =>
+      guard(() async {
+        final response = await dio.get<List<dynamic>>(
+          SqEndpoints.consultations,
+          queryParameters: {
+            'as': 'expert',
+            if (status != null) 'status': status.wireValue,
+            'take': ?take,
+            'skip': ?skip,
+          },
+        );
+        return response.data!
+            .map(
+              (e) => ConsultationExpertDto.fromJson(e as Map<String, dynamic>),
+            )
+            .toList();
+      });
+
   /// `GET /consultations/{id}` — консультация клиента-участника.
   Future<ClientConsultation> consultationById(String id) => guard(() async {
         final response = await dio.get<Map<String, dynamic>>(

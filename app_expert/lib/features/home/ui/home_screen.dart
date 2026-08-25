@@ -1,14 +1,16 @@
 /// Главный экран эксперта (E7 задача 10): крупный переключатель приёма
 /// заявок (`ACCEPTING`/`NOT_ACCEPTING`) и presence-heartbeat
-/// (`HomeController`). Карточка «Сегодня: N заявок» и баннер активной
-/// консультации заполнятся задачей 12 (список офферов/консультаций) —
-/// этот экран их не блокирует.
+/// (`HomeController`), плюс переходы на расписание (задача 8) и заявки/
+/// консультации (задача 12) — больше некуда вести с главного экрана,
+/// навигационной оболочки со вкладками план E7 не заводит.
 library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:shared/shared.dart';
 
+import '../../../core/route_paths.dart';
 import '../../auth/state/auth_controller.dart';
 import '../state/home_controller.dart';
 
@@ -94,6 +96,19 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       style: SqTypography.body.copyWith(color: SqColors.danger),
                     ),
                   ),
+                const SizedBox(height: 16),
+                ListTile(
+                  key: const Key('sq-home-consultations'),
+                  leading: const Icon(Icons.list_alt),
+                  title: const Text('Заявки и консультации'),
+                  onTap: () => context.push(RoutePaths.consultations),
+                ),
+                ListTile(
+                  key: const Key('sq-home-schedule'),
+                  leading: const Icon(Icons.calendar_month),
+                  title: const Text('Расписание'),
+                  onTap: () => context.push(RoutePaths.schedule),
+                ),
               ],
             ),
           );

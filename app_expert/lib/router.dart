@@ -24,6 +24,7 @@ import 'core/route_paths.dart';
 import 'features/auth/state/auth_controller.dart';
 import 'features/auth/ui/phone_screen.dart';
 import 'features/auth/ui/splash_screen.dart';
+import 'features/consultations/ui/expert_consultations_screen.dart';
 import 'features/home/ui/home_screen.dart';
 import 'features/onboarding/state/onboarding_controller.dart';
 import 'features/onboarding/ui/profile_step_screen.dart';
@@ -123,6 +124,10 @@ GoRouter sqExpertRouter(Ref ref) {
       GoRoute(
         path: RoutePaths.scheduleExceptions,
         builder: (context, state) => const ExceptionsScreen(),
+      ),
+      GoRoute(
+        path: RoutePaths.consultations,
+        builder: (context, state) => const ExpertConsultationsScreen(),
       ),
     ],
   );

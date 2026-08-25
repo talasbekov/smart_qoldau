@@ -6,6 +6,7 @@ library;
 export 'auth_models.dart';
 export 'chat_message.dart';
 export 'consultation.dart';
+export 'consultation_expert.dart';
 export 'enums.dart';
 export 'expert.dart';
 export 'expert_document.dart';
