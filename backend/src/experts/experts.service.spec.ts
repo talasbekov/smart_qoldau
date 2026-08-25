@@ -37,6 +37,8 @@ describe('ExpertsService.updateWorkStatus — компенсация presence п
       prisma as unknown as PrismaService,
       { log: jest.fn() } as unknown as AuditService,
       presence,
+      {} as never,
+      {} as never,
     );
   });
 
