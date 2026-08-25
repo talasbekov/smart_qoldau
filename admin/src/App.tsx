@@ -9,6 +9,7 @@ import StaffPage from './routes/StaffPage';
 import VerificationQueuePage from './routes/VerificationQueuePage';
 import ProfileModerationPage from './routes/ProfileModerationPage';
 import FlaggedExpertsPage from './routes/FlaggedExpertsPage';
+import ReviewsModerationPage from './routes/ReviewsModerationPage';
 import { tokenStore } from './lib/tokenStore';
 import type { Session } from './lib/types';
 import './index.css';
@@ -54,7 +55,8 @@ export default function App() {
             <Route path="/verification" element={<VerificationQueuePage />} />
             <Route path="/profile-moderation" element={<ProfileModerationPage />} />
             <Route path="/flagged-experts" element={<FlaggedExpertsPage />} />
-            {/* Остальные маршруты подключаются задачами 9-11 */}
+            <Route path="/reviews" element={<ReviewsModerationPage />} />
+            {/* Остальные маршруты подключаются задачами 10-11 */}
           </Route>
         </Route>
       </Routes>
