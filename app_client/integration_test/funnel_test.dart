@@ -18,10 +18,12 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
+import 'package:shared/shared.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:app_client/app.dart';
 import 'package:app_client/core/locale_controller.dart';
+import 'package:app_client/core/providers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// Адрес бэкенда для служебных вызовов теста (эксперт, сид). Тот же, что и
@@ -125,7 +127,15 @@ void main() {
 
     await tester.pumpWidget(
       ProviderScope(
-        overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
+        overrides: [
+          sharedPreferencesProvider.overrideWithValue(prefs),
+          // sqApiProvider/sqEventsProvider — placeholder-провайдеры shared
+          // (задача 2, E7): без переопределения их телами приложения
+          // (main.dart делает то же самое) первое чтение бросает
+          // UnimplementedError уже на гостевом входе.
+          sqApiProvider.overrideWith(buildSqApi),
+          sqEventsProvider.overrideWith(buildSqEvents),
+        ],
         child: const SqClientApp(),
       ),
     );
