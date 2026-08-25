@@ -35,15 +35,19 @@ npm run build
 
 ```
 app/
-  layout.tsx              — корневой редирект "/" -> "/ru"
+  layout.tsx              — пробрасывает children; редирект "/" -> "/ru"
+                             делает middleware.ts (next-intl), НЕ этот layout
   sitemap.ts, robots.ts
-  [locale]/                — все страницы под локалью ru|kz
+  [locale]/                — все страницы под локалью ru|kz, html/body здесь
+middleware.ts               — next-intl, локаль по пути
 components/                — Header, Footer, SpecialistCard, FaqAccordion,
                               SupportForm, LegalPageLayout
 lib/
   api.ts                   — fetchPublicExperts, submitTicket
   ticket.ts                — buildTicketPayload (чистая функция)
-  i18n/                    — routing.ts, request.ts (next-intl)
+  i18n/                    — routing.ts, request.ts, navigation.ts (next-intl;
+                              Link/redirect/useRouter — из createNavigation,
+                              next-intl v4 не экспортирует их из корня пакета)
 messages/                  — ru.json, kz.json
 ```
 
@@ -55,3 +59,18 @@ messages/                  — ru.json, kz.json
   `/support` — решение задокументировано в плане (раздел «Решения»).
 - Цена Premium — 2 990 ₸/мес / 23 900 ₸/год (решение Р-08), не совпадает с
   устаревшей ценой в исходном прототипе (4 990 ₸/мес).
+
+## Ручная проверка против живого бэкенда (пройдена)
+
+Все 6 страниц на обеих локалях отдают 200, витрина специалистов на
+главной рендерит реального верифицированного эксперта из БД
+(`GET /experts`), форма поддержки успешно создаёт тикет
+(`POST /tickets` → `201`, проверено прямым запросом с телом, которое
+собирает `buildTicketPayload`). Найден и исправлен реальный баг при
+проверке: корневой `app/layout.tsx` безусловно вызывал
+`redirect('/ru')`, что применялось абсолютно ко всем маршрутам (включая
+уже `/ru`) — Next.js рендерит корневой layout как предка каждого
+дочернего маршрута — и приводило к самозацикленному редиректу `/ru` →
+`/ru`. Исправлено: редирект "/" -> "/ru" отдан целиком middleware.ts
+(next-intl, `localePrefix: "always"` по умолчанию уже это делает),
+`app/layout.tsx` теперь просто пробрасывает `children`.
