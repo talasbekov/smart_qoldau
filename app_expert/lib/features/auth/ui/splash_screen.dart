@@ -1,6 +1,9 @@
-/// Экран заставки: восстанавливает сессию при старте приложения и отдаёт
-/// результат наружу — сам он никуда не навигирует, решение, куда вести
-/// эксперта дальше по [AuthState], принимает `router.dart`.
+/// Экран заставки: восстанавливает сессию при старте приложения. Сам он
+/// никуда не навигирует и никого об этом не уведомляет — навигация решается
+/// целиком реактивно, `router.dart`'ом (`_AuthRefreshNotifier` слушает
+/// `authControllerProvider`, а `_redirect` решает, куда вести эксперта по
+/// свежему [AuthState]) — как только `restore()` меняет состояние, гард сам
+/// пересчитывается и уводит с этого экрана.
 library;
 
 import 'package:flutter/material.dart';
@@ -11,10 +14,7 @@ import 'package:shared/shared.dart';
 import '../state/auth_controller.dart';
 
 class SplashScreen extends ConsumerStatefulWidget {
-  const SplashScreen({super.key, required this.onRestored});
-
-  /// Вызывается ровно один раз, когда восстановление сессии завершилось.
-  final void Function(BuildContext context, AuthState state) onRestored;
+  const SplashScreen({super.key});
 
   @override
   ConsumerState<SplashScreen> createState() => _SplashScreenState();
@@ -27,16 +27,9 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
     // ref.read() до того как виджет вставлен в дерево и первый кадр
     // построен — не гарантированно безопасно, поэтому восстановление
     // запускаем постфреймом, а не прямо в initState.
-    SchedulerBinding.instance.addPostFrameCallback((_) => _restore());
-  }
-
-  Future<void> _restore() async {
-    await ref.read(authControllerProvider.notifier).restore();
-    if (!mounted) return;
-    final state = ref.read(authControllerProvider).value;
-    if (state != null) {
-      widget.onRestored(context, state);
-    }
+    SchedulerBinding.instance.addPostFrameCallback(
+      (_) => ref.read(authControllerProvider.notifier).restore(),
+    );
   }
 
   @override

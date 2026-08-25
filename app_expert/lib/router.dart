@@ -68,8 +68,7 @@ GoRouter sqExpertRouter(Ref ref) {
     routes: [
       GoRoute(
         path: RoutePaths.splash,
-        builder: (context, state) =>
-            SplashScreen(onRestored: (context, state) {}),
+        builder: (context, state) => const SplashScreen(),
       ),
       GoRoute(
         path: RoutePaths.welcome,
