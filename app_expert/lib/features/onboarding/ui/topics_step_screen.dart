@@ -65,10 +65,10 @@ class _TopicsStepScreenState extends ConsumerState<TopicsStepScreen> {
     }
     if (!mounted) return;
     setState(() => _submitting = false);
-    // Экран статуса верификации появится задачей 6 эпика E7 — до тех пор
-    // ведём на временную домашнюю заглушку ([AppShell]), как и обычный
-    // редирект-гард сессии (`router.dart`).
-    context.go(RoutePaths.home);
+    // Сразу после отправки анкеты профиль ещё DRAFT — ведём на экран
+    // статуса верификации (задача 6 эпика E7), а не на главный (задача 10):
+    // приём заявок всё равно недоступен, пока не придёт VERIFIED.
+    context.go(RoutePaths.verificationStatus);
   }
 
   @override

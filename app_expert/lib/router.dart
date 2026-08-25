@@ -2,10 +2,11 @@
 /// маршрутов (`go_router`).
 ///
 /// В отличие от `app_client/lib/router.dart` большинства веток
-/// (каталог/консультации/профиль и т.п.) здесь ещё нет — они появятся в
-/// последующих задачах эпика E7 (расписание, заявки, заработок). Задача 1
-/// завела гард сессии: `AuthUnknown` → `/splash`, `AuthAnonymous` →
-/// `/welcome`, иначе — `/home` (заглушка [AppShell]). Задача 4 добавила
+/// (заявки/заработок и т.п.) здесь ещё нет — они появятся в последующих
+/// задачах эпика E7. Задача 1 завела гард сессии: `AuthUnknown` →
+/// `/splash`, `AuthAnonymous` → `/welcome`, иначе — `/home`. Задача 10
+/// заменила временную заглушку главного экрана на [HomeScreen] (статус
+/// приёма и presence-heartbeat). Задача 4 добавила
 /// маршруты анкеты онбординга (`/onboarding/profile`, `/onboarding/topics`)
 /// — оба НЕ в `_gatedPaths`: попасть на них можно только уже
 /// аутентифицированным (`_redirect` уводит `AuthAnonymous` на `/welcome`
@@ -22,12 +23,12 @@ import 'core/route_paths.dart';
 import 'features/auth/state/auth_controller.dart';
 import 'features/auth/ui/phone_screen.dart';
 import 'features/auth/ui/splash_screen.dart';
+import 'features/home/ui/home_screen.dart';
 import 'features/onboarding/state/onboarding_controller.dart';
 import 'features/onboarding/ui/profile_step_screen.dart';
 import 'features/onboarding/ui/topics_step_screen.dart';
 import 'features/schedule/ui/exceptions_screen.dart';
 import 'features/schedule/ui/schedule_screen.dart';
-import 'features/shell/ui/app_shell.dart';
 import 'features/verification/ui/documents_screen.dart';
 import 'features/verification/ui/photo_screen.dart';
 import 'features/verification/ui/verification_status_screen.dart';
@@ -90,7 +91,7 @@ GoRouter sqExpertRouter(Ref ref) {
       ),
       GoRoute(
         path: RoutePaths.home,
-        builder: (context, state) => const AppShell(),
+        builder: (context, state) => const HomeScreen(),
       ),
       GoRoute(
         path: RoutePaths.onboardingProfile,
