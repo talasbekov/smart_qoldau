@@ -43,6 +43,12 @@ abstract final class SqEndpoints {
   static String expertsMeScheduleExceptionByDate(String date) =>
       '/experts/me/schedule/exceptions/$date';
 
+  /// Офферы эксперта (E7 задача 9): активные PENDING-офферы,
+  /// принятие/отклонение.
+  static const expertsMeOffers = '/experts/me/offers';
+  static String offerAccept(String offerId) => '/offers/$offerId/accept';
+  static String offerDecline(String offerId) => '/offers/$offerId/decline';
+
   // --- избранное ---
   static const favorites = '/favorites';
   static String favoriteExpert(String expertId) => '/favorites/$expertId';
@@ -149,6 +155,9 @@ abstract final class SqEndpoints {
     ('GET', expertsMeScheduleExceptions),
     ('PUT', '/experts/me/schedule/exceptions/{date}'),
     ('DELETE', '/experts/me/schedule/exceptions/{date}'),
+    ('GET', expertsMeOffers),
+    ('POST', '/offers/{offerId}/accept'),
+    ('POST', '/offers/{offerId}/decline'),
   ];
 
   /// Исключены из проверки контрактным тестом, потому что бэкенд ещё не

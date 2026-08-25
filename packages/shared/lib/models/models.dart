@@ -13,6 +13,7 @@ export 'expert_me.dart';
 export 'match_request.dart';
 export 'media_token.dart';
 export 'notification.dart';
+export 'offer.dart';
 export 'online_count.dart';
 export 'payment.dart';
 export 'photo_upload_result.dart';

@@ -8,6 +8,7 @@ import 'sq_api_documents.dart';
 import 'sq_api_expert_profile.dart';
 import 'sq_api_experts.dart';
 import 'sq_api_notifications.dart';
+import 'sq_api_offers.dart';
 import 'sq_api_payments.dart';
 import 'sq_api_requests.dart';
 import 'sq_api_schedule.dart';
@@ -30,6 +31,7 @@ class SqApi extends SqApiBase
         SqApiExpertProfile,
         SqApiDocuments,
         SqApiSchedule,
+        SqApiOffers,
         SqApiRequests,
         SqApiConsultations,
         SqApiPayments,

@@ -43,6 +43,11 @@ abstract final class ApiErrorCode {
   static const ticketCategoryNotAllowed = 'TICKET_CATEGORY_NOT_ALLOWED';
   static const ticketAlreadyResolved = 'TICKET_ALREADY_RESOLVED';
 
+  /// Офферы эксперта (E7 задача 9).
+  static const offerNotFound = 'OFFER_NOT_FOUND';
+  static const offerExpired = 'OFFER_EXPIRED';
+  static const offerAlreadyTaken = 'OFFER_ALREADY_TAKEN';
+
   /// Код, которым [ApiException.fromDioError] помечает сетевые сбои без
   /// ответа сервера (таймаут, обрыв соединения, DNS) — бэкенд его не знает,
   /// это чисто клиентское значение.
