@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared/shared.dart';
 
+import '../../../l10n/app_localizations.dart';
 import '../state/expert_reviews_controller.dart';
 import 'review_item_card.dart';
 
@@ -16,16 +17,17 @@ class ExpertReviewsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
     final async = ref.watch(expertReviewsControllerProvider);
 
     return Scaffold(
       backgroundColor: SqColors.background,
-      appBar: AppBar(title: const Text('Отзывы')),
+      appBar: AppBar(title: Text(l10n.reviewsScreenTitle)),
       body: async.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, _) => Center(
           child: Text(
-            error is ApiException ? error.message : 'Не удалось загрузить отзывы',
+            error is ApiException ? error.message : l10n.errorLoadFailed,
             style: SqTypography.body.copyWith(color: SqColors.danger),
           ),
         ),
@@ -42,7 +44,7 @@ class ExpertReviewsScreen extends ConsumerWidget {
                   ),
                   const SizedBox(width: 8),
                   Text(
-                    '${reviews.ratingCount} отзывов',
+                    l10n.reviewsCount(reviews.ratingCount),
                     style: SqTypography.body.copyWith(color: SqColors.textSecondary),
                   ),
                 ],
@@ -51,7 +53,7 @@ class ExpertReviewsScreen extends ConsumerWidget {
               if (reviews.items.isEmpty)
                 Padding(
                   padding: const EdgeInsets.only(top: 24),
-                  child: Center(child: Text('Пока нет отзывов', style: SqTypography.body)),
+                  child: Center(child: Text(l10n.reviewsEmpty, style: SqTypography.body)),
                 )
               else
                 for (final review in reviews.items)

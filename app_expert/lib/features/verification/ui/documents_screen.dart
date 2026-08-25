@@ -8,20 +8,21 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared/shared.dart';
 
+import '../../../l10n/app_localizations.dart';
 import '../state/documents_controller.dart';
 
-String _typeLabel(DocumentType type) => switch (type) {
-  DocumentType.identity => 'Удостоверение личности',
-  DocumentType.diploma => 'Диплом об образовании',
-  DocumentType.certificates => 'Сертификаты',
-  DocumentType.qualification => 'Подтверждение квалификации',
+String _typeLabel(AppLocalizations l10n, DocumentType type) => switch (type) {
+  DocumentType.identity => l10n.documentTypeIdentity,
+  DocumentType.diploma => l10n.documentTypeDiploma,
+  DocumentType.certificates => l10n.documentTypeCertificates,
+  DocumentType.qualification => l10n.documentTypeQualification,
 };
 
-String _statusLabel(DocumentStatus? status) => switch (status) {
-  null => 'Не загружен',
-  DocumentStatus.uploaded => 'На проверке',
-  DocumentStatus.approved => 'Принят',
-  DocumentStatus.reuploadRequired => 'Нужна переотправка',
+String _statusLabel(AppLocalizations l10n, DocumentStatus? status) => switch (status) {
+  null => l10n.documentStatusNotUploaded,
+  DocumentStatus.uploaded => l10n.documentStatusUploaded,
+  DocumentStatus.approved => l10n.documentStatusApproved,
+  DocumentStatus.reuploadRequired => l10n.documentStatusReuploadRequired,
 };
 
 Color _statusColor(DocumentStatus? status) => switch (status) {
@@ -50,9 +51,7 @@ class DocumentsScreen extends ConsumerWidget {
     } on DocumentTooLargeException {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Файл больше 10 МБ — выберите файл меньшего размера'),
-        ),
+        SnackBar(content: Text(AppLocalizations.of(context)!.documentTooLarge)),
       );
     } on ApiException catch (e) {
       if (!context.mounted) return;
@@ -64,19 +63,18 @@ class DocumentsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
     final documentsAsync = ref.watch(documentsControllerProvider);
     final controller = ref.read(documentsControllerProvider.notifier);
 
     return Scaffold(
       backgroundColor: SqColors.background,
-      appBar: AppBar(title: const Text('Документы верификации')),
+      appBar: AppBar(title: Text(l10n.documentsScreenTitle)),
       body: documentsAsync.when(
         loading: () => const SqLoader(),
         error: (error, _) => Center(
           child: SqErrorView(
-            text: error is ApiException
-                ? error.message
-                : 'Не удалось загрузить документы',
+            text: error is ApiException ? error.message : l10n.errorLoadFailed,
             onRetry: controller.refresh,
           ),
         ),
@@ -93,7 +91,7 @@ class DocumentsScreen extends ConsumerWidget {
             ],
             const SizedBox(height: SqSpacing.m),
             SqButton(
-              label: 'Отправить на проверку',
+              label: l10n.actionSubmitForReview,
               onPressed: controller.canSubmit
                   ? () async {
                       await controller.submit();
@@ -120,6 +118,7 @@ class _DocumentCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final status = document?.status;
     return SqCard(
       child: Row(
@@ -128,10 +127,10 @@ class _DocumentCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(_typeLabel(type), style: SqTypography.title),
+                Text(_typeLabel(l10n, type), style: SqTypography.title),
                 const SizedBox(height: SqSpacing.xs),
                 Text(
-                  _statusLabel(status),
+                  _statusLabel(l10n, status),
                   style: SqTypography.caption.copyWith(
                     color: _statusColor(status),
                     fontWeight: FontWeight.w600,
@@ -141,7 +140,7 @@ class _DocumentCard extends StatelessWidget {
             ),
           ),
           SqButton(
-            label: status == null ? 'Загрузить' : 'Заменить',
+            label: status == null ? l10n.actionUpload : l10n.actionReplace,
             kind: SqButtonKind.secondary,
             onPressed: onTap,
           ),

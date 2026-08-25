@@ -9,6 +9,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared/shared.dart';
 
+import '../../../l10n/app_localizations.dart';
 import '../state/auth_controller.dart';
 
 /// Длительность обратного отсчёта до разблокировки повторной отправки
@@ -125,16 +126,17 @@ class _CodeScreenState extends ConsumerState<CodeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       backgroundColor: SqColors.background,
-      appBar: AppBar(title: const Text('Код подтверждения')),
+      appBar: AppBar(title: Text(l10n.codeScreenTitle)),
       body: Padding(
         padding: const EdgeInsets.all(SqSpacing.l),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Text(
-              'Мы отправили код на ${widget.phone}',
+              l10n.codeScreenSentTo(widget.phone),
               style: SqTypography.body.copyWith(color: SqColors.textSecondary),
             ),
             const SizedBox(height: SqSpacing.xl),
@@ -156,8 +158,8 @@ class _CodeScreenState extends ConsumerState<CodeScreen> {
                 onPressed: _secondsLeft == 0 ? _resend : null,
                 child: Text(
                   _secondsLeft == 0
-                      ? 'Отправить код повторно'
-                      : 'Повторно через $_secondsLeft с',
+                      ? l10n.actionResendCode
+                      : l10n.resendCodeCountdown(_secondsLeft),
                 ),
               ),
             ),

@@ -12,20 +12,21 @@ import 'package:go_router/go_router.dart';
 import 'package:shared/shared.dart';
 
 import '../../../core/route_paths.dart';
+import '../../../l10n/app_localizations.dart';
 import '../state/verification_status_controller.dart';
 
-String _verificationLabel(VerificationStatus status) => switch (status) {
-  VerificationStatus.draft => 'Анкета не отправлена',
-  VerificationStatus.pending => 'Анкета на проверке. Срок рассмотрения — до 24 часов',
-  VerificationStatus.verified => 'Верификация пройдена',
+String _verificationLabel(AppLocalizations l10n, VerificationStatus status) => switch (status) {
+  VerificationStatus.draft => l10n.verificationDraft,
+  VerificationStatus.pending => l10n.verificationPending,
+  VerificationStatus.verified => l10n.verificationVerified,
 };
 
-String _fieldStatusLabel(String fieldName, ProfileFieldStatus status) =>
+String _fieldStatusLabel(AppLocalizations l10n, String fieldName, ProfileFieldStatus status) =>
     switch (status) {
-      ProfileFieldStatus.none => '$fieldName: не заполнено',
-      ProfileFieldStatus.pending => '$fieldName: на проверке',
-      ProfileFieldStatus.approved => '$fieldName: одобрено',
-      ProfileFieldStatus.rejected => '$fieldName: отклонено',
+      ProfileFieldStatus.none => l10n.fieldStatusNone(fieldName),
+      ProfileFieldStatus.pending => l10n.fieldStatusPending(fieldName),
+      ProfileFieldStatus.approved => l10n.fieldStatusApproved(fieldName),
+      ProfileFieldStatus.rejected => l10n.fieldStatusRejected(fieldName),
     };
 
 class VerificationStatusScreen extends ConsumerWidget {
@@ -33,6 +34,7 @@ class VerificationStatusScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
     final provider = verificationStatusControllerProvider;
 
     // Терминальный переход — побочный эффект изменения статуса, а не
@@ -53,16 +55,14 @@ class VerificationStatusScreen extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: SqColors.background,
-      appBar: AppBar(title: const Text('Статус верификации')),
+      appBar: AppBar(title: Text(l10n.verificationScreenTitle)),
       body: asyncMe.when(
         loading: () => const SqLoader(),
         error: (error, _) => Center(
           child: Padding(
             padding: const EdgeInsets.all(SqSpacing.l),
             child: SqErrorView(
-              text: error is ApiException
-                  ? error.message
-                  : 'Не удалось загрузить статус верификации',
+              text: error is ApiException ? error.message : l10n.errorLoadFailed,
               onRetry: () =>
                   ref.read(provider.notifier).refresh(),
             ),
@@ -85,12 +85,13 @@ class _VerificationContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return ListView(
       padding: const EdgeInsets.all(SqSpacing.l),
       children: [
         SqCard(
           child: Text(
-            _verificationLabel(me.verificationStatus),
+            _verificationLabel(l10n, me.verificationStatus),
             style: SqTypography.title,
           ),
         ),
@@ -100,12 +101,12 @@ class _VerificationContent extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                _fieldStatusLabel('Фото', me.photoStatus),
+                _fieldStatusLabel(l10n, l10n.fieldPhoto, me.photoStatus),
                 style: SqTypography.body,
               ),
               const SizedBox(height: SqSpacing.s),
               Text(
-                _fieldStatusLabel('О себе', me.aboutStatus),
+                _fieldStatusLabel(l10n, l10n.fieldAbout, me.aboutStatus),
                 style: SqTypography.body,
               ),
               if (me.photoStatus == ProfileFieldStatus.rejected ||
@@ -128,7 +129,7 @@ class _VerificationContent extends StatelessWidget {
                 if (me.photoStatus == ProfileFieldStatus.rejected) ...[
                   const SizedBox(height: SqSpacing.m),
                   SqButton(
-                    label: 'Загрузить заново',
+                    label: l10n.actionReupload,
                     kind: SqButtonKind.secondary,
                     onPressed: () => context.go(RoutePaths.verificationPhoto),
                   ),

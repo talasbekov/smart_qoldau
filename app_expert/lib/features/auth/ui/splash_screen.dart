@@ -11,6 +11,7 @@ import 'package:flutter/scheduler.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared/shared.dart';
 
+import '../../../l10n/app_localizations.dart';
 import '../state/auth_controller.dart';
 
 class SplashScreen extends ConsumerStatefulWidget {
@@ -34,16 +35,17 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       backgroundColor: SqColors.background,
       body: Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text('SmartQoldau Эксперт', style: SqTypography.h1),
+            Text(l10n.appTitle, style: SqTypography.h1),
             const SizedBox(height: SqSpacing.s),
             Text(
-              'Загружаем ваш кабинет…',
+              l10n.splashLoading,
               style: SqTypography.body.copyWith(color: SqColors.textSecondary),
             ),
             const SizedBox(height: SqSpacing.xxl),

@@ -12,6 +12,7 @@ import 'package:go_router/go_router.dart';
 import 'package:shared/shared.dart';
 
 import '../../../core/route_paths.dart';
+import '../../../l10n/app_localizations.dart';
 import '../data/offers_repository.dart';
 
 class OffersListScreen extends StatelessWidget {
@@ -26,18 +27,19 @@ class OffersListScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return offers.when(
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (error, _) => Center(
         child: Text(
-          error is ApiException ? error.message : 'Не удалось загрузить заявки',
+          error is ApiException ? error.message : l10n.errorLoadFailed,
           style: SqTypography.body.copyWith(color: SqColors.danger),
         ),
       ),
       data: (list) {
         if (list.isEmpty) {
           return Center(
-            child: Text('Пока нет новых заявок', style: SqTypography.body),
+            child: Text(l10n.offersEmpty, style: SqTypography.body),
           );
         }
         return ListView.separated(
@@ -117,6 +119,7 @@ class _OfferTileState extends ConsumerState<_OfferTile> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final offer = widget.offer;
     return Container(
       padding: const EdgeInsets.all(16),
@@ -133,7 +136,7 @@ class _OfferTileState extends ConsumerState<_OfferTile> {
             children: [
               Text(offer.topicSlug, style: SqTypography.title),
               Text(
-                '${_remaining.inSeconds} с',
+                l10n.secondsShort(_remaining.inSeconds),
                 key: Key('sq-offer-countdown-${offer.offerId}'),
                 style: SqTypography.body.copyWith(color: SqColors.textSecondary),
               ),
@@ -143,7 +146,7 @@ class _OfferTileState extends ConsumerState<_OfferTile> {
             Padding(
               padding: const EdgeInsets.only(top: 4),
               child: Text(
-                'Срочный запрос',
+                l10n.offerEmergencyBadge,
                 style: SqTypography.caption.copyWith(color: SqColors.danger),
               ),
             ),
@@ -154,7 +157,7 @@ class _OfferTileState extends ConsumerState<_OfferTile> {
                 child: OutlinedButton(
                   key: Key('sq-offer-decline-${offer.offerId}'),
                   onPressed: _busy ? null : _decline,
-                  child: const Text('Отклонить'),
+                  child: Text(l10n.actionDecline),
                 ),
               ),
               const SizedBox(width: 12),
@@ -162,7 +165,7 @@ class _OfferTileState extends ConsumerState<_OfferTile> {
                 child: ElevatedButton(
                   key: Key('sq-offer-accept-${offer.offerId}'),
                   onPressed: _busy ? null : _accept,
-                  child: const Text('Принять'),
+                  child: Text(l10n.actionAccept),
                 ),
               ),
             ],

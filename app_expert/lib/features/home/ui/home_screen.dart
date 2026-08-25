@@ -11,6 +11,7 @@ import 'package:go_router/go_router.dart';
 import 'package:shared/shared.dart';
 
 import '../../../core/route_paths.dart';
+import '../../../l10n/app_localizations.dart';
 import '../state/home_controller.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
@@ -42,12 +43,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final async = ref.watch(homeControllerProvider);
 
     return Scaffold(
       backgroundColor: SqColors.background,
       appBar: AppBar(
-        title: const Text('Главная'),
+        title: Text(l10n.homeScreenTitle),
         actions: [
           IconButton(
             key: const Key('sq-home-profile'),
@@ -60,7 +62,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, _) => Center(
           child: Text(
-            error is ApiException ? error.message : 'Не удалось загрузить профиль',
+            error is ApiException ? error.message : l10n.errorLoadFailed,
             style: SqTypography.body.copyWith(color: SqColors.danger),
           ),
         ),
@@ -74,13 +76,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   Padding(
                     padding: const EdgeInsets.only(bottom: 16),
                     child: Text(
-                      'Приём заявок откроется после проверки анкеты',
+                      l10n.homeAcceptingBlockedByVerification,
                       style: SqTypography.body.copyWith(color: SqColors.textSecondary),
                     ),
                   ),
                 SwitchListTile(
                   key: const Key('sq-home-accepting-switch'),
-                  title: Text(accepting ? 'Приём заявок включён' : 'Приём заявок выключен'),
+                  title: Text(accepting ? l10n.homeAcceptingOn : l10n.homeAcceptingOff),
                   value: accepting,
                   onChanged: (_saving ||
                           me.verificationStatus != VerificationStatus.verified)
@@ -99,25 +101,25 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 ListTile(
                   key: const Key('sq-home-consultations'),
                   leading: const Icon(Icons.list_alt),
-                  title: const Text('Заявки и консультации'),
+                  title: Text(l10n.homeNavConsultations),
                   onTap: () => context.push(RoutePaths.consultations),
                 ),
                 ListTile(
                   key: const Key('sq-home-schedule'),
                   leading: const Icon(Icons.calendar_month),
-                  title: const Text('Расписание'),
+                  title: Text(l10n.scheduleScreenTitle),
                   onTap: () => context.push(RoutePaths.schedule),
                 ),
                 ListTile(
                   key: const Key('sq-home-earnings'),
                   leading: const Icon(Icons.payments_outlined),
-                  title: const Text('Доход'),
+                  title: Text(l10n.homeNavEarnings),
                   onTap: () => context.push(RoutePaths.earnings),
                 ),
                 ListTile(
                   key: const Key('sq-home-reviews'),
                   leading: const Icon(Icons.star_border),
-                  title: const Text('Отзывы'),
+                  title: Text(l10n.homeNavReviews),
                   onTap: () => context.push(RoutePaths.reviews),
                 ),
               ],

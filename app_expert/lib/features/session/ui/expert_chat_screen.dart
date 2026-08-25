@@ -10,6 +10,7 @@ import 'package:go_router/go_router.dart';
 import 'package:shared/shared.dart';
 
 import '../../../core/route_paths.dart';
+import '../../../l10n/app_localizations.dart';
 import '../../consultations/ui/note_editor.dart';
 import '../../consultations/ui/outcome_sheet.dart';
 import '../state/expert_session_controller.dart';
@@ -57,6 +58,7 @@ class _ExpertChatScreenState extends ConsumerState<ExpertChatScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final async = ref.watch(expertSessionControllerProvider(widget.consultationId));
 
     return async.when(
@@ -64,7 +66,7 @@ class _ExpertChatScreenState extends ConsumerState<ExpertChatScreen> {
       error: (error, _) => Scaffold(
         body: Center(
           child: Text(
-            error is ApiException ? error.message : 'Не удалось загрузить сессию',
+            error is ApiException ? error.message : l10n.errorLoadFailed,
             style: SqTypography.body.copyWith(color: SqColors.danger),
           ),
         ),
@@ -149,7 +151,7 @@ class _ExpertChatScreenState extends ConsumerState<ExpertChatScreen> {
                 Padding(
                   padding: const EdgeInsets.all(16),
                   child: Text(
-                    'Консультация завершена',
+                    l10n.consultationFinished,
                     style: SqTypography.body.copyWith(color: SqColors.textSecondary),
                   ),
                 ),

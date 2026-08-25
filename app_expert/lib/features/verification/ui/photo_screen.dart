@@ -9,6 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared/shared.dart';
 
+import '../../../l10n/app_localizations.dart';
 import '../data/verification_repository.dart';
 
 class PhotoScreen extends ConsumerStatefulWidget {
@@ -63,9 +64,10 @@ class _PhotoScreenState extends ConsumerState<PhotoScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       backgroundColor: SqColors.background,
-      appBar: AppBar(title: const Text('Фото профиля')),
+      appBar: AppBar(title: Text(l10n.photoScreenTitle)),
       body: Padding(
         padding: const EdgeInsets.all(SqSpacing.l),
         child: Column(
@@ -73,7 +75,7 @@ class _PhotoScreenState extends ConsumerState<PhotoScreen> {
           children: [
             if (_lastStatus != null) ...[
               Text(
-                _statusLabel(_lastStatus!),
+                _statusLabel(l10n, _lastStatus!),
                 style: SqTypography.body.copyWith(color: SqColors.textSecondary),
               ),
               const SizedBox(height: SqSpacing.m),
@@ -86,13 +88,13 @@ class _PhotoScreenState extends ConsumerState<PhotoScreen> {
               const SizedBox(height: SqSpacing.m),
             ],
             SqButton(
-              label: 'Загрузить фото',
+              label: l10n.actionUploadPhoto,
               onPressed: _busy ? null : _pickAndUpload,
               loading: _busy,
             ),
             const SizedBox(height: SqSpacing.m),
             SqButton(
-              label: 'Удалить фото',
+              label: l10n.actionDeletePhoto,
               kind: SqButtonKind.danger,
               onPressed: _busy ? null : _delete,
             ),
@@ -103,9 +105,9 @@ class _PhotoScreenState extends ConsumerState<PhotoScreen> {
   }
 }
 
-String _statusLabel(ProfileFieldStatus status) => switch (status) {
-  ProfileFieldStatus.none => 'Фото не загружено',
-  ProfileFieldStatus.pending => 'Фото отправлено на проверку',
-  ProfileFieldStatus.approved => 'Фото одобрено',
-  ProfileFieldStatus.rejected => 'Фото отклонено',
+String _statusLabel(AppLocalizations l10n, ProfileFieldStatus status) => switch (status) {
+  ProfileFieldStatus.none => l10n.photoStatusNone,
+  ProfileFieldStatus.pending => l10n.photoStatusPending,
+  ProfileFieldStatus.approved => l10n.photoStatusApproved,
+  ProfileFieldStatus.rejected => l10n.photoStatusRejected,
 };

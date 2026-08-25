@@ -7,6 +7,8 @@ library;
 import 'package:flutter/material.dart';
 import 'package:shared/shared.dart';
 
+import '../../../l10n/app_localizations.dart';
+
 class ReviewItemCard extends StatelessWidget {
   const ReviewItemCard({super.key, required this.review});
 
@@ -14,6 +16,7 @@ class ReviewItemCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -49,7 +52,7 @@ class ReviewItemCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Ваш ответ', style: SqTypography.caption.copyWith(color: SqColors.textSecondary)),
+                  Text(l10n.reviewYourReply, style: SqTypography.caption.copyWith(color: SqColors.textSecondary)),
                   const SizedBox(height: 4),
                   Text(review.expertReply!, style: SqTypography.body),
                 ],

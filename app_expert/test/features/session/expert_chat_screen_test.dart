@@ -11,6 +11,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:shared/shared.dart';
 
 import 'package:app_expert/features/session/ui/expert_chat_screen.dart';
+import 'package:app_expert/l10n/app_localizations.dart';
 
 class MockSqApi extends Mock implements SqApi {}
 
@@ -79,7 +80,12 @@ Widget _wrap(SqApi api, SqSocket socket) {
       sqApiProvider.overrideWithValue(api),
       sqEventsProvider.overrideWithValue(SqEvents(socket)),
     ],
-    child: MaterialApp.router(routerConfig: router),
+    child: MaterialApp.router(
+      locale: const Locale('ru'),
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
+      routerConfig: router,
+    ),
   );
 }
 

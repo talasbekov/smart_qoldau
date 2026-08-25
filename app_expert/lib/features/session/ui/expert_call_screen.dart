@@ -13,6 +13,7 @@ import 'package:go_router/go_router.dart';
 import 'package:shared/shared.dart';
 
 import '../../../core/route_paths.dart';
+import '../../../l10n/app_localizations.dart';
 import '../state/expert_session_controller.dart';
 import 'session_header_wrapper.dart';
 
@@ -48,6 +49,7 @@ class _ExpertCallScreenState extends ConsumerState<ExpertCallScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final call = ref.watch(callControllerProvider(widget.consultationId));
     final session = ref
         .watch(expertSessionControllerProvider(widget.consultationId))
@@ -56,7 +58,7 @@ class _ExpertCallScreenState extends ConsumerState<ExpertCallScreen> {
     return Scaffold(
       backgroundColor: SqColors.background,
       appBar: session == null
-          ? AppBar(title: const Text('Звонок'))
+          ? AppBar(title: Text(l10n.callScreenTitle))
           : SessionHeaderWrapper(
               clientCode: session.consultation.clientCode,
               topicSlug: session.consultation.topicSlug,
@@ -107,14 +109,15 @@ class _ActiveCall extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         Text(
           switch (state.phase) {
-            CallPhase.connecting => 'Подключение…',
-            CallPhase.reconnecting => 'Связь восстанавливается…',
-            _ => 'Звонок идёт',
+            CallPhase.connecting => l10n.callConnecting,
+            CallPhase.reconnecting => l10n.callReconnecting,
+            _ => l10n.callInProgress,
           },
           style: SqTypography.title,
         ),
@@ -153,13 +156,14 @@ class _PermissionDenied extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Text('Нет доступа к микрофону', style: SqTypography.body),
+        Text(l10n.callMicDenied, style: SqTypography.body),
         const SizedBox(height: 16),
-        ElevatedButton(onPressed: onOpenSettings, child: const Text('Открыть настройки')),
-        TextButton(onPressed: onBackToChat, child: const Text('Вернуться в чат')),
+        ElevatedButton(onPressed: onOpenSettings, child: Text(l10n.actionOpenSettings)),
+        TextButton(onPressed: onBackToChat, child: Text(l10n.actionBackToChat)),
       ],
     );
   }
@@ -173,15 +177,16 @@ class _Failed extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
         Text(
-          offerChat ? 'Связь не восстановилась — продолжите в чате' : 'Звонок не удался',
+          offerChat ? l10n.callOfferChatFallback : l10n.callFailed,
           style: SqTypography.body,
         ),
         const SizedBox(height: 16),
-        ElevatedButton(onPressed: onBackToChat, child: const Text('Вернуться в чат')),
+        ElevatedButton(onPressed: onBackToChat, child: Text(l10n.actionBackToChat)),
       ],
     );
   }

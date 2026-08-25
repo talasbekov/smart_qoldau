@@ -15,6 +15,7 @@ import 'package:go_router/go_router.dart';
 import 'package:shared/shared.dart';
 
 import '../../../core/route_paths.dart';
+import '../../../l10n/app_localizations.dart';
 import '../state/onboarding_controller.dart';
 
 final topicsProvider = FutureProvider.autoDispose<List<Topic>>(
@@ -73,18 +74,19 @@ class _TopicsStepScreenState extends ConsumerState<TopicsStepScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final topics = ref.watch(topicsProvider);
 
     return Scaffold(
       backgroundColor: SqColors.background,
-      appBar: AppBar(title: const Text('Анкета специалиста — шаг 2 из 2')),
+      appBar: AppBar(title: Text(l10n.onboardingTopicsTitle)),
       body: SafeArea(
         child: topics.when(
           loading: () => const Center(child: SqLoader()),
           error: (error, stackTrace) => SqErrorView(
-            text: error is ApiException ? error.message : 'Ошибка загрузки',
+            text: error is ApiException ? error.message : l10n.errorLoadFailed,
             onRetry: () => ref.invalidate(topicsProvider),
-            retryLabel: 'Повторить',
+            retryLabel: l10n.actionRetry,
           ),
           data: (list) => Padding(
             padding: const EdgeInsets.all(SqSpacing.l),
@@ -92,7 +94,7 @@ class _TopicsStepScreenState extends ConsumerState<TopicsStepScreen> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Text(
-                  'Выберите темы консультаций, с которыми вы работаете',
+                  l10n.onboardingTopicsHint,
                   style: SqTypography.body.copyWith(
                     color: SqColors.textSecondary,
                   ),
@@ -135,7 +137,7 @@ class _TopicsStepScreenState extends ConsumerState<TopicsStepScreen> {
                 ],
                 SqButton(
                   key: const Key('sq-onboarding-submit'),
-                  label: 'Отправить анкету',
+                  label: l10n.actionSubmitProfile,
                   loading: _submitting,
                   onPressed: _selectedSlugs.isNotEmpty && !_submitting
                       ? _submit

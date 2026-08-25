@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared/shared.dart';
 
+import '../../../l10n/app_localizations.dart';
 import '../state/notifications_controller.dart';
 import 'notification_tile.dart';
 
@@ -14,16 +15,17 @@ class NotificationsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
     final async = ref.watch(notificationsControllerProvider);
 
     return Scaffold(
       backgroundColor: SqColors.background,
       appBar: AppBar(
-        title: const Text('Уведомления'),
+        title: Text(l10n.notificationsScreenTitle),
         actions: [
           TextButton(
             onPressed: () => ref.read(notificationsControllerProvider.notifier).markAllRead(),
-            child: const Text('Прочитать все'),
+            child: Text(l10n.actionMarkAllRead),
           ),
         ],
       ),
@@ -31,13 +33,13 @@ class NotificationsScreen extends ConsumerWidget {
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, _) => Center(
           child: Text(
-            error is ApiException ? error.message : 'Не удалось загрузить уведомления',
+            error is ApiException ? error.message : l10n.errorLoadFailed,
             style: SqTypography.body.copyWith(color: SqColors.danger),
           ),
         ),
         data: (data) {
           if (data.items.isEmpty) {
-            return Center(child: Text('Пока нет уведомлений', style: SqTypography.body));
+            return Center(child: Text(l10n.notificationsEmpty, style: SqTypography.body));
           }
           return RefreshIndicator(
             onRefresh: () => ref.read(notificationsControllerProvider.notifier).refresh(),

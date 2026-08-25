@@ -15,6 +15,7 @@ import 'package:shared/shared.dart';
 
 import 'package:app_expert/core/route_paths.dart';
 import 'package:app_expert/features/verification/ui/verification_status_screen.dart';
+import 'package:app_expert/l10n/app_localizations.dart';
 
 class MockSqApi extends Mock implements SqApi {}
 
@@ -64,7 +65,12 @@ Widget _wrap(SqApi api) {
 
   return ProviderScope(
     overrides: [sqApiProvider.overrideWithValue(api)],
-    child: MaterialApp.router(routerConfig: router),
+    child: MaterialApp.router(
+      locale: const Locale('ru'),
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
+      routerConfig: router,
+    ),
   );
 }
 

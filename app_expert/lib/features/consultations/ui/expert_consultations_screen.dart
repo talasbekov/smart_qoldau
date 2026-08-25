@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared/shared.dart';
 
+import '../../../l10n/app_localizations.dart';
 import '../../offers/ui/offers_list_screen.dart';
 import '../state/expert_consultations_controller.dart';
 import 'expert_consultation_card.dart';
@@ -15,6 +16,7 @@ class ExpertConsultationsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
     final state = ref.watch(expertConsultationsControllerProvider);
     final controller = ref.read(expertConsultationsControllerProvider.notifier);
 
@@ -23,12 +25,12 @@ class ExpertConsultationsScreen extends ConsumerWidget {
       child: Scaffold(
         backgroundColor: SqColors.background,
         appBar: AppBar(
-          title: const Text('Заявки и консультации'),
-          bottom: const TabBar(
+          title: Text(l10n.consultationsScreenTitle),
+          bottom: TabBar(
             tabs: [
-              Tab(text: 'Заявки'),
-              Tab(text: 'Идёт/Плановые'),
-              Tab(text: 'История'),
+              Tab(text: l10n.consultationsTabOffers),
+              Tab(text: l10n.consultationsTabActive),
+              Tab(text: l10n.consultationsTabHistory),
             ],
           ),
         ),
@@ -52,17 +54,18 @@ class _ConsultationsList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return value.when(
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (error, _) => Center(
         child: Text(
-          error is ApiException ? error.message : 'Не удалось загрузить список',
+          error is ApiException ? error.message : l10n.errorLoadFailed,
           style: SqTypography.body.copyWith(color: SqColors.danger),
         ),
       ),
       data: (list) {
         if (list.isEmpty) {
-          return Center(child: Text('Пусто', style: SqTypography.body));
+          return Center(child: Text(l10n.listEmpty, style: SqTypography.body));
         }
         return RefreshIndicator(
           onRefresh: onRefresh,

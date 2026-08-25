@@ -11,6 +11,7 @@ import 'package:go_router/go_router.dart';
 import 'package:shared/shared.dart';
 
 import '../../../core/route_paths.dart';
+import '../../../l10n/app_localizations.dart';
 import '../state/schedule_controller.dart';
 import 'day_row.dart';
 
@@ -103,12 +104,13 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final scheduleAsync = ref.watch(scheduleControllerProvider);
 
     return Scaffold(
       backgroundColor: SqColors.background,
       appBar: AppBar(
-        title: const Text('Расписание'),
+        title: Text(l10n.scheduleScreenTitle),
         actions: [
           IconButton(
             key: const Key('sq-schedule-exceptions'),
@@ -121,9 +123,7 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
         loading: () => const SqLoader(),
         error: (error, _) => Center(
           child: SqErrorView(
-            text: error is ApiException
-                ? error.message
-                : 'Не удалось загрузить расписание',
+            text: error is ApiException ? error.message : l10n.errorLoadFailed,
             onRetry: () => ref.invalidate(scheduleControllerProvider),
           ),
         ),
@@ -151,7 +151,7 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
             ],
             SqButton(
               key: const Key('sq-schedule-save'),
-              label: 'Сохранить',
+              label: l10n.actionSave,
               loading: _saving,
               onPressed: _saving ? null : _save,
             ),

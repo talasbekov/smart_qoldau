@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared/shared.dart';
 
+import '../../../l10n/app_localizations.dart';
 import '../state/payout_controller.dart';
 
 class PayoutScreen extends ConsumerStatefulWidget {
@@ -43,11 +44,12 @@ class _PayoutScreenState extends ConsumerState<PayoutScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final state = ref.watch(payoutControllerProvider);
 
     return Scaffold(
       backgroundColor: SqColors.background,
-      appBar: AppBar(title: const Text('Вывод средств')),
+      appBar: AppBar(title: Text(l10n.payoutScreenTitle)),
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: ListView(
@@ -62,11 +64,11 @@ class _PayoutScreenState extends ConsumerState<PayoutScreen> {
                 ),
                 child: Text(
                   switch (state.result!.status) {
-                    PayoutStatus.pendingReview => 'Заявка на проверке у финконтроля',
-                    PayoutStatus.processing => 'Заявка одобрена, отправлена на выплату',
-                    PayoutStatus.paid => 'Выплачено',
+                    PayoutStatus.pendingReview => l10n.payoutPendingReview,
+                    PayoutStatus.processing => l10n.payoutProcessing,
+                    PayoutStatus.paid => l10n.payoutPaid,
                     PayoutStatus.rejected =>
-                      'Заявка отклонена: ${state.result!.rejectReason ?? ''}',
+                      l10n.payoutRejected(state.result!.rejectReason ?? ''),
                   },
                   style: SqTypography.body,
                 ),
@@ -75,14 +77,14 @@ class _PayoutScreenState extends ConsumerState<PayoutScreen> {
               key: const Key('sq-payout-amount'),
               controller: _amount,
               keyboardType: TextInputType.number,
-              decoration: const InputDecoration(labelText: 'Сумма, ₸'),
+              decoration: InputDecoration(labelText: l10n.payoutAmountLabel),
             ),
             const SizedBox(height: 12),
             TextField(
               key: const Key('sq-payout-pan'),
               controller: _pan,
               keyboardType: TextInputType.number,
-              decoration: const InputDecoration(labelText: 'Номер карты'),
+              decoration: InputDecoration(labelText: l10n.payoutPanLabel),
             ),
             const SizedBox(height: 12),
             TextField(
@@ -94,7 +96,7 @@ class _PayoutScreenState extends ConsumerState<PayoutScreen> {
             TextField(
               key: const Key('sq-payout-holder'),
               controller: _holderName,
-              decoration: const InputDecoration(labelText: 'Имя держателя'),
+              decoration: InputDecoration(labelText: l10n.payoutHolderLabel),
             ),
             if (state.validationError != null)
               Padding(
@@ -116,7 +118,7 @@ class _PayoutScreenState extends ConsumerState<PayoutScreen> {
             ElevatedButton(
               key: const Key('sq-payout-submit'),
               onPressed: state.submitting ? null : _submit,
-              child: const Text('Отправить заявку'),
+              child: Text(l10n.actionSubmitPayout),
             ),
           ],
         ),

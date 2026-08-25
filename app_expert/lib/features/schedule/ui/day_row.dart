@@ -8,10 +8,18 @@ library;
 import 'package:flutter/material.dart';
 import 'package:shared/shared.dart';
 
-const _dayNames = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
+import '../../../l10n/app_localizations.dart';
 
 /// Короткая подпись дня недели по `weekday` (0 = пн, 6 = вс).
-String dayLabel(int weekday) => _dayNames[weekday];
+String dayLabel(AppLocalizations l10n, int weekday) => switch (weekday) {
+  0 => l10n.weekdayMon,
+  1 => l10n.weekdayTue,
+  2 => l10n.weekdayWed,
+  3 => l10n.weekdayThu,
+  4 => l10n.weekdayFri,
+  5 => l10n.weekdaySat,
+  _ => l10n.weekdaySun,
+};
 
 /// `"09:00"` для минут от полуночи, `"—"` если время не задано.
 String formatMinutes(int? minutes) {
@@ -43,6 +51,7 @@ class DayRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return SqCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -50,7 +59,7 @@ class DayRow extends StatelessWidget {
           Row(
             children: [
               Expanded(
-                child: Text(dayLabel(day.weekday), style: SqTypography.title),
+                child: Text(dayLabel(l10n, day.weekday), style: SqTypography.title),
               ),
               Switch(
                 key: Key('day-${day.weekday}-toggle'),
@@ -66,7 +75,7 @@ class DayRow extends StatelessWidget {
                 Expanded(
                   child: _TimeField(
                     fieldKey: Key('day-${day.weekday}-start'),
-                    label: 'Начало',
+                    label: l10n.scheduleStart,
                     minutes: day.startMin,
                     onTap: onPickStart,
                   ),
@@ -75,7 +84,7 @@ class DayRow extends StatelessWidget {
                 Expanded(
                   child: _TimeField(
                     fieldKey: Key('day-${day.weekday}-end'),
-                    label: 'Конец',
+                    label: l10n.scheduleEnd,
                     minutes: day.endMin,
                     onTap: onPickEnd,
                   ),
@@ -88,7 +97,7 @@ class DayRow extends StatelessWidget {
                 Expanded(
                   child: _TimeField(
                     fieldKey: Key('day-${day.weekday}-break-start'),
-                    label: 'Перерыв с',
+                    label: l10n.scheduleBreakStart,
                     minutes: day.breakStart,
                     onTap: onPickBreakStart,
                   ),
@@ -97,7 +106,7 @@ class DayRow extends StatelessWidget {
                 Expanded(
                   child: _TimeField(
                     fieldKey: Key('day-${day.weekday}-break-end'),
-                    label: 'Перерыв до',
+                    label: l10n.scheduleBreakEnd,
                     minutes: day.breakEnd,
                     onTap: onPickBreakEnd,
                   ),
@@ -110,7 +119,7 @@ class DayRow extends StatelessWidget {
                 key: Key('day-${day.weekday}-clear-break'),
                 onTap: onClearBreak,
                 child: Text(
-                  'Убрать перерыв',
+                  l10n.actionClearBreak,
                   style: SqTypography.caption.copyWith(
                     color: SqColors.textSecondary,
                   ),

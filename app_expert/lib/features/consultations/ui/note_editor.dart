@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared/shared.dart';
 
+import '../../../l10n/app_localizations.dart';
 import '../data/expert_notes_repository.dart';
 
 class NoteEditor extends ConsumerStatefulWidget {
@@ -67,6 +68,7 @@ class _NoteEditorState extends ConsumerState<NoteEditor> {
   @override
   Widget build(BuildContext context) {
     if (_loading) return const Center(child: CircularProgressIndicator());
+    final l10n = AppLocalizations.of(context)!;
 
     return Padding(
       padding: const EdgeInsets.all(16),
@@ -74,10 +76,10 @@ class _NoteEditorState extends ConsumerState<NoteEditor> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text('Приватная заметка', style: SqTypography.title),
+          Text(l10n.noteEditorTitle, style: SqTypography.title),
           const SizedBox(height: 4),
           Text(
-            'Видна только вам. Не используйте медицинские диагнозы.',
+            l10n.noteEditorHint,
             style: SqTypography.caption.copyWith(color: SqColors.textSecondary),
           ),
           const SizedBox(height: 12),
@@ -95,7 +97,7 @@ class _NoteEditorState extends ConsumerState<NoteEditor> {
           ElevatedButton(
             key: const Key('sq-note-save'),
             onPressed: _saving ? null : _save,
-            child: const Text('Сохранить'),
+            child: Text(l10n.actionSave),
           ),
         ],
       ),

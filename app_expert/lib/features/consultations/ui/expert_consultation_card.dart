@@ -8,21 +8,23 @@ import 'package:go_router/go_router.dart';
 import 'package:shared/shared.dart';
 
 import '../../../core/route_paths.dart';
+import '../../../l10n/app_localizations.dart';
 
 class ExpertConsultationCard extends StatelessWidget {
   const ExpertConsultationCard({super.key, required this.consultation});
 
   final ConsultationExpertDto consultation;
 
-  String get _statusLabel => switch (consultation.status) {
-        ConsultationStatus.scheduled => 'Плановая запись',
-        ConsultationStatus.active => 'Идёт сейчас',
-        ConsultationStatus.completed => 'Завершена',
-        ConsultationStatus.cancelled => 'Отменена',
+  String _statusLabel(AppLocalizations l10n) => switch (consultation.status) {
+        ConsultationStatus.scheduled => l10n.consultationStatusScheduled,
+        ConsultationStatus.active => l10n.consultationStatusActive,
+        ConsultationStatus.completed => l10n.consultationStatusCompleted,
+        ConsultationStatus.cancelled => l10n.consultationStatusCancelled,
       };
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     // Открыть сессию (чат) есть смысл только для ACTIVE — SCHEDULED ещё не
     // началась (нет переписки, `GET /consultations/{id}/messages` не
     // предмет плановой записи), COMPLETED/CANCELLED — история для чтения,
@@ -46,11 +48,11 @@ class ExpertConsultationCard extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(consultation.topicSlug, style: SqTypography.title),
-              Text('Клиент #${consultation.clientCode}', style: SqTypography.caption),
+              Text(l10n.clientCode(consultation.clientCode), style: SqTypography.caption),
             ],
           ),
           const SizedBox(height: 4),
-          Text(_statusLabel, style: SqTypography.body.copyWith(color: SqColors.textSecondary)),
+          Text(_statusLabel(l10n), style: SqTypography.body.copyWith(color: SqColors.textSecondary)),
           const SizedBox(height: 4),
           Text(
             formatTenge(consultation.priceTiyn),

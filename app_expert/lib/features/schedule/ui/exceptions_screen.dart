@@ -10,6 +10,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared/shared.dart';
 
+import '../../../l10n/app_localizations.dart';
 import '../data/schedule_repository.dart';
 
 /// Горизонт исключений — 14 дней вперёд, включая сегодня.
@@ -22,7 +23,16 @@ String _formatDate(DateTime day) {
   return '$y-$m-$d';
 }
 
-const _weekdayNames = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
+/// [weekday] — `DateTime.weekday` (1 = пн ... 7 = вс).
+String _weekdayShort(AppLocalizations l10n, int weekday) => switch (weekday) {
+  1 => l10n.weekdayMon,
+  2 => l10n.weekdayTue,
+  3 => l10n.weekdayWed,
+  4 => l10n.weekdayThu,
+  5 => l10n.weekdayFri,
+  6 => l10n.weekdaySat,
+  _ => l10n.weekdaySun,
+};
 
 class ExceptionsScreen extends ConsumerStatefulWidget {
   const ExceptionsScreen({super.key});
@@ -112,9 +122,10 @@ class _ExceptionsScreenState extends ConsumerState<ExceptionsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       backgroundColor: SqColors.background,
-      appBar: AppBar(title: const Text('Исключения в расписании')),
+      appBar: AppBar(title: Text(l10n.exceptionsScreenTitle)),
       body: _loading
           ? const SqLoader()
           : _error != null
@@ -159,9 +170,10 @@ class _DayCell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final label = switch (exception) {
       null => null,
-      ScheduleException(isDayOff: true) => 'Выходной',
+      ScheduleException(isDayOff: true) => l10n.scheduleDayOff,
       ScheduleException(:final startMin, :final endMin) =>
         '${_pad(startMin! ~/ 60)}:${_pad(startMin % 60)}'
             '–${_pad(endMin! ~/ 60)}:${_pad(endMin % 60)}',
@@ -181,7 +193,7 @@ class _DayCell extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Text(
-              '${_weekdayNames[day.weekday - 1]} ${day.day}',
+              '${_weekdayShort(l10n, day.weekday)} ${day.day}',
               style: SqTypography.caption,
             ),
             if (label != null)
@@ -245,6 +257,7 @@ class _ExceptionSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return SafeArea(
       child: Padding(
         padding: const EdgeInsets.all(SqSpacing.l),
@@ -255,19 +268,19 @@ class _ExceptionSheet extends StatelessWidget {
             Text(_formatDate(day), style: SqTypography.title),
             const SizedBox(height: SqSpacing.m),
             SqButton(
-              label: 'Сделать выходным',
+              label: l10n.actionMakeDayOff,
               onPressed: () => Navigator.of(context).pop(_DayOffAction()),
             ),
             const SizedBox(height: SqSpacing.s),
             SqButton(
-              label: 'Другие часы работы',
+              label: l10n.actionCustomHours,
               kind: SqButtonKind.secondary,
               onPressed: () => _pickCustomHours(context),
             ),
             if (existing != null) ...[
               const SizedBox(height: SqSpacing.s),
               SqButton(
-                label: 'Убрать исключение',
+                label: l10n.actionRemoveException,
                 kind: SqButtonKind.ghost,
                 onPressed: () => Navigator.of(context).pop(_ClearAction()),
               ),

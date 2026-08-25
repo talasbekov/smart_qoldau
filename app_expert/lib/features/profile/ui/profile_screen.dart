@@ -1,6 +1,5 @@
 /// Профиль эксперта (E7 задача 16): имя, кнопка выхода, смена языка
-/// (`PATCH /me/locale` через `LocaleController` — UI пока не локализован,
-/// см. `core/locale_controller.dart`), центр уведомлений.
+/// (`PATCH /me/locale` через `LocaleController`), центр уведомлений.
 library;
 
 import 'package:flutter/material.dart';
@@ -10,6 +9,7 @@ import 'package:shared/shared.dart';
 
 import '../../../core/locale_controller.dart';
 import '../../../core/route_paths.dart';
+import '../../../l10n/app_localizations.dart';
 import '../../auth/state/auth_controller.dart';
 import '../../home/state/home_controller.dart';
 
@@ -18,12 +18,13 @@ class ProfileScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
     final me = ref.watch(homeControllerProvider).valueOrNull;
     final locale = ref.watch(localeControllerProvider);
 
     return Scaffold(
       backgroundColor: SqColors.background,
-      appBar: AppBar(title: const Text('Профиль')),
+      appBar: AppBar(title: Text(l10n.profileScreenTitle)),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
@@ -35,12 +36,14 @@ class ProfileScreen extends ConsumerWidget {
           ListTile(
             key: const Key('sq-profile-notifications'),
             leading: const Icon(Icons.notifications_outlined),
-            title: const Text('Уведомления'),
+            title: Text(l10n.notificationsScreenTitle),
             onTap: () => context.push(RoutePaths.notifications),
           ),
           ListTile(
             leading: const Icon(Icons.language),
-            title: const Text('Язык'),
+            title: Text(l10n.profileLanguage),
+            // Названия языков намеренно НЕ локализуются — переключатель языка
+            // показывает каждый пункт на его же языке (стандартная практика).
             trailing: DropdownButton<Locale>(
               key: const Key('sq-profile-locale'),
               value: locale,
@@ -59,7 +62,7 @@ class ProfileScreen extends ConsumerWidget {
           ListTile(
             key: const Key('sq-logout'),
             leading: const Icon(Icons.logout),
-            title: const Text('Выйти'),
+            title: Text(l10n.actionLogout),
             onTap: () => ref.read(authControllerProvider.notifier).logout(),
           ),
         ],

@@ -11,6 +11,7 @@ import 'package:go_router/go_router.dart';
 import 'package:shared/shared.dart';
 
 import '../../../core/route_paths.dart';
+import '../../../l10n/app_localizations.dart';
 import '../data/offers_repository.dart';
 import '../state/incoming_offer_controller.dart';
 
@@ -84,6 +85,7 @@ class _IncomingOfferScreenState extends ConsumerState<IncomingOfferScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final offer = widget.offer;
     final seconds = _remaining.inSeconds;
 
@@ -104,15 +106,15 @@ class _IncomingOfferScreenState extends ConsumerState<IncomingOfferScreen> {
                       color: SqColors.danger,
                       borderRadius: BorderRadius.circular(999),
                     ),
-                    child: const Text('Срочный запрос', style: TextStyle(color: Colors.white)),
+                    child: Text(l10n.offerEmergencyBadge, style: const TextStyle(color: Colors.white)),
                   ),
                 const SizedBox(height: 16),
-                Text('Новый оффер', style: SqTypography.h2),
+                Text(l10n.offerNewTitle, style: SqTypography.h2),
                 const SizedBox(height: 8),
                 Text(offer.topicSlug, style: SqTypography.body),
                 const SizedBox(height: 24),
                 Text(
-                  '$seconds с',
+                  l10n.secondsShort(seconds),
                   key: const Key('sq-offer-countdown'),
                   style: SqTypography.h1,
                 ),
@@ -132,7 +134,7 @@ class _IncomingOfferScreenState extends ConsumerState<IncomingOfferScreen> {
                             : () => _respond(
                                   () => ref.read(offersRepositoryProvider).decline(offer.offerId),
                                 ),
-                        child: const Text('Отклонить'),
+                        child: Text(l10n.actionDecline),
                       ),
                     ),
                     const SizedBox(width: 16),
@@ -146,7 +148,7 @@ class _IncomingOfferScreenState extends ConsumerState<IncomingOfferScreen> {
                                   onSuccess: (result) =>
                                       context.push(RoutePaths.session(result.consultationId)),
                                 ),
-                        child: const Text('Принять'),
+                        child: Text(l10n.actionAccept),
                       ),
                     ),
                   ],

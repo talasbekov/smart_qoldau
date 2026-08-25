@@ -14,13 +14,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared/shared.dart';
 
+import '../../../l10n/app_localizations.dart';
 import '../data/expert_consultations_repository.dart';
 
-const _outcomes = [
-  (ConsultationOutcome.completed, 'Консультация состоялась'),
-  (ConsultationOutcome.clientNoShow, 'Клиент не пришёл'),
-  (ConsultationOutcome.clientCancelled, 'Клиент отменил'),
-  (ConsultationOutcome.techIssue, 'Технический сбой'),
+List<(ConsultationOutcome, String)> _outcomes(AppLocalizations l10n) => [
+  (ConsultationOutcome.completed, l10n.outcomeCompleted),
+  (ConsultationOutcome.clientNoShow, l10n.outcomeClientNoShow),
+  (ConsultationOutcome.clientCancelled, l10n.outcomeClientCancelled),
+  (ConsultationOutcome.techIssue, l10n.outcomeTechIssue),
 ];
 
 /// Показывает шторку и, если эксперт выбрал исход, вызывает
@@ -73,6 +74,7 @@ class _OutcomeSheetContentState extends ConsumerState<_OutcomeSheetContent> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return SafeArea(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -80,14 +82,14 @@ class _OutcomeSheetContentState extends ConsumerState<_OutcomeSheetContent> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text('Завершить консультацию', style: SqTypography.title),
+            Text(l10n.outcomeSheetTitle, style: SqTypography.title),
             const SizedBox(height: 16),
             if (_error != null)
               Padding(
                 padding: const EdgeInsets.only(bottom: 12),
                 child: Text(_error!, style: SqTypography.body.copyWith(color: SqColors.danger)),
               ),
-            for (final (outcome, label) in _outcomes)
+            for (final (outcome, label) in _outcomes(l10n))
               ListTile(
                 key: Key('sq-outcome-${outcome.wireValue}'),
                 title: Text(label),

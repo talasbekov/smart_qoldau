@@ -6,6 +6,8 @@ library;
 
 import 'package:flutter/material.dart';
 
+import '../../../l10n/app_localizations.dart';
+
 class SessionHeaderWrapper extends StatelessWidget implements PreferredSizeWidget {
   const SessionHeaderWrapper({
     super.key,
@@ -31,8 +33,9 @@ class SessionHeaderWrapper extends StatelessWidget implements PreferredSizeWidge
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return AppBar(
-      title: Text('Клиент #$clientCode · $topicSlug'),
+      title: Text(l10n.sessionHeaderTitle(clientCode, topicSlug)),
       actions: [
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 12),

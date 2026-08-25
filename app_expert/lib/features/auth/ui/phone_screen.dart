@@ -10,6 +10,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared/shared.dart';
 
+import '../../../l10n/app_localizations.dart';
 import '../state/auth_controller.dart';
 import 'code_screen.dart';
 
@@ -116,16 +117,17 @@ class _PhoneScreenState extends ConsumerState<PhoneScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       backgroundColor: SqColors.background,
-      appBar: AppBar(title: const Text('Вход для специалиста')),
+      appBar: AppBar(title: Text(l10n.phoneScreenTitle)),
       body: Padding(
         padding: const EdgeInsets.all(SqSpacing.l),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Text(
-              'Введите номер телефона — на него придёт код подтверждения',
+              l10n.phoneScreenHint,
               style: SqTypography.body.copyWith(color: SqColors.textSecondary),
             ),
             const SizedBox(height: SqSpacing.xl),
@@ -135,7 +137,7 @@ class _PhoneScreenState extends ConsumerState<PhoneScreen> {
               inputFormatters: [_PhoneMaskFormatter()],
               style: SqTypography.body.copyWith(color: SqColors.textPrimary),
               decoration: InputDecoration(
-                labelText: 'Номер телефона',
+                labelText: l10n.phoneNumberLabel,
                 prefixText: '+7 (7',
                 prefixStyle: SqTypography.body.copyWith(
                   color: SqColors.textPrimary,
@@ -156,7 +158,7 @@ class _PhoneScreenState extends ConsumerState<PhoneScreen> {
             ),
             const SizedBox(height: SqSpacing.xl),
             SqButton(
-              label: 'Получить код',
+              label: l10n.actionGetCode,
               loading: _submitting,
               onPressed: _canSubmit ? () => _submit() : null,
             ),

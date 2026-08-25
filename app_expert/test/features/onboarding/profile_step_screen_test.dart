@@ -9,8 +9,14 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared/shared.dart';
 
 import 'package:app_expert/features/onboarding/ui/profile_step_screen.dart';
+import 'package:app_expert/l10n/app_localizations.dart';
 
-Widget _wrap(Widget child) => MaterialApp(home: child);
+Widget _wrap(Widget child) => MaterialApp(
+      locale: const Locale('ru'),
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
+      home: child,
+    );
 
 Finder _displayNameField() =>
     find.byKey(const Key('sq-onboarding-display-name'));

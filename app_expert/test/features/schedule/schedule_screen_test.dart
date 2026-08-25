@@ -12,6 +12,7 @@ import 'package:shared/shared.dart';
 
 import 'package:app_expert/features/schedule/state/schedule_controller.dart';
 import 'package:app_expert/features/schedule/ui/schedule_screen.dart';
+import 'package:app_expert/l10n/app_localizations.dart';
 
 class MockSqApi extends Mock implements SqApi {}
 
@@ -35,7 +36,12 @@ Widget _wrap(SqApi api, {ProviderContainer? container}) {
         container ??
         (ProviderContainer(overrides: [sqApiProvider.overrideWithValue(api)])
           ..updateOverrides([sqApiProvider.overrideWithValue(api)])),
-    child: const MaterialApp(home: ScheduleScreen()),
+    child: MaterialApp(
+      locale: const Locale('ru'),
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
+      home: const ScheduleScreen(),
+    ),
   );
 }
 

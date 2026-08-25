@@ -8,6 +8,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:shared/shared.dart';
 
 import 'package:app_expert/features/consultations/ui/outcome_sheet.dart';
+import 'package:app_expert/l10n/app_localizations.dart';
 
 class MockSqApi extends Mock implements SqApi {}
 
@@ -29,6 +30,9 @@ ConsultationExpertDto _consultation(ConsultationOutcome outcome) => Consultation
 Widget _wrap(SqApi api) => ProviderScope(
       overrides: [sqApiProvider.overrideWithValue(api)],
       child: MaterialApp(
+        locale: const Locale('ru'),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: Builder(
           builder: (context) => ElevatedButton(
             onPressed: () => showOutcomeSheet(context, consultationId: 'cons-1'),

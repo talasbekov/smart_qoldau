@@ -3,10 +3,7 @@
 ///
 /// Города, опыт и языки — фиксированные словари ТЗ (`БП-04 Онбординг и
 /// верификация эксперта`): три города (Астана/Алматы/Шымкент), 5 градаций
-/// опыта, 3 языка (рус/каз/англ). `app_expert` пока не заводит l10n-
-/// инфраструктуру (см. `phone_screen.dart`/`code_screen.dart` — задача 1
-/// оставила экраны с захардкоженными русскими строками), поэтому подписи
-/// здесь такие же захардкоженные строки, а не ключи ARB.
+/// опыта, 3 языка (рус/каз/англ).
 library;
 
 import 'package:flutter/material.dart';
@@ -14,30 +11,31 @@ import 'package:go_router/go_router.dart';
 import 'package:shared/shared.dart';
 
 import '../../../core/route_paths.dart';
+import '../../../l10n/app_localizations.dart';
 import '../state/onboarding_controller.dart';
 
 const _cities = ['Астана', 'Алматы', 'Шымкент'];
 const _languageCodes = ['ru', 'kk', 'en'];
 
-String _languageLabel(String code) => switch (code) {
-  'ru' => 'Русский',
-  'kk' => 'Казахский',
-  'en' => 'Английский',
+String _languageLabel(AppLocalizations l10n, String code) => switch (code) {
+  'ru' => l10n.languageRussian,
+  'kk' => l10n.languageKazakh,
+  'en' => l10n.languageEnglish,
   _ => code,
 };
 
-String _experienceLabel(ExperienceLevel level) => switch (level) {
-  ExperienceLevel.lessThanYear => 'Менее 1 года',
-  ExperienceLevel.oneToThree => '1–3 года',
-  ExperienceLevel.threeToFive => '3–5 лет',
-  ExperienceLevel.fiveToTen => '5–10 лет',
-  ExperienceLevel.moreThanTen => 'Более 10 лет',
+String _experienceLabel(AppLocalizations l10n, ExperienceLevel level) => switch (level) {
+  ExperienceLevel.lessThanYear => l10n.experienceLessThanYear,
+  ExperienceLevel.oneToThree => l10n.experienceOneToThree,
+  ExperienceLevel.threeToFive => l10n.experienceThreeToFive,
+  ExperienceLevel.fiveToTen => l10n.experienceFiveToTen,
+  ExperienceLevel.moreThanTen => l10n.experienceMoreThanTen,
 };
 
-String _formatLabel(SessionFormat format) => switch (format) {
-  SessionFormat.chat => 'Чат',
-  SessionFormat.audio => 'Аудио',
-  SessionFormat.video => 'Видео',
+String _formatLabel(AppLocalizations l10n, SessionFormat format) => switch (format) {
+  SessionFormat.chat => l10n.formatChat,
+  SessionFormat.audio => l10n.formatAudio,
+  SessionFormat.video => l10n.formatVideo,
 };
 
 class ProfileStepScreen extends StatefulWidget {
@@ -110,20 +108,21 @@ class _ProfileStepScreenState extends State<ProfileStepScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       backgroundColor: SqColors.background,
-      appBar: AppBar(title: const Text('Анкета специалиста — шаг 1 из 2')),
+      appBar: AppBar(title: Text(l10n.onboardingProfileTitle)),
       body: SafeArea(
         child: ListView(
           padding: const EdgeInsets.all(SqSpacing.l),
           children: [
             SqTextField(
               key: const Key('sq-onboarding-display-name'),
-              label: 'Имя и фамилия',
+              label: l10n.fieldFullName,
               controller: _displayNameController,
             ),
             const SizedBox(height: SqSpacing.l),
-            Text('Город', style: SqTypography.title),
+            Text(l10n.fieldCity, style: SqTypography.title),
             const SizedBox(height: SqSpacing.s),
             Wrap(
               spacing: SqSpacing.s,
@@ -137,7 +136,7 @@ class _ProfileStepScreenState extends State<ProfileStepScreen> {
               ],
             ),
             const SizedBox(height: SqSpacing.l),
-            Text('Опыт работы', style: SqTypography.title),
+            Text(l10n.fieldExperience, style: SqTypography.title),
             const SizedBox(height: SqSpacing.s),
             Wrap(
               spacing: SqSpacing.s,
@@ -148,7 +147,7 @@ class _ProfileStepScreenState extends State<ProfileStepScreen> {
                     key: Key('sq-onboarding-experience-${level.wireValue}'),
                     onTap: () => setState(() => _experience = level),
                     child: SqChip(
-                      label: _experienceLabel(level),
+                      label: _experienceLabel(l10n, level),
                       selected: _experience == level,
                     ),
                   ),
@@ -157,18 +156,18 @@ class _ProfileStepScreenState extends State<ProfileStepScreen> {
             const SizedBox(height: SqSpacing.l),
             SqTextField(
               key: const Key('sq-onboarding-education'),
-              label: 'Образование',
+              label: l10n.fieldEducation,
               controller: _educationController,
             ),
             const SizedBox(height: SqSpacing.l),
             SqTextField(
               key: const Key('sq-onboarding-price'),
-              label: 'Стоимость консультации, ₸',
+              label: l10n.fieldPriceTenge,
               controller: _priceController,
               keyboardType: TextInputType.number,
             ),
             const SizedBox(height: SqSpacing.l),
-            Text('Языки консультации', style: SqTypography.title),
+            Text(l10n.fieldLanguages, style: SqTypography.title),
             const SizedBox(height: SqSpacing.s),
             Wrap(
               spacing: SqSpacing.s,
@@ -178,14 +177,14 @@ class _ProfileStepScreenState extends State<ProfileStepScreen> {
                     key: Key('sq-onboarding-lang-$code'),
                     onTap: () => _toggleLanguage(code),
                     child: SqChip(
-                      label: _languageLabel(code),
+                      label: _languageLabel(l10n, code),
                       selected: _languages.contains(code),
                     ),
                   ),
               ],
             ),
             const SizedBox(height: SqSpacing.l),
-            Text('Форматы консультаций', style: SqTypography.title),
+            Text(l10n.fieldFormats, style: SqTypography.title),
             const SizedBox(height: SqSpacing.s),
             Wrap(
               spacing: SqSpacing.s,
@@ -195,7 +194,7 @@ class _ProfileStepScreenState extends State<ProfileStepScreen> {
                     key: Key('sq-onboarding-format-${format.wireValue}'),
                     onTap: () => _toggleFormat(format),
                     child: SqChip(
-                      label: _formatLabel(format),
+                      label: _formatLabel(l10n, format),
                       selected: _formats.contains(format),
                     ),
                   ),
@@ -204,7 +203,7 @@ class _ProfileStepScreenState extends State<ProfileStepScreen> {
             const SizedBox(height: SqSpacing.xl),
             SqButton(
               key: const Key('sq-onboarding-next'),
-              label: 'Далее',
+              label: l10n.actionNext,
               onPressed: _canProceed ? _next : null,
             ),
           ],
