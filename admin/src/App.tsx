@@ -7,6 +7,7 @@ import AppLayout from './routes/AppLayout';
 import SettingsPage from './routes/SettingsPage';
 import StaffPage from './routes/StaffPage';
 import VerificationQueuePage from './routes/VerificationQueuePage';
+import ProfileModerationPage from './routes/ProfileModerationPage';
 import { tokenStore } from './lib/tokenStore';
 import type { Session } from './lib/types';
 import './index.css';
@@ -50,7 +51,8 @@ export default function App() {
             <Route path="/settings" element={<SettingsPage />} />
             <Route path="/staff" element={<StaffPage />} />
             <Route path="/verification" element={<VerificationQueuePage />} />
-            {/* Остальные маршруты подключаются задачами 7-11 */}
+            <Route path="/profile-moderation" element={<ProfileModerationPage />} />
+            {/* Остальные маршруты подключаются задачами 8-11 */}
           </Route>
         </Route>
       </Routes>
