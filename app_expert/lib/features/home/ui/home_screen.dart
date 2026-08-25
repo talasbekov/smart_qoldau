@@ -44,6 +44,20 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+
+    // Свежезарегистрированный телефон ещё не имеет анкеты эксперта —
+    // `GET /experts/me` отвечает 404 EXPERT_NOT_FOUND. Ни один экран до
+    // этого не заводил автоматический переход в онбординг (см. брифинг
+    // задачи 4: «заведёт задача 6», но задача 6 — только фото/статус
+    // верификации, а не сам переход) — без него новый эксперт упирался бы
+    // в тупиковый экран ошибки без всякого выхода.
+    ref.listen(homeControllerProvider, (previous, next) {
+      final error = next.error;
+      if (error is ApiException && error.code == ApiErrorCode.expertNotFound) {
+        context.go(RoutePaths.onboardingProfile);
+      }
+    });
+
     final async = ref.watch(homeControllerProvider);
 
     return Scaffold(
