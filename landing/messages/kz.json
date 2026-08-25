@@ -1,0 +1,29 @@
+{
+  "nav": {
+    "home": "Басты бет",
+    "becomeExpert": "Психолог болу",
+    "premium": "Premium",
+    "support": "Қолдау",
+    "login": "Кіру"
+  },
+  "footer": {
+    "tagline": "Онлайн психологиялық қолдау",
+    "clientsTitle": "Клиенттерге",
+    "clientsSupport": "Қолдау",
+    "clientsPremium": "Premium",
+    "expertsTitle": "Мамандарға",
+    "expertsBecome": "Психолог болу",
+    "companyTitle": "Компания",
+    "companySupport": "Қолдау",
+    "docsTitle": "Құжаттар",
+    "docsPrivacy": "Құпиялылық саясаты",
+    "docsTerms": "Пайдаланушы келісімі",
+    "copyright": "© SmartQoldau"
+  },
+  "home": {},
+  "becomeExpert": {},
+  "premium": {},
+  "terms": {},
+  "privacy": {},
+  "support": {}
+}

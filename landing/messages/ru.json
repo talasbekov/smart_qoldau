@@ -1,0 +1,29 @@
+{
+  "nav": {
+    "home": "Главная",
+    "becomeExpert": "Стать психологом",
+    "premium": "Premium",
+    "support": "Поддержка",
+    "login": "Войти"
+  },
+  "footer": {
+    "tagline": "Психологическая поддержка онлайн",
+    "clientsTitle": "Клиентам",
+    "clientsSupport": "Поддержка",
+    "clientsPremium": "Premium",
+    "expertsTitle": "Специалистам",
+    "expertsBecome": "Стать психологом",
+    "companyTitle": "Компания",
+    "companySupport": "Поддержка",
+    "docsTitle": "Документы",
+    "docsPrivacy": "Политика конфиденциальности",
+    "docsTerms": "Пользовательское соглашение",
+    "copyright": "© SmartQoldau"
+  },
+  "home": {},
+  "becomeExpert": {},
+  "premium": {},
+  "terms": {},
+  "privacy": {},
+  "support": {}
+}
