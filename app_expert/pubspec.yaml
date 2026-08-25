@@ -62,6 +62,13 @@ dev_dependencies:
   # rules and activating additional ones.
   flutter_lints: ^6.0.0
   mocktail: ^1.0.5
+  # Сквозной прогон против живого бэкенда (E7 задача 17).
+  integration_test:
+    sdk: flutter
+  # HTTP-клиент нужен напрямую сквозному integration_test (играет роль
+  # клиента, создающего заявку). Прикладной код обращается к бэкенду
+  # только через `SqApi`.
+  dio: ^5.9.0
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec

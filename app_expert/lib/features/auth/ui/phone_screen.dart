@@ -158,6 +158,7 @@ class _PhoneScreenState extends ConsumerState<PhoneScreen> {
             ),
             const SizedBox(height: SqSpacing.xl),
             SqButton(
+              key: const Key('sq-phone-submit'),
               label: l10n.actionGetCode,
               loading: _submitting,
               onPressed: _canSubmit ? () => _submit() : null,
