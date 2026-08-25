@@ -20,6 +20,11 @@ export function configureApp(app: INestApplication): void {
   // проекта — Swagger UI на /v1/docs, и дефолтная политика helmet ломает
   // его инлайновые скрипты; API-ответам CSP не нужен.
   app.use(helmet({ contentSecurityPolicy: false }));
+  // E8: панель admin/ — браузерный SPA на другом origin (Vite dev-сервер),
+  // без этого браузер блокирует ответ ещё до того, как код фронтенда его
+  // увидит. origin:true отражает Origin запроса; credentials не нужны —
+  // авторизация в admin/ полностью на Bearer-токене, без cookie.
+  app.enableCors({ origin: true, credentials: false });
   app.setGlobalPrefix('v1');
   app.useGlobalFilters(new AppExceptionFilter());
   app.useGlobalPipes(
