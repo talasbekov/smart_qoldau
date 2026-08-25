@@ -19,5 +19,7 @@ export 'photo_upload_result.dart';
 export 'booking.dart';
 export 'review.dart';
 export 'review_tags.dart';
+export 'schedule_day.dart';
+export 'schedule_exception.dart';
 export 'ticket.dart';
 export 'topic.dart';

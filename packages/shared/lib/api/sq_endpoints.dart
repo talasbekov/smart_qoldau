@@ -34,6 +34,15 @@ abstract final class SqEndpoints {
   /// Слоты для записи (E6b).
   static String expertSlots(String id) => '/experts/$id/slots';
 
+  /// Расписание и исключения эксперта (E7 задача 7): еженедельное
+  /// расписание, приём срочных запросов, и дневные исключения (выходные,
+  /// нестандартное время).
+  static const expertsMeSchedule = '/experts/me/schedule';
+  static const expertsMeAvailability = '/experts/me/availability';
+  static const expertsMeScheduleExceptions = '/experts/me/schedule/exceptions';
+  static String expertsMeScheduleExceptionByDate(String date) =>
+      '/experts/me/schedule/exceptions/$date';
+
   // --- избранное ---
   static const favorites = '/favorites';
   static String favoriteExpert(String expertId) => '/favorites/$expertId';
@@ -134,6 +143,12 @@ abstract final class SqEndpoints {
     ('GET', tickets),
     ('GET', '/tickets/{id}'),
     ('GET', matchingOnlineCount),
+    ('GET', expertsMeSchedule),
+    ('PUT', expertsMeSchedule),
+    ('PATCH', expertsMeAvailability),
+    ('GET', expertsMeScheduleExceptions),
+    ('PUT', '/experts/me/schedule/exceptions/{date}'),
+    ('DELETE', '/experts/me/schedule/exceptions/{date}'),
   ];
 
   /// Исключены из проверки контрактным тестом, потому что бэкенд ещё не
