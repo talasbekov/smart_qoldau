@@ -6,6 +6,7 @@ import RequireAuth from './routes/RequireAuth';
 import AppLayout from './routes/AppLayout';
 import SettingsPage from './routes/SettingsPage';
 import StaffPage from './routes/StaffPage';
+import VerificationQueuePage from './routes/VerificationQueuePage';
 import { tokenStore } from './lib/tokenStore';
 import type { Session } from './lib/types';
 import './index.css';
@@ -48,7 +49,8 @@ export default function App() {
             <Route path="/" element={<Navigate to="/verification" replace />} />
             <Route path="/settings" element={<SettingsPage />} />
             <Route path="/staff" element={<StaffPage />} />
-            {/* Остальные маршруты подключаются задачами 6-11 */}
+            <Route path="/verification" element={<VerificationQueuePage />} />
+            {/* Остальные маршруты подключаются задачами 7-11 */}
           </Route>
         </Route>
       </Routes>
