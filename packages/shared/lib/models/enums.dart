@@ -197,3 +197,49 @@ enum TicketAuthorKind {
   @JsonValue('staff')
   staff,
 }
+
+/// Статус верификации профиля эксперта (`ExpertMeDto.verificationStatus` бэкенда).
+enum VerificationStatus {
+  @JsonValue('DRAFT')
+  draft,
+  @JsonValue('PENDING')
+  pending,
+  @JsonValue('VERIFIED')
+  verified,
+}
+
+/// Статус отдельного поля профиля эксперта (`ExpertMeDto.photoStatus`,
+/// `ExpertMeDto.aboutStatus` бэкенда).
+enum ProfileFieldStatus {
+  @JsonValue('NONE')
+  none,
+  @JsonValue('PENDING')
+  pending,
+  @JsonValue('APPROVED')
+  approved,
+  @JsonValue('REJECTED')
+  rejected,
+}
+
+/// Строковое представление [ExperienceLevel] для мест, где значение уходит не
+/// через модельный `toJson`, а напрямую в тело запроса (для ручной сериализации).
+extension ExperienceLevelWire on ExperienceLevel {
+  String get wireValue => switch (this) {
+        ExperienceLevel.lessThanYear => 'LESS_THAN_YEAR',
+        ExperienceLevel.oneToThree => 'ONE_TO_THREE',
+        ExperienceLevel.threeToFive => 'THREE_TO_FIVE',
+        ExperienceLevel.fiveToTen => 'FIVE_TO_TEN',
+        ExperienceLevel.moreThanTen => 'MORE_THAN_TEN',
+      };
+}
+
+/// Строковое представление [WorkStatus] для мест, где значение уходит не
+/// через модельный `toJson`, а напрямую в тело запроса (для ручной сериализации).
+extension WorkStatusWire on WorkStatus {
+  String get wireValue => switch (this) {
+        WorkStatus.accepting => 'ACCEPTING',
+        WorkStatus.busy => 'BUSY',
+        WorkStatus.notAccepting => 'NOT_ACCEPTING',
+        WorkStatus.unavailable => 'UNAVAILABLE',
+      };
+}

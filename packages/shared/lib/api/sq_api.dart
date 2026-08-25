@@ -4,6 +4,7 @@ import 'auth_interceptor.dart';
 import 'sq_api_auth.dart';
 import 'sq_api_base.dart';
 import 'sq_api_consultations.dart';
+import 'sq_api_expert_profile.dart';
 import 'sq_api_experts.dart';
 import 'sq_api_notifications.dart';
 import 'sq_api_payments.dart';
@@ -24,6 +25,7 @@ class SqApi extends SqApiBase
     with
         SqApiAuth,
         SqApiExperts,
+        SqApiExpertProfile,
         SqApiRequests,
         SqApiConsultations,
         SqApiPayments,

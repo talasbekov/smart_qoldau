@@ -23,6 +23,9 @@ abstract final class ApiErrorCode {
   static const expertUnavailable = 'EXPERT_UNAVAILABLE';
   static const expertNotFound = 'EXPERT_NOT_FOUND';
   static const expertBlocked = 'EXPERT_BLOCKED';
+  static const expertExists = 'EXPERT_EXISTS';
+  static const priceOutOfRange = 'PRICE_OUT_OF_RANGE';
+  static const notVerified = 'NOT_VERIFIED';
   static const requestNotFound = 'REQUEST_NOT_FOUND';
   static const requestAlreadyClosed = 'REQUEST_ALREADY_CLOSED';
   static const consultationNotFound = 'CONSULTATION_NOT_FOUND';
