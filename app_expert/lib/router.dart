@@ -26,6 +26,8 @@ import 'features/auth/state/auth_controller.dart';
 import 'features/auth/ui/phone_screen.dart';
 import 'features/auth/ui/splash_screen.dart';
 import 'features/consultations/ui/expert_consultations_screen.dart';
+import 'features/earnings/ui/earnings_screen.dart';
+import 'features/earnings/ui/payout_screen.dart';
 import 'features/home/ui/home_screen.dart';
 import 'features/onboarding/state/onboarding_controller.dart';
 import 'features/onboarding/ui/profile_step_screen.dart';
@@ -136,6 +138,14 @@ GoRouter sqExpertRouter(Ref ref) {
         path: RoutePaths.sessionPattern,
         builder: (context, state) =>
             ExpertChatScreen(consultationId: state.pathParameters['id']!),
+      ),
+      GoRoute(
+        path: RoutePaths.earnings,
+        builder: (context, state) => const EarningsScreen(),
+      ),
+      GoRoute(
+        path: RoutePaths.payout,
+        builder: (context, state) => const PayoutScreen(),
       ),
       GoRoute(
         path: RoutePaths.callPattern,

@@ -109,6 +109,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   title: const Text('Расписание'),
                   onTap: () => context.push(RoutePaths.schedule),
                 ),
+                ListTile(
+                  key: const Key('sq-home-earnings'),
+                  leading: const Icon(Icons.payments_outlined),
+                  title: const Text('Доход'),
+                  onTap: () => context.push(RoutePaths.earnings),
+                ),
               ],
             ),
           );

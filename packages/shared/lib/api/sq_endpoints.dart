@@ -49,6 +49,11 @@ abstract final class SqEndpoints {
   static String offerAccept(String offerId) => '/offers/$offerId/accept';
   static String offerDecline(String offerId) => '/offers/$offerId/decline';
 
+  /// Доход, баланс и выплаты эксперта (E7 задача 14).
+  static const expertsMeEarnings = '/experts/me/earnings';
+  static const expertsMeBalance = '/experts/me/balance';
+  static const payouts = '/payouts';
+
   // --- избранное ---
   static const favorites = '/favorites';
   static String favoriteExpert(String expertId) => '/favorites/$expertId';
@@ -166,6 +171,10 @@ abstract final class SqEndpoints {
     ('POST', '/consultations/{id}/complete'),
     ('GET', '/consultations/{id}/note'),
     ('PUT', '/consultations/{id}/note'),
+    ('GET', expertsMeEarnings),
+    ('GET', expertsMeBalance),
+    ('POST', payouts),
+    ('GET', payouts),
   ];
 
   /// Исключены из проверки контрактным тестом, потому что бэкенд ещё не

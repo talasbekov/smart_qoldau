@@ -67,4 +67,8 @@ abstract final class RoutePaths {
   /// query-параметром, потому что это ЗАПРОШЕННЫЙ формат (эскалация), а не
   /// текущее состояние консультации.
   static String call(String id, SessionFormat format) => '/call/$id?format=${format.wireValue}';
+
+  /// Доход и вывод средств (задача 14 эпика E7).
+  static const earnings = '/earnings';
+  static const payout = '/earnings/payout';
 }

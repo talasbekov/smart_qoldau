@@ -293,3 +293,18 @@ extension WorkStatusWire on WorkStatus {
         WorkStatus.unavailable => 'UNAVAILABLE',
       };
 }
+
+/// Статус заявки на вывод средств эксперта (`PayoutDto.status` бэкенда,
+/// E7 задача 14).
+enum PayoutStatus {
+  /// Очередь финконтроля — сумма выше лимита автоодобрения (Р-06).
+  @JsonValue('PENDING_REVIEW')
+  pendingReview,
+  /// Одобрен (авто или вручную), отправлен провайдеру.
+  @JsonValue('PROCESSING')
+  processing,
+  @JsonValue('PAID')
+  paid,
+  @JsonValue('REJECTED')
+  rejected,
+}

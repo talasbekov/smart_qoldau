@@ -4,9 +4,11 @@
 library;
 
 export 'auth_models.dart';
+export 'balance.dart';
 export 'chat_message.dart';
 export 'consultation.dart';
 export 'consultation_expert.dart';
+export 'earnings.dart';
 export 'enums.dart';
 export 'expert.dart';
 export 'expert_document.dart';
@@ -18,6 +20,7 @@ export 'notification.dart';
 export 'offer.dart';
 export 'online_count.dart';
 export 'payment.dart';
+export 'payout.dart';
 export 'photo_upload_result.dart';
 export 'booking.dart';
 export 'review.dart';
