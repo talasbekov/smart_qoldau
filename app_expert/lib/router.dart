@@ -29,6 +29,7 @@ import 'features/consultations/ui/expert_consultations_screen.dart';
 import 'features/earnings/ui/earnings_screen.dart';
 import 'features/earnings/ui/payout_screen.dart';
 import 'features/home/ui/home_screen.dart';
+import 'features/reviews/ui/expert_reviews_screen.dart';
 import 'features/onboarding/state/onboarding_controller.dart';
 import 'features/onboarding/ui/profile_step_screen.dart';
 import 'features/onboarding/ui/topics_step_screen.dart';
@@ -146,6 +147,10 @@ GoRouter sqExpertRouter(Ref ref) {
       GoRoute(
         path: RoutePaths.payout,
         builder: (context, state) => const PayoutScreen(),
+      ),
+      GoRoute(
+        path: RoutePaths.reviews,
+        builder: (context, state) => const ExpertReviewsScreen(),
       ),
       GoRoute(
         path: RoutePaths.callPattern,

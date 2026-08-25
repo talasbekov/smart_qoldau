@@ -71,4 +71,7 @@ abstract final class RoutePaths {
   /// Доход и вывод средств (задача 14 эпика E7).
   static const earnings = '/earnings';
   static const payout = '/earnings/payout';
+
+  /// Отзывы о текущем эксперте (задача 15 эпика E7).
+  static const reviews = '/reviews';
 }
