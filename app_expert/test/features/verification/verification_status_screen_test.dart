@@ -142,22 +142,52 @@ void main() {
     expect(find.text('sq-stub-photo'), findsOneWidget);
   });
 
-  testWidgets('REJECTED about: показывает moderationComment', (tester) async {
-    when(() => api.me()).thenAnswer(
-      (_) async => _me(
-        verificationStatus: VerificationStatus.pending,
-        aboutStatus: ProfileFieldStatus.rejected,
-        moderationComment: 'Слишком короткое описание',
-      ),
-    );
+  testWidgets(
+    'REJECTED только about (фото в порядке): показывает moderationComment, БЕЗ кнопки '
+    '«Загрузить заново» — редактировать about пока негде, а фото трогать не нужно',
+    (tester) async {
+      when(() => api.me()).thenAnswer(
+        (_) async => _me(
+          verificationStatus: VerificationStatus.pending,
+          aboutStatus: ProfileFieldStatus.rejected,
+          moderationComment: 'Слишком короткое описание',
+        ),
+      );
 
-    await tester.pumpWidget(_wrap(api));
-    await tester.pump();
+      await tester.pumpWidget(_wrap(api));
+      await tester.pump();
 
-    expect(find.text('Слишком короткое описание'), findsOneWidget);
+      expect(find.text('Слишком короткое описание'), findsOneWidget);
+      expect(find.text('Загрузить заново'), findsNothing);
 
-    await _teardownTree(tester);
-  });
+      await _teardownTree(tester);
+    },
+  );
+
+  testWidgets(
+    'REJECTED и фото, и about: кнопка «Загрузить заново» есть (фото — единственное реально '
+    'исправимое действие)',
+    (tester) async {
+      when(() => api.me()).thenAnswer(
+        (_) async => _me(
+          verificationStatus: VerificationStatus.pending,
+          photoStatus: ProfileFieldStatus.rejected,
+          aboutStatus: ProfileFieldStatus.rejected,
+          moderationComment: 'Фото и описание не приняты',
+        ),
+      );
+
+      await tester.pumpWidget(_wrap(api));
+      await tester.pump();
+
+      expect(find.text('Фото и описание не приняты'), findsOneWidget);
+      expect(find.text('Загрузить заново'), findsOneWidget);
+
+      await tester.tap(find.text('Загрузить заново'));
+      await tester.pumpAndSettle();
+      expect(find.text('sq-stub-photo'), findsOneWidget);
+    },
+  );
 
   testWidgets('опрос обновляет статус раз в 30 секунд, не раньше', (tester) async {
     var calls = 0;

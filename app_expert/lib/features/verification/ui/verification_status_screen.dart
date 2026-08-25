@@ -116,12 +116,23 @@ class _VerificationContent extends StatelessWidget {
                     me.moderationComment!,
                     style: SqTypography.body.copyWith(color: SqColors.danger),
                   ),
-                const SizedBox(height: SqSpacing.m),
-                SqButton(
-                  label: 'Загрузить заново',
-                  kind: SqButtonKind.secondary,
-                  onPressed: () => context.go(RoutePaths.verificationPhoto),
-                ),
+                // Кнопка ведёт только на PhotoScreen — это единственное
+                // реально доступное действие «переисправить», поэтому она
+                // показывается, только если отклонено ФОТО. Если отклонено
+                // только `about`, кнопки нет вообще: экрана редактирования
+                // «о себе» в плане E7 пока не существует ни в этой, ни в
+                // одной другой задаче — предлагать эксперту переснимать
+                // фото ради правки текста было бы неверным действием
+                // (см. ревью задачи 6, раунд правок 1). `moderationComment`
+                // выше остаётся информационным для этого случая.
+                if (me.photoStatus == ProfileFieldStatus.rejected) ...[
+                  const SizedBox(height: SqSpacing.m),
+                  SqButton(
+                    label: 'Загрузить заново',
+                    kind: SqButtonKind.secondary,
+                    onPressed: () => context.go(RoutePaths.verificationPhoto),
+                  ),
+                ],
               ],
             ],
           ),
