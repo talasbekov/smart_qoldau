@@ -38,13 +38,21 @@ final tokenStoreProvider = Provider<TokenStore>((ref) {
 /// через `ref.listen` в своём `build()` (тот же приём, что в `app_client`).
 final sessionInvalidatedProvider = StateProvider<int>((ref) => 0);
 
-/// Единая точка входа в бэкенд SmartQoldau.
+/// Тело реального `sqApiProvider` — `shared` объявляет его лишь как
+/// placeholder-заглушку (`api/sq_api_provider.dart`, экспортирован через
+/// `shared.dart`), которую переопределяет каждое приложение своей
+/// конфигурацией (тот же приём, что в `app_client/lib/core/providers.dart`,
+/// `buildSqApi`). Раньше здесь был собственный `final sqApiProvider = ...`
+/// — это стало неоднозначным импортом, как только `shared` начала
+/// экспортировать провайдер с тем же именем (перенос chat/call/push в
+/// `shared`), поэтому построение вынесено в функцию и подключается через
+/// `sqApiProvider.overrideWith(buildSqApi)` в `main()`.
 ///
 /// `onLogout` не вызывает `AuthController` напрямую (см.
 /// [sessionInvalidatedProvider]): чистит хранилище токенов, до которого
 /// `core` и так имеет прямой доступ ([tokenStoreProvider]), и увеличивает
 /// счётчик — реакцию на него берёт на себя `features/auth`.
-final sqApiProvider = Provider<SqApi>((ref) {
+SqApi buildSqApi(Ref ref) {
   final tokenStore = ref.watch(tokenStoreProvider);
   return SqApi(
     baseUrl: apiBaseUrl,
@@ -55,4 +63,4 @@ final sqApiProvider = Provider<SqApi>((ref) {
       ref.read(sessionInvalidatedProvider.notifier).state++;
     },
   );
-});
+}

@@ -1,11 +1,17 @@
 /// Навигация-оболочка приложения эксперта: редирект-гард сессии и таблица
 /// маршрутов (`go_router`).
 ///
-/// В отличие от `app_client/lib/router.dart` ветвей (каталог/консультации/
-/// профиль и т.п.) здесь ещё нет — они появятся в последующих задачах
-/// эпика E7 (онбординг-анкета, расписание, заявки, заработок). Задача 1
-/// заводит только гард сессии: `AuthUnknown` → `/splash`, `AuthAnonymous` →
-/// `/welcome`, иначе — `/home` (заглушка [AppShell]).
+/// В отличие от `app_client/lib/router.dart` большинства веток
+/// (каталог/консультации/профиль и т.п.) здесь ещё нет — они появятся в
+/// последующих задачах эпика E7 (расписание, заявки, заработок). Задача 1
+/// завела гард сессии: `AuthUnknown` → `/splash`, `AuthAnonymous` →
+/// `/welcome`, иначе — `/home` (заглушка [AppShell]). Задача 4 добавила
+/// маршруты анкеты онбординга (`/onboarding/profile`, `/onboarding/topics`)
+/// — оба НЕ в `_gatedPaths`: попасть на них можно только уже
+/// аутентифицированным (`_redirect` уводит `AuthAnonymous` на `/welcome`
+/// раньше, чем маршрут вообще разрешится), а автоматический вход в
+/// онбординг сразу после регистрации (по `verificationStatus` профиля)
+/// заведёт задача 6, когда появится экран статуса верификации.
 library;
 
 import 'package:flutter/material.dart';
@@ -16,6 +22,9 @@ import 'core/route_paths.dart';
 import 'features/auth/state/auth_controller.dart';
 import 'features/auth/ui/phone_screen.dart';
 import 'features/auth/ui/splash_screen.dart';
+import 'features/onboarding/state/onboarding_controller.dart';
+import 'features/onboarding/ui/profile_step_screen.dart';
+import 'features/onboarding/ui/topics_step_screen.dart';
 import 'features/shell/ui/app_shell.dart';
 
 /// Пути, на которых эксперт обязан ОСТАВАТЬСЯ, пока не выполнено их
@@ -77,6 +86,15 @@ GoRouter sqExpertRouter(Ref ref) {
       GoRoute(
         path: RoutePaths.home,
         builder: (context, state) => const AppShell(),
+      ),
+      GoRoute(
+        path: RoutePaths.onboardingProfile,
+        builder: (context, state) => const ProfileStepScreen(),
+      ),
+      GoRoute(
+        path: RoutePaths.onboardingTopics,
+        builder: (context, state) =>
+            TopicsStepScreen(draft: state.extra! as ProfileDraft),
       ),
     ],
   );
