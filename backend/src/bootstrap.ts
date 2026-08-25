@@ -22,9 +22,19 @@ export function configureApp(app: INestApplication): void {
   app.use(helmet({ contentSecurityPolicy: false }));
   // E8: панель admin/ — браузерный SPA на другом origin (Vite dev-сервер),
   // без этого браузер блокирует ответ ещё до того, как код фронтенда его
-  // увидит. origin:true отражает Origin запроса; credentials не нужны —
-  // авторизация в admin/ полностью на Bearer-токене, без cookie.
-  app.enableCors({ origin: true, credentials: false });
+  // увидит. Список разрешённых origin — из ADMIN_ORIGINS (через запятую),
+  // по умолчанию только локальный Vite dev-сервер: НЕ origin:true — это
+  // отражало бы Origin любого сайта, credentials не нужны — авторизация в
+  // admin/ полностью на Bearer-токене, без cookie, но открытый CORS всё
+  // равно даёт постороннему сайту вызвать API от лица залогиненного в
+  // admin/ пользователя, если токен где-то ещё утёк.
+  const adminOrigins = (
+    process.env.ADMIN_ORIGINS ?? 'http://localhost:5173'
+  )
+    .split(',')
+    .map((origin) => origin.trim())
+    .filter(Boolean);
+  app.enableCors({ origin: adminOrigins, credentials: false });
   app.setGlobalPrefix('v1');
   app.useGlobalFilters(new AppExceptionFilter());
   app.useGlobalPipes(

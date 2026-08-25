@@ -19,12 +19,21 @@ describe('CORS (e2e)', () => {
     await app.close();
   });
 
-  it('отдаёт Access-Control-Allow-Origin для кросс-origin preflight', async () => {
+  it('отдаёт Access-Control-Allow-Origin для разрешённого origin (admin/ dev-сервер)', async () => {
     const response = await request(app.getHttpServer())
       .options('/v1/admin/auth/login')
       .set('Origin', 'http://localhost:5173')
       .set('Access-Control-Request-Method', 'POST');
 
     expect(response.headers['access-control-allow-origin']).toBe('http://localhost:5173');
+  });
+
+  it('НЕ отдаёт Access-Control-Allow-Origin для постороннего origin', async () => {
+    const response = await request(app.getHttpServer())
+      .options('/v1/admin/auth/login')
+      .set('Origin', 'https://evil.example')
+      .set('Access-Control-Request-Method', 'POST');
+
+    expect(response.headers['access-control-allow-origin']).toBeUndefined();
   });
 });
