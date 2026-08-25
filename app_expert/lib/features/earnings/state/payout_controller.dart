@@ -35,6 +35,12 @@ bool isValidPan(String digits) {
 /// `add_card_screen.dart`.
 bool isValidExpiry(String value) => RegExp(r'^(0[1-9]|1[0-2])/\d{2}$').hasMatch(value);
 
+/// Тип клиентской ошибки валидации — экран переводит его в локализованный
+/// текст через `AppLocalizations` (контроллер не имеет доступа к
+/// `BuildContext`, поэтому не хранит готовую строку — перевод в текст
+/// остаётся зоной ответственности экрана).
+enum PayoutValidationError { amountTooLow, invalidPan, invalidExpiry }
+
 class PayoutState {
   const PayoutState({
     this.submitting = false,
@@ -51,14 +57,14 @@ class PayoutState {
   /// Текст ошибки бэкенда (`ApiException.message`).
   final String? errorMessage;
 
-  /// Текст ошибки клиентской валидации — раньше сети, без круга на сервер.
-  final String? validationError;
+  /// Ошибка клиентской валидации — раньше сети, без круга на сервер.
+  final PayoutValidationError? validationError;
 
   PayoutState copyWith({
     bool? submitting,
     PayoutDto? result,
     String? errorMessage,
-    String? validationError,
+    PayoutValidationError? validationError,
   }) => PayoutState(
     submitting: submitting ?? this.submitting,
     result: result ?? this.result,
@@ -73,15 +79,15 @@ class PayoutController extends Notifier<PayoutState> {
 
   /// Возвращает текст клиентской ошибки без сетевого вызова — `null`,
   /// если поля прошли валидацию.
-  String? _validate({
+  PayoutValidationError? _validate({
     required int amountTiyn,
     required String pan,
     required String expiry,
   }) {
-    if (amountTiyn < 1) return 'Сумма должна быть больше нуля';
+    if (amountTiyn < 1) return PayoutValidationError.amountTooLow;
     final digits = pan.replaceAll(RegExp(r'\D'), '');
-    if (!isValidPan(digits)) return 'Неверный номер карты';
-    if (!isValidExpiry(expiry)) return 'Неверный срок действия (MM/YY)';
+    if (!isValidPan(digits)) return PayoutValidationError.invalidPan;
+    if (!isValidExpiry(expiry)) return PayoutValidationError.invalidExpiry;
     return null;
   }
 

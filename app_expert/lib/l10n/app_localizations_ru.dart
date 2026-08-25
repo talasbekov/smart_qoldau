@@ -456,6 +456,15 @@ class AppLocalizationsRu extends AppLocalizations {
   String get payoutHolderLabel => 'Имя держателя';
 
   @override
+  String get payoutErrorAmountTooLow => 'Сумма должна быть больше нуля';
+
+  @override
+  String get payoutErrorInvalidPan => 'Неверный номер карты';
+
+  @override
+  String get payoutErrorInvalidExpiry => 'Неверный срок действия (MM/YY)';
+
+  @override
   String get actionSubmitPayout => 'Отправить заявку';
 
   @override

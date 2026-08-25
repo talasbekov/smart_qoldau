@@ -88,14 +88,29 @@ class _OfferTileState extends ConsumerState<_OfferTile> {
     super.dispose();
   }
 
+  static const _expectedOfferErrorCodes = {
+    ApiErrorCode.offerExpired,
+    ApiErrorCode.offerAlreadyTaken,
+    ApiErrorCode.offerNotFound,
+  };
+
+  /// Показывает ошибку, только если код не входит в ожидаемые
+  /// «оффер уже недоступен» — те молча уводят карточку через
+  /// `onHandled`-перечитывание списка. Всё остальное (401, 500, обрыв сети)
+  /// не должно тонуть незаметно для эксперта.
+  void _reportUnexpected(ApiException error) {
+    if (_expectedOfferErrorCodes.contains(error.code)) return;
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error.message)));
+  }
+
   Future<void> _decline() async {
     if (_busy) return;
     setState(() => _busy = true);
     try {
       await ref.read(offersRepositoryProvider).decline(widget.offer.offerId);
-    } on ApiException {
-      // OFFER_EXPIRED/OFFER_ALREADY_TAKEN/OFFER_NOT_FOUND — оффер уже
-      // недоступен; список всё равно перечитывается ниже и уберёт карточку.
+    } on ApiException catch (e) {
+      _reportUnexpected(e);
     } finally {
       if (mounted) setState(() => _busy = false);
       widget.onHandled();
@@ -108,9 +123,8 @@ class _OfferTileState extends ConsumerState<_OfferTile> {
     try {
       final result = await ref.read(offersRepositoryProvider).accept(widget.offer.offerId);
       if (mounted) context.push(RoutePaths.session(result.consultationId));
-    } on ApiException {
-      // OFFER_EXPIRED/OFFER_ALREADY_TAKEN/OFFER_NOT_FOUND — оффер уже
-      // недоступен; список всё равно перечитывается ниже и уберёт карточку.
+    } on ApiException catch (e) {
+      _reportUnexpected(e);
     } finally {
       if (mounted) setState(() => _busy = false);
       widget.onHandled();

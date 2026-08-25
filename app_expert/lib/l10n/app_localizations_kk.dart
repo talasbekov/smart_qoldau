@@ -455,6 +455,15 @@ class AppLocalizationsKk extends AppLocalizations {
   String get payoutHolderLabel => 'Иесінің аты-жөні';
 
   @override
+  String get payoutErrorAmountTooLow => 'Сома нөлден үлкен болуы керек';
+
+  @override
+  String get payoutErrorInvalidPan => 'Карта нөмірін тексеріңіз';
+
+  @override
+  String get payoutErrorInvalidExpiry => 'Мерзімі АА/ЖЖ пішімінде';
+
+  @override
   String get actionSubmitPayout => 'Өтінімді жіберу';
 
   @override

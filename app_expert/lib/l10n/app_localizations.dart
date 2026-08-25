@@ -932,6 +932,24 @@ abstract class AppLocalizations {
   /// **'Имя держателя'**
   String get payoutHolderLabel;
 
+  /// No description provided for @payoutErrorAmountTooLow.
+  ///
+  /// In ru, this message translates to:
+  /// **'Сумма должна быть больше нуля'**
+  String get payoutErrorAmountTooLow;
+
+  /// No description provided for @payoutErrorInvalidPan.
+  ///
+  /// In ru, this message translates to:
+  /// **'Неверный номер карты'**
+  String get payoutErrorInvalidPan;
+
+  /// No description provided for @payoutErrorInvalidExpiry.
+  ///
+  /// In ru, this message translates to:
+  /// **'Неверный срок действия (MM/YY)'**
+  String get payoutErrorInvalidExpiry;
+
   /// No description provided for @actionSubmitPayout.
   ///
   /// In ru, this message translates to:

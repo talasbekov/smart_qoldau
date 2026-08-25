@@ -234,6 +234,9 @@
   "payoutAmountLabel": "Сумма, ₸",
   "payoutPanLabel": "Номер карты",
   "payoutHolderLabel": "Имя держателя",
+  "payoutErrorAmountTooLow": "Сумма должна быть больше нуля",
+  "payoutErrorInvalidPan": "Неверный номер карты",
+  "payoutErrorInvalidExpiry": "Неверный срок действия (MM/YY)",
   "actionSubmitPayout": "Отправить заявку",
 
   "reviewsScreenTitle": "Отзывы",

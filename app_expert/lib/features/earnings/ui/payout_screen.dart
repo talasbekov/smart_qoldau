@@ -102,7 +102,11 @@ class _PayoutScreenState extends ConsumerState<PayoutScreen> {
               Padding(
                 padding: const EdgeInsets.only(top: 12),
                 child: Text(
-                  state.validationError!,
+                  switch (state.validationError!) {
+                    PayoutValidationError.amountTooLow => l10n.payoutErrorAmountTooLow,
+                    PayoutValidationError.invalidPan => l10n.payoutErrorInvalidPan,
+                    PayoutValidationError.invalidExpiry => l10n.payoutErrorInvalidExpiry,
+                  },
                   style: SqTypography.body.copyWith(color: SqColors.danger),
                 ),
               ),

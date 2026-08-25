@@ -164,6 +164,9 @@
   "payoutAmountLabel": "Сома, ₸",
   "payoutPanLabel": "Карта нөмірі",
   "payoutHolderLabel": "Иесінің аты-жөні",
+  "payoutErrorAmountTooLow": "Сома нөлден үлкен болуы керек",
+  "payoutErrorInvalidPan": "Карта нөмірін тексеріңіз",
+  "payoutErrorInvalidExpiry": "Мерзімі АА/ЖЖ пішімінде",
   "actionSubmitPayout": "Өтінімді жіберу",
 
   "reviewsScreenTitle": "Пікірлер",
