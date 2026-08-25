@@ -980,6 +980,66 @@ abstract class AppLocalizations {
   /// **'Ваш ответ'**
   String get reviewYourReply;
 
+  /// No description provided for @reviewActionReply.
+  ///
+  /// In ru, this message translates to:
+  /// **'Ответить'**
+  String get reviewActionReply;
+
+  /// No description provided for @reviewActionEditReply.
+  ///
+  /// In ru, this message translates to:
+  /// **'Изменить ответ'**
+  String get reviewActionEditReply;
+
+  /// No description provided for @reviewActionComplaint.
+  ///
+  /// In ru, this message translates to:
+  /// **'Пожаловаться'**
+  String get reviewActionComplaint;
+
+  /// No description provided for @reviewReplyDialogTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Ответ на отзыв'**
+  String get reviewReplyDialogTitle;
+
+  /// No description provided for @reviewReplyHint.
+  ///
+  /// In ru, this message translates to:
+  /// **'Ответ увидят все — не упоминайте детали консультации. До 1000 символов.'**
+  String get reviewReplyHint;
+
+  /// No description provided for @reviewReplySaved.
+  ///
+  /// In ru, this message translates to:
+  /// **'Ответ сохранён'**
+  String get reviewReplySaved;
+
+  /// No description provided for @reviewComplaintDialogTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Жалоба на отзыв'**
+  String get reviewComplaintDialogTitle;
+
+  /// No description provided for @reviewComplaintHint.
+  ///
+  /// In ru, this message translates to:
+  /// **'Опишите, почему отзыв нарушает правила. Отзыв скроют и исключат из рейтинга до решения модератора.'**
+  String get reviewComplaintHint;
+
+  /// No description provided for @reviewComplaintSent.
+  ///
+  /// In ru, this message translates to:
+  /// **'Жалоба отправлена, отзыв скрыт до решения модератора'**
+  String get reviewComplaintSent;
+
+  /// No description provided for @actionCancel.
+  ///
+  /// In ru, this message translates to:
+  /// **'Отмена'**
+  String get actionCancel;
+
   /// No description provided for @notificationsScreenTitle.
   ///
   /// In ru, this message translates to:

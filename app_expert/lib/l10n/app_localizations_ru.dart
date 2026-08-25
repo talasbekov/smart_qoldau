@@ -482,6 +482,39 @@ class AppLocalizationsRu extends AppLocalizations {
   String get reviewYourReply => 'Ваш ответ';
 
   @override
+  String get reviewActionReply => 'Ответить';
+
+  @override
+  String get reviewActionEditReply => 'Изменить ответ';
+
+  @override
+  String get reviewActionComplaint => 'Пожаловаться';
+
+  @override
+  String get reviewReplyDialogTitle => 'Ответ на отзыв';
+
+  @override
+  String get reviewReplyHint =>
+      'Ответ увидят все — не упоминайте детали консультации. До 1000 символов.';
+
+  @override
+  String get reviewReplySaved => 'Ответ сохранён';
+
+  @override
+  String get reviewComplaintDialogTitle => 'Жалоба на отзыв';
+
+  @override
+  String get reviewComplaintHint =>
+      'Опишите, почему отзыв нарушает правила. Отзыв скроют и исключат из рейтинга до решения модератора.';
+
+  @override
+  String get reviewComplaintSent =>
+      'Жалоба отправлена, отзыв скрыт до решения модератора';
+
+  @override
+  String get actionCancel => 'Отмена';
+
+  @override
   String get notificationsScreenTitle => 'Уведомления';
 
   @override

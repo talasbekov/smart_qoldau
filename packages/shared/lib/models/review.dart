@@ -77,3 +77,45 @@ abstract class ExpertReviews with _$ExpertReviews {
   factory ExpertReviews.fromJson(Map<String, dynamic> json) =>
       _$ExpertReviewsFromJson(json);
 }
+
+/// Один СВОЙ отзыв в ленте эксперта (`OwnReviewItemDto`, ответ `GET
+/// /experts/me/reviews`).
+///
+/// Отличается от [ReviewItem] ровно одним полем — [id]. Публичная выдача
+/// `GET /experts/{id}/reviews` анонимна и идентификатор не отдаёт вообще
+/// (см. комментарий `ReviewItemDto` на бэкенде), поэтому вызвать
+/// `POST /reviews/{id}/reply|complaint` по ней было нечем — под это
+/// бэкенд и завёл отдельный эндпоинт «свои отзывы». Автор отзыва здесь
+/// по-прежнему анонимен: ни имени, ни кода клиента в DTO нет.
+@freezed
+abstract class OwnReviewItem with _$OwnReviewItem {
+  const factory OwnReviewItem({
+    required String id,
+    required int rating,
+    String? publicText,
+    String? expertReply,
+
+    /// Коды тегов из [reviewTagsFor]; подписи живут в локализации.
+    @Default(<String>[]) List<String> tags,
+    required DateTime createdAt,
+  }) = _OwnReviewItem;
+
+  factory OwnReviewItem.fromJson(Map<String, dynamic> json) =>
+      _$OwnReviewItemFromJson(json);
+}
+
+/// Свои отзывы эксперта постранично + распределение и агрегаты
+/// (`MyExpertReviewsDto`, ответ `GET /experts/me/reviews`). Аналог
+/// [ExpertReviews], но элементы — [OwnReviewItem] с `id`.
+@freezed
+abstract class MyExpertReviews with _$MyExpertReviews {
+  const factory MyExpertReviews({
+    required List<OwnReviewItem> items,
+    required RatingDistribution distribution,
+    required double ratingAvg,
+    required int ratingCount,
+  }) = _MyExpertReviews;
+
+  factory MyExpertReviews.fromJson(Map<String, dynamic> json) =>
+      _$MyExpertReviewsFromJson(json);
+}

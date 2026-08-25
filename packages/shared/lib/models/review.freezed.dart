@@ -1151,4 +1151,587 @@ $RatingDistributionCopyWith<$Res> get distribution {
 }
 }
 
+
+/// @nodoc
+mixin _$OwnReviewItem {
+
+ String get id; int get rating; String? get publicText; String? get expertReply;/// Коды тегов из [reviewTagsFor]; подписи живут в локализации.
+ List<String> get tags; DateTime get createdAt;
+/// Create a copy of OwnReviewItem
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$OwnReviewItemCopyWith<OwnReviewItem> get copyWith => _$OwnReviewItemCopyWithImpl<OwnReviewItem>(this as OwnReviewItem, _$identity);
+
+  /// Serializes this OwnReviewItem to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is OwnReviewItem&&(identical(other.id, id) || other.id == id)&&(identical(other.rating, rating) || other.rating == rating)&&(identical(other.publicText, publicText) || other.publicText == publicText)&&(identical(other.expertReply, expertReply) || other.expertReply == expertReply)&&const DeepCollectionEquality().equals(other.tags, tags)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,id,rating,publicText,expertReply,const DeepCollectionEquality().hash(tags),createdAt);
+
+@override
+String toString() {
+  return 'OwnReviewItem(id: $id, rating: $rating, publicText: $publicText, expertReply: $expertReply, tags: $tags, createdAt: $createdAt)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $OwnReviewItemCopyWith<$Res>  {
+  factory $OwnReviewItemCopyWith(OwnReviewItem value, $Res Function(OwnReviewItem) _then) = _$OwnReviewItemCopyWithImpl;
+@useResult
+$Res call({
+ String id, int rating, String? publicText, String? expertReply, List<String> tags, DateTime createdAt
+});
+
+
+
+
+}
+/// @nodoc
+class _$OwnReviewItemCopyWithImpl<$Res>
+    implements $OwnReviewItemCopyWith<$Res> {
+  _$OwnReviewItemCopyWithImpl(this._self, this._then);
+
+  final OwnReviewItem _self;
+  final $Res Function(OwnReviewItem) _then;
+
+/// Create a copy of OwnReviewItem
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? rating = null,Object? publicText = freezed,Object? expertReply = freezed,Object? tags = null,Object? createdAt = null,}) {
+  return _then(OwnReviewItem(
+id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+as String,rating: null == rating ? _self.rating : rating // ignore: cast_nullable_to_non_nullable
+as int,publicText: freezed == publicText ? _self.publicText : publicText // ignore: cast_nullable_to_non_nullable
+as String?,expertReply: freezed == expertReply ? _self.expertReply : expertReply // ignore: cast_nullable_to_non_nullable
+as String?,tags: null == tags ? _self.tags : tags // ignore: cast_nullable_to_non_nullable
+as List<String>,createdAt: null == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
+as DateTime,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [OwnReviewItem].
+extension OwnReviewItemPatterns on OwnReviewItem {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _OwnReviewItem value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _OwnReviewItem() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _OwnReviewItem value)  $default,){
+final _that = this;
+switch (_that) {
+case _OwnReviewItem():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _OwnReviewItem value)?  $default,){
+final _that = this;
+switch (_that) {
+case _OwnReviewItem() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  int rating,  String? publicText,  String? expertReply,  List<String> tags,  DateTime createdAt)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _OwnReviewItem() when $default != null:
+return $default(_that.id,_that.rating,_that.publicText,_that.expertReply,_that.tags,_that.createdAt);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  int rating,  String? publicText,  String? expertReply,  List<String> tags,  DateTime createdAt)  $default,) {final _that = this;
+switch (_that) {
+case _OwnReviewItem():
+return $default(_that.id,_that.rating,_that.publicText,_that.expertReply,_that.tags,_that.createdAt);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  int rating,  String? publicText,  String? expertReply,  List<String> tags,  DateTime createdAt)?  $default,) {final _that = this;
+switch (_that) {
+case _OwnReviewItem() when $default != null:
+return $default(_that.id,_that.rating,_that.publicText,_that.expertReply,_that.tags,_that.createdAt);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _OwnReviewItem implements OwnReviewItem {
+  const _OwnReviewItem({required this.id, required this.rating, this.publicText, this.expertReply,  List<String> tags = const <String>[], required this.createdAt}): _tags = tags;
+  factory _OwnReviewItem.fromJson(Map<String, dynamic> json) => _$OwnReviewItemFromJson(json);
+
+@override final  String id;
+@override final  int rating;
+@override final  String? publicText;
+@override final  String? expertReply;
+/// Коды тегов из [reviewTagsFor]; подписи живут в локализации.
+ final  List<String> _tags;
+/// Коды тегов из [reviewTagsFor]; подписи живут в локализации.
+@override@JsonKey() List<String> get tags {
+  if (_tags is EqualUnmodifiableListView) return _tags;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(_tags);
+}
+
+@override final  DateTime createdAt;
+
+/// Create a copy of OwnReviewItem
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$OwnReviewItemCopyWith<_OwnReviewItem> get copyWith => __$OwnReviewItemCopyWithImpl<_OwnReviewItem>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$OwnReviewItemToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _OwnReviewItem&&(identical(other.id, id) || other.id == id)&&(identical(other.rating, rating) || other.rating == rating)&&(identical(other.publicText, publicText) || other.publicText == publicText)&&(identical(other.expertReply, expertReply) || other.expertReply == expertReply)&&const DeepCollectionEquality().equals(other._tags, _tags)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,id,rating,publicText,expertReply,const DeepCollectionEquality().hash(_tags),createdAt);
+
+@override
+String toString() {
+  return 'OwnReviewItem(id: $id, rating: $rating, publicText: $publicText, expertReply: $expertReply, tags: $tags, createdAt: $createdAt)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$OwnReviewItemCopyWith<$Res> implements $OwnReviewItemCopyWith<$Res> {
+  factory _$OwnReviewItemCopyWith(_OwnReviewItem value, $Res Function(_OwnReviewItem) _then) = __$OwnReviewItemCopyWithImpl;
+@override @useResult
+$Res call({
+ String id, int rating, String? publicText, String? expertReply, List<String> tags, DateTime createdAt
+});
+
+
+
+
+}
+/// @nodoc
+class __$OwnReviewItemCopyWithImpl<$Res>
+    implements _$OwnReviewItemCopyWith<$Res> {
+  __$OwnReviewItemCopyWithImpl(this._self, this._then);
+
+  final _OwnReviewItem _self;
+  final $Res Function(_OwnReviewItem) _then;
+
+/// Create a copy of OwnReviewItem
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? rating = null,Object? publicText = freezed,Object? expertReply = freezed,Object? tags = null,Object? createdAt = null,}) {
+  return _then(_OwnReviewItem(
+id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+as String,rating: null == rating ? _self.rating : rating // ignore: cast_nullable_to_non_nullable
+as int,publicText: freezed == publicText ? _self.publicText : publicText // ignore: cast_nullable_to_non_nullable
+as String?,expertReply: freezed == expertReply ? _self.expertReply : expertReply // ignore: cast_nullable_to_non_nullable
+as String?,tags: null == tags ? _self._tags : tags // ignore: cast_nullable_to_non_nullable
+as List<String>,createdAt: null == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
+as DateTime,
+  ));
+}
+
+
+}
+
+
+/// @nodoc
+mixin _$MyExpertReviews {
+
+ List<OwnReviewItem> get items; RatingDistribution get distribution; double get ratingAvg; int get ratingCount;
+/// Create a copy of MyExpertReviews
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$MyExpertReviewsCopyWith<MyExpertReviews> get copyWith => _$MyExpertReviewsCopyWithImpl<MyExpertReviews>(this as MyExpertReviews, _$identity);
+
+  /// Serializes this MyExpertReviews to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is MyExpertReviews&&const DeepCollectionEquality().equals(other.items, items)&&(identical(other.distribution, distribution) || other.distribution == distribution)&&(identical(other.ratingAvg, ratingAvg) || other.ratingAvg == ratingAvg)&&(identical(other.ratingCount, ratingCount) || other.ratingCount == ratingCount));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(items),distribution,ratingAvg,ratingCount);
+
+@override
+String toString() {
+  return 'MyExpertReviews(items: $items, distribution: $distribution, ratingAvg: $ratingAvg, ratingCount: $ratingCount)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $MyExpertReviewsCopyWith<$Res>  {
+  factory $MyExpertReviewsCopyWith(MyExpertReviews value, $Res Function(MyExpertReviews) _then) = _$MyExpertReviewsCopyWithImpl;
+@useResult
+$Res call({
+ List<OwnReviewItem> items, RatingDistribution distribution, double ratingAvg, int ratingCount
+});
+
+
+$RatingDistributionCopyWith<$Res> get distribution;
+
+}
+/// @nodoc
+class _$MyExpertReviewsCopyWithImpl<$Res>
+    implements $MyExpertReviewsCopyWith<$Res> {
+  _$MyExpertReviewsCopyWithImpl(this._self, this._then);
+
+  final MyExpertReviews _self;
+  final $Res Function(MyExpertReviews) _then;
+
+/// Create a copy of MyExpertReviews
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? items = null,Object? distribution = null,Object? ratingAvg = null,Object? ratingCount = null,}) {
+  return _then(MyExpertReviews(
+items: null == items ? _self.items : items // ignore: cast_nullable_to_non_nullable
+as List<OwnReviewItem>,distribution: null == distribution ? _self.distribution : distribution // ignore: cast_nullable_to_non_nullable
+as RatingDistribution,ratingAvg: null == ratingAvg ? _self.ratingAvg : ratingAvg // ignore: cast_nullable_to_non_nullable
+as double,ratingCount: null == ratingCount ? _self.ratingCount : ratingCount // ignore: cast_nullable_to_non_nullable
+as int,
+  ));
+}
+/// Create a copy of MyExpertReviews
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$RatingDistributionCopyWith<$Res> get distribution {
+  
+  return $RatingDistributionCopyWith<$Res>(_self.distribution, (value) {
+    return _then(_self.copyWith(distribution: value));
+  });
+}
+}
+
+
+/// Adds pattern-matching-related methods to [MyExpertReviews].
+extension MyExpertReviewsPatterns on MyExpertReviews {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _MyExpertReviews value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _MyExpertReviews() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _MyExpertReviews value)  $default,){
+final _that = this;
+switch (_that) {
+case _MyExpertReviews():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _MyExpertReviews value)?  $default,){
+final _that = this;
+switch (_that) {
+case _MyExpertReviews() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( List<OwnReviewItem> items,  RatingDistribution distribution,  double ratingAvg,  int ratingCount)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _MyExpertReviews() when $default != null:
+return $default(_that.items,_that.distribution,_that.ratingAvg,_that.ratingCount);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( List<OwnReviewItem> items,  RatingDistribution distribution,  double ratingAvg,  int ratingCount)  $default,) {final _that = this;
+switch (_that) {
+case _MyExpertReviews():
+return $default(_that.items,_that.distribution,_that.ratingAvg,_that.ratingCount);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( List<OwnReviewItem> items,  RatingDistribution distribution,  double ratingAvg,  int ratingCount)?  $default,) {final _that = this;
+switch (_that) {
+case _MyExpertReviews() when $default != null:
+return $default(_that.items,_that.distribution,_that.ratingAvg,_that.ratingCount);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _MyExpertReviews implements MyExpertReviews {
+  const _MyExpertReviews({required  List<OwnReviewItem> items, required this.distribution, required this.ratingAvg, required this.ratingCount}): _items = items;
+  factory _MyExpertReviews.fromJson(Map<String, dynamic> json) => _$MyExpertReviewsFromJson(json);
+
+ final  List<OwnReviewItem> _items;
+@override List<OwnReviewItem> get items {
+  if (_items is EqualUnmodifiableListView) return _items;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(_items);
+}
+
+@override final  RatingDistribution distribution;
+@override final  double ratingAvg;
+@override final  int ratingCount;
+
+/// Create a copy of MyExpertReviews
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$MyExpertReviewsCopyWith<_MyExpertReviews> get copyWith => __$MyExpertReviewsCopyWithImpl<_MyExpertReviews>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$MyExpertReviewsToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _MyExpertReviews&&const DeepCollectionEquality().equals(other._items, _items)&&(identical(other.distribution, distribution) || other.distribution == distribution)&&(identical(other.ratingAvg, ratingAvg) || other.ratingAvg == ratingAvg)&&(identical(other.ratingCount, ratingCount) || other.ratingCount == ratingCount));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(_items),distribution,ratingAvg,ratingCount);
+
+@override
+String toString() {
+  return 'MyExpertReviews(items: $items, distribution: $distribution, ratingAvg: $ratingAvg, ratingCount: $ratingCount)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$MyExpertReviewsCopyWith<$Res> implements $MyExpertReviewsCopyWith<$Res> {
+  factory _$MyExpertReviewsCopyWith(_MyExpertReviews value, $Res Function(_MyExpertReviews) _then) = __$MyExpertReviewsCopyWithImpl;
+@override @useResult
+$Res call({
+ List<OwnReviewItem> items, RatingDistribution distribution, double ratingAvg, int ratingCount
+});
+
+
+@override $RatingDistributionCopyWith<$Res> get distribution;
+
+}
+/// @nodoc
+class __$MyExpertReviewsCopyWithImpl<$Res>
+    implements _$MyExpertReviewsCopyWith<$Res> {
+  __$MyExpertReviewsCopyWithImpl(this._self, this._then);
+
+  final _MyExpertReviews _self;
+  final $Res Function(_MyExpertReviews) _then;
+
+/// Create a copy of MyExpertReviews
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? items = null,Object? distribution = null,Object? ratingAvg = null,Object? ratingCount = null,}) {
+  return _then(_MyExpertReviews(
+items: null == items ? _self._items : items // ignore: cast_nullable_to_non_nullable
+as List<OwnReviewItem>,distribution: null == distribution ? _self.distribution : distribution // ignore: cast_nullable_to_non_nullable
+as RatingDistribution,ratingAvg: null == ratingAvg ? _self.ratingAvg : ratingAvg // ignore: cast_nullable_to_non_nullable
+as double,ratingCount: null == ratingCount ? _self.ratingCount : ratingCount // ignore: cast_nullable_to_non_nullable
+as int,
+  ));
+}
+
+/// Create a copy of MyExpertReviews
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$RatingDistributionCopyWith<$Res> get distribution {
+  
+  return $RatingDistributionCopyWith<$Res>(_self.distribution, (value) {
+    return _then(_self.copyWith(distribution: value));
+  });
+}
+}
+
 // dart format on

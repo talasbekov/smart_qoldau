@@ -481,6 +481,39 @@ class AppLocalizationsKk extends AppLocalizations {
   String get reviewYourReply => 'Сіздің жауабыңыз';
 
   @override
+  String get reviewActionReply => 'Жауап беру';
+
+  @override
+  String get reviewActionEditReply => 'Жауапты өзгерту';
+
+  @override
+  String get reviewActionComplaint => 'Шағымдану';
+
+  @override
+  String get reviewReplyDialogTitle => 'Пікірге жауап';
+
+  @override
+  String get reviewReplyHint =>
+      'Жауапты барлығы көреді — консультация мәліметтерін жазбаңыз. 1000 таңбаға дейін.';
+
+  @override
+  String get reviewReplySaved => 'Жауап сақталды';
+
+  @override
+  String get reviewComplaintDialogTitle => 'Пікірге шағым';
+
+  @override
+  String get reviewComplaintHint =>
+      'Пікір ережені неге бұзатынын сипаттаңыз. Модератор шешім қабылдағанша пікір жасырылады және рейтингтен шығарылады.';
+
+  @override
+  String get reviewComplaintSent =>
+      'Шағым жіберілді, модератор шешім қабылдағанша пікір жасырылды';
+
+  @override
+  String get actionCancel => 'Болдырмау';
+
+  @override
   String get notificationsScreenTitle => 'Хабарламалар';
 
   @override

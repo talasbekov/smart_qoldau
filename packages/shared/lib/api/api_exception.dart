@@ -52,6 +52,11 @@ abstract final class ApiErrorCode {
   static const invalidOutcome = 'INVALID_OUTCOME';
   static const invalidNoteText = 'INVALID_NOTE_TEXT';
 
+  /// Ответ/жалоба эксперта на отзыв (E7 задача 15): отзыв не в статусе
+  /// PUBLISHED — например, жалоба уже подана (FLAGGED) или отзыв скрыт
+  /// модератором.
+  static const invalidStateTransition = 'INVALID_STATE_TRANSITION';
+
   /// Код, которым [ApiException.fromDioError] помечает сетевые сбои без
   /// ответа сервера (таймаут, обрыв соединения, DNS) — бэкенд его не знает,
   /// это чисто клиентское значение.

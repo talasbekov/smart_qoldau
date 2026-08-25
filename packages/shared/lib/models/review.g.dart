@@ -84,3 +84,45 @@ Map<String, dynamic> _$ExpertReviewsToJson(_ExpertReviews instance) =>
       'ratingAvg': instance.ratingAvg,
       'ratingCount': instance.ratingCount,
     };
+
+_OwnReviewItem _$OwnReviewItemFromJson(Map<String, dynamic> json) =>
+    _OwnReviewItem(
+      id: json['id'] as String,
+      rating: (json['rating'] as num).toInt(),
+      publicText: json['publicText'] as String?,
+      expertReply: json['expertReply'] as String?,
+      tags:
+          (json['tags'] as List<dynamic>?)?.map((e) => e as String).toList() ??
+          const <String>[],
+      createdAt: DateTime.parse(json['createdAt'] as String),
+    );
+
+Map<String, dynamic> _$OwnReviewItemToJson(_OwnReviewItem instance) =>
+    <String, dynamic>{
+      'id': instance.id,
+      'rating': instance.rating,
+      'publicText': instance.publicText,
+      'expertReply': instance.expertReply,
+      'tags': instance.tags,
+      'createdAt': instance.createdAt.toIso8601String(),
+    };
+
+_MyExpertReviews _$MyExpertReviewsFromJson(Map<String, dynamic> json) =>
+    _MyExpertReviews(
+      items: (json['items'] as List<dynamic>)
+          .map((e) => OwnReviewItem.fromJson(e as Map<String, dynamic>))
+          .toList(),
+      distribution: RatingDistribution.fromJson(
+        json['distribution'] as Map<String, dynamic>,
+      ),
+      ratingAvg: (json['ratingAvg'] as num).toDouble(),
+      ratingCount: (json['ratingCount'] as num).toInt(),
+    );
+
+Map<String, dynamic> _$MyExpertReviewsToJson(_MyExpertReviews instance) =>
+    <String, dynamic>{
+      'items': instance.items.map((e) => e.toJson()).toList(),
+      'distribution': instance.distribution.toJson(),
+      'ratingAvg': instance.ratingAvg,
+      'ratingCount': instance.ratingCount,
+    };

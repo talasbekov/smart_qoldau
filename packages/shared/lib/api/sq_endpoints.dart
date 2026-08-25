@@ -31,6 +31,13 @@ abstract final class SqEndpoints {
   static String expertById(String id) => '/experts/$id';
   static String expertReviews(String id) => '/experts/$id/reviews';
 
+  /// Свои отзывы эксперта с `id` каждого отзыва (E7 задача 15): публичный
+  /// [expertReviews] анонимен и идентификатор не отдаёт, а [reviewReply]/
+  /// [reviewComplaint] без него не вызвать.
+  static const expertsMeReviews = '/experts/me/reviews';
+  static String reviewReply(String id) => '/reviews/$id/reply';
+  static String reviewComplaint(String id) => '/reviews/$id/complaint';
+
   /// Слоты для записи (E6b).
   static String expertSlots(String id) => '/experts/$id/slots';
 
@@ -147,6 +154,9 @@ abstract final class SqEndpoints {
     ('GET', '/consultations/{id}/payment'),
     ('POST', '/consultations/{id}/review'),
     ('DELETE', '/reviews/{id}'),
+    ('GET', expertsMeReviews),
+    ('POST', '/reviews/{id}/reply'),
+    ('POST', '/reviews/{id}/complaint'),
     ('GET', paymentMethods),
     ('POST', paymentMethods),
     ('DELETE', '/payment-methods/{id}'),

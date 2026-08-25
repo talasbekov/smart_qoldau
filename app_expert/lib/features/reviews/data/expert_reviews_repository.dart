@@ -1,17 +1,11 @@
-/// Отзывы о текущем эксперте: тонкая обёртка над `SqApiExperts.expertReviews`
-/// (E7 задача 15).
+/// Свои отзывы эксперта: лента, ответ и жалоба (E7 задача 15).
 ///
-/// ДОЛГ (задокументирован в Plane, задача заведена в Backlog проекта Smart
-/// Qoldau): «Ответить»/«Пожаловаться» из брифа задачи 15 НЕ реализованы.
-/// `GET /experts/{id}/reviews` (`ReviewItemDto`) полностью анонимизирован
-/// по замыслу — предназначен для публичного каталога клиента и намеренно
-/// не несёт `id` отзыва вообще нигде в ответе (см. комментарий
-/// `ReviewItemDto` бэкенда: «ПОЛНАЯ анонимность»). `POST /reviews/{id}
-/// /reply`/`/complaint` требуют этот `id`, а единственное место, где он
-/// вообще возвращается — `ReviewCreatedDto` клиенту в момент создания
-/// отзыва, эксперту недоступно. Реализовать ответ/жалобу без нового
-/// бэкенд-эндпоинта (`GET /experts/me/reviews` с `id` в ответе)
-/// невозможно — это работа отдельного эпика/бэкенд-задачи, не фронтенда.
+/// Раньше здесь был публичный `GET /experts/{id}/reviews`, а
+/// «Ответить»/«Пожаловаться» были невозможны: публичная выдача
+/// (`ReviewItemDto`) полностью анонимна и `id` отзыва не несёт вообще, а
+/// `POST /reviews/{id}/reply|complaint` без него не вызвать. Бэкенд-долг
+/// закрыт эндпоинтом `GET /experts/me/reviews` (`MyExpertReviewsDto`,
+/// items с `id`) — на него репозиторий и переведён.
 library;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -22,14 +16,20 @@ class ExpertReviewsRepository {
 
   final SqApi _api;
 
-  /// Собственный id эксперта — нужен как параметр `expertReviews(id)`
-  /// (публичный эндпоинт, id в пути — не «мои отзывы», а «отзывы об этом
-  /// эксперте»; для себя он просто известен из своего же профиля).
-  Future<String> myExpertId() async => (await _api.me()).id;
+  /// `GET /experts/me/reviews` — свои отзывы (PUBLISHED) с `id`,
+  /// распределение оценок и агрегаты.
+  Future<MyExpertReviews> reviews({int? take, int? skip}) =>
+      _api.myReviews(take: take, skip: skip);
 
-  /// `GET /experts/{id}/reviews` — отзывы + распределение оценок.
-  Future<ExpertReviews> reviews(String expertId, {int? take, int? skip}) =>
-      _api.expertReviews(expertId, take: take, skip: skip);
+  /// `POST /reviews/{id}/reply` — публичный ответ на отзыв; повтор
+  /// перезаписывает предыдущий текст.
+  Future<void> reply(String reviewId, String text) =>
+      _api.replyToReview(reviewId, text);
+
+  /// `POST /reviews/{id}/complaint` — жалоба: отзыв уходит в FLAGGED и
+  /// пропадает из выдачи (и из рейтинга) до решения модератора.
+  Future<void> complaint(String reviewId, String text) =>
+      _api.complainAboutReview(reviewId, text);
 }
 
 final expertReviewsRepositoryProvider = Provider<ExpertReviewsRepository>(
