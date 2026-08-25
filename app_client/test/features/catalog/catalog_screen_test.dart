@@ -10,7 +10,6 @@ import 'package:shared/shared.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:app_client/core/locale_controller.dart';
-import 'package:app_client/core/providers.dart';
 import 'package:app_client/core/route_paths.dart';
 import 'package:app_client/features/catalog/state/catalog_controller.dart';
 import 'package:app_client/features/catalog/ui/catalog_screen.dart';

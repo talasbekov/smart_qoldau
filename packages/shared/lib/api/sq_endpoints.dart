@@ -15,11 +15,44 @@ abstract final class SqEndpoints {
   // --- каталог ---
   static const topics = '/topics';
   static const experts = '/experts';
+  static const expertsMe = '/experts/me';
+  static const expertsMeWorkStatus = '/experts/me/work-status';
+  static const expertsMeHeartbeat = '/experts/me/heartbeat';
+
+  /// Документы верификации эксперта (E7 задача 5).
+  static const expertsMeDocuments = '/experts/me/documents';
+  static const expertsMeDocumentsSubmit = '/experts/me/documents/submit';
+  static String expertsMeDocumentByType(String type) =>
+      '/experts/me/documents/$type';
+
+  /// Фото профиля эксперта (E7 задача 6): `POST` — загрузить (на
+  /// модерацию), `DELETE` — удалить.
+  static const expertsMePhoto = '/experts/me/photo';
   static String expertById(String id) => '/experts/$id';
   static String expertReviews(String id) => '/experts/$id/reviews';
 
   /// Слоты для записи (E6b).
   static String expertSlots(String id) => '/experts/$id/slots';
+
+  /// Расписание и исключения эксперта (E7 задача 7): еженедельное
+  /// расписание, приём срочных запросов, и дневные исключения (выходные,
+  /// нестандартное время).
+  static const expertsMeSchedule = '/experts/me/schedule';
+  static const expertsMeAvailability = '/experts/me/availability';
+  static const expertsMeScheduleExceptions = '/experts/me/schedule/exceptions';
+  static String expertsMeScheduleExceptionByDate(String date) =>
+      '/experts/me/schedule/exceptions/$date';
+
+  /// Офферы эксперта (E7 задача 9): активные PENDING-офферы,
+  /// принятие/отклонение.
+  static const expertsMeOffers = '/experts/me/offers';
+  static String offerAccept(String offerId) => '/offers/$offerId/accept';
+  static String offerDecline(String offerId) => '/offers/$offerId/decline';
+
+  /// Доход, баланс и выплаты эксперта (E7 задача 14).
+  static const expertsMeEarnings = '/experts/me/earnings';
+  static const expertsMeBalance = '/experts/me/balance';
+  static const payouts = '/payouts';
 
   // --- избранное ---
   static const favorites = '/favorites';
@@ -47,6 +80,11 @@ abstract final class SqEndpoints {
   static String consultationPay(String id) => '/consultations/$id/pay';
   static String consultationPayment(String id) => '/consultations/$id/payment';
   static String consultationReview(String id) => '/consultations/$id/review';
+
+  /// Завершение консультации экспертом и его приватные заметки (E7 задача
+  /// 13).
+  static String consultationComplete(String id) => '/consultations/$id/complete';
+  static String consultationNote(String id) => '/consultations/$id/note';
 
   // --- отзывы ---
   static String reviewById(String id) => '/reviews/$id';
@@ -79,6 +117,16 @@ abstract final class SqEndpoints {
     ('POST', authGuestConvert),
     ('GET', topics),
     ('GET', experts),
+    ('POST', experts),
+    ('GET', expertsMe),
+    ('PATCH', expertsMe),
+    ('PATCH', expertsMeWorkStatus),
+    ('POST', expertsMeHeartbeat),
+    ('GET', expertsMeDocuments),
+    ('POST', '/experts/me/documents/{type}'),
+    ('POST', expertsMeDocumentsSubmit),
+    ('POST', expertsMePhoto),
+    ('DELETE', expertsMePhoto),
     ('GET', '/experts/{id}'),
     ('GET', '/experts/{id}/reviews'),
     ('GET', '/experts/{id}/slots'),
@@ -111,6 +159,22 @@ abstract final class SqEndpoints {
     ('GET', tickets),
     ('GET', '/tickets/{id}'),
     ('GET', matchingOnlineCount),
+    ('GET', expertsMeSchedule),
+    ('PUT', expertsMeSchedule),
+    ('PATCH', expertsMeAvailability),
+    ('GET', expertsMeScheduleExceptions),
+    ('PUT', '/experts/me/schedule/exceptions/{date}'),
+    ('DELETE', '/experts/me/schedule/exceptions/{date}'),
+    ('GET', expertsMeOffers),
+    ('POST', '/offers/{offerId}/accept'),
+    ('POST', '/offers/{offerId}/decline'),
+    ('POST', '/consultations/{id}/complete'),
+    ('GET', '/consultations/{id}/note'),
+    ('PUT', '/consultations/{id}/note'),
+    ('GET', expertsMeEarnings),
+    ('GET', expertsMeBalance),
+    ('POST', payouts),
+    ('GET', payouts),
   ];
 
   /// Исключены из проверки контрактным тестом, потому что бэкенд ещё не

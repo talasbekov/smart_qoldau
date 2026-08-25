@@ -15,7 +15,6 @@ import '../../../../core/locale_controller.dart';
 import '../../../../core/route_paths.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../review/state/review_controller.dart';
-import '../state/chat_controller.dart';
 import 'message_bubble.dart';
 import 'session_header.dart';
 import 'session_menu.dart';

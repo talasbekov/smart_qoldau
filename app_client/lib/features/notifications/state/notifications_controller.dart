@@ -11,7 +11,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared/shared.dart';
 
 import '../../../core/locale_controller.dart';
-import '../../../core/providers.dart';
 import '../../../core/push_token_source.dart';
 import '../../auth/state/auth_controller.dart';
 import '../data/notifications_repository.dart';

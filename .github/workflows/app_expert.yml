@@ -1,0 +1,40 @@
+name: app_expert
+on: { pull_request: { paths: ['app_expert/**', 'packages/shared/**'] }, push: { branches: [main] } }
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        package: [packages/shared, app_expert]
+    defaults: { run: { working-directory: "${{ matrix.package }}" } }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with: { channel: stable }
+      - run: flutter pub get
+      - name: Generate code (build_runner)
+        run: |
+          if grep -q build_runner pubspec.yaml; then
+            dart run build_runner build --delete-conflicting-outputs
+          else
+            echo "build_runner не подключён — шаг пропущен"
+          fi
+      - name: Check freezed/json_serializable codegen is committed (packages/shared only)
+        if: matrix.package == 'packages/shared'
+        run: |
+          git add --intent-to-add -- lib
+          git diff --exit-code -- lib || {
+            echo "::error::*.freezed.dart/*.g.dart в packages/shared разошлись с исходниками — перегенерируй (dart run build_runner build --delete-conflicting-outputs) и закоммить"
+            exit 1
+          }
+      - name: Check l10n codegen is committed (app_expert only)
+        if: matrix.package == 'app_expert'
+        run: |
+          flutter gen-l10n
+          git add --intent-to-add -- lib/l10n
+          git diff --exit-code -- lib/l10n || {
+            echo "::error::lib/l10n/*.dart разошёлся с l10n/*.arb — перегенерируй (flutter gen-l10n) и закоммить"
+            exit 1
+          }
+      - run: flutter analyze
+      - run: flutter test

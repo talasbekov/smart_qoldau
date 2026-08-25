@@ -9,7 +9,6 @@ import 'package:shared/shared.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:app_client/core/locale_controller.dart';
-import 'package:app_client/core/providers.dart';
 import 'package:app_client/core/route_paths.dart';
 import 'package:app_client/features/review/ui/review_screen.dart';
 import 'package:app_client/l10n/app_localizations.dart';

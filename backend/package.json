@@ -19,7 +19,8 @@
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "DATABASE_URL=\"${DATABASE_URL:-postgresql://sq:sq@localhost:5433/smartqoldau_test}\" THROTTLE_ENABLED=\"${THROTTLE_ENABLED:-false}\" NODE_OPTIONS=--experimental-vm-modules jest --config ./test/jest-e2e.json",
     "openapi:dump": "ts-node scripts/dump-openapi.ts",
-    "admin:seed": "ts-node src/cli/seed-superadmin.ts"
+    "admin:seed": "ts-node src/cli/seed-superadmin.ts",
+    "expert:verify": "ts-node src/cli/verify-expert.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1113.0",

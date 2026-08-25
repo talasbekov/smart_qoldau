@@ -58,13 +58,18 @@ final sessionInvalidatedProvider = StateProvider<int>((ref) => 0);
 /// отсчёт «через 2 ч 15 мин».
 final nowProvider = Provider<DateTime Function()>((ref) => DateTime.now);
 
-/// Единая точка входа в бэкенд SmartQoldau.
+/// Тело реального [sqApiProvider] — задача 2 (E7) перенесла сам провайдер в
+/// `shared` как placeholder (`ChatRepository`/`MediaRepository` теперь
+/// живут там и должны собираться самодостаточно), а построение настоящего
+/// `SqApi` осталось конфигурацией приложения: `main()` переопределяет
+/// `sqApiProvider` этой же самой функцией (`.overrideWith(buildSqApi)`),
+/// один в один с тем, что было здесь раньше — никаких изменений в логике.
 ///
 /// `onLogout` не вызывает `AuthController` напрямую (см.
 /// [sessionInvalidatedProvider]): чистит хранилище токенов, до которого
 /// `core` и так имеет прямой доступ ([tokenStoreProvider]), и увеличивает
 /// счётчик — реакцию на него берёт на себя `features/auth`.
-final sqApiProvider = Provider<SqApi>((ref) {
+SqApi buildSqApi(Ref ref) {
   final tokenStore = ref.watch(tokenStoreProvider);
   return SqApi(
     baseUrl: apiBaseUrl,
@@ -75,7 +80,7 @@ final sqApiProvider = Provider<SqApi>((ref) {
       ref.read(sessionInvalidatedProvider.notifier).state++;
     },
   );
-});
+}
 
 /// Минимальный интервал между проактивными попытками обновить токен из-за
 /// разрыва WS, похожего на отказ аутентификации (см. [connectSqEvents]).
@@ -359,10 +364,13 @@ const Duration _authRefreshCooldown = Duration(seconds: 30);
   );
 }
 
-/// Шина реалтайм-событий (`request.updated`, `chat.message`, ... — см.
-/// `packages/shared/lib/events`). Экраны читают `ref.watch(sqEventsProvider)
-/// .stream`/`.forConsultation(id)`; соединение поднимается/рвётся
-/// автоматически вместе с сессией (см. [connectSqEvents]).
+/// Тело реального [sqEventsProvider] — как и [buildSqApi], перенесено сюда
+/// задачей 2 (E7): сам провайдер теперь placeholder в `shared`
+/// (`ChatController` переехал туда и читает `sqEventsProvider`), а `main()`
+/// переопределяет его этой же функцией (`.overrideWith(buildSqEvents)`).
+/// [connectSqEvents] — намеренно НЕ трогается этим переносом: вся
+/// race-condition-чувствительная логика реконнекта остаётся здесь, как и
+/// была, только точка её подключения к Riverpod теперь называется иначе.
 ///
 /// `refresh: api.tokenRefresher.refresh` — намеренно НЕ `api.refresh`
 /// (тот принимает конкретный refresh-токен и не координируется ни с чем):
@@ -370,7 +378,7 @@ const Duration _authRefreshCooldown = Duration(seconds: 30);
 /// внутри пользуется `AuthInterceptor` этого же `SqApi` — так HTTP-401 и
 /// разрыв WS делят один single-flight, а не гоняются за один одноразовый
 /// refresh-токен независимо (Round 2 ревью задачи 8, п.2).
-final sqEventsProvider = Provider<SqEvents>((ref) {
+SqEvents buildSqEvents(Ref ref) {
   final tokenStore = ref.watch(tokenStoreProvider);
   final api = ref.watch(sqApiProvider);
   final socket = SocketIoSqSocket(wsBase: wsBaseUrl);
@@ -383,4 +391,4 @@ final sqEventsProvider = Provider<SqEvents>((ref) {
   );
   ref.onDispose(() => unawaited(connection.dispose()));
   return connection.events;
-});
+}

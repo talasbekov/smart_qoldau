@@ -10,9 +10,10 @@ import '../models/models.dart';
 ///
 /// [SqEvent.fromRaw] — единственная точка разбора сырой пары `(имя
 /// события, payload)`. Неизвестное имя события (в том числе экспертские
-/// `offer.new`/`offer.revoked`/`earning.credited`/`payout.updated`, которые
-/// клиент по контракту никогда не получает) и любой сбой разбора известного
-/// события (неожиданно отсутствующее обязательное поле и т.п.) одинаково
+/// `earning.credited`/`payout.updated`, которые клиент (app_client) по
+/// контракту никогда не получает — их разбирает только app_expert, см.
+/// задачи 9/14) и любой сбой разбора известного события (неожиданно
+/// отсутствующее обязательное поле и т.п.) одинаково
 /// деградируют в [UnknownEvent] — шина обязана пережить рассинхрон с
 /// бэкендом, а не уронить поток (см. брифинг задачи 8: `EventsService
 /// .safeEmit` бэкенда — best-effort, «шина не единственный источник
@@ -32,6 +33,15 @@ sealed class SqEvent {
     final json =
         data is Map ? data.cast<String, dynamic>() : const <String, dynamic>{};
     return switch (event) {
+      'offer.new' => OfferNew(
+          offerId: json['offerId'] as String,
+          topicSlug: json['topicSlug'] as String,
+          format: _sessionFormat(json['format'] as String)!,
+          isEmergency: json['isEmergency'] as bool,
+          clientCode: json['clientCode'] as int,
+          deadlineAt: DateTime.parse(json['deadlineAt'] as String),
+        ),
+      'offer.revoked' => OfferRevoked(offerId: json['offerId'] as String),
       'request.updated' => RequestUpdated(
           id: json['id'] as String,
           status: _requestStatus(json['status'] as String),
@@ -178,6 +188,43 @@ final class NotificationNew extends SqEvent {
 
   @override
   String toString() => 'NotificationNew(id: $id, type: $type)';
+}
+
+/// `offer.new` — эксперту (app_expert) поступил новый оффер на срочную или
+/// плановую заявку. PII-инвариант: только [clientCode], никаких данных
+/// клиента.
+final class OfferNew extends SqEvent {
+  const OfferNew({
+    required this.offerId,
+    required this.topicSlug,
+    required this.format,
+    required this.isEmergency,
+    required this.clientCode,
+    required this.deadlineAt,
+  });
+
+  final String offerId;
+  final String topicSlug;
+  final SessionFormat format;
+  final bool isEmergency;
+  final int clientCode;
+  final DateTime deadlineAt;
+
+  @override
+  String toString() => 'OfferNew(offerId: $offerId, topicSlug: $topicSlug, '
+      'isEmergency: $isEmergency, deadlineAt: $deadlineAt)';
+}
+
+/// `offer.revoked` — оффер [offerId] стал недоступен (принят другим
+/// экспертом, истёк, или заявка отменена клиентом) до того, как этот
+/// эксперт успел отреагировать.
+final class OfferRevoked extends SqEvent {
+  const OfferRevoked({required this.offerId});
+
+  final String offerId;
+
+  @override
+  String toString() => 'OfferRevoked(offerId: $offerId)';
 }
 
 /// Незнакомое имя события ИЛИ известное имя с payload'ом, который не

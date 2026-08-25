@@ -7,7 +7,6 @@ import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:shared/shared.dart';
 
-import 'package:app_client/core/providers.dart';
 import 'package:app_client/core/route_paths.dart';
 import 'package:app_client/features/payment/ui/found_screen.dart';
 import 'package:app_client/l10n/app_localizations.dart';

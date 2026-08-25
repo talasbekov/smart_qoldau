@@ -23,6 +23,9 @@ abstract final class ApiErrorCode {
   static const expertUnavailable = 'EXPERT_UNAVAILABLE';
   static const expertNotFound = 'EXPERT_NOT_FOUND';
   static const expertBlocked = 'EXPERT_BLOCKED';
+  static const expertExists = 'EXPERT_EXISTS';
+  static const priceOutOfRange = 'PRICE_OUT_OF_RANGE';
+  static const notVerified = 'NOT_VERIFIED';
   static const requestNotFound = 'REQUEST_NOT_FOUND';
   static const requestAlreadyClosed = 'REQUEST_ALREADY_CLOSED';
   static const consultationNotFound = 'CONSULTATION_NOT_FOUND';
@@ -39,6 +42,15 @@ abstract final class ApiErrorCode {
   static const ticketContactRequired = 'TICKET_CONTACT_REQUIRED';
   static const ticketCategoryNotAllowed = 'TICKET_CATEGORY_NOT_ALLOWED';
   static const ticketAlreadyResolved = 'TICKET_ALREADY_RESOLVED';
+
+  /// Офферы эксперта (E7 задача 9).
+  static const offerNotFound = 'OFFER_NOT_FOUND';
+  static const offerExpired = 'OFFER_EXPIRED';
+  static const offerAlreadyTaken = 'OFFER_ALREADY_TAKEN';
+
+  /// Завершение консультации и заметки эксперта (E7 задача 13).
+  static const invalidOutcome = 'INVALID_OUTCOME';
+  static const invalidNoteText = 'INVALID_NOTE_TEXT';
 
   /// Код, которым [ApiException.fromDioError] помечает сетевые сбои без
   /// ответа сервера (таймаут, обрыв соединения, DNS) — бэкенд его не знает,
