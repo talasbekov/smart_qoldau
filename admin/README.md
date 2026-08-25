@@ -18,7 +18,10 @@ npm run dev   # http://localhost:5173
 Требует живой бэкенд с включённым CORS (`backend/src/bootstrap.ts`,
 `app.enableCors()` — добавлено этим же эпиком) на
 `http://localhost:3000/v1` по умолчанию (переопределяется
-`VITE_API_BASE_URL`).
+`VITE_API_BASE_URL`). CORS — allow-list (`ADMIN_ORIGINS`, через запятую)
+на бэкенде, по умолчанию только `http://localhost:5173`; если Vite
+занял другой порт (порт уже был занят), добавить его в
+`ADMIN_ORIGINS`, например: `ADMIN_ORIGINS="http://localhost:5173,http://localhost:5174" npm run start:dev`.
 
 ## Тесты и сборка
 
@@ -57,12 +60,27 @@ src/
 ## Первый сотрудник (SUPERADMIN)
 
 `POST /admin/staff` сам требует токен SUPERADMIN — курица и яйцо для
-самого первого сотрудника. Использовать `backend/src/cli/seed-superadmin.ts`
-(`npm run admin:seed` в `backend/`), если он создаёт запись с ролью
-SUPERADMIN, либо создать запись напрямую в БД для самого первого входа.
+самого первого сотрудника. Используется
+`backend/src/cli/seed-superadmin.ts` (`npm run admin:seed -- --email=...
+--password=...` в `backend/`) — создаёт (или чинит доступ
+существующему) сотрудника с ролью SUPERADMIN напрямую в БД, минуя HTTP.
 
 ## Известные ограничения (вне объёма E8 — не подкреплено бэкендом)
 
 - Дашборд метрик, блокировка клиентов, справочники (CRUD), ledger-вью и
   ручные корректировки финансов — на бэкенде нет соответствующих
   эндпоинтов на момент разработки, см. план (раздел «Вне объёма»).
+
+## Ручная проверка против живого бэкенда (пройдена)
+
+Поднят полный стек (`docker compose infra` + `backend` +
+`admin` dev-сервер), заведён SUPERADMIN через `admin:seed`, вход
+подтверждён (`POST /admin/auth/login` без 2FA — свежий аккаунт).
+Проверены точные HTTP-вызовы, которые делают страницы (curl с тем же
+методом/путём/телом, что и `lib/*.ts`): список и карточка тикетов,
+ответ, закрытие (`GET/POST /admin/tickets*`), список сотрудников
+(`GET /admin/staff`), очередь верификации (`GET
+/admin/verification/queue`), выплаты (`GET /admin/payouts`), флаг
+отзывов (`GET /admin/reviews/flagged`) — формы ответов совпадают с
+TypeScript-интерфейсами `lib/*.ts` один в один. Оба dev-сервера
+остановлены после проверки.
