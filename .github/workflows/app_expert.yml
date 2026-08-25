@@ -27,5 +27,14 @@ jobs:
             echo "::error::*.freezed.dart/*.g.dart в packages/shared разошлись с исходниками — перегенерируй (dart run build_runner build --delete-conflicting-outputs) и закоммить"
             exit 1
           }
+      - name: Check l10n codegen is committed (app_expert only)
+        if: matrix.package == 'app_expert'
+        run: |
+          flutter gen-l10n
+          git add --intent-to-add -- lib/l10n
+          git diff --exit-code -- lib/l10n || {
+            echo "::error::lib/l10n/*.dart разошёлся с l10n/*.arb — перегенерируй (flutter gen-l10n) и закоммить"
+            exit 1
+          }
       - run: flutter analyze
       - run: flutter test

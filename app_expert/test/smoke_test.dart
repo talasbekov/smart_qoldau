@@ -3,8 +3,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:app_expert/app.dart';
+import 'package:app_expert/core/locale_controller.dart';
 import 'package:app_expert/core/providers.dart';
 import 'package:app_expert/core/token_store.dart';
 
@@ -26,10 +28,14 @@ class _FakeSecureStore implements SecureStore {
 
 void main() {
   testWidgets('SqExpertApp строится и содержит MaterialApp', (tester) async {
+    SharedPreferences.setMockInitialValues({});
+    final prefs = await SharedPreferences.getInstance();
+
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
           secureStoreProvider.overrideWithValue(_FakeSecureStore()),
+          sharedPreferencesProvider.overrideWithValue(prefs),
         ],
         child: const SqExpertApp(),
       ),

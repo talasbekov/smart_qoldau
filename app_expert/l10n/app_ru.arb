@@ -1,0 +1,7 @@
+{
+  "@@locale": "ru",
+  "appTitle": "SmartQoldau Эксперт",
+  "@appTitle": {
+    "description": "Заголовок приложения (MaterialApp.onGenerateTitle)."
+  }
+}
