@@ -6,6 +6,7 @@ import {
   ParticipantRole,
 } from '../consultations/consultations.service';
 import { apiError } from '../common/filters/app-exception.filter';
+import { AuditService } from '../audit/audit.service';
 import { MessageCipher } from './message-cipher';
 import { MessageDto } from './dto/message.dto';
 import { MessageHistoryDto } from './dto/message-history.dto';
@@ -22,6 +23,7 @@ export class ChatService {
     private prisma: PrismaService,
     private consultations: ConsultationsService,
     private cipher: MessageCipher,
+    private audit: AuditService,
   ) {}
 
   // Резолвер участника вынесен в ConsultationsService.resolveParticipant
@@ -93,7 +95,18 @@ export class ChatService {
     cursor: string | undefined,
     limit: number | undefined,
   ): Promise<MessageHistoryDto> {
-    await this.resolveParticipant(consultationId, userSub);
+    const { role } = await this.resolveParticipant(consultationId, userSub);
+
+    // ТЗ §11.7: чтение переписки — самый чувствительный вид доступа к
+    // консультации (сообщения возвращаются расшифрованными), журналируем
+    // отдельно от чтения карточки.
+    await this.audit.logAccess({
+      actorType: role === 'client' ? 'user' : 'expert',
+      actorId: userSub,
+      entity: 'consultation',
+      entityId: consultationId,
+      transition: 'consultation.messages_read',
+    });
 
     const take = Math.min(limit ?? DEFAULT_LIMIT, MAX_LIMIT);
 
