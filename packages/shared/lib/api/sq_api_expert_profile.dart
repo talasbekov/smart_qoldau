@@ -74,7 +74,7 @@ mixin SqApiExpertProfile on SqApiBase {
   /// `PATCH /experts/me/work-status` — установить статус работы эксперта.
   Future<ExpertMe> setWorkStatus(WorkStatus status) => guard(() async {
         final response = await dio.patch<Map<String, dynamic>>(
-          '/experts/me/work-status',
+          SqEndpoints.expertsMeWorkStatus,
           data: {'status': status.wireValue},
         );
         return ExpertMe.fromJson(response.data!);
@@ -82,6 +82,6 @@ mixin SqApiExpertProfile on SqApiBase {
 
   /// `POST /experts/me/heartbeat` — отправить сигнал о доступности эксперта.
   Future<void> heartbeat() => guard(() async {
-        await dio.post<void>('/experts/me/heartbeat');
+        await dio.post<void>(SqEndpoints.expertsMeHeartbeat);
       });
 }

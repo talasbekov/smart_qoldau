@@ -16,6 +16,8 @@ abstract final class SqEndpoints {
   static const topics = '/topics';
   static const experts = '/experts';
   static const expertsMe = '/experts/me';
+  static const expertsMeWorkStatus = '/experts/me/work-status';
+  static const expertsMeHeartbeat = '/experts/me/heartbeat';
   static String expertById(String id) => '/experts/$id';
   static String expertReviews(String id) => '/experts/$id/reviews';
 
@@ -83,8 +85,8 @@ abstract final class SqEndpoints {
     ('POST', experts),
     ('GET', expertsMe),
     ('PATCH', expertsMe),
-    ('PATCH', '/experts/me/work-status'),
-    ('POST', '/experts/me/heartbeat'),
+    ('PATCH', expertsMeWorkStatus),
+    ('POST', expertsMeHeartbeat),
     ('GET', '/experts/{id}'),
     ('GET', '/experts/{id}/reviews'),
     ('GET', '/experts/{id}/slots'),
