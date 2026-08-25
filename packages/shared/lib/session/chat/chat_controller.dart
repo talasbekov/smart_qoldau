@@ -7,10 +7,6 @@ import 'dart:developer' as developer;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared/shared.dart';
 
-import '../../../../core/analytics_provider.dart';
-import '../../../../core/providers.dart';
-import '../data/chat_repository.dart';
-
 /// Роль клиента в переписке (`MessageDto.senderRole` бэкенда — обычная
 /// строка, не enum).
 const clientSenderRole = 'client';

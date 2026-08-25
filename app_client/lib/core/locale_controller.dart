@@ -12,7 +12,6 @@ import 'package:shared/shared.dart';
 
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'providers.dart';
 
 /// Ключ, под которым выбранная локаль хранится в [SharedPreferences].
 const _localePrefsKey = 'sq.locale';

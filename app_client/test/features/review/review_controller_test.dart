@@ -8,7 +8,6 @@ import 'package:shared/shared.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:app_client/core/locale_controller.dart';
-import 'package:app_client/core/providers.dart';
 import 'package:app_client/features/review/state/review_controller.dart';
 
 class MockSqApi extends Mock implements SqApi {}

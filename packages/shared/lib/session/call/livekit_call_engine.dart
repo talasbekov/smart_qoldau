@@ -11,7 +11,7 @@ import 'dart:developer' as developer;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:livekit_client/livekit_client.dart' as lk;
 
-import '../state/call_controller.dart';
+import 'call_engine.dart';
 
 class LiveKitCallEngine implements CallEngine {
   LiveKitCallEngine() {

@@ -7,7 +7,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared/shared.dart';
 
 import '../../../core/locale_controller.dart';
-import '../../../core/analytics_provider.dart';
 import '../../funnel/data/requests_repository.dart';
 import '../data/reviews_repository.dart';
 

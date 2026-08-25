@@ -9,7 +9,6 @@ import 'package:shared/shared.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../core/locale_controller.dart';
-import '../../../core/providers.dart';
 import '../../review/data/reviews_repository.dart';
 import '../../review/state/review_controller.dart';
 import '../data/consultations_repository.dart';

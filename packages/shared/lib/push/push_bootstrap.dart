@@ -7,11 +7,6 @@ import 'dart:developer' as developer;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared/shared.dart';
 
-import '../../features/notifications/state/notifications_controller.dart';
-import '../../features/notifications/ui/notification_tile.dart';
-import 'push_config.dart';
-import 'push_messaging_port.dart';
-
 /// Куда уводит нажатый пуш. Переопределяется в `main()` реальной
 /// навигацией роутера; в тестах — записью маршрута.
 final pushNavigatorProvider = Provider<void Function(String route)>(
@@ -29,6 +24,38 @@ final localNotificationPresenterProvider =
         name: 'PushBootstrap',
       ),
     );
+
+/// Регистрация push-токена устройства на бэкенде — транспортный уровень
+/// («вызвать API регистрации токена»). Логика профиля (платформа, локаль,
+/// какой именно эндпоинт/репозиторий) остаётся приложению — `app_client`
+/// передаёт сюда `DeviceRegistrar.registerToken` через `overrideWith` в
+/// `main()` (та же логика, что была тут раньше, просто теперь настоящая
+/// реализация внедряется, а не хардкодится). Задача 2 (E7): тот же паттерн,
+/// что уже [pushNavigatorProvider]/[localNotificationPresenterProvider].
+final deviceTokenRegistrarProvider =
+    Provider<Future<void> Function(String token)>(
+      (ref) => (token) async => developer.log(
+        'push-токен не зарегистрирован: seam не переопределён',
+        name: 'PushBootstrap',
+      ),
+    );
+
+/// Резолвит маршрут пуша по его данным. Сигнатура зависит только от самого
+/// уведомления ([AppNotification], тип уже общий для приложений), а не от
+/// путей конкретного роутера — `app_client` передаёт сюда свою
+/// `notificationRoute()` (знающую про `RoutePaths`) через `overrideWith` в
+/// `main()`; `app_expert` (задача 13) передаст свою. По умолчанию — некуда.
+final pushRouteResolverProvider = Provider<String? Function(AppNotification)>(
+  (ref) => (_) => null,
+);
+
+/// Пуш пришёл в форграунде: центр уведомлений приложения должен обновиться
+/// (список непрочитанных и т.д.). Что именно это означает — знает только
+/// приложение (`app_client` передаёт `NotificationsController.refresh` через
+/// `overrideWith` в `main()`). По умолчанию — ничего не делает.
+final notificationsRefresherProvider = Provider<Future<void> Function()>(
+  (ref) => () async {},
+);
 
 class PushBootstrap {
   PushBootstrap(this._ref);
@@ -64,7 +91,7 @@ class PushBootstrap {
         // «пользователь нажал». Показываем локальное уведомление и
         // обновляем центр уведомлений.
         _ref.read(localNotificationPresenterProvider)(message);
-        unawaited(_ref.read(notificationsControllerProvider.notifier).refresh());
+        unawaited(_ref.read(notificationsRefresherProvider)());
       }),
     );
 
@@ -75,7 +102,7 @@ class PushBootstrap {
 
   Future<void> _register(String token) async {
     try {
-      await _ref.read(deviceRegistrarProvider).registerToken(token);
+      await _ref.read(deviceTokenRegistrarProvider)(token);
     } catch (error) {
       developer.log(
         'регистрация push-токена не удалась: ${error.runtimeType}',
@@ -96,7 +123,7 @@ class PushBootstrap {
   String? _routeFor(PushMessage message) {
     final type = message.data['type'];
     if (type is! String) return null;
-    return notificationRoute(
+    return _ref.read(pushRouteResolverProvider)(
       AppNotification(
         id: '',
         type: type,

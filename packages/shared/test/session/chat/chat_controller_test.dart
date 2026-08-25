@@ -13,10 +13,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:shared/shared.dart';
 
-import 'package:app_client/core/analytics_provider.dart';
-import 'package:app_client/core/providers.dart';
-import 'package:app_client/features/session/chat/state/chat_controller.dart';
-
 class MockSqApi extends Mock implements SqApi {}
 
 class _RecordingAnalytics implements AnalyticsPort {

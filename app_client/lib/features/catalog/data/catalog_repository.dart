@@ -4,7 +4,6 @@ library;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared/shared.dart';
 
-import '../../../core/providers.dart';
 
 class CatalogRepository {
   const CatalogRepository(this._api);

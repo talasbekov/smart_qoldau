@@ -16,7 +16,6 @@ import 'package:shared/shared.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:app_client/core/locale_controller.dart';
-import 'package:app_client/core/permission_service.dart';
 import 'package:app_client/features/onboarding/state/onboarding_flags.dart';
 import 'package:app_client/features/onboarding/ui/permissions_screen.dart';
 import 'package:app_client/l10n/app_localizations.dart';

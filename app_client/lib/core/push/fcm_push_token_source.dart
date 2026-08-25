@@ -2,10 +2,9 @@
 library;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared/shared.dart';
 
 import '../push_token_source.dart';
-import 'push_config.dart';
-import 'push_messaging_port.dart';
 
 /// Токен берётся у Firebase — но только если пуши включены флагом сборки.
 /// При выключенных пушах в провайдере остаётся `NoopPushTokenSource`, и

@@ -10,7 +10,6 @@ import 'package:shared/shared.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:app_client/core/locale_controller.dart';
-import 'package:app_client/core/providers.dart';
 import 'package:app_client/features/consultations/data/consultations_repository.dart';
 import 'package:app_client/features/consultations/state/consultations_controller.dart';
 import 'package:app_client/features/review/state/review_controller.dart';

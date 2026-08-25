@@ -6,7 +6,6 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared/shared.dart';
 
-import '../../../core/analytics_provider.dart';
 import '../data/payments_repository.dart';
 
 enum PaymentPhase { idle, processing, paid, declined }

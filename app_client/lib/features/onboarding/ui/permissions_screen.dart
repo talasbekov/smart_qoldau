@@ -20,7 +20,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared/shared.dart';
 
 import '../../../core/error_text.dart';
-import '../../../core/permission_service.dart';
 import '../../../l10n/app_localizations.dart';
 import '../state/onboarding_flags.dart';
 

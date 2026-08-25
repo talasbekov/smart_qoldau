@@ -11,7 +11,6 @@ import 'package:shared/shared.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:app_client/core/locale_controller.dart';
-import 'package:app_client/core/providers.dart';
 import 'package:app_client/core/push_token_source.dart';
 import 'package:app_client/features/auth/state/auth_controller.dart';
 import 'package:app_client/features/notifications/state/notifications_controller.dart';

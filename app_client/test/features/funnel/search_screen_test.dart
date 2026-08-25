@@ -11,7 +11,6 @@ import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:shared/shared.dart';
 
-import 'package:app_client/core/providers.dart';
 import 'package:app_client/core/route_paths.dart';
 import 'package:app_client/features/funnel/state/search_controller.dart';
 import 'package:app_client/features/funnel/ui/search_screen.dart';

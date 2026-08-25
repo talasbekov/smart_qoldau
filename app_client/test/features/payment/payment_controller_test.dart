@@ -7,7 +7,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:shared/shared.dart';
 
-import 'package:app_client/core/providers.dart';
 import 'package:app_client/features/payment/state/payment_controller.dart';
 
 class MockSqApi extends Mock implements SqApi {}

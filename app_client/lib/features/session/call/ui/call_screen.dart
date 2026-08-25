@@ -13,9 +13,7 @@ import 'package:shared/shared.dart';
 import '../../../../core/error_text.dart';
 import '../../../../core/route_paths.dart';
 import '../../../../l10n/app_localizations.dart';
-import '../../chat/state/chat_controller.dart';
 import '../../chat/ui/session_header.dart';
-import '../state/call_controller.dart';
 import 'call_controls.dart';
 import 'connection_banner.dart';
 
