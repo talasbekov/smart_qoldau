@@ -4,6 +4,7 @@ import LoginPage from './routes/LoginPage';
 import TotpChallengePage from './routes/TotpChallengePage';
 import RequireAuth from './routes/RequireAuth';
 import AppLayout from './routes/AppLayout';
+import SettingsPage from './routes/SettingsPage';
 import { tokenStore } from './lib/tokenStore';
 import type { Session } from './lib/types';
 import './index.css';
@@ -44,7 +45,8 @@ export default function App() {
         <Route element={<RequireAuth />}>
           <Route element={<AppLayout />}>
             <Route path="/" element={<Navigate to="/verification" replace />} />
-            {/* Остальные маршруты подключаются задачами 4-11 */}
+            <Route path="/settings" element={<SettingsPage />} />
+            {/* Остальные маршруты подключаются задачами 5-11 */}
           </Route>
         </Route>
       </Routes>
