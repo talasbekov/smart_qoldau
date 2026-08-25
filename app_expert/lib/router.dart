@@ -25,6 +25,8 @@ import 'features/auth/ui/splash_screen.dart';
 import 'features/onboarding/state/onboarding_controller.dart';
 import 'features/onboarding/ui/profile_step_screen.dart';
 import 'features/onboarding/ui/topics_step_screen.dart';
+import 'features/schedule/ui/exceptions_screen.dart';
+import 'features/schedule/ui/schedule_screen.dart';
 import 'features/shell/ui/app_shell.dart';
 import 'features/verification/ui/documents_screen.dart';
 import 'features/verification/ui/photo_screen.dart';
@@ -110,6 +112,14 @@ GoRouter sqExpertRouter(Ref ref) {
       GoRoute(
         path: RoutePaths.verificationPhoto,
         builder: (context, state) => const PhotoScreen(),
+      ),
+      GoRoute(
+        path: RoutePaths.schedule,
+        builder: (context, state) => const ScheduleScreen(),
+      ),
+      GoRoute(
+        path: RoutePaths.scheduleExceptions,
+        builder: (context, state) => const ExceptionsScreen(),
       ),
     ],
   );

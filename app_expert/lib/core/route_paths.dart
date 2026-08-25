@@ -37,4 +37,12 @@ abstract final class RoutePaths {
 
   /// Загрузка/удаление фото профиля (задача 6 эпика E7).
   static const verificationPhoto = '/verification/photo';
+
+  /// Еженедельное расписание эксперта (задача 8 эпика E7) — 7 строк дней,
+  /// тумблер + рабочие часы/перерыв.
+  static const schedule = '/schedule';
+
+  /// Исключения в расписании (задача 8 эпика E7) — календарь на 14 дней
+  /// вперёд, тап по дню открывает шторку «выходной / другие часы».
+  static const scheduleExceptions = '/schedule/exceptions';
 }
