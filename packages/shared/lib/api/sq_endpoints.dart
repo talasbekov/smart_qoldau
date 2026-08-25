@@ -76,6 +76,11 @@ abstract final class SqEndpoints {
   static String consultationPayment(String id) => '/consultations/$id/payment';
   static String consultationReview(String id) => '/consultations/$id/review';
 
+  /// Завершение консультации экспертом и его приватные заметки (E7 задача
+  /// 13).
+  static String consultationComplete(String id) => '/consultations/$id/complete';
+  static String consultationNote(String id) => '/consultations/$id/note';
+
   // --- отзывы ---
   static String reviewById(String id) => '/reviews/$id';
 
@@ -158,6 +163,9 @@ abstract final class SqEndpoints {
     ('GET', expertsMeOffers),
     ('POST', '/offers/{offerId}/accept'),
     ('POST', '/offers/{offerId}/decline'),
+    ('POST', '/consultations/{id}/complete'),
+    ('GET', '/consultations/{id}/note'),
+    ('PUT', '/consultations/{id}/note'),
   ];
 
   /// Исключены из проверки контрактным тестом, потому что бэкенд ещё не

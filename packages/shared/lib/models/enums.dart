@@ -54,6 +54,19 @@ enum ConsultationOutcome {
   expertCancelled,
 }
 
+/// Строковое представление [ConsultationOutcome] для мест, где значение
+/// уходит не через модельный `toJson`, а напрямую в тело запроса (E7
+/// задача 13: `POST /consultations/{id}/complete`).
+extension ConsultationOutcomeWire on ConsultationOutcome {
+  String get wireValue => switch (this) {
+        ConsultationOutcome.completed => 'COMPLETED',
+        ConsultationOutcome.clientNoShow => 'CLIENT_NO_SHOW',
+        ConsultationOutcome.clientCancelled => 'CLIENT_CANCELLED',
+        ConsultationOutcome.techIssue => 'TECH_ISSUE',
+        ConsultationOutcome.expertCancelled => 'EXPERT_CANCELLED',
+      };
+}
+
 /// Статус оплаты консультации (`ConsultationClientDto.paymentStatus`).
 /// Отдельный от [PaymentStatus] enum — у бэкенда это разные Prisma-enum'ы
 /// (здесь набор значений начинается с `UNPAID`, а не `PENDING`).

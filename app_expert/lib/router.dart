@@ -18,6 +18,7 @@ library;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shared/shared.dart';
 
 import 'core/providers.dart';
 import 'core/route_paths.dart';
@@ -31,6 +32,8 @@ import 'features/onboarding/ui/profile_step_screen.dart';
 import 'features/onboarding/ui/topics_step_screen.dart';
 import 'features/schedule/ui/exceptions_screen.dart';
 import 'features/schedule/ui/schedule_screen.dart';
+import 'features/session/ui/expert_call_screen.dart';
+import 'features/session/ui/expert_chat_screen.dart';
 import 'features/verification/ui/documents_screen.dart';
 import 'features/verification/ui/photo_screen.dart';
 import 'features/verification/ui/verification_status_screen.dart';
@@ -128,6 +131,20 @@ GoRouter sqExpertRouter(Ref ref) {
       GoRoute(
         path: RoutePaths.consultations,
         builder: (context, state) => const ExpertConsultationsScreen(),
+      ),
+      GoRoute(
+        path: RoutePaths.sessionPattern,
+        builder: (context, state) =>
+            ExpertChatScreen(consultationId: state.pathParameters['id']!),
+      ),
+      GoRoute(
+        path: RoutePaths.callPattern,
+        builder: (context, state) => ExpertCallScreen(
+          consultationId: state.pathParameters['id']!,
+          format: state.uri.queryParameters['format'] == 'video'
+              ? SessionFormat.video
+              : SessionFormat.audio,
+        ),
       ),
     ],
   );

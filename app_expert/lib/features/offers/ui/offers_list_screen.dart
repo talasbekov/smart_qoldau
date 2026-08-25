@@ -8,8 +8,10 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:shared/shared.dart';
 
+import '../../../core/route_paths.dart';
 import '../data/offers_repository.dart';
 
 class OffersListScreen extends StatelessWidget {
@@ -84,15 +86,31 @@ class _OfferTileState extends ConsumerState<_OfferTile> {
     super.dispose();
   }
 
-  Future<void> _respond(Future<void> Function() action) async {
+  Future<void> _decline() async {
     if (_busy) return;
     setState(() => _busy = true);
     try {
-      await action();
+      await ref.read(offersRepositoryProvider).decline(widget.offer.offerId);
     } on ApiException {
       // OFFER_EXPIRED/OFFER_ALREADY_TAKEN/OFFER_NOT_FOUND — оффер уже
       // недоступен; список всё равно перечитывается ниже и уберёт карточку.
     } finally {
+      if (mounted) setState(() => _busy = false);
+      widget.onHandled();
+    }
+  }
+
+  Future<void> _accept() async {
+    if (_busy) return;
+    setState(() => _busy = true);
+    try {
+      final result = await ref.read(offersRepositoryProvider).accept(widget.offer.offerId);
+      if (mounted) context.push(RoutePaths.session(result.consultationId));
+    } on ApiException {
+      // OFFER_EXPIRED/OFFER_ALREADY_TAKEN/OFFER_NOT_FOUND — оффер уже
+      // недоступен; список всё равно перечитывается ниже и уберёт карточку.
+    } finally {
+      if (mounted) setState(() => _busy = false);
       widget.onHandled();
     }
   }
@@ -135,11 +153,7 @@ class _OfferTileState extends ConsumerState<_OfferTile> {
               Expanded(
                 child: OutlinedButton(
                   key: Key('sq-offer-decline-${offer.offerId}'),
-                  onPressed: _busy
-                      ? null
-                      : () => _respond(
-                            () => ref.read(offersRepositoryProvider).decline(offer.offerId),
-                          ),
+                  onPressed: _busy ? null : _decline,
                   child: const Text('Отклонить'),
                 ),
               ),
@@ -147,11 +161,7 @@ class _OfferTileState extends ConsumerState<_OfferTile> {
               Expanded(
                 child: ElevatedButton(
                   key: Key('sq-offer-accept-${offer.offerId}'),
-                  onPressed: _busy
-                      ? null
-                      : () => _respond(
-                            () => ref.read(offersRepositoryProvider).accept(offer.offerId),
-                          ),
+                  onPressed: _busy ? null : _accept,
                   child: const Text('Принять'),
                 ),
               ),

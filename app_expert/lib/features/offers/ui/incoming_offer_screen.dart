@@ -7,8 +7,10 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:shared/shared.dart';
 
+import '../../../core/route_paths.dart';
 import '../data/offers_repository.dart';
 import '../state/incoming_offer_controller.dart';
 
@@ -45,16 +47,22 @@ class _IncomingOfferScreenState extends ConsumerState<IncomingOfferScreen> {
     super.dispose();
   }
 
-  Future<void> _respond(Future<void> Function() action) async {
+  Future<void> _respond<T>(
+    Future<T> Function() action, {
+    void Function(T result)? onSuccess,
+  }) async {
     if (_busy) return;
     setState(() {
       _busy = true;
       _error = null;
     });
     try {
-      await action();
+      final result = await action();
       if (!mounted) return;
       ref.read(incomingOfferControllerProvider.notifier).handledByUser(widget.offer.offerId);
+      // Навигация ДО закрытия диалога — `context` этого виджета валиден
+      // ровно до `pop()`; после него он в процессе размонтирования.
+      onSuccess?.call(result);
       Navigator.of(context, rootNavigator: true).pop();
     } on ApiException catch (e) {
       // OFFER_EXPIRED/OFFER_ALREADY_TAKEN/OFFER_NOT_FOUND — оффер уже
@@ -135,6 +143,8 @@ class _IncomingOfferScreenState extends ConsumerState<IncomingOfferScreen> {
                             ? null
                             : () => _respond(
                                   () => ref.read(offersRepositoryProvider).accept(offer.offerId),
+                                  onSuccess: (result) =>
+                                      context.push(RoutePaths.session(result.consultationId)),
                                 ),
                         child: const Text('Принять'),
                       ),

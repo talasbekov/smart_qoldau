@@ -4,7 +4,10 @@
 library;
 
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:shared/shared.dart';
+
+import '../../../core/route_paths.dart';
 
 class ExpertConsultationCard extends StatelessWidget {
   const ExpertConsultationCard({super.key, required this.consultation});
@@ -20,7 +23,16 @@ class ExpertConsultationCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    // Открыть сессию (чат) есть смысл только для ACTIVE — SCHEDULED ещё не
+    // началась (нет переписки, `GET /consultations/{id}/messages` не
+    // предмет плановой записи), COMPLETED/CANCELLED — история для чтения,
+    // а не действий (задача 13 не заводит режим «только просмотр»).
+    return InkWell(
+      onTap: consultation.status == ConsultationStatus.active
+          ? () => context.push(RoutePaths.session(consultation.id))
+          : null,
+      borderRadius: BorderRadius.circular(SqRadius.m),
+      child: Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: SqColors.surface,
@@ -45,6 +57,7 @@ class ExpertConsultationCard extends StatelessWidget {
             style: SqTypography.body,
           ),
         ],
+      ),
       ),
     );
   }

@@ -6,6 +6,8 @@
 /// задачах эпика E7.
 library;
 
+import 'package:shared/shared.dart';
+
 abstract final class RoutePaths {
   /// Заставка: восстановление сессии при старте приложения.
   static const splash = '/splash';
@@ -49,4 +51,20 @@ abstract final class RoutePaths {
   /// Заявки и консультации (задача 12 эпика E7) — три вкладки: «Заявки»
   /// (офферы), «Идёт сейчас»/«Плановые», «История».
   static const consultations = '/consultations';
+
+  /// Шаблон маршрута сессии консультации (чат) для регистрации в
+  /// `GoRoute.path` (задача 13 эпика E7).
+  static const sessionPattern = '/session/:id';
+
+  /// Путь сессии консультации [id] — чат.
+  static String session(String id) => '/session/$id';
+
+  /// Шаблон маршрута звонка (аудио/видео) для регистрации в `GoRoute.path`.
+  static const callPattern = '/call/:id';
+
+  /// Путь звонка по консультации [id] в формате [format] — тот же приём,
+  /// что `app_client/lib/core/route_paths.dart`: формат едет
+  /// query-параметром, потому что это ЗАПРОШЕННЫЙ формат (эскалация), а не
+  /// текущее состояние консультации.
+  static String call(String id, SessionFormat format) => '/call/$id?format=${format.wireValue}';
 }

@@ -60,6 +60,40 @@ mixin SqApiConsultations on SqApiBase {
         return ClientConsultation.fromJson(response.data!);
       });
 
+  /// `GET /consultations/{id}` — консультация, где вызывающий — эксперт-
+  /// участник (E7 задача 13). Тот же путь, что [consultationById] — форма
+  /// ответа зависит от РОЛИ вызывающего на бэкенде
+  /// (`ConsultationsService.findForParticipant`), а не от query-параметра,
+  /// поэтому это не дубль, а другой разбор того же эндпоинта.
+  /// [consultationById] сознательно не переиспользован здесь: он парсит
+  /// ответ как `ClientConsultation` (обязательное поле `expert`), что упало
+  /// бы `TypeError` на экспертском ответе (нет `expert`, есть `clientCode`/
+  /// `topicSlug`).
+  Future<ConsultationExpertDto> expertConsultationById(String id) =>
+      guard(() async {
+        final response = await dio.get<Map<String, dynamic>>(
+          SqEndpoints.consultationById(id),
+        );
+        return ConsultationExpertDto.fromJson(response.data!);
+      });
+
+  /// `POST /consultations/{id}/complete` — эксперт завершает консультацию
+  /// с исходом. `403 FORBIDDEN` — не эксперт-участник; `409
+  /// CONSULTATION_NOT_ACTIVE` — уже закрыта (гонка с клиентом/no-show);
+  /// `409 INVALID_OUTCOME` — `CLIENT_NO_SHOW`, когда клиент по данным
+  /// LiveKit подключался (Р-01).
+  Future<ConsultationExpertDto> completeConsultation(
+    String id,
+    ConsultationOutcome outcome,
+  ) =>
+      guard(() async {
+        final response = await dio.post<Map<String, dynamic>>(
+          SqEndpoints.consultationComplete(id),
+          data: {'outcome': outcome.wireValue},
+        );
+        return ConsultationExpertDto.fromJson(response.data!);
+      });
+
   /// `POST /consultations/{id}/cancel` — отмена консультации клиентом.
   Future<ClientConsultation> cancelConsultation(String id) => guard(() async {
         final response = await dio.post<Map<String, dynamic>>(

@@ -11,6 +11,7 @@ export 'enums.dart';
 export 'expert.dart';
 export 'expert_document.dart';
 export 'expert_me.dart';
+export 'expert_note.dart';
 export 'match_request.dart';
 export 'media_token.dart';
 export 'notification.dart';
