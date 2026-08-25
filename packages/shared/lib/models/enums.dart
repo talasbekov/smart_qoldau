@@ -221,6 +221,43 @@ enum ProfileFieldStatus {
   rejected,
 }
 
+/// Тип документа верификации эксперта (`DocumentType` Prisma-enum
+/// бэкенда, см. `backend/prisma/schema.prisma`) — 4 обязательных типа,
+/// весь набор нужен, чтобы отправить анкету на проверку.
+enum DocumentType {
+  @JsonValue('IDENTITY')
+  identity,
+  @JsonValue('DIPLOMA')
+  diploma,
+  @JsonValue('CERTIFICATES')
+  certificates,
+  @JsonValue('QUALIFICATION')
+  qualification,
+}
+
+/// Статус загруженного документа верификации (`DocumentStatus` Prisma-enum
+/// бэкенда).
+enum DocumentStatus {
+  @JsonValue('UPLOADED')
+  uploaded,
+  @JsonValue('APPROVED')
+  approved,
+  @JsonValue('REUPLOAD_REQUIRED')
+  reuploadRequired,
+}
+
+/// Строковое представление [DocumentType] для подстановки в путь запроса
+/// (`POST /experts/me/documents/{type}` ждёт SCREAMING_SNAKE, как и на
+/// проводе JSON).
+extension DocumentTypeWire on DocumentType {
+  String get wireValue => switch (this) {
+        DocumentType.identity => 'IDENTITY',
+        DocumentType.diploma => 'DIPLOMA',
+        DocumentType.certificates => 'CERTIFICATES',
+        DocumentType.qualification => 'QUALIFICATION',
+      };
+}
+
 /// Строковое представление [ExperienceLevel] для мест, где значение уходит не
 /// через модельный `toJson`, а напрямую в тело запроса (для ручной сериализации).
 extension ExperienceLevelWire on ExperienceLevel {

@@ -8,6 +8,7 @@ export 'chat_message.dart';
 export 'consultation.dart';
 export 'enums.dart';
 export 'expert.dart';
+export 'expert_document.dart';
 export 'expert_me.dart';
 export 'match_request.dart';
 export 'media_token.dart';

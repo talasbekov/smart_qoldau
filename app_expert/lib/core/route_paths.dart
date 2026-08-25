@@ -26,4 +26,8 @@ abstract final class RoutePaths {
 
   /// Анкета онбординга, шаг 2/2 — выбор тем консультаций.
   static const onboardingTopics = '/onboarding/topics';
+
+  /// Документы верификации (задача 5 эпика E7) — 4 карточки типа
+  /// документа, отправка анкеты на проверку.
+  static const verificationDocuments = '/verification/documents';
 }

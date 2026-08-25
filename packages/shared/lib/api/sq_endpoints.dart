@@ -18,6 +18,12 @@ abstract final class SqEndpoints {
   static const expertsMe = '/experts/me';
   static const expertsMeWorkStatus = '/experts/me/work-status';
   static const expertsMeHeartbeat = '/experts/me/heartbeat';
+
+  /// Документы верификации эксперта (E7 задача 5).
+  static const expertsMeDocuments = '/experts/me/documents';
+  static const expertsMeDocumentsSubmit = '/experts/me/documents/submit';
+  static String expertsMeDocumentByType(String type) =>
+      '/experts/me/documents/$type';
   static String expertById(String id) => '/experts/$id';
   static String expertReviews(String id) => '/experts/$id/reviews';
 
@@ -87,6 +93,9 @@ abstract final class SqEndpoints {
     ('PATCH', expertsMe),
     ('PATCH', expertsMeWorkStatus),
     ('POST', expertsMeHeartbeat),
+    ('GET', expertsMeDocuments),
+    ('POST', '/experts/me/documents/{type}'),
+    ('POST', expertsMeDocumentsSubmit),
     ('GET', '/experts/{id}'),
     ('GET', '/experts/{id}/reviews'),
     ('GET', '/experts/{id}/slots'),
