@@ -15,6 +15,7 @@ export 'media_token.dart';
 export 'notification.dart';
 export 'online_count.dart';
 export 'payment.dart';
+export 'photo_upload_result.dart';
 export 'booking.dart';
 export 'review.dart';
 export 'review_tags.dart';

@@ -1,3 +1,5 @@
+import 'package:dio/dio.dart';
+
 import '../models/models.dart';
 import 'sq_api_base.dart';
 import 'sq_endpoints.dart';
@@ -83,5 +85,32 @@ mixin SqApiExpertProfile on SqApiBase {
   /// `POST /experts/me/heartbeat` — отправить сигнал о доступности эксперта.
   Future<void> heartbeat() => guard(() async {
         await dio.post<void>(SqEndpoints.expertsMeHeartbeat);
+      });
+
+  /// `POST /experts/me/photo` — загрузить фото профиля (multipart, поле
+  /// `file`) на модерацию. `400 PHOTO_INVALID` — файл пуст, больше 5 МБ,
+  /// не то соотношение сторон/формат (см. `PhotoService` бэкенда). В
+  /// отличие от [SqApiDocuments.uploadDocument] клиент размер заранее не
+  /// проверяет — лимит там мельче (5 МБ), а сам ответ бэкенда на невалидный
+  /// файл приходит быстро (изображения обычно небольшие), так что
+  /// дублировать проверку ради экономии одного round-trip не стоило.
+  Future<PhotoUploadedDto> uploadPhoto({
+    required List<int> bytes,
+    required String filename,
+  }) =>
+      guard(() async {
+        final formData = FormData.fromMap({
+          'file': MultipartFile.fromBytes(bytes, filename: filename),
+        });
+        final response = await dio.post<Map<String, dynamic>>(
+          SqEndpoints.expertsMePhoto,
+          data: formData,
+        );
+        return PhotoUploadedDto.fromJson(response.data!);
+      });
+
+  /// `DELETE /experts/me/photo` — удалить фото профиля.
+  Future<void> deletePhoto() => guard(() async {
+        await dio.delete<void>(SqEndpoints.expertsMePhoto);
       });
 }

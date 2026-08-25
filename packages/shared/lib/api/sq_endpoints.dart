@@ -24,6 +24,10 @@ abstract final class SqEndpoints {
   static const expertsMeDocumentsSubmit = '/experts/me/documents/submit';
   static String expertsMeDocumentByType(String type) =>
       '/experts/me/documents/$type';
+
+  /// Фото профиля эксперта (E7 задача 6): `POST` — загрузить (на
+  /// модерацию), `DELETE` — удалить.
+  static const expertsMePhoto = '/experts/me/photo';
   static String expertById(String id) => '/experts/$id';
   static String expertReviews(String id) => '/experts/$id/reviews';
 
@@ -96,6 +100,8 @@ abstract final class SqEndpoints {
     ('GET', expertsMeDocuments),
     ('POST', '/experts/me/documents/{type}'),
     ('POST', expertsMeDocumentsSubmit),
+    ('POST', expertsMePhoto),
+    ('DELETE', expertsMePhoto),
     ('GET', '/experts/{id}'),
     ('GET', '/experts/{id}/reviews'),
     ('GET', '/experts/{id}/slots'),

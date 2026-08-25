@@ -27,6 +27,8 @@ import 'features/onboarding/ui/profile_step_screen.dart';
 import 'features/onboarding/ui/topics_step_screen.dart';
 import 'features/shell/ui/app_shell.dart';
 import 'features/verification/ui/documents_screen.dart';
+import 'features/verification/ui/photo_screen.dart';
+import 'features/verification/ui/verification_status_screen.dart';
 
 /// Пути, на которых эксперт обязан ОСТАВАТЬСЯ, пока не выполнено их
 /// условие (см. [_redirect]), и с которых он обязан УЙТИ, как только оно
@@ -100,6 +102,14 @@ GoRouter sqExpertRouter(Ref ref) {
       GoRoute(
         path: RoutePaths.verificationDocuments,
         builder: (context, state) => const DocumentsScreen(),
+      ),
+      GoRoute(
+        path: RoutePaths.verificationStatus,
+        builder: (context, state) => const VerificationStatusScreen(),
+      ),
+      GoRoute(
+        path: RoutePaths.verificationPhoto,
+        builder: (context, state) => const PhotoScreen(),
       ),
     ],
   );

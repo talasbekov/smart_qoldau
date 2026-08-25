@@ -30,4 +30,11 @@ abstract final class RoutePaths {
   /// Документы верификации (задача 5 эпика E7) — 4 карточки типа
   /// документа, отправка анкеты на проверку.
   static const verificationDocuments = '/verification/documents';
+
+  /// Статус верификации (задача 6 эпика E7) — единственный источник
+  /// правды: `ExpertMe`, опрашиваемый раз в 30 с, пока не `VERIFIED`.
+  static const verificationStatus = '/verification/status';
+
+  /// Загрузка/удаление фото профиля (задача 6 эпика E7).
+  static const verificationPhoto = '/verification/photo';
 }
