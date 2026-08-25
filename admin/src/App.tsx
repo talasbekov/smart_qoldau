@@ -11,6 +11,8 @@ import ProfileModerationPage from './routes/ProfileModerationPage';
 import FlaggedExpertsPage from './routes/FlaggedExpertsPage';
 import ReviewsModerationPage from './routes/ReviewsModerationPage';
 import PayoutsPage from './routes/PayoutsPage';
+import TicketsPage from './routes/TicketsPage';
+import TicketDetailPage from './routes/TicketDetailPage';
 import { tokenStore } from './lib/tokenStore';
 import type { Session } from './lib/types';
 import './index.css';
@@ -58,7 +60,8 @@ export default function App() {
             <Route path="/flagged-experts" element={<FlaggedExpertsPage />} />
             <Route path="/reviews" element={<ReviewsModerationPage />} />
             <Route path="/payouts" element={<PayoutsPage />} />
-            {/* Остальные маршруты подключаются задачей 11 */}
+            <Route path="/tickets" element={<TicketsPage />} />
+            <Route path="/tickets/:id" element={<TicketDetailPage />} />
           </Route>
         </Route>
       </Routes>
