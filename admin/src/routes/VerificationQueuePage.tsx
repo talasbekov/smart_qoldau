@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import QueueTable from '@/components/QueueTable';
 import DecisionModal from '@/components/DecisionModal';
 import { getQueue, decideExpert, decideDocument, blockExpert, unblockExpert, type QueueEntry } from '@/lib/verification';
+import { verificationSla, VERIFICATION_SLA_HOURS } from '@/lib/sla';
 
 type ModalTarget = { kind: 'expert' | 'document'; id: string };
 
@@ -45,6 +46,29 @@ export default function VerificationQueuePage() {
         rows={items}
         columns={[
           { header: 'Эксперт', render: (r) => r.displayName },
+          {
+            // ТЗ §11.4: решение за 24 часа. Система срок не форсит, но
+            // очередь обязана показывать оператору, что уже просрочено —
+            // без этого «≤24ч» ничем не подкреплён. Бэкенд сортирует
+            // очередь по submittedAt, поэтому просроченные идут сверху.
+            header: 'Ждёт',
+            render: (r) => {
+              const sla = verificationSla(r.submittedAt);
+              return (
+                <span
+                  className={sla.overdue ? 'text-red-600 font-semibold' : 'text-gray-600'}
+                  title={
+                    sla.overdue
+                      ? `Просрочка: SLA ${VERIFICATION_SLA_HOURS} ч`
+                      : r.submittedAt ?? 'Отметка об отправке отсутствует'
+                  }
+                >
+                  {sla.label}
+                  {sla.overdue && ' · просрочено'}
+                </span>
+              );
+            },
+          },
           {
             header: 'Документы',
             render: (r) => (

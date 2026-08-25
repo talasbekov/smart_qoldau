@@ -29,6 +29,13 @@ export class QueueEntryDto {
   @ApiProperty({ enum: VerificationStatus })
   verificationStatus: VerificationStatus;
 
+  @ApiProperty({
+    nullable: true,
+    description:
+      'Момент отправки анкеты на проверку — точка отсчёта SLA 24ч (ТЗ §11.4). null только у записей, отправленных до появления поля.',
+  })
+  submittedAt: Date | null;
+
   @ApiProperty({ type: QueueDocumentDto, isArray: true })
   documents: QueueDocumentDto[];
 }
