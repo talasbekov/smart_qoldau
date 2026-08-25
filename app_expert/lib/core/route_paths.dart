@@ -74,4 +74,8 @@ abstract final class RoutePaths {
 
   /// Отзывы о текущем эксперте (задача 15 эпика E7).
   static const reviews = '/reviews';
+
+  /// Профиль и центр уведомлений (задача 16 эпика E7).
+  static const profile = '/profile';
+  static const notifications = '/notifications';
 }

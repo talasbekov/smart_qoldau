@@ -11,7 +11,6 @@ import 'package:go_router/go_router.dart';
 import 'package:shared/shared.dart';
 
 import '../../../core/route_paths.dart';
-import '../../auth/state/auth_controller.dart';
 import '../state/home_controller.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
@@ -51,9 +50,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         title: const Text('Главная'),
         actions: [
           IconButton(
-            key: const Key('sq-logout'),
-            icon: const Icon(Icons.logout),
-            onPressed: () => ref.read(authControllerProvider.notifier).logout(),
+            key: const Key('sq-home-profile'),
+            icon: const Icon(Icons.person_outline),
+            onPressed: () => context.push(RoutePaths.profile),
           ),
         ],
       ),
