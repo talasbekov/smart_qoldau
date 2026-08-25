@@ -17,5 +17,9 @@ export default async () => {
   return {
     ...resolved,
     transformIgnorePatterns: ['/node_modules/(?!(next-intl|use-intl|intl-messageformat|@formatjs)/)'],
+    moduleNameMapper: {
+      ...resolved.moduleNameMapper,
+      '^@/(.*)$': '<rootDir>/$1',
+    },
   };
 };
