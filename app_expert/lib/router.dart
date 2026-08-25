@@ -19,6 +19,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import 'core/providers.dart';
 import 'core/route_paths.dart';
 import 'features/auth/state/auth_controller.dart';
 import 'features/auth/ui/phone_screen.dart';
@@ -77,6 +78,7 @@ GoRouter sqExpertRouter(Ref ref) {
   final refresh = _AuthRefreshNotifier(ref);
 
   return GoRouter(
+    navigatorKey: ref.watch(appNavigatorKeyProvider),
     initialLocation: RoutePaths.splash,
     refreshListenable: refresh,
     redirect: (context, state) => _redirect(ref, state),
