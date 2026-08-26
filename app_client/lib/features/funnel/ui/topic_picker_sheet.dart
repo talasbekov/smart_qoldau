@@ -23,7 +23,7 @@ final topicsProvider = FutureProvider.autoDispose<List<Topic>>((ref) {
 
 /// Показывает шторку и возвращает выбранную тему (`null` — закрыли).
 Future<Topic?> showTopicPickerSheet(BuildContext context) =>
-    showModalBottomSheet<Topic>(
+    showSqSheetOrDialog<Topic>(
       context: context,
       isScrollControlled: true,
       backgroundColor: SqColors.surface,

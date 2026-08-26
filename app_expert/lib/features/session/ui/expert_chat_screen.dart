@@ -54,7 +54,7 @@ class _ExpertChatScreenState extends ConsumerState<ExpertChatScreen> {
   }
 
   void _openNote() {
-    showModalBottomSheet<void>(
+    showSqSheetOrDialog<void>(
       context: context,
       isScrollControlled: true,
       builder: (_) => NoteEditor(consultationId: widget.consultationId),

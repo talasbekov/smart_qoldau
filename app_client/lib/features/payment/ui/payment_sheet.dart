@@ -18,7 +18,7 @@ import '../state/payment_controller.dart';
 Future<bool?> showPaymentSheet(
   BuildContext context,
   ClientConsultation consultation,
-) => showModalBottomSheet<bool>(
+) => showSqSheetOrDialog<bool>(
   context: context,
   isScrollControlled: true,
   backgroundColor: SqColors.surface,

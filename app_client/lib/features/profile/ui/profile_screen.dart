@@ -126,7 +126,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
   Future<void> _pickLanguage() async {
     final l10n = AppLocalizations.of(context)!;
-    final locale = await showModalBottomSheet<Locale>(
+    final locale = await showSqSheetOrDialog<Locale>(
       context: context,
       backgroundColor: SqColors.surface,
       builder: (sheetContext) => SafeArea(

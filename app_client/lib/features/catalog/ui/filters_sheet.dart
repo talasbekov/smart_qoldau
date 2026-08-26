@@ -11,7 +11,7 @@ import '../../funnel/ui/topic_picker_sheet.dart' show topicsProvider;
 import '../state/catalog_controller.dart';
 
 Future<void> showCatalogFiltersSheet(BuildContext context) =>
-    showModalBottomSheet<void>(
+    showSqSheetOrDialog<void>(
       context: context,
       isScrollControlled: true,
       backgroundColor: SqColors.surface,

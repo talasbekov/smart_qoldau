@@ -15,7 +15,7 @@ import '../../../l10n/app_localizations.dart';
 /// Показывает шторку и возвращает выбранный формат — либо `null`, если
 /// пользователь закрыл её, ничего не выбрав (обычный, не аварийный исход).
 Future<SessionFormat?> showFormatSheet(BuildContext context) =>
-    showModalBottomSheet<SessionFormat>(
+    showSqSheetOrDialog<SessionFormat>(
       context: context,
       backgroundColor: SqColors.surface,
       shape: const RoundedRectangleBorder(

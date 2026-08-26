@@ -33,7 +33,7 @@ Future<ConsultationExpertDto?> showOutcomeSheet(
   BuildContext context, {
   required String consultationId,
 }) {
-  return showModalBottomSheet<ConsultationExpertDto?>(
+  return showSqSheetOrDialog<ConsultationExpertDto?>(
     context: context,
     isScrollControlled: true,
     builder: (context) => _OutcomeSheetContent(consultationId: consultationId),

@@ -16,7 +16,7 @@ import '../../payment/state/cards_controller.dart';
 Future<String?> showCardPickerSheet(
   BuildContext context,
   String confirmLabel,
-) => showModalBottomSheet<String>(
+) => showSqSheetOrDialog<String>(
   context: context,
   backgroundColor: SqColors.surface,
   shape: const RoundedRectangleBorder(
