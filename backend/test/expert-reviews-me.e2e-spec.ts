@@ -29,7 +29,7 @@ let lastCode = '';
 
 class FakeSmsProvider implements SmsProvider {
   async send(_phone: string, text: string): Promise<void> {
-    const match = text.match(/(\d{4})/);
+    const match = text.match(/(\d{6})/);
     lastCode = match ? match[1] : '';
   }
 }
@@ -134,9 +134,9 @@ describe('GET /experts/me/reviews — свои отзывы с id (долг E7)'
 
   beforeAll(async () => {
     app = await createApp(
-      Test.createTestingModule({ imports: [AppModule] }).overrideProvider(
-        SMS_PROVIDER_TOKEN,
-      ).useClass(FakeSmsProvider),
+      Test.createTestingModule({ imports: [AppModule] })
+        .overrideProvider(SMS_PROVIDER_TOKEN)
+        .useClass(FakeSmsProvider),
     );
     prisma = app.get(PrismaService);
     redis = app.get(RedisService);

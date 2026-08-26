@@ -11,10 +11,10 @@ export class ConvertGuestDto {
   phone: string;
 
   @ApiProperty({
-    example: '1234',
-    description: 'Одноразовый SMS-код (4 цифры)',
+    example: '123456',
+    description: 'Одноразовый SMS-код (6 цифр)',
   })
   @IsString()
-  @Length(4, 4)
+  @Length(6, 6)
   code: string;
 }

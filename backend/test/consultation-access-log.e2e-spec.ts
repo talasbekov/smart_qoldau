@@ -28,7 +28,7 @@ let lastCode = '';
 
 class FakeSmsProvider implements SmsProvider {
   async send(_phone: string, text: string): Promise<void> {
-    const match = text.match(/(\d{4})/);
+    const match = text.match(/(\d{6})/);
     lastCode = match ? match[1] : '';
   }
 }
@@ -135,9 +135,9 @@ describe('Журнал доступа к метаданным консульта
 
   beforeAll(async () => {
     app = await createApp(
-      Test.createTestingModule({ imports: [AppModule] }).overrideProvider(
-        SMS_PROVIDER_TOKEN,
-      ).useClass(FakeSmsProvider),
+      Test.createTestingModule({ imports: [AppModule] })
+        .overrideProvider(SMS_PROVIDER_TOKEN)
+        .useClass(FakeSmsProvider),
     );
     prisma = app.get(PrismaService);
     redis = app.get(RedisService);
@@ -218,9 +218,15 @@ describe('Журнал доступа к метаданным консульта
     const cli = await clientUser(PH_C1);
     const consultationId = await activeConsultation(cli, exp);
 
-    await get(cli.accessToken, `/v1/consultations/${consultationId}`).expect(200);
-    await get(cli.accessToken, `/v1/consultations/${consultationId}`).expect(200);
-    await get(cli.accessToken, `/v1/consultations/${consultationId}`).expect(200);
+    await get(cli.accessToken, `/v1/consultations/${consultationId}`).expect(
+      200,
+    );
+    await get(cli.accessToken, `/v1/consultations/${consultationId}`).expect(
+      200,
+    );
+    await get(cli.accessToken, `/v1/consultations/${consultationId}`).expect(
+      200,
+    );
 
     const rows = await accessRows('consultation.metadata_read', consultationId);
     expect(rows).toHaveLength(1);
@@ -231,8 +237,12 @@ describe('Журнал доступа к метаданным консульта
     const cli = await clientUser(PH_C1);
     const consultationId = await activeConsultation(cli, exp);
 
-    await get(cli.accessToken, `/v1/consultations/${consultationId}`).expect(200);
-    await get(exp.accessToken, `/v1/consultations/${consultationId}`).expect(200);
+    await get(cli.accessToken, `/v1/consultations/${consultationId}`).expect(
+      200,
+    );
+    await get(exp.accessToken, `/v1/consultations/${consultationId}`).expect(
+      200,
+    );
 
     const rows = await accessRows('consultation.metadata_read', consultationId);
     expect(rows).toHaveLength(2);

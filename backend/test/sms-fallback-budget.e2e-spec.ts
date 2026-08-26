@@ -27,7 +27,7 @@ const sentSms: { phone: string; text: string }[] = [];
 class FakeSmsProvider implements SmsProvider {
   async send(phone: string, text: string): Promise<void> {
     sentSms.push({ phone, text });
-    const match = text.match(/(\d{4})/);
+    const match = text.match(/(\d{6})/);
     if (match) lastCode = match[1];
   }
 }

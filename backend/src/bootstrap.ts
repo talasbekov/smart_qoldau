@@ -28,9 +28,7 @@ export function configureApp(app: INestApplication): void {
   // admin/ полностью на Bearer-токене, без cookie, но открытый CORS всё
   // равно даёт постороннему сайту вызвать API от лица залогиненного в
   // admin/ пользователя, если токен где-то ещё утёк.
-  const adminOrigins = (
-    process.env.ADMIN_ORIGINS ?? 'http://localhost:5173'
-  )
+  const adminOrigins = (process.env.ADMIN_ORIGINS ?? 'http://localhost:5173')
     .split(',')
     .map((origin) => origin.trim())
     .filter(Boolean);
@@ -52,9 +50,21 @@ export function configureApp(app: INestApplication): void {
     }),
   );
 
-  SwaggerModule.setup(
-    'v1/docs',
-    app,
-    SwaggerModule.createDocument(app, swaggerConfig),
-  );
+  // Интерактивная документация — инструмент разработки, а не часть продукта:
+  // на публичном хосте она бесплатно выдаёт постороннему полную карту API,
+  // включая административные маршруты и формы запросов. Поэтому в
+  // production по умолчанию не поднимается вовсе (404), а в остальных
+  // средах — поднимается. SWAGGER_ENABLED переопределяет обе стороны: на
+  // staging её иногда нужно открыть намеренно.
+  const swaggerEnabled =
+    process.env.SWAGGER_ENABLED === 'true' ||
+    (process.env.SWAGGER_ENABLED !== 'false' &&
+      process.env.NODE_ENV !== 'production');
+  if (swaggerEnabled) {
+    SwaggerModule.setup(
+      'v1/docs',
+      app,
+      SwaggerModule.createDocument(app, swaggerConfig),
+    );
+  }
 }

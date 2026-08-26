@@ -12,6 +12,11 @@ export const envValidationSchema = Joi.object({
     then: Joi.required(),
     otherwise: Joi.optional(),
   }),
+  // Origin'ы, которым разрешён CORS к API (админка). Список через запятую;
+  // по умолчанию — локальный Vite dev-сервер (см. bootstrap.ts).
+  ADMIN_ORIGINS: Joi.string().optional(),
+  // Поднимать ли /v1/docs. Не задан — включено везде, кроме NODE_ENV=production.
+  SWAGGER_ENABLED: Joi.string().valid('true', 'false').optional(),
   S3_ENDPOINT: Joi.string().uri().required(),
   S3_ACCESS_KEY: Joi.string().required(),
   S3_SECRET_KEY: Joi.string().required(),

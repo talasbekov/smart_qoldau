@@ -17,7 +17,10 @@ import '../state/auth_controller.dart';
 /// SMS-кода (Р-10/ТЗ §5.1).
 const codeResendCooldown = Duration(seconds: 45);
 
-const _cellCount = 4;
+// Шесть ячеек, как длина кода на бэкенде (`AuthService.requestCode`):
+// четырёхзначный код давал 13 бит энтропии, что при живых лимитах на
+// проверку кода недостаточно (OWASP ASVS 4.0 V2.7.6).
+const _cellCount = 6;
 
 class CodeScreen extends ConsumerStatefulWidget {
   const CodeScreen({super.key, required this.phone});
@@ -176,7 +179,9 @@ class _CodeScreenState extends ConsumerState<CodeScreen> {
 
   Widget _buildCell(int index) {
     return SizedBox(
-      width: 56,
+      // 48, а не 56: шесть ячеек по 56 не помещаются в ряд на 360-точечном
+      // экране вместе с отступами страницы.
+      width: 48,
       height: 64,
       child: TextField(
         controller: _controllers[index],

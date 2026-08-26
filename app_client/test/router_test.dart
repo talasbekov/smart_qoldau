@@ -363,7 +363,7 @@ void main() {
         await tester.pumpAndSettle();
 
         final codeFields = find.byType(TextField);
-        for (var i = 0; i < 4; i++) {
+        for (var i = 0; i < 6; i++) {
           await tester.enterText(codeFields.at(i), '${i + 1}');
         }
         await tester.pumpAndSettle();

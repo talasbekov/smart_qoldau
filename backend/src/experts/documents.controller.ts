@@ -32,6 +32,8 @@ import { ExpertGuard } from './expert.guard';
 import { CurrentExpert } from './current-expert.decorator';
 import { FileSignatureValidator } from './file-signature.validator';
 
+const MAX_DOCUMENT_BYTES = 10 * 1024 * 1024;
+
 @ApiTags('experts')
 @Controller('experts/me/documents')
 @UseGuards(JwtAuthGuard, ExpertGuard)
@@ -61,7 +63,14 @@ export class DocumentsController {
 
   @Post(':type')
   @HttpCode(201)
-  @UseInterceptors(FileInterceptor('file'))
+  // limits — не дубль MaxFileSizeValidator ниже: валидатор смотрит на уже
+  // собранный в памяти буфер, то есть 500-мегабайтная «загрузка» съедала бы
+  // память процесса ещё до проверки. multer обрывает поток на границе.
+  @UseInterceptors(
+    FileInterceptor('file', {
+      limits: { fileSize: MAX_DOCUMENT_BYTES, files: 1 },
+    }),
+  )
   @ApiOperation({ summary: 'Загрузить документ эксперта (4 типа, MinIO)' })
   @ApiParam({ name: 'type', enum: DocumentType })
   @ApiConsumes('multipart/form-data')
@@ -81,7 +90,7 @@ export class DocumentsController {
     @UploadedFile(
       new ParseFilePipe({
         validators: [
-          new MaxFileSizeValidator({ maxSize: 10 * 1024 * 1024 }),
+          new MaxFileSizeValidator({ maxSize: MAX_DOCUMENT_BYTES }),
           new FileSignatureValidator(),
         ],
       }),

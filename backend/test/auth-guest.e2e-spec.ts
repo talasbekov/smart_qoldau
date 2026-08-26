@@ -17,7 +17,7 @@ let lastCode = '';
 
 class FakeSmsProvider implements SmsProvider {
   async send(_phone: string, text: string): Promise<void> {
-    const match = text.match(/(\d{4})/);
+    const match = text.match(/(\d{6})/);
     lastCode = match ? match[1] : '';
   }
 }
@@ -150,7 +150,7 @@ describe('Auth guest / convert (e2e)', () => {
   it('конверсия без токена -> 401', async () => {
     await request(app.getHttpServer())
       .post('/v1/auth/guest/convert')
-      .send({ phone: PHONE2, code: '1234' })
+      .send({ phone: PHONE2, code: '123456' })
       .expect(401);
   });
 

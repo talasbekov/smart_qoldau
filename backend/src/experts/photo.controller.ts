@@ -27,6 +27,9 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { ExpertGuard } from './expert.guard';
 import { CurrentExpert } from './current-expert.decorator';
 
+// Тот же потолок, что MAX_BYTES в PhotoService.
+const MAX_PHOTO_BYTES = 5 * 1024 * 1024;
+
 @ApiTags('experts')
 @Controller('experts/me/photo')
 @UseGuards(JwtAuthGuard, ExpertGuard)
@@ -36,7 +39,13 @@ export class PhotoController {
 
   @Post()
   @HttpCode(202)
-  @UseInterceptors(FileInterceptor('file'))
+  // Предел здесь дублирует проверку в PhotoService намеренно: сервис видит
+  // файл, уже целиком лежащий в памяти, а multer обрывает поток на границе.
+  @UseInterceptors(
+    FileInterceptor('file', {
+      limits: { fileSize: MAX_PHOTO_BYTES, files: 1 },
+    }),
+  )
   @ApiOperation({ summary: 'Загрузить фотографию профиля (на модерацию)' })
   @ApiConsumes('multipart/form-data')
   @ApiBody({

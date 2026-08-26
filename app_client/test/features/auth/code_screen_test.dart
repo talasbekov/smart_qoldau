@@ -1,4 +1,4 @@
-// Виджет-тесты CodeScreen: автоподтверждение по 4-й цифре, локализованный
+// Виджет-тесты CodeScreen: автоподтверждение по 6-й цифре, локализованный
 // текст ошибки SMS_CODE_INVALID и 45-секундный обратный отсчёт повторной
 // отправки (Р-10/ТЗ §5.1). Сеть заменена моком SqApi (mocktail).
 import 'package:flutter/material.dart';
@@ -61,15 +61,15 @@ void main() {
     registerFallbackValue(_phone);
   });
 
-  testWidgets('ввод 4 цифр вызывает verifyCode ровно один раз', (tester) async {
+  testWidgets('ввод 6 цифр вызывает verifyCode ровно один раз', (tester) async {
     final api = MockSqApi();
     when(() => api.verifyCode(any(), any())).thenAnswer((_) async => _tokens());
 
     await tester.pumpWidget(_wrap(api, const CodeScreen(phone: _phone)));
-    await _enterCode(tester, '1234');
+    await _enterCode(tester, '123456');
     await tester.pumpAndSettle();
 
-    verify(() => api.verifyCode(_phone, '1234')).called(1);
+    verify(() => api.verifyCode(_phone, '123456')).called(1);
   });
 
   testWidgets('SMS_CODE_INVALID показывает локализованный текст ошибки', (
@@ -81,7 +81,7 @@ void main() {
     );
 
     await tester.pumpWidget(_wrap(api, const CodeScreen(phone: _phone)));
-    await _enterCode(tester, '1234');
+    await _enterCode(tester, '123456');
     await tester.pumpAndSettle();
 
     final l10n = AppLocalizations.of(tester.element(find.byType(CodeScreen)))!;
@@ -106,4 +106,21 @@ void main() {
       expect(resendButton().onPressed, isNotNull);
     },
   );
+
+  // Шесть ячеек вместо четырёх: ряд обязан помещаться и на самом узком
+  // распространённом экране (360 dp), иначе Flutter рисует полосатый
+  // overflow вместо поля ввода.
+  testWidgets('ряд из шести ячеек помещается на экране 360 dp', (tester) async {
+    tester.view.physicalSize = const Size(360, 690);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final api = MockSqApi();
+    await tester.pumpWidget(_wrap(api, const CodeScreen(phone: _phone)));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(TextField), findsNWidgets(6));
+    expect(tester.takeException(), isNull);
+  });
 }

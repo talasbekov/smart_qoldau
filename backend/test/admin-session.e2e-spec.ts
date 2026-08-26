@@ -173,6 +173,27 @@ describe('Сессия сотрудника админки (e2e)', () => {
       .expect(401);
   });
 
+  it('два параллельных refresh одним токеном: ровно одна новая сессия', async () => {
+    // Ротация обязана быть атомарной: раньше «прочитал -> отозвал» двумя
+    // запросами позволяли обоим гонщикам пройти, то есть перехваченный
+    // токен молча размножался в две живые сессии.
+    const email = uniqueEmail('race');
+    await createStaff(email);
+    const session = await login(email);
+
+    const results = await Promise.all([
+      request(app.getHttpServer())
+        .post('/v1/admin/auth/refresh')
+        .send({ refreshToken: session.refreshToken }),
+      request(app.getHttpServer())
+        .post('/v1/admin/auth/refresh')
+        .send({ refreshToken: session.refreshToken }),
+    ]);
+
+    const statuses = results.map((r) => r.status).sort();
+    expect(statuses).toEqual([200, 401]);
+  });
+
   it('деактивация отзывает refresh-токены немедленно', async () => {
     const email = uniqueEmail('revoke');
     const staff = await createStaff(email);

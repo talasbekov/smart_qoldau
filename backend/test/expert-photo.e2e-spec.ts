@@ -21,7 +21,7 @@ let lastCode = '';
 
 class FakeSmsProvider implements SmsProvider {
   async send(_phone: string, text: string): Promise<void> {
-    const match = text.match(/(\d{4})/);
+    const match = text.match(/(\d{6})/);
     if (match) lastCode = match[1];
   }
 }
@@ -241,9 +241,14 @@ describe('Фотография специалиста (e2e)', () => {
       expect(res.body.error.code).toBe('PHOTO_INVALID');
     });
 
-    it('файл больше 5 МБ → 400', async () => {
+    // Обрывается multer'ом на границе 5 МБ, не доходя до PhotoService:
+    // иначе гигабайтная «фотография» жила бы в памяти процесса до первой
+    // же проверки.
+    it('файл больше 5 МБ → 413 FILE_TOO_LARGE', async () => {
       const big = Buffer.alloc(6 * 1024 * 1024, 1);
-      expect((await post(big)).status).toBe(400);
+      const res = await post(big);
+      expect(res.status).toBe(413);
+      expect(res.body.error.code).toBe('FILE_TOO_LARGE');
     });
 
     it('сторона меньше 200 px → 400 PHOTO_INVALID', async () => {
