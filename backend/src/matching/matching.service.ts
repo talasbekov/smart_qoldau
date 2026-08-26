@@ -56,36 +56,30 @@ export class MatchingService {
     });
 
     const now = this.clock.now();
-    const withinSchedule = await Promise.all(
-      experts.map(async (e) => ({
-        id: e.id,
-        ok: await this.schedule.isWithinSchedule(e.id, now),
-      })),
+    const allowed = await this.schedule.filterWithinSchedule(
+      experts.map((e) => e.id),
+      now,
     );
-    const eligibleIds = withinSchedule.filter((e) => e.ok).map((e) => e.id);
+    const eligibleIds = experts
+      .map((e) => e.id)
+      .filter((id) => allowed.has(id));
     if (eligibleIds.length === 0) return [];
 
     const todayStart = this.startOfAlmatyDay(now);
-    const [scores, todayOffersCounts] = await Promise.all([
-      Promise.all(
-        eligibleIds.map(async (id) => ({
-          id,
-          score: await this.scoring.score(id),
-        })),
-      ),
-      Promise.all(
-        eligibleIds.map(async (id) => ({
-          id,
-          count: await this.prisma.requestCandidate.count({
-            where: { expertId: id, offeredAt: { gte: todayStart } },
-          }),
-        })),
-      ),
+    const [scoreById, todayOffers] = await Promise.all([
+      this.scoring.scoreMany(eligibleIds),
+      this.prisma.requestCandidate.groupBy({
+        by: ['expertId'],
+        where: {
+          expertId: { in: eligibleIds },
+          offeredAt: { gte: todayStart },
+        },
+        _count: { _all: true },
+      }),
     ]);
 
-    const scoreById = new Map(scores.map((s) => [s.id, s.score]));
     const todayCountById = new Map(
-      todayOffersCounts.map((t) => [t.id, t.count]),
+      todayOffers.map((t) => [t.expertId, t._count._all]),
     );
 
     return [...eligibleIds].sort((a, b) => {
@@ -101,9 +95,11 @@ export class MatchingService {
   // 1 запрос requestCandidate.findMany на кандидата) и БЕЗ подсчёта офферов
   // за сегодня (ещё 1 запрос на кандидата) — обе стадии существуют только
   // ради сортировки итогового списка, а счётчику нужна лишь его длина.
-  // Измерено отдельным e2e (matching-online-count-perf.e2e-spec.ts):
-  // полный конвейер даёт 1+3N запросов к Postgres на N подходящих
-  // кандидатов, этот путь — 1+N. При потолке ТЗ §6 (до 500 онлайн,
+  // Измерено отдельным e2e (matching-online-count-perf.e2e-spec.ts).
+  // После пакетной переделки (E11, карточка #28) оба пути стоят
+  // фиксированного числа запросов независимо от N: полный конвейер — 5
+  // (эксперты, исключения расписания, дни расписания, скоринг, офферы за
+  // сегодня), этот — 3. При потолке ТЗ §6 (до 500 онлайн,
   // экран поиска опрашивает эндпоинт раз в 10с у каждого клиента) разница
   // не разовая, а на каждый такой опрос.
   //
@@ -136,10 +132,11 @@ export class MatchingService {
     if (experts.length === 0) return 0;
 
     const now = this.clock.now();
-    const withinSchedule = await Promise.all(
-      experts.map((e) => this.schedule.isWithinSchedule(e.id, now)),
+    const allowed = await this.schedule.filterWithinSchedule(
+      experts.map((e) => e.id),
+      now,
     );
-    return withinSchedule.filter(Boolean).length;
+    return allowed.size;
   }
 
   private startOfAlmatyDay(date: Date): Date {

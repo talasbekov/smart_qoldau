@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { Expert } from '@prisma/client';
+import { Expert, ExpertScheduleDay, ScheduleException } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import { apiError } from '../common/filters/app-exception.filter';
@@ -106,36 +106,86 @@ export class ScheduleService {
     return updated;
   }
 
+  /// Пакетная версия [isWithinSchedule] для матчинга: два запроса на весь
+  /// список вместо двух на каждого эксперта. При 500 онлайн это была
+  /// тысяча обращений к БД на одну заявку — нагрузочный прогон E11
+  /// показал 30 секунд на `POST /requests` именно из-за таких N+1.
+  /// Правило доступности одно и то же, поэтому оно вынесено в чистую
+  /// [matchesSchedule], которой пользуются обе версии.
+  async filterWithinSchedule(
+    expertIds: string[],
+    date: Date,
+  ): Promise<Set<string>> {
+    if (expertIds.length === 0) return new Set();
+    const { weekday, minutes } = this.toAlmatyWeekdayMinutes(date);
+
+    const [exceptions, days] = await Promise.all([
+      this.prisma.scheduleException.findMany({
+        where: { expertId: { in: expertIds }, date: this.almatyDayStart(date) },
+      }),
+      this.prisma.expertScheduleDay.findMany({
+        where: { expertId: { in: expertIds }, weekday },
+      }),
+    ]);
+
+    const exceptionBy = new Map(exceptions.map((e) => [e.expertId, e]));
+    const dayBy = new Map(days.map((d) => [d.expertId, d]));
+
+    const allowed = new Set<string>();
+    for (const id of expertIds) {
+      if (
+        this.matchesSchedule(
+          exceptionBy.get(id) ?? null,
+          dayBy.get(id) ?? null,
+          minutes,
+        )
+      )
+        allowed.add(id);
+    }
+    return allowed;
+  }
+
+  /// Единственное место, где живёт правило «доступен ли специалист в эту
+  /// минуту»: исключение на дату перекрывает недельное расписание целиком
+  /// (E6b) — выходной закрывает день, иные часы заменяют собой окно, а не
+  /// сужают его.
+  private matchesSchedule(
+    exception: ScheduleException | null,
+    day: ExpertScheduleDay | null,
+    minutes: number,
+  ): boolean {
+    if (exception) {
+      if (exception.isDayOff) return false;
+      if (exception.startMin === null || exception.endMin === null)
+        return false;
+      return minutes >= exception.startMin && minutes < exception.endMin;
+    }
+
+    if (!day || !day.enabled) return false;
+    if (minutes < day.startMin || minutes >= day.endMin) return false;
+    if (day.breakStart !== null && day.breakEnd !== null) {
+      if (minutes >= day.breakStart && minutes < day.breakEnd) return false;
+    }
+    return true;
+  }
+
   // Контракт для матчинга E3: проверяет доступность эксперта в момент date
   // по TZ Asia/Almaty (enabled -> интервал -> вне перерыва).
   async isWithinSchedule(expertId: string, date: Date): Promise<boolean> {
     const { weekday, minutes } = this.toAlmatyWeekdayMinutes(date);
 
-    // Исключение на дату перекрывает недельное расписание целиком (E6b):
-    // выходной закрывает день, иные часы заменяют собой окно, а не
-    // сужают его — специалист задал именно те часы, что хотел.
-    const exception = await this.prisma.scheduleException.findUnique({
-      where: {
-        expertId_date: { expertId, date: this.almatyDayStart(date) },
-      },
-    });
-    if (exception) {
-      if (exception.isDayOff) return false;
-      if (exception.startMin === null || exception.endMin === null) {
-        return false;
-      }
-      return minutes >= exception.startMin && minutes < exception.endMin;
-    }
+    const [exception, day] = await Promise.all([
+      this.prisma.scheduleException.findUnique({
+        where: {
+          expertId_date: { expertId, date: this.almatyDayStart(date) },
+        },
+      }),
+      this.prisma.expertScheduleDay.findUnique({
+        where: { expertId_weekday: { expertId, weekday } },
+      }),
+    ]);
 
-    const row = await this.prisma.expertScheduleDay.findUnique({
-      where: { expertId_weekday: { expertId, weekday } },
-    });
-    if (!row || !row.enabled) return false;
-    if (minutes < row.startMin || minutes >= row.endMin) return false;
-    if (row.breakStart !== null && row.breakEnd !== null) {
-      if (minutes >= row.breakStart && minutes < row.breakEnd) return false;
-    }
-    return true;
+    return this.matchesSchedule(exception, day, minutes);
   }
 
   /// UTC-полночь календарного дня по Алматы — в этом виде хранится

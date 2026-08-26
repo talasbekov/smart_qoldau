@@ -8,10 +8,15 @@ import { MatchingService } from '../src/matching/matching.service';
 import { createApp } from './utils/create-app';
 import { acceptingExpert as acceptingExpertHelper } from './utils/expert-helpers';
 
-// Ревью раунд 1 задачи 9 эпика E6, п.1: online-count раньше вызывал
-// findCandidates (полный конвейер матчинга) ради одного лишь числа —
-// это заявленный, но не измеренный расход БД. Здесь измеряем оба пути на
-// одной и той же фикстуре кандидатов, а не полагаемся на догадку.
+// Спек измеряет стоимость обоих путей матчинга в запросах к БД на одной
+// и той же фикстуре кандидатов, а не полагается на догадку.
+//
+// Изначально (E6, задача 9) он фиксировал, что экономный путь
+// online-count не зовёт скоринг и подсчёт офферов: полный конвейер стоил
+// 1+3N запросов, экономный — 1+N. После нагрузочного прогона E11
+// (карточка #28) оба переведены на пакетные запросы, и проверяется более
+// сильное свойство: **стоимость обоих путей не зависит от N**. Именно
+// линейный рост давал 30 секунд на POST /requests при 500 онлайн.
 //
 // Номера спека — свой диапазон, не пересекается с другими спеками.
 function phone(n: number): string {
@@ -26,7 +31,7 @@ class FakeSmsProvider implements SmsProvider {
   }
 }
 
-describe('online-count: измерение стоимости БД full pipeline vs lean path (e2e)', () => {
+describe('матчинг: стоимость в запросах к БД не зависит от числа кандидатов (e2e)', () => {
   let app: INestApplication;
   let prisma: PrismaService;
   let redis: RedisService;
@@ -120,26 +125,37 @@ describe('online-count: измерение стоимости БД full pipeline
 
   interface Counts {
     expertFindMany: number;
-    scheduleFindUnique: number;
-    scoringFindMany: number;
-    todayOffersCount: number;
+    scheduleDays: number;
+    scheduleExceptions: number;
+    scoringQuery: number;
+    todayOffersGroupBy: number;
   }
 
   function attachSpies() {
     return {
       expertFindMany: jest.spyOn(prisma.expert, 'findMany'),
-      scheduleFindUnique: jest.spyOn(prisma.expertScheduleDay, 'findUnique'),
-      scoringFindMany: jest.spyOn(prisma.requestCandidate, 'findMany'),
-      todayOffersCount: jest.spyOn(prisma.requestCandidate, 'count'),
+      scheduleDays: jest.spyOn(prisma.expertScheduleDay, 'findMany'),
+      scheduleExceptions: jest.spyOn(prisma.scheduleException, 'findMany'),
+      // Скоринг режет «последние 50 на эксперта» оконной функцией —
+      // Prisma-выборкой это не выражается, поэтому $queryRaw.
+      scoringQuery: jest.spyOn(prisma, '$queryRaw'),
+      // `as never`: типы groupBy у Prisma рекурсивны, и jest.spyOn на них
+      // не выводится (TS2615). Считаем только число вызовов, форма
+      // аргументов здесь не проверяется.
+      todayOffersGroupBy: jest.spyOn(
+        prisma.requestCandidate as never,
+        'groupBy',
+      ),
     };
   }
 
   function readAndClear(spies: ReturnType<typeof attachSpies>): Counts {
     const counts: Counts = {
       expertFindMany: spies.expertFindMany.mock.calls.length,
-      scheduleFindUnique: spies.scheduleFindUnique.mock.calls.length,
-      scoringFindMany: spies.scoringFindMany.mock.calls.length,
-      todayOffersCount: spies.todayOffersCount.mock.calls.length,
+      scheduleDays: spies.scheduleDays.mock.calls.length,
+      scheduleExceptions: spies.scheduleExceptions.mock.calls.length,
+      scoringQuery: spies.scoringQuery.mock.calls.length,
+      todayOffersGroupBy: spies.todayOffersGroupBy.mock.calls.length,
     };
     Object.values(spies).forEach((s) => s.mockClear());
     return counts;
@@ -148,9 +164,10 @@ describe('online-count: измерение стоимости БД full pipeline
   function total(c: Counts): number {
     return (
       c.expertFindMany +
-      c.scheduleFindUnique +
-      c.scoringFindMany +
-      c.todayOffersCount
+      c.scheduleDays +
+      c.scheduleExceptions +
+      c.scoringQuery +
+      c.todayOffersGroupBy
     );
   }
 
@@ -178,44 +195,40 @@ describe('online-count: измерение стоимости БД full pipeline
     return { ids, count, full, lean };
   }
 
-  it('N=20 подходящих: lean path не трогает scoring/today-count, число совпадает с findCandidates', async () => {
+  it('N=20 подходящих: пять запросов у полного конвейера, три у экономного', async () => {
     const { ids, count, full, lean } = await measure(20, 1);
 
     expect(ids).toHaveLength(20);
     expect(count).toBe(20);
     expect(count).toBe(ids.length);
 
-    // Полный конвейер реально дорогой — иначе не с чем сравнивать.
-    expect(full.scoringFindMany).toBe(20);
-    expect(full.todayOffersCount).toBe(20);
-    expect(full.scheduleFindUnique).toBe(20);
+    // Полный конвейер: эксперты + два запроса расписания + скоринг +
+    // офферы за сегодня. Ни один из них не повторяется на кандидата.
     expect(full.expertFindMany).toBe(1);
+    expect(full.scheduleDays).toBe(1);
+    expect(full.scheduleExceptions).toBe(1);
+    expect(full.scoringQuery).toBe(1);
+    expect(full.todayOffersGroupBy).toBe(1);
+    expect(total(full)).toBe(5);
 
     // Экономный путь не должен звать ScoringService и подсчёт офферов
     // вообще — это провабельно выброшенная работа, а не мелкая оптимизация.
-    expect(lean.scoringFindMany).toBe(0);
-    expect(lean.todayOffersCount).toBe(0);
-    expect(lean.scheduleFindUnique).toBe(20);
-    expect(lean.expertFindMany).toBe(1);
-
-    expect(total(lean)).toBeLessThan(total(full));
+    expect(lean.scoringQuery).toBe(0);
+    expect(lean.todayOffersGroupBy).toBe(0);
+    expect(total(lean)).toBe(3);
   }, 60_000);
 
-  it('N=60 подходящих: та же зависимость 1+3N vs 1+N при большем N', async () => {
+  it('N=60 подходящих: стоимость обоих путей та же, что при N=20', async () => {
     const { ids, count, full, lean } = await measure(60, 101);
 
     expect(ids).toHaveLength(60);
     expect(count).toBe(60);
     expect(count).toBe(ids.length);
 
-    expect(full.scoringFindMany).toBe(60);
-    expect(full.todayOffersCount).toBe(60);
-    expect(total(full)).toBe(1 + 3 * 60);
-
-    expect(lean.scoringFindMany).toBe(0);
-    expect(lean.todayOffersCount).toBe(0);
-    expect(total(lean)).toBe(1 + 60);
-
-    expect(total(lean)).toBeLessThan(total(full));
+    // Главное свойство: втрое больше кандидатов — столько же запросов.
+    expect(total(full)).toBe(5);
+    expect(total(lean)).toBe(3);
+    expect(lean.scoringQuery).toBe(0);
+    expect(lean.todayOffersGroupBy).toBe(0);
   }, 120_000);
 });
