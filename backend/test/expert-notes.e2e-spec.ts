@@ -180,6 +180,46 @@ describe('Приватные шифрованные заметки экспер�
     return result;
   }
 
+  /// Матч, когда онлайн НЕСКОЛЬКО равных по скору специалистов: кому из
+  /// них уйдёт оффер, решает матчинг (при полной ничьей порядок зависит
+  /// от заявки — см. matching-fairness.e2e-spec.ts), поэтому спек не
+  /// угадывает получателя, а находит его — ровно как настоящее
+  /// приложение эксперта, которое просто ждёт свой оффер.
+  async function matchClientToAnyExpert(
+    cli: { accessToken: string },
+    candidates: { accessToken: string; expertId: string }[],
+  ) {
+    const r = await post(cli.accessToken, '/v1/requests')
+      .send({ topicSlug: 'anxiety-stress', format: 'chat' })
+      .expect(201);
+
+    let owner: { accessToken: string; expertId: string } | undefined;
+    let offerId: string | undefined;
+    for (const candidate of candidates) {
+      const offers = await get(
+        candidate.accessToken,
+        '/v1/experts/me/offers',
+      ).expect(200);
+      if (offers.body.length > 0) {
+        owner = candidate;
+        offerId = offers.body[0].offerId as string;
+        break;
+      }
+    }
+    if (!owner || !offerId) throw new Error('оффер не ушёл ни одному из них');
+
+    const accepted = await post(
+      owner.accessToken,
+      `/v1/offers/${offerId}/accept`,
+    ).expect(200);
+    return {
+      owner,
+      others: candidates.filter((c) => c.expertId !== owner!.expertId),
+      requestId: r.body.id as string,
+      consultationId: accepted.body.consultationId as string,
+    };
+  }
+
   async function matchClientToExpert(
     cli: { accessToken: string },
     exp: { accessToken: string; expertId: string },
@@ -305,21 +345,25 @@ describe('Приватные шифрованные заметки экспер�
     const exp1 = await acceptingExpert(PH_E1);
     const exp2 = await acceptingExpert(PH_E2);
     const cli = await clientUser(PH_C1);
-    const { consultationId } = await matchClientToExpert(cli, exp1);
+    const { owner, others, consultationId } = await matchClientToAnyExpert(
+      cli,
+      [exp1, exp2],
+    );
+    const stranger = others[0];
 
-    // Эксперт 1 создаёт заметку
-    await put(exp1.accessToken, `/v1/consultations/${consultationId}/note`)
-      .send({ text: 'Заметка exp1' })
+    // Участник консультации создаёт заметку
+    await put(owner.accessToken, `/v1/consultations/${consultationId}/note`)
+      .send({ text: 'Заметка участника' })
       .expect(200);
 
-    // Эксперт 2 пытается PUT
-    await put(exp2.accessToken, `/v1/consultations/${consultationId}/note`)
-      .send({ text: 'Попытка exp2' })
+    // Второй специалист пытается PUT
+    await put(stranger.accessToken, `/v1/consultations/${consultationId}/note`)
+      .send({ text: 'Попытка чужого' })
       .expect(404);
 
-    // Эксперт 2 пытается GET
+    // Второй специалист пытается GET
     await get(
-      exp2.accessToken,
+      stranger.accessToken,
       `/v1/consultations/${consultationId}/note`,
     ).expect(404);
   });

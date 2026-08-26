@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { createHash } from 'node:crypto';
 import { PrismaService } from '../prisma/prisma.service';
 import { PresenceService } from '../presence/presence.service';
 import { ScheduleService } from '../schedule/schedule.service';
@@ -10,6 +11,26 @@ export interface FindCandidatesParams {
   format: string;
   excludeExpertIds?: string[];
   urgentOnly?: boolean;
+  /// Чем разводить кандидатов с ОДИНАКОВЫМ скором и одинаковым числом
+  /// сегодняшних офферов. Без него порядок при полной ничьей один и тот же
+  /// для всех заявок сразу, и весь поток бьётся в одного и того же
+  /// специалиста: нагрузочный прогон E11 дал 4190 отказов «уже занят» на
+  /// 200 успешных приёмов, пока сотни свободных простаивали.
+  ///
+  /// Передаётся id заявки: порядок остаётся строго детерминированным
+  /// (тот же id — тот же порядок, спеки на ничью воспроизводимы), но у
+  /// разных заявок он разный.
+  tieBreakSeed?: string;
+}
+
+/// Псевдослучайный, но воспроизводимый ранг кандидата в рамках одной
+/// заявки: одинаковый для одной и той же пары (эксперт, заявка) и разный
+/// для разных заявок.
+function tieRank(expertId: string, seed: string): number {
+  return createHash('md5')
+    .update(`${seed}:${expertId}`)
+    .digest()
+    .readUInt32BE(0);
 }
 
 @Injectable()
@@ -82,10 +103,18 @@ export class MatchingService {
       todayOffers.map((t) => [t.expertId, t._count._all]),
     );
 
+    const seed = params.tieBreakSeed;
     return [...eligibleIds].sort((a, b) => {
       const scoreDiff = (scoreById.get(b) ?? 0) - (scoreById.get(a) ?? 0);
       if (scoreDiff !== 0) return scoreDiff;
-      return (todayCountById.get(a) ?? 0) - (todayCountById.get(b) ?? 0);
+      const offersDiff =
+        (todayCountById.get(a) ?? 0) - (todayCountById.get(b) ?? 0);
+      if (offersDiff !== 0) return offersDiff;
+      // Полная ничья. Без seed порядок остаётся прежним — порядком выборки
+      // (sort стабилен), с seed кандидаты раскладываются по-разному для
+      // разных заявок, оставаясь воспроизводимыми для одной и той же.
+      if (!seed) return 0;
+      return tieRank(a, seed) - tieRank(b, seed);
     });
   }
 

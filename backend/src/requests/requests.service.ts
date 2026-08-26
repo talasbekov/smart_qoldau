@@ -222,6 +222,10 @@ export class RequestsService {
         format: request.format,
         excludeExpertIds,
         urgentOnly: request.isEmergency && !request.broadcastAt,
+        // Равные по скору кандидаты раскладываются по-своему для каждой
+        // заявки: иначе поток заявок бьётся в одного и того же
+        // специалиста, а остальные свободные простаивают.
+        tieBreakSeed: request.id,
       });
       nextExpertId = ranked[0];
     }
