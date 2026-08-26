@@ -54,6 +54,12 @@ abstract final class ApiErrorCode {
   /// недоступен» — вторая попытка бессмысленна.
   static const expertBusy = 'EXPERT_BUSY';
 
+  /// Удаление аккаунта (ТЗ §5.1): отказы, при которых удалять рано или
+  /// нельзя вовсе.
+  static const consultationInProgress = 'CONSULTATION_IN_PROGRESS';
+  static const paymentInProgress = 'PAYMENT_IN_PROGRESS';
+  static const expertDeleteViaSupport = 'EXPERT_DELETE_VIA_SUPPORT';
+
   /// Завершение консультации и заметки эксперта (E7 задача 13).
   static const invalidOutcome = 'INVALID_OUTCOME';
   static const invalidNoteText = 'INVALID_NOTE_TEXT';

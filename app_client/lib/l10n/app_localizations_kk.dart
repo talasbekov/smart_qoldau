@@ -925,14 +925,15 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get profileDeleteAccountBody =>
-      'Біз қолдау қызметіне өтінім жасаймыз — команда сізбен байланысып, жоюды растайды';
+      'Хат-хабар, маман жазбалары, карталар мен хабарламалар қайтарымсыз жойылады. Консультациялар мен төлемдер туралы жазбалар бухгалтерияда қалады — оларды сақтауды заң міндеттейді. Осы нөмірмен қайта кіруге болады, бірақ бұл жаңа бос аккаунт болады';
 
   @override
-  String get profileDeleteAccountSubject => 'Аккаунт пен деректерді жою';
+  String get profileDeleteAccountBlockedConsultation =>
+      'Алдымен консультацияны аяқтаңыз немесе бас тартыңыз — оның ортасында аккаунтты жою мүмкін емес';
 
   @override
-  String get profileDeleteAccountTicketBody =>
-      'Аккаунтымды және онымен байланысты деректерді жоюды сұраймын';
+  String get profileDeleteAccountBlockedPayment =>
+      'Соңғы консультация бойынша есеп айырысу аяқталуын күтіңіз';
 
   @override
   String get convertGuestTitle => 'Аккаунт жасау';

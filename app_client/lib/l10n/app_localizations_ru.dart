@@ -931,14 +931,15 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get profileDeleteAccountBody =>
-      'Мы создадим обращение в поддержку — команда свяжется с вами и подтвердит удаление';
+      'Переписка, заметки специалистов, карты и уведомления будут удалены безвозвратно. Записи о консультациях и платежах останутся в бухгалтерии — их закон хранить обязывает. Войти снова по этому номеру можно будет, но это будет новый пустой аккаунт';
 
   @override
-  String get profileDeleteAccountSubject => 'Удаление аккаунта и данных';
+  String get profileDeleteAccountBlockedConsultation =>
+      'Сначала завершите или отмените консультацию — удалить аккаунт посреди неё нельзя';
 
   @override
-  String get profileDeleteAccountTicketBody =>
-      'Прошу удалить мой аккаунт и связанные с ним данные';
+  String get profileDeleteAccountBlockedPayment =>
+      'Дождитесь завершения расчёта по последней консультации';
 
   @override
   String get convertGuestTitle => 'Создание аккаунта';

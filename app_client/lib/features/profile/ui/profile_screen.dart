@@ -15,7 +15,6 @@ import '../../../core/url_launcher_port.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../auth/state/auth_controller.dart';
 import '../../consultations/data/consultations_repository.dart';
-import '../../support/state/tickets_controller.dart';
 
 /// Сколько консультаций спрашиваем ради счётчика в профиле. Отдельного
 /// эндпоинта «сколько у меня завершённых» бэкенд не даёт, поэтому берём
@@ -74,8 +73,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     if (mounted) context.go(RoutePaths.welcome);
   }
 
-  /// «Удалить аккаунт» — обращение в поддержку: прямого эндпоинта удаления
-  /// у бэкенда нет (решение 9), а тихо ничего не делать нельзя.
+  /// «Удалить аккаунт» — `DELETE /me` (ТЗ §5.1). Раньше здесь заводилось
+  /// обращение в поддержку, потому что эндпоинта не существовало; теперь
+  /// удаление выполняется сразу, а поддержка остаётся запасным путём для
+  /// специалистов, которым удаление через приложение закрыто.
   Future<void> _deleteAccount() async {
     final l10n = AppLocalizations.of(context)!;
     final confirmed = await showDialog<bool>(
@@ -101,16 +102,19 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     if (confirmed != true || !mounted) return;
 
     try {
-      await ref
-          .read(ticketsControllerProvider.notifier)
-          .create(
-            category: deleteAccountTicketCategory,
-            subject: l10n.profileDeleteAccountSubject,
-            body: l10n.profileDeleteAccountTicketBody,
-          );
-      if (mounted) context.go(RoutePaths.support);
+      await ref.read(authControllerProvider.notifier).deleteAccount();
+      if (mounted) context.go(RoutePaths.welcome);
     } on ApiException catch (error) {
-      if (mounted) setState(() => _error = errorText(context, error));
+      if (!mounted) return;
+      // Отказы удаления объясняются своими словами: сообщение бэкенда
+      // русское, а приложение обязано говорить и по-казахски.
+      setState(() => _error = switch (error.code) {
+            ApiErrorCode.consultationInProgress =>
+              l10n.profileDeleteAccountBlockedConsultation,
+            ApiErrorCode.paymentInProgress =>
+              l10n.profileDeleteAccountBlockedPayment,
+            _ => errorText(context, error),
+          });
     }
   }
 

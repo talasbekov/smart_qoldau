@@ -48,6 +48,21 @@ mixin SqApiAuth on SqApiBase {
         return Tokens.fromJson(response.data!);
       });
 
+  /// `DELETE /me` — удалить свой аккаунт и данные (ТЗ §5.1).
+  ///
+  /// Возврата нет: телефон освобождается, и повторный вход по нему заводит
+  /// новый аккаунт. Консультации, платежи и проводки остаются как учётные
+  /// записи — их нельзя терять по запросу одной из сторон, — но переписка,
+  /// заметки, устройства, карты и тексты отзывов удаляются.
+  ///
+  /// `409 CONSULTATION_IN_PROGRESS` — идёт или запланирована консультация;
+  /// `409 PAYMENT_IN_PROGRESS` — не закрыт расчёт;
+  /// `409 EXPERT_DELETE_VIA_SUPPORT` — у специалиста удаление только через
+  /// поддержку.
+  Future<void> deleteAccount() => guard(() async {
+        await dio.delete<void>(SqEndpoints.me);
+      });
+
   /// `POST /auth/guest/convert` — конверсия гостя в аккаунт по телефону.
   Future<Tokens> convertGuest(String phone, String code) => guard(() async {
         final response = await dio.post<Map<String, dynamic>>(

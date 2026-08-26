@@ -1153,7 +1153,7 @@
   },
   "profileDeleteAccount": "Удалить аккаунт",
   "@profileDeleteAccount": {
-    "description": "Пункт профиля: удаление аккаунта через обращение"
+    "description": "Пункт профиля: удаление аккаунта"
   },
   "profileLogout": "Выйти",
   "@profileLogout": {
@@ -1175,17 +1175,17 @@
   "@profileDeleteAccountTitle": {
     "description": "Заголовок подтверждения удаления аккаунта"
   },
-  "profileDeleteAccountBody": "Мы создадим обращение в поддержку — команда свяжется с вами и подтвердит удаление",
+  "profileDeleteAccountBody": "Переписка, заметки специалистов, карты и уведомления будут удалены безвозвратно. Записи о консультациях и платежах останутся в бухгалтерии — их закон хранить обязывает. Войти снова по этому номеру можно будет, но это будет новый пустой аккаунт",
   "@profileDeleteAccountBody": {
-    "description": "Текст подтверждения удаления аккаунта: прямого эндпоинта удаления нет"
+    "description": "Текст подтверждения удаления аккаунта: что исчезает, а что остаётся"
   },
-  "profileDeleteAccountSubject": "Удаление аккаунта и данных",
-  "@profileDeleteAccountSubject": {
-    "description": "Тема автоматически созданного обращения на удаление аккаунта"
+  "profileDeleteAccountBlockedConsultation": "Сначала завершите или отмените консультацию — удалить аккаунт посреди неё нельзя",
+  "@profileDeleteAccountBlockedConsultation": {
+    "description": "Отказ CONSULTATION_IN_PROGRESS при удалении аккаунта"
   },
-  "profileDeleteAccountTicketBody": "Прошу удалить мой аккаунт и связанные с ним данные",
-  "@profileDeleteAccountTicketBody": {
-    "description": "Тело автоматически созданного обращения на удаление аккаунта"
+  "profileDeleteAccountBlockedPayment": "Дождитесь завершения расчёта по последней консультации",
+  "@profileDeleteAccountBlockedPayment": {
+    "description": "Отказ PAYMENT_IN_PROGRESS при удалении аккаунта"
   },
   "convertGuestTitle": "Создание аккаунта",
   "@convertGuestTitle": {

@@ -20,6 +20,12 @@ model User {
   // Prisma частичные индексы не выражает — не удалять при prisma migrate dev.
   deviceId      String?        @map("device_id")
   locale        String         @default("ru")
+  // Аккаунт удалён по запросу пользователя (ТЗ §5.1, политика
+  // конфиденциальности). Строка остаётся: на неё ссылаются консультации и
+  // платежи — финансовый учёт терять нельзя, — но PII из неё вычищен, а
+  // телефон освобождён, поэтому повторный вход по тому же номеру заводит
+  // новый аккаунт, а не воскрешает этот.
+  deletedAt     DateTime?      @map("deleted_at")
   createdAt     DateTime       @default(now()) @map("created_at")
   refreshTokens RefreshToken[]
   expert        Expert?

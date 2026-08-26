@@ -109,6 +109,10 @@ abstract final class SqEndpoints {
   static const devices = '/devices';
   static const meLocale = '/me/locale';
 
+  // --- аккаунт ---
+  /// `DELETE` — удаление своего аккаунта и данных (ТЗ §5.1).
+  static const me = '/me';
+
   // --- обращения в поддержку ---
   static const tickets = '/tickets';
   static String ticketById(String id) => '/tickets/$id';
@@ -165,6 +169,7 @@ abstract final class SqEndpoints {
     ('POST', devices),
     ('DELETE', devices),
     ('PATCH', meLocale),
+    ('DELETE', me),
     ('POST', tickets),
     ('GET', tickets),
     ('GET', '/tickets/{id}'),

@@ -3996,6 +3996,35 @@
         ]
       }
     },
+    "/v1/me": {
+      "delete": {
+        "operationId": "AccountController_remove",
+        "summary": "Удалить свой аккаунт и данные (ТЗ §5.1). Консультации, платежи и проводки остаются как учётные записи, PII из аккаунта вычищается.",
+        "parameters": [],
+        "responses": {
+          "204": {
+            "description": "Аккаунт удалён"
+          },
+          "401": {
+            "description": "UNAUTHORIZED"
+          },
+          "404": {
+            "description": "NOT_FOUND — аккаунт уже удалён"
+          },
+          "409": {
+            "description": "EXPERT_DELETE_VIA_SUPPORT | CONSULTATION_IN_PROGRESS | PAYMENT_IN_PROGRESS"
+          }
+        },
+        "tags": [
+          "account"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/tickets": {
       "post": {
         "operationId": "TicketsController_create",

@@ -31,6 +31,7 @@ import { LedgerModule } from './ledger/ledger.module';
 import { PaymentsModule } from './payments/payments.module';
 import { PayoutsModule } from './payouts/payouts.module';
 import { DevicesModule } from './devices/devices.module';
+import { AccountModule } from './account/account.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { AdminModule } from './admin/admin.module';
 import { TicketsModule } from './tickets/tickets.module';
@@ -70,6 +71,7 @@ import { MaintenanceModule } from './maintenance/maintenance.module';
     BookingModule,
     PayoutsModule,
     DevicesModule,
+    AccountModule,
     NotificationsModule,
     AdminModule,
     TicketsModule,

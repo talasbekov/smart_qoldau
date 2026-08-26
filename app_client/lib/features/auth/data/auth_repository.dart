@@ -47,6 +47,10 @@ class AuthRepository {
     return tokens;
   }
 
+  /// `DELETE /me` — удаление аккаунта на бэкенде (ТЗ §5.1). Локальную
+  /// сессию чистит вызывающий, уже после успеха.
+  Future<void> deleteAccount() => _api.deleteAccount();
+
   /// Чистит сохранённую сессию.
   Future<void> logout() => _tokenStore.clear();
 }
