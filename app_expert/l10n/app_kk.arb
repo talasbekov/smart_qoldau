@@ -164,5 +164,10 @@
   "profileLanguage": "Тіл",
   "actionLogout": "Шығу",
   "webPresenceNotice": "Өтінімдер осы қойынды ашық тұрғанда келеді. Жапсаңыз — қабылдау өшеді.",
-  "offersScreenTitle": "Өтінімдер"
+  "offersScreenTitle": "Өтінімдер",
+  "devicesTitle": "Камера мен микрофонды тексеріңіз",
+  "devicesCamera": "Камера",
+  "devicesMicrophone": "Микрофон",
+  "devicesJoin": "Консультацияға кіру",
+  "devicesNotFound": "Камера мен микрофон табылмады. Браузерде рұқсат беріп, қайталап көріңіз."
 }

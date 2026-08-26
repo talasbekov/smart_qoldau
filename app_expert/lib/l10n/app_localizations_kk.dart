@@ -537,4 +537,20 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get offersScreenTitle => 'Өтінімдер';
+
+  @override
+  String get devicesTitle => 'Камера мен микрофонды тексеріңіз';
+
+  @override
+  String get devicesCamera => 'Камера';
+
+  @override
+  String get devicesMicrophone => 'Микрофон';
+
+  @override
+  String get devicesJoin => 'Консультацияға кіру';
+
+  @override
+  String get devicesNotFound =>
+      'Камера мен микрофон табылмады. Браузерде рұқсат беріп, қайталап көріңіз.';
 }

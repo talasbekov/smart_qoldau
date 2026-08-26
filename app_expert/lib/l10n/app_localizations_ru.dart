@@ -538,4 +538,20 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get offersScreenTitle => 'Заявки';
+
+  @override
+  String get devicesTitle => 'Проверьте камеру и микрофон';
+
+  @override
+  String get devicesCamera => 'Камера';
+
+  @override
+  String get devicesMicrophone => 'Микрофон';
+
+  @override
+  String get devicesJoin => 'Войти в консультацию';
+
+  @override
+  String get devicesNotFound =>
+      'Камера и микрофон не найдены. Разрешите доступ в браузере и попробуйте снова.';
 }

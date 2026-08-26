@@ -283,5 +283,25 @@
   "offersScreenTitle": "Заявки",
   "@offersScreenTitle": {
     "description": "Заголовок раздела заявок (веб-кабинет)"
+  },
+  "devicesTitle": "Проверьте камеру и микрофон",
+  "@devicesTitle": {
+    "description": "Выбор медиаустройств (E14)"
+  },
+  "devicesCamera": "Камера",
+  "@devicesCamera": {
+    "description": "Выбор медиаустройств (E14)"
+  },
+  "devicesMicrophone": "Микрофон",
+  "@devicesMicrophone": {
+    "description": "Выбор медиаустройств (E14)"
+  },
+  "devicesJoin": "Войти в консультацию",
+  "@devicesJoin": {
+    "description": "Выбор медиаустройств (E14)"
+  },
+  "devicesNotFound": "Камера и микрофон не найдены. Разрешите доступ в браузере и попробуйте снова.",
+  "@devicesNotFound": {
+    "description": "Выбор медиаустройств (E14)"
   }
 }

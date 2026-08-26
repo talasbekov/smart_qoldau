@@ -1087,6 +1087,36 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Заявки'**
   String get offersScreenTitle;
+
+  /// Выбор медиаустройств (E14)
+  ///
+  /// In ru, this message translates to:
+  /// **'Проверьте камеру и микрофон'**
+  String get devicesTitle;
+
+  /// Выбор медиаустройств (E14)
+  ///
+  /// In ru, this message translates to:
+  /// **'Камера'**
+  String get devicesCamera;
+
+  /// Выбор медиаустройств (E14)
+  ///
+  /// In ru, this message translates to:
+  /// **'Микрофон'**
+  String get devicesMicrophone;
+
+  /// Выбор медиаустройств (E14)
+  ///
+  /// In ru, this message translates to:
+  /// **'Войти в консультацию'**
+  String get devicesJoin;
+
+  /// Выбор медиаустройств (E14)
+  ///
+  /// In ru, this message translates to:
+  /// **'Камера и микрофон не найдены. Разрешите доступ в браузере и попробуйте снова.'**
+  String get devicesNotFound;
 }
 
 class _AppLocalizationsDelegate
