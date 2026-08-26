@@ -68,6 +68,12 @@ class AppShell extends StatelessWidget {
               label: l10n.navCatalog,
             ),
             NavigationDestination(
+              key: const Key('sq-nav-materials'),
+              icon: const Icon(Icons.library_books_outlined),
+              selectedIcon: const Icon(Icons.library_books),
+              label: l10n.navMaterials,
+            ),
+            NavigationDestination(
               key: const Key('sq-nav-consultations'),
               icon: const Icon(Icons.forum_outlined),
               selectedIcon: const Icon(Icons.forum),

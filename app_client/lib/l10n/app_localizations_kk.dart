@@ -1161,4 +1161,72 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get premiumDiscountApplied => 'Premium жеңілдігі қолданылды';
+
+  @override
+  String get navMaterials => 'Материалдар';
+
+  @override
+  String get materialsTitle => 'Материалдар';
+
+  @override
+  String get materialsEmpty => 'Әзірге бос — материалдар жақында пайда болады';
+
+  @override
+  String get materialsFilterAll => 'Барлығы';
+
+  @override
+  String get materialsFilterMeditation => 'Медитациялар';
+
+  @override
+  String get materialsFilterMusic => 'Музыка';
+
+  @override
+  String get materialsFilterArticle => 'Мақалалар';
+
+  @override
+  String get materialsFilterBreathing => 'Тыныс алу';
+
+  @override
+  String get materialsPremiumOnly => 'Premium жазылымымен қолжетімді';
+
+  @override
+  String get materialsUseful => 'Пайдалы болды ма?';
+
+  @override
+  String get materialsUsefulYes => 'Иә';
+
+  @override
+  String get materialsUsefulNo => 'Жоқ';
+
+  @override
+  String get breathingStart => 'Бастау';
+
+  @override
+  String get breathingStop => 'Тоқтату';
+
+  @override
+  String get playerPlay => 'Тыңдау';
+
+  @override
+  String get playerPause => 'Кідірту';
+
+  @override
+  String materialsStreak(int days) {
+    return '$days күн қатарынан';
+  }
+
+  @override
+  String materialsCompleted(int count) {
+    return 'Өтілген материалдар: $count';
+  }
+
+  @override
+  String materialsDuration(int minutes) {
+    return '$minutes мин';
+  }
+
+  @override
+  String breathingCycle(int current, int total) {
+    return '$total циклдің $current-і';
+  }
 }

@@ -1493,5 +1493,108 @@
   "premiumDiscountApplied": "Скидка Premium уже применена",
   "@premiumDiscountApplied": {
     "description": "Строка в шторке оплаты для клиента с подпиской"
+  },
+  "navMaterials": "Материалы",
+  "@navMaterials": {
+    "description": "Вкладка библиотеки самопомощи"
+  },
+  "materialsTitle": "Материалы",
+  "@materialsTitle": {
+    "description": "Заголовок вкладки материалов"
+  },
+  "materialsEmpty": "Здесь пока пусто — материалы скоро появятся",
+  "@materialsEmpty": {
+    "description": "Пустое состояние библиотеки"
+  },
+  "materialsFilterAll": "Все",
+  "@materialsFilterAll": {
+    "description": "Фильтр: все виды материалов"
+  },
+  "materialsFilterMeditation": "Медитации",
+  "@materialsFilterMeditation": {
+    "description": "Фильтр по виду"
+  },
+  "materialsFilterMusic": "Музыка",
+  "@materialsFilterMusic": {
+    "description": "Фильтр по виду"
+  },
+  "materialsFilterArticle": "Статьи",
+  "@materialsFilterArticle": {
+    "description": "Фильтр по виду"
+  },
+  "materialsFilterBreathing": "Дыхание",
+  "@materialsFilterBreathing": {
+    "description": "Фильтр по виду"
+  },
+  "materialsPremiumOnly": "Доступно по подписке Premium",
+  "@materialsPremiumOnly": {
+    "description": "Подпись под замком"
+  },
+  "materialsUseful": "Было полезно?",
+  "@materialsUseful": {
+    "description": "Вопрос под статьёй"
+  },
+  "materialsUsefulYes": "Да",
+  "@materialsUsefulYes": {
+    "description": "Ответ на вопрос о пользе"
+  },
+  "materialsUsefulNo": "Нет",
+  "@materialsUsefulNo": {
+    "description": "Ответ на вопрос о пользе"
+  },
+  "breathingStart": "Начать",
+  "@breathingStart": {
+    "description": "Кнопка старта дыхательной практики"
+  },
+  "breathingStop": "Остановить",
+  "@breathingStop": {
+    "description": "Кнопка остановки практики"
+  },
+  "playerPlay": "Слушать",
+  "@playerPlay": {
+    "description": "Кнопка воспроизведения"
+  },
+  "playerPause": "Пауза",
+  "@playerPause": {
+    "description": "Кнопка паузы"
+  },
+  "materialsStreak": "{days} дней подряд",
+  "@materialsStreak": {
+    "description": "Стрик практик",
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "materialsCompleted": "Пройдено материалов: {count}",
+  "@materialsCompleted": {
+    "description": "Счётчик пройденного",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "materialsDuration": "{minutes} мин",
+  "@materialsDuration": {
+    "description": "Длительность материала",
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "breathingCycle": "Цикл {current} из {total}",
+  "@breathingCycle": {
+    "description": "Прогресс дыхательной практики",
+    "placeholders": {
+      "current": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
   }
 }

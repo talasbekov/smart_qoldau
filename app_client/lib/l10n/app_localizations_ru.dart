@@ -1167,4 +1167,72 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get premiumDiscountApplied => 'Скидка Premium уже применена';
+
+  @override
+  String get navMaterials => 'Материалы';
+
+  @override
+  String get materialsTitle => 'Материалы';
+
+  @override
+  String get materialsEmpty => 'Здесь пока пусто — материалы скоро появятся';
+
+  @override
+  String get materialsFilterAll => 'Все';
+
+  @override
+  String get materialsFilterMeditation => 'Медитации';
+
+  @override
+  String get materialsFilterMusic => 'Музыка';
+
+  @override
+  String get materialsFilterArticle => 'Статьи';
+
+  @override
+  String get materialsFilterBreathing => 'Дыхание';
+
+  @override
+  String get materialsPremiumOnly => 'Доступно по подписке Premium';
+
+  @override
+  String get materialsUseful => 'Было полезно?';
+
+  @override
+  String get materialsUsefulYes => 'Да';
+
+  @override
+  String get materialsUsefulNo => 'Нет';
+
+  @override
+  String get breathingStart => 'Начать';
+
+  @override
+  String get breathingStop => 'Остановить';
+
+  @override
+  String get playerPlay => 'Слушать';
+
+  @override
+  String get playerPause => 'Пауза';
+
+  @override
+  String materialsStreak(int days) {
+    return '$days дней подряд';
+  }
+
+  @override
+  String materialsCompleted(int count) {
+    return 'Пройдено материалов: $count';
+  }
+
+  @override
+  String materialsDuration(int minutes) {
+    return '$minutes мин';
+  }
+
+  @override
+  String breathingCycle(int current, int total) {
+    return 'Цикл $current из $total';
+  }
 }

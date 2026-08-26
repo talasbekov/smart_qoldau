@@ -2221,6 +2221,126 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Скидка Premium уже применена'**
   String get premiumDiscountApplied;
+
+  /// Вкладка библиотеки самопомощи
+  ///
+  /// In ru, this message translates to:
+  /// **'Материалы'**
+  String get navMaterials;
+
+  /// Заголовок вкладки материалов
+  ///
+  /// In ru, this message translates to:
+  /// **'Материалы'**
+  String get materialsTitle;
+
+  /// Пустое состояние библиотеки
+  ///
+  /// In ru, this message translates to:
+  /// **'Здесь пока пусто — материалы скоро появятся'**
+  String get materialsEmpty;
+
+  /// Фильтр: все виды материалов
+  ///
+  /// In ru, this message translates to:
+  /// **'Все'**
+  String get materialsFilterAll;
+
+  /// Фильтр по виду
+  ///
+  /// In ru, this message translates to:
+  /// **'Медитации'**
+  String get materialsFilterMeditation;
+
+  /// Фильтр по виду
+  ///
+  /// In ru, this message translates to:
+  /// **'Музыка'**
+  String get materialsFilterMusic;
+
+  /// Фильтр по виду
+  ///
+  /// In ru, this message translates to:
+  /// **'Статьи'**
+  String get materialsFilterArticle;
+
+  /// Фильтр по виду
+  ///
+  /// In ru, this message translates to:
+  /// **'Дыхание'**
+  String get materialsFilterBreathing;
+
+  /// Подпись под замком
+  ///
+  /// In ru, this message translates to:
+  /// **'Доступно по подписке Premium'**
+  String get materialsPremiumOnly;
+
+  /// Вопрос под статьёй
+  ///
+  /// In ru, this message translates to:
+  /// **'Было полезно?'**
+  String get materialsUseful;
+
+  /// Ответ на вопрос о пользе
+  ///
+  /// In ru, this message translates to:
+  /// **'Да'**
+  String get materialsUsefulYes;
+
+  /// Ответ на вопрос о пользе
+  ///
+  /// In ru, this message translates to:
+  /// **'Нет'**
+  String get materialsUsefulNo;
+
+  /// Кнопка старта дыхательной практики
+  ///
+  /// In ru, this message translates to:
+  /// **'Начать'**
+  String get breathingStart;
+
+  /// Кнопка остановки практики
+  ///
+  /// In ru, this message translates to:
+  /// **'Остановить'**
+  String get breathingStop;
+
+  /// Кнопка воспроизведения
+  ///
+  /// In ru, this message translates to:
+  /// **'Слушать'**
+  String get playerPlay;
+
+  /// Кнопка паузы
+  ///
+  /// In ru, this message translates to:
+  /// **'Пауза'**
+  String get playerPause;
+
+  /// Стрик практик
+  ///
+  /// In ru, this message translates to:
+  /// **'{days} дней подряд'**
+  String materialsStreak(int days);
+
+  /// Счётчик пройденного
+  ///
+  /// In ru, this message translates to:
+  /// **'Пройдено материалов: {count}'**
+  String materialsCompleted(int count);
+
+  /// Длительность материала
+  ///
+  /// In ru, this message translates to:
+  /// **'{minutes} мин'**
+  String materialsDuration(int minutes);
+
+  /// Прогресс дыхательной практики
+  ///
+  /// In ru, this message translates to:
+  /// **'Цикл {current} из {total}'**
+  String breathingCycle(int current, int total);
 }
 
 class _AppLocalizationsDelegate

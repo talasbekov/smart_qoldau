@@ -53,6 +53,8 @@ dependencies:
   # `SqApi`. Аналитика PostHog, которой раньше был нужен `dio` напрямую,
   # переехала в `shared` (задача 2 эпика E7).
   dio: ^5.9.0
+  just_audio: ^0.10.6
+  flutter_markdown_plus: ^1.0.12
   # permission_handler, livekit_client, firebase_core, firebase_messaging,
   # flutter_local_notifications переехали в `packages/shared` (задача 2
   # эпика E7, перенос chat/call/push/permissions) — теперь транзитивные
