@@ -5,6 +5,7 @@ import {
   ContentKind,
   Prisma,
 } from '@prisma/client';
+import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 import { PrismaService } from '../prisma/prisma.service';
 import { ClockService } from '../common/clock/clock.service';
 import { apiError } from '../common/filters/app-exception.filter';
@@ -24,6 +25,15 @@ const MEDIA_TTL_SEC = 900;
 
 /// Материал считается пройденным на этой отметке.
 const COMPLETE_PERMILLE = 1000;
+
+const DEFAULT_TAKE = 20;
+const MAX_TAKE = 100;
+
+/// Обложка — превью карточки, а не платный контент, но лежит в том же
+/// закрытом бакете, поэтому ссылку тоже надо подписывать. Живёт дольше
+/// аудио: список пролистывают долго, а перезапрашивать карточки ради
+/// картинок незачем.
+const COVER_TTL_SEC = 3600;
 
 function localeOf(userLocale: string): ContentLocale {
   return userLocale === 'kz' || userLocale === 'kk' ? 'kk' : 'ru';
@@ -54,7 +64,12 @@ export class ContentService {
 
   async list(
     userId: string,
-    filter: { kind?: ContentKind; category?: string },
+    filter: {
+      kind?: ContentKind;
+      category?: string;
+      take?: number;
+      skip?: number;
+    },
   ): Promise<ContentItemDto[]> {
     const locale = await this.localeOfUser(userId);
     const where: Prisma.ContentItemWhereInput = {
@@ -72,6 +87,8 @@ export class ContentService {
       this.prisma.contentItem.findMany({
         where,
         orderBy: [{ sortOrder: 'asc' }, { id: 'asc' }],
+        take: Math.min(filter.take ?? DEFAULT_TAKE, MAX_TAKE),
+        skip: filter.skip ?? 0,
       }),
       this.premium.isPremiumAt(userId, this.clock.now()),
     ]);
@@ -83,10 +100,13 @@ export class ContentService {
       progress.map((p) => [p.itemId, p.positionPermille]),
     );
 
-    return items.map((item) => ({
-      ...this.card(item, locale, premium),
-      positionPermille: positionById.get(item.id) ?? 0,
-    }));
+    return Promise.all(
+      items.map(async (item) => ({
+        ...this.card(item, locale, premium),
+        coverUrl: await this.coverUrl(item.coverKey),
+        positionPermille: positionById.get(item.id) ?? 0,
+      })),
+    );
   }
 
   async byId(userId: string, id: string): Promise<ContentItemDto> {
@@ -99,6 +119,7 @@ export class ContentService {
 
     return {
       ...this.card(item, locale, premium),
+      coverUrl: await this.coverUrl(item.coverKey),
       positionPermille: progress?.positionPermille ?? 0,
       usefulYes: item.usefulYes,
       usefulNo: item.usefulNo,
@@ -145,19 +166,35 @@ export class ContentService {
     const completedAt =
       positionPermille >= COMPLETE_PERMILLE ? this.clock.now() : undefined;
 
-    const row = await this.prisma.contentProgress.upsert({
-      where: { userId_itemId: { userId, itemId: id } },
-      create: {
-        userId,
-        itemId: id,
-        positionPermille,
-        completedAt: completedAt ?? null,
-      },
-      update: {
-        positionPermille,
-        ...(completedAt ? { completedAt } : {}),
-      },
-    });
+    const write = () =>
+      this.prisma.contentProgress.upsert({
+        where: { userId_itemId: { userId, itemId: id } },
+        create: {
+          userId,
+          itemId: id,
+          positionPermille,
+          completedAt: completedAt ?? null,
+        },
+        update: {
+          positionPermille,
+          ...(completedAt ? { completedAt } : {}),
+        },
+      });
+
+    let row;
+    try {
+      row = await write();
+    } catch (e) {
+      // Два параллельных сохранения прогресса (одна и та же статья на двух
+      // устройствах) оба видят «строки нет» и оба идут в create — второй
+      // упирается в уникальный индекс. Это штатная гонка, а не ошибка
+      // пользователя: повтор попадёт уже в ветку update.
+      if (e instanceof PrismaClientKnownRequestError && e.code === 'P2002') {
+        row = await write();
+      } else {
+        throw e;
+      }
+    }
 
     return {
       positionPermille: row.positionPermille,
@@ -218,6 +255,14 @@ export class ContentService {
     return item;
   }
 
+  /// Ключ обложки сам по себе бесполезен приложению: бакет закрыт, и
+  /// картинку по нему не загрузить. Поле называлось coverUrl, а содержало
+  /// ключ — имя врало, и обложки просто не показались бы.
+  private async coverUrl(key: string | null): Promise<string | null> {
+    if (!key) return null;
+    return this.storage.contentUrl(key, COVER_TTL_SEC);
+  }
+
   private async localeOfUser(userId: string): Promise<ContentLocale> {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
@@ -240,7 +285,9 @@ export class ContentService {
       title: locale === 'kk' ? item.titleKk : item.titleRu,
       summary: locale === 'kk' ? item.summaryKk : item.summaryRu,
       durationSec: item.durationSec,
-      coverUrl: item.coverKey,
+      // Заполняется вызывающим: подпись асинхронна, а card() собирает
+      // синхронную часть карточки.
+      coverUrl: null,
       locked: item.access === ContentAccess.PREMIUM && !premium,
     };
   }

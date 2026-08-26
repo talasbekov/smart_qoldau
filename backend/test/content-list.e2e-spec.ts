@@ -240,6 +240,38 @@ describe('Контент: списки и карточки (E13, e2e)', () => {
     ).expect(404);
   });
 
+  it('обложка отдаётся подписанной ссылкой, а не ключом хранилища', async () => {
+    const ru = await clientUser(app, PH_RU, () => lastCode);
+    await prisma.contentItem.update({
+      where: { id: articleId },
+      data: { coverKey: 'covers/article.webp' },
+    });
+
+    const res = await get(ru.accessToken, `/v1/content/${articleId}`).expect(
+      200,
+    );
+    // Ключ сам по себе бесполезен: бакет закрыт, картинку по нему не
+    // загрузить — поле обязано содержать ссылку, а не имя объекта.
+    expect(res.body.coverUrl).toContain('X-Amz-Signature');
+    expect(res.body.coverUrl).toContain('covers/article.webp');
+  });
+
+  it('список ограничен страницей: take и skip', async () => {
+    const ru = await clientUser(app, PH_RU, () => lastCode);
+
+    const firstPage = await get(ru.accessToken, '/v1/content?take=1').expect(
+      200,
+    );
+    expect(firstPage.body).toHaveLength(1);
+
+    const secondPage = await get(
+      ru.accessToken,
+      '/v1/content?take=1&skip=1',
+    ).expect(200);
+    expect(secondPage.body).toHaveLength(1);
+    expect(secondPage.body[0].slug).not.toBe(firstPage.body[0].slug);
+  });
+
   it('без токена -> 401', async () => {
     await request(app.getHttpServer()).get('/v1/content').expect(401);
   });

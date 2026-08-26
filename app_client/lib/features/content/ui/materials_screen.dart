@@ -1,6 +1,8 @@
 /// Вкладка «Материалы»: библиотека самопомощи со стриком и фильтрами.
 library;
 
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -19,8 +21,38 @@ const _kindLabels = <ContentKind?, String>{
   ContentKind.breathing: 'BREATHING',
 };
 
-class MaterialsScreen extends ConsumerWidget {
+class MaterialsScreen extends ConsumerStatefulWidget {
   const MaterialsScreen({super.key});
+
+  @override
+  ConsumerState<MaterialsScreen> createState() => _MaterialsScreenState();
+}
+
+class _MaterialsScreenState extends ConsumerState<MaterialsScreen> {
+  final _scroll = ScrollController();
+
+  @override
+  void initState() {
+    super.initState();
+    _scroll.addListener(_onScroll);
+  }
+
+  @override
+  void dispose() {
+    _scroll.removeListener(_onScroll);
+    _scroll.dispose();
+    super.dispose();
+  }
+
+  void _onScroll() {
+    if (!_scroll.hasClients) return;
+    // Догружаем заранее, за экран до конца: иначе пользователь упирается в
+    // край списка и ждёт.
+    final remaining = _scroll.position.maxScrollExtent - _scroll.offset;
+    if (remaining < 600) {
+      unawaited(ref.read(contentListProvider.notifier).loadMore());
+    }
+  }
 
   String _kindLabel(AppLocalizations l10n, ContentKind? kind) {
     switch (kind) {
@@ -38,7 +70,7 @@ class MaterialsScreen extends ConsumerWidget {
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final items = ref.watch(contentListProvider);
     final filter = ref.watch(contentFilterProvider);
@@ -87,7 +119,7 @@ class MaterialsScreen extends ConsumerWidget {
                     ),
                   ),
                 ),
-                data: (list) => list.isEmpty
+                data: (page) => page.items.isEmpty
                     ? Center(
                         child: SqEmptyState(
                           key: const Key('sq-content-empty'),
@@ -96,10 +128,17 @@ class MaterialsScreen extends ConsumerWidget {
                         ),
                       )
                     : ListView.builder(
+                        controller: _scroll,
                         padding: const EdgeInsets.all(SqSpacing.l),
-                        itemCount: list.length,
+                        itemCount:
+                            page.items.length + (page.loadingMore ? 1 : 0),
                         itemBuilder: (context, index) =>
-                            _ItemCard(item: list[index]),
+                            index >= page.items.length
+                            ? const Padding(
+                                padding: EdgeInsets.all(SqSpacing.l),
+                                child: SqLoader(),
+                              )
+                            : _ItemCard(item: page.items[index]),
                       ),
               ),
             ),

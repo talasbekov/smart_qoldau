@@ -176,6 +176,26 @@ describe('Контент: прогресс, голоса и стрик (E13, e2e
     });
   });
 
+  it('два параллельных сохранения прогресса не падают на гонке', async () => {
+    const cli = await clientUser(app, PH_C1, () => lastCode);
+
+    // Одна и та же статья на двух устройствах: оба запроса видят «строки
+    // нет» и оба идут в create — второй упирается в уникальный индекс.
+    const responses = await Promise.all([
+      post(cli.accessToken, `/v1/content/${itemId}/progress`).send({
+        positionPermille: 100,
+      }),
+      post(cli.accessToken, `/v1/content/${itemId}/progress`).send({
+        positionPermille: 200,
+      }),
+    ]);
+
+    expect(responses.map((r) => r.status)).toEqual([200, 200]);
+    expect(
+      await prisma.contentProgress.count({ where: { userId: cli.userId } }),
+    ).toBe(1);
+  });
+
   it('прогресс по черновику невозможен: 404', async () => {
     const cli = await clientUser(app, PH_C1, () => lastCode);
     const draft = await prisma.contentItem.create({

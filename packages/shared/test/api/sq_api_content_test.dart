@@ -96,6 +96,17 @@ void main() {
     expect(items, hasLength(1));
   });
 
+  test('страница запрашивается через take и skip', () async {
+    dioAdapter.onGet(
+      '/content',
+      (s) => s.reply(200, [_articleJson]),
+      queryParameters: {'take': 20, 'skip': 20},
+    );
+
+    final items = await api.content(take: 20, skip: 20);
+    expect(items, hasLength(1));
+  });
+
   test('тело статьи и тело дыхания разбираются в разные типы', () async {
     dioAdapter.onGet('/content/c1', (s) => s.reply(200, _articleJson));
     dioAdapter.onGet('/content/c2', (s) => s.reply(200, _breathingJson));

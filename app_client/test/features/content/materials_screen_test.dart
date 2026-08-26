@@ -86,6 +86,8 @@ void main() {
       () => api.content(
         kind: any(named: 'kind'),
         category: any(named: 'category'),
+        take: any(named: 'take'),
+        skip: any(named: 'skip'),
       ),
     ).thenAnswer((_) async => [_article(), _lockedMeditation()]);
     when(() => api.contentStreak()).thenAnswer((_) async => _streak);
@@ -131,7 +133,62 @@ void main() {
     await tester.pumpAndSettle();
 
     verify(
-      () => api.content(kind: ContentKind.article, category: null),
+      () => api.content(
+        kind: ContentKind.article,
+        category: null,
+        take: any(named: 'take'),
+        skip: 0,
+      ),
+    ).called(1);
+  });
+
+  testWidgets('прокрутка до конца подгружает следующую страницу', (
+    tester,
+  ) async {
+    // Библиотека постраничная: показать первую страницу и молча потерять
+    // остальное — то же самое, что не показать материалы вовсе.
+    final firstPage = List.generate(
+      20,
+      (i) => ContentItem(
+        id: 'p$i',
+        kind: ContentKind.article,
+        access: ContentAccess.free,
+        slug: 'article-$i',
+        category: 'anxiety',
+        title: 'Материал $i',
+        summary: 'Кратко',
+      ),
+    );
+    when(
+      () => api.content(
+        kind: any(named: 'kind'),
+        category: any(named: 'category'),
+        take: any(named: 'take'),
+        skip: 0,
+      ),
+    ).thenAnswer((_) async => firstPage);
+    when(
+      () => api.content(
+        kind: any(named: 'kind'),
+        category: any(named: 'category'),
+        take: any(named: 'take'),
+        skip: 20,
+      ),
+    ).thenAnswer((_) async => [_article()]);
+
+    await tester.pumpWidget(_wrap(api));
+    await tester.pumpAndSettle();
+
+    await tester.drag(find.byType(Scrollable).last, const Offset(0, -3000));
+    await tester.pumpAndSettle();
+
+    verify(
+      () => api.content(
+        kind: any(named: 'kind'),
+        category: any(named: 'category'),
+        take: any(named: 'take'),
+        skip: 20,
+      ),
     ).called(1);
   });
 
@@ -142,6 +199,8 @@ void main() {
       () => api.content(
         kind: any(named: 'kind'),
         category: any(named: 'category'),
+        take: any(named: 'take'),
+        skip: any(named: 'skip'),
       ),
     ).thenAnswer((_) async => []);
 

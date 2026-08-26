@@ -9,8 +9,12 @@ class ContentRepository {
 
   final SqApi _api;
 
-  Future<List<ContentItem>> list({ContentKind? kind, String? category}) =>
-      _api.content(kind: kind, category: category);
+  Future<List<ContentItem>> list({
+    ContentKind? kind,
+    String? category,
+    int? take,
+    int? skip,
+  }) => _api.content(kind: kind, category: category, take: take, skip: skip);
 
   Future<ContentItem> byId(String id) => _api.contentItem(id);
 

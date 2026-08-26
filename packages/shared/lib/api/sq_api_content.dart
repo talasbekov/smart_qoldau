@@ -15,6 +15,8 @@ mixin SqApiContent on SqApiBase {
   Future<List<ContentItem>> content({
     ContentKind? kind,
     String? category,
+    int? take,
+    int? skip,
   }) =>
       guard(() async {
         final response = await dio.get<List<dynamic>>(
@@ -22,6 +24,11 @@ mixin SqApiContent on SqApiBase {
           queryParameters: {
             'kind': ?(kind == null ? null : _kindValues[kind]),
             'category': ?category,
+            // Библиотека постраничная: без параметров сервер отдаёт первую
+            // страницу, и молча показать только её значило бы потерять
+            // остальные материалы.
+            'take': ?take,
+            'skip': ?skip,
           },
         );
         return response.data!
