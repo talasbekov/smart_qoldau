@@ -229,7 +229,6 @@
   "expertReviewsTitle": "Пікірлер",
   "expertNoReviews": "Пікірлер әзірге жоқ",
   "expertReplyPrefix": "Маманның жауабы",
-  "expertPriceLabel": "Кеңес",
   "expertUnavailableTitle": "Маман қазір қолжетімсіз",
   "expertUnavailableBody": "Осы тақырып бойынша басқа бос маманды таңдауға болады",
   "expertPickAutomatically": "Автоматты түрде таңдау",
@@ -374,5 +373,6 @@
   "materialsCompleted": "Өтілген материалдар: {count}",
   "materialsDuration": "{minutes} мин",
   "breathingCycle": "{total} циклдің {current}-і",
-  "premiumPlanFree": "Тегін"
+  "premiumPlanFree": "Тегін",
+  "expertPricePerSession": "консультация үшін"
 }

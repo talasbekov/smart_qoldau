@@ -48,10 +48,7 @@ void main() {
       expect(captured!['api_key'], 'phc_test');
       expect(captured!['event'], 'topic_selected');
       expect(captured!['distinct_id'], 'u1');
-      expect(
-        (captured!['properties'] as Map)['topic_slug'],
-        'anxiety-stress',
-      );
+      expect((captured!['properties'] as Map)['topic_slug'], 'anxiety-stress');
     });
 
     test('сбой сети не бросает наружу', () async {
@@ -63,33 +60,35 @@ void main() {
         data: Matchers.any,
       );
 
-      await expectLater(
-        analytics.track(const GuestConverted()),
-        completes,
-      );
+      await expectLater(analytics.track(const GuestConverted()), completes);
     });
 
-    test('без identify событие всё равно уходит с гостевым distinct_id', () async {
-      final fresh = PostHogAnalytics(dio: dio, apiKey: 'phc_test');
-      Map<String, dynamic>? captured;
-      adapter.onPost(
-        '/capture/',
-        (server) => server.reply(200, {'status': 1}),
-        data: Matchers.any,
-      );
-      dio.interceptors.add(
-        InterceptorsWrapper(
-          onRequest: (options, handler) {
-            captured = options.data as Map<String, dynamic>;
-            handler.next(options);
-          },
-        ),
-      );
+    test(
+      'без identify событие всё равно уходит с гостевым distinct_id',
+      () async {
+        final fresh = PostHogAnalytics(dio: dio, apiKey: 'phc_test');
+        Map<String, dynamic>? captured;
+        adapter.onPost(
+          '/capture/',
+          (server) => server.reply(200, {'status': 1}),
+          data: Matchers.any,
+        );
+        dio.interceptors.add(
+          InterceptorsWrapper(
+            onRequest: (options, handler) {
+              captured = options.data as Map<String, dynamic>;
+              handler.next(options);
+            },
+          ),
+        );
 
-      await fresh.track(const EmergencyEscalated(requestId: 'r1', stage: 'hotlines'));
+        await fresh.track(
+          const EmergencyEscalated(requestId: 'r1', stage: 'hotlines'),
+        );
 
-      expect(captured!['distinct_id'], isNotEmpty);
-    });
+        expect(captured!['distinct_id'], isNotEmpty);
+      },
+    );
   });
 
   group('PII-инвариант', () {
@@ -114,15 +113,25 @@ void main() {
         const EmergencyEscalated(requestId: 'r1', stage: 'hotlines'),
       ];
 
-      const forbidden = ['phone', 'text', 'maskedPan', 'masked_pan',
-          'displayName', 'display_name', 'name', 'email', 'pan'];
+      const forbidden = [
+        'phone',
+        'text',
+        'maskedPan',
+        'masked_pan',
+        'displayName',
+        'display_name',
+        'name',
+        'email',
+        'pan',
+      ];
 
       for (final event in events) {
         for (final key in event.properties.keys) {
           expect(
             forbidden.contains(key),
             isFalse,
-            reason: 'событие ${event.name}: свойство "$key" — персональные '
+            reason:
+                'событие ${event.name}: свойство "$key" — персональные '
                 'данные, аналитике оно не принадлежит',
           );
         }
@@ -130,7 +139,8 @@ void main() {
           expect(
             value,
             anyOf(isA<String>(), isA<num>(), isA<bool>(), isNull),
-            reason: 'свойства событий должны быть примитивами: вложенные '
+            reason:
+                'свойства событий должны быть примитивами: вложенные '
                 'объекты легко протаскивают ПД целиком',
           );
         }
@@ -139,8 +149,10 @@ void main() {
 
     test('имена событий — snake_case из ТЗ §10', () {
       expect(const TopicSelected(topicSlug: 't').name, 'topic_selected');
-      expect(const ExpertMatched(requestId: 'r', secondsToMatch: 1).name,
-          'expert_matched');
+      expect(
+        const ExpertMatched(requestId: 'r', secondsToMatch: 1).name,
+        'expert_matched',
+      );
       expect(const GuestConverted().name, 'guest_converted');
     });
   });

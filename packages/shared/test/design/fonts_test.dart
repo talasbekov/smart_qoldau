@@ -16,16 +16,19 @@ void main() {
   });
 
   test('в pubspec объявлены четыре начертания Inter с весами 400–700', () {
-    final pubspec = loadYaml(File('pubspec.yaml').readAsStringSync()) as YamlMap;
+    final pubspec =
+        loadYaml(File('pubspec.yaml').readAsStringSync()) as YamlMap;
     final fonts = (pubspec['flutter'] as YamlMap)['fonts'] as YamlList;
     final inter = fonts.firstWhere((family) => family['family'] == 'Inter');
     final assets = inter['fonts'] as YamlList;
 
     expect(assets.length, 4);
-    expect(
-      assets.map((asset) => asset['weight']).toList(),
-      [400, 500, 600, 700],
-    );
+    expect(assets.map((asset) => asset['weight']).toList(), [
+      400,
+      500,
+      600,
+      700,
+    ]);
     for (final asset in assets) {
       expect(
         File(asset['asset'] as String).existsSync(),

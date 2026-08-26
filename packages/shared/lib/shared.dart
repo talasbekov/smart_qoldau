@@ -12,6 +12,7 @@ export 'analytics/analytics_provider.dart';
 export 'analytics/noop_analytics.dart';
 export 'analytics/posthog_analytics.dart';
 export 'design/breakpoints.dart';
+export 'design/split_layout.dart';
 export 'api/api_exception.dart';
 export 'api/auth_interceptor.dart';
 export 'api/sq_api.dart';

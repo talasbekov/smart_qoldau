@@ -25,10 +25,8 @@ enum ContentAccess {
 /// Фаза дыхательной техники на языке пользователя.
 @freezed
 abstract class BreathingPhase with _$BreathingPhase {
-  const factory BreathingPhase({
-    required String name,
-    required int seconds,
-  }) = _BreathingPhase;
+  const factory BreathingPhase({required String name, required int seconds}) =
+      _BreathingPhase;
 
   factory BreathingPhase.fromJson(Map<String, dynamic> json) =>
       _$BreathingPhaseFromJson(json);
@@ -74,8 +72,7 @@ class BreathingBody extends ContentBody {
 
   /// Длительность одного цикла. Считается на клиенте: экран показывает её
   /// до старта, а сервер такого поля не отдаёт.
-  int get cycleSeconds =>
-      phases.fold(0, (sum, phase) => sum + phase.seconds);
+  int get cycleSeconds => phases.fold(0, (sum, phase) => sum + phase.seconds);
 }
 
 /// Карточка материала на языке пользователя (`ContentItemDto` бэкенда).
@@ -138,10 +135,8 @@ abstract class ContentProgress with _$ContentProgress {
 
 @freezed
 abstract class ContentVotes with _$ContentVotes {
-  const factory ContentVotes({
-    required int usefulYes,
-    required int usefulNo,
-  }) = _ContentVotes;
+  const factory ContentVotes({required int usefulYes, required int usefulNo}) =
+      _ContentVotes;
 
   factory ContentVotes.fromJson(Map<String, dynamic> json) =>
       _$ContentVotesFromJson(json);

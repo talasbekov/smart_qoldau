@@ -4,11 +4,11 @@ import 'package:http_mock_adapter/http_mock_adapter.dart';
 import 'package:shared/shared.dart';
 
 SqApi _buildApi() => SqApi(
-      baseUrl: 'https://api.test.local/v1',
-      readTokens: () async => null,
-      writeTokens: (_) async {},
-      onLogout: () async {},
-    );
+  baseUrl: 'https://api.test.local/v1',
+  readTokens: () async => null,
+  writeTokens: (_) async {},
+  onLogout: () async {},
+);
 
 const _articleJson = {
   'id': 'c1',

@@ -107,9 +107,8 @@ void main() {
     api = MockSqApi();
     engine = _FakeCallEngine();
     addTearDown(engine.dispose);
-    when(
-      () => api.mediaToken('c1', format: any(named: 'format')),
-    ).thenAnswer((_) async => _token);
+    when(() => api.mediaToken('c1', format: any(named: 'format')))
+        .thenAnswer((_) async => _token);
   });
 
   testWidgets('видеозвонок просит оба разрешения, берёт токен и подключается', (
@@ -270,11 +269,7 @@ void main() {
     tester,
   ) async {
     when(() => api.mediaToken('c1', format: any(named: 'format'))).thenThrow(
-      const ApiException(
-        ApiErrorCode.consultationNotActive,
-        'not active',
-        409,
-      ),
+      const ApiException(ApiErrorCode.consultationNotActive, 'not active', 409),
     );
 
     final container = _container(

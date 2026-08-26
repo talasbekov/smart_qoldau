@@ -95,9 +95,8 @@ class SqAvatar extends StatelessWidget {
               height: size,
               fit: BoxFit.cover,
               // Ошибка загрузки — штатный случай, а не исключение.
-              errorBuilder: (context, error, stackTrace) => Center(
-                child: _initialsChild(),
-              ),
+              errorBuilder: (context, error, stackTrace) =>
+                  Center(child: _initialsChild()),
             ),
     );
   }

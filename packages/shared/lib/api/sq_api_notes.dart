@@ -8,11 +8,11 @@ mixin SqApiNotes on SqApiBase {
   /// `text: null`, когда заметки ещё нет (см. `ExpertNoteDto`) — это НЕ
   /// повод бросать `ApiException`.
   Future<ExpertNoteDto> note(String consultationId) => guard(() async {
-        final response = await dio.get<Map<String, dynamic>>(
-          SqEndpoints.consultationNote(consultationId),
-        );
-        return ExpertNoteDto.fromJson(response.data!);
-      });
+    final response = await dio.get<Map<String, dynamic>>(
+      SqEndpoints.consultationNote(consultationId),
+    );
+    return ExpertNoteDto.fromJson(response.data!);
+  });
 
   /// `PUT /consultations/{id}/note` — создать/обновить заметку.
   /// `400 INVALID_NOTE_TEXT` — пусто или длиннее 5000 символов.

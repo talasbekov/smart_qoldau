@@ -12,9 +12,8 @@ part 'photo_upload_result.g.dart';
 /// при следующем `me()`.
 @freezed
 abstract class PhotoUploadedDto with _$PhotoUploadedDto {
-  const factory PhotoUploadedDto({
-    required ProfileFieldStatus status,
-  }) = _PhotoUploadedDto;
+  const factory PhotoUploadedDto({required ProfileFieldStatus status}) =
+      _PhotoUploadedDto;
 
   factory PhotoUploadedDto.fromJson(Map<String, dynamic> json) =>
       _$PhotoUploadedDtoFromJson(json);

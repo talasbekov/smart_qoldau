@@ -30,52 +30,54 @@ sealed class SqEvent {
   }
 
   static SqEvent _parse(String event, dynamic data) {
-    final json =
-        data is Map ? data.cast<String, dynamic>() : const <String, dynamic>{};
+    final json = data is Map
+        ? data.cast<String, dynamic>()
+        : const <String, dynamic>{};
     return switch (event) {
       'offer.new' => OfferNew(
-          offerId: json['offerId'] as String,
-          topicSlug: json['topicSlug'] as String,
-          format: _sessionFormat(json['format'] as String)!,
-          isEmergency: json['isEmergency'] as bool,
-          clientCode: json['clientCode'] as int,
-          deadlineAt: DateTime.parse(json['deadlineAt'] as String),
-        ),
+        offerId: json['offerId'] as String,
+        topicSlug: json['topicSlug'] as String,
+        format: _sessionFormat(json['format'] as String)!,
+        isEmergency: json['isEmergency'] as bool,
+        clientCode: json['clientCode'] as int,
+        deadlineAt: DateTime.parse(json['deadlineAt'] as String),
+      ),
       'offer.revoked' => OfferRevoked(offerId: json['offerId'] as String),
       'request.updated' => RequestUpdated(
-          id: json['id'] as String,
-          status: _requestStatus(json['status'] as String),
-          matchedExpert: json['matchedExpert'] == null
-              ? null
-              : ExpertPublic.fromJson(
-                  (json['matchedExpert'] as Map).cast<String, dynamic>(),
-                ),
-          consultationId: json['consultationId'] as String?,
-          hotlines: (json['hotlines'] as List?)?.cast<String>(),
-        ),
+        id: json['id'] as String,
+        status: _requestStatus(json['status'] as String),
+        matchedExpert: json['matchedExpert'] == null
+            ? null
+            : ExpertPublic.fromJson(
+                (json['matchedExpert'] as Map).cast<String, dynamic>(),
+              ),
+        consultationId: json['consultationId'] as String?,
+        hotlines: (json['hotlines'] as List?)?.cast<String>(),
+      ),
       'consultation.updated' => ConsultationUpdated(
-          id: json['id'] as String,
-          status: _consultationStatus(json['status'] as String?),
-          outcome: _consultationOutcome(json['outcome'] as String?),
-          paymentStatus:
-              _consultationPaymentStatus(json['paymentStatus'] as String?),
-          format: _sessionFormat(json['format'] as String?),
-          // Перенос плановой записи второй стороной (E6b) меняет время —
-          // без него карточка показывала бы старое до перезагрузки.
-          startedAt: json['startedAt'] == null
-              ? null
-              : DateTime.parse(json['startedAt'] as String),
+        id: json['id'] as String,
+        status: _consultationStatus(json['status'] as String?),
+        outcome: _consultationOutcome(json['outcome'] as String?),
+        paymentStatus: _consultationPaymentStatus(
+          json['paymentStatus'] as String?,
         ),
+        format: _sessionFormat(json['format'] as String?),
+        // Перенос плановой записи второй стороной (E6b) меняет время —
+        // без него карточка показывала бы старое до перезагрузки.
+        startedAt: json['startedAt'] == null
+            ? null
+            : DateTime.parse(json['startedAt'] as String),
+      ),
       'chat.message' => ChatMessageEvent(ChatMessage.fromJson(json)),
       'chat.typing' => ChatTypingEvent(
-          consultationId: json['consultationId'] as String,
-          senderRole: json['senderRole'] as String,
-        ),
+        consultationId: json['consultationId'] as String,
+        senderRole: json['senderRole'] as String,
+      ),
       'chat.error' => ChatErrorEvent(json['code'] as String),
       'notification.new' => NotificationNew(
-          id: json['id'] as String,
-          type: json['type'] as String,
-        ),
+        id: json['id'] as String,
+        type: json['type'] as String,
+      ),
       _ => UnknownEvent(name: event, data: data),
     };
   }
@@ -129,7 +131,8 @@ final class ConsultationUpdated extends SqEvent {
   final DateTime? startedAt;
 
   @override
-  String toString() => 'ConsultationUpdated(id: $id, status: $status, '
+  String toString() =>
+      'ConsultationUpdated(id: $id, status: $status, '
       'outcome: $outcome, paymentStatus: $paymentStatus, format: $format, '
       'startedAt: $startedAt)';
 }
@@ -143,14 +146,18 @@ final class ChatMessageEvent extends SqEvent {
   /// НЕ включает `message.text` — это содержимое переписки (PII), ему не
   /// место в логах/диагностике (см. Global Constraints задачи 8).
   @override
-  String toString() => 'ChatMessageEvent(id: ${message.id}, '
+  String toString() =>
+      'ChatMessageEvent(id: ${message.id}, '
       'consultationId: ${message.consultationId}, '
       'senderRole: ${message.senderRole})';
 }
 
 /// `chat.typing` — собеседник печатает.
 final class ChatTypingEvent extends SqEvent {
-  const ChatTypingEvent({required this.consultationId, required this.senderRole});
+  const ChatTypingEvent({
+    required this.consultationId,
+    required this.senderRole,
+  });
 
   final String consultationId;
 
@@ -211,7 +218,8 @@ final class OfferNew extends SqEvent {
   final DateTime deadlineAt;
 
   @override
-  String toString() => 'OfferNew(offerId: $offerId, topicSlug: $topicSlug, '
+  String toString() =>
+      'OfferNew(offerId: $offerId, topicSlug: $topicSlug, '
       'isEmergency: $isEmergency, deadlineAt: $deadlineAt)';
 }
 
@@ -253,30 +261,30 @@ final class UnknownEvent extends SqEvent {
 // `@JsonValue` из `enums.dart`.
 
 RequestStatus _requestStatus(String raw) => switch (raw) {
-      'SEARCHING' => RequestStatus.searching,
-      'MATCHED' => RequestStatus.matched,
-      'CANCELLED' => RequestStatus.cancelled,
-      'NO_EXPERTS' => RequestStatus.noExperts,
-      'CALLBACK_REQUESTED' => RequestStatus.callbackRequested,
-      _ => throw ArgumentError('неизвестный RequestStatus: $raw'),
-    };
+  'SEARCHING' => RequestStatus.searching,
+  'MATCHED' => RequestStatus.matched,
+  'CANCELLED' => RequestStatus.cancelled,
+  'NO_EXPERTS' => RequestStatus.noExperts,
+  'CALLBACK_REQUESTED' => RequestStatus.callbackRequested,
+  _ => throw ArgumentError('неизвестный RequestStatus: $raw'),
+};
 
 ConsultationStatus? _consultationStatus(String? raw) => switch (raw) {
-      null => null,
-      'ACTIVE' => ConsultationStatus.active,
-      'COMPLETED' => ConsultationStatus.completed,
-      'CANCELLED' => ConsultationStatus.cancelled,
-      _ => throw ArgumentError('неизвестный ConsultationStatus: $raw'),
-    };
+  null => null,
+  'ACTIVE' => ConsultationStatus.active,
+  'COMPLETED' => ConsultationStatus.completed,
+  'CANCELLED' => ConsultationStatus.cancelled,
+  _ => throw ArgumentError('неизвестный ConsultationStatus: $raw'),
+};
 
 ConsultationOutcome? _consultationOutcome(String? raw) => switch (raw) {
-      null => null,
-      'COMPLETED' => ConsultationOutcome.completed,
-      'CLIENT_NO_SHOW' => ConsultationOutcome.clientNoShow,
-      'CLIENT_CANCELLED' => ConsultationOutcome.clientCancelled,
-      'TECH_ISSUE' => ConsultationOutcome.techIssue,
-      _ => throw ArgumentError('неизвестный ConsultationOutcome: $raw'),
-    };
+  null => null,
+  'COMPLETED' => ConsultationOutcome.completed,
+  'CLIENT_NO_SHOW' => ConsultationOutcome.clientNoShow,
+  'CLIENT_CANCELLED' => ConsultationOutcome.clientCancelled,
+  'TECH_ISSUE' => ConsultationOutcome.techIssue,
+  _ => throw ArgumentError('неизвестный ConsultationOutcome: $raw'),
+};
 
 ConsultationPaymentStatus? _consultationPaymentStatus(String? raw) =>
     switch (raw) {
@@ -290,9 +298,9 @@ ConsultationPaymentStatus? _consultationPaymentStatus(String? raw) =>
     };
 
 SessionFormat? _sessionFormat(String? raw) => switch (raw) {
-      null => null,
-      'chat' => SessionFormat.chat,
-      'audio' => SessionFormat.audio,
-      'video' => SessionFormat.video,
-      _ => throw ArgumentError('неизвестный SessionFormat: $raw'),
-    };
+  null => null,
+  'chat' => SessionFormat.chat,
+  'audio' => SessionFormat.audio,
+  'video' => SessionFormat.video,
+  _ => throw ArgumentError('неизвестный SessionFormat: $raw'),
+};

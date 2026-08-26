@@ -78,16 +78,19 @@ void main() {
       expect(updated.hotlines, isNull);
     });
 
-    test('пустая заявка без экспертов даёт status без остальных полей', () async {
-      final future = events.stream.first;
-      socket.pushRaw('request.updated', {'id': 'r2', 'status': 'NO_EXPERTS'});
+    test(
+      'пустая заявка без экспертов даёт status без остальных полей',
+      () async {
+        final future = events.stream.first;
+        socket.pushRaw('request.updated', {'id': 'r2', 'status': 'NO_EXPERTS'});
 
-      final updated = await future as RequestUpdated;
-      expect(updated.status, RequestStatus.noExperts);
-      expect(updated.consultationId, isNull);
-      expect(updated.matchedExpert, isNull);
-      expect(updated.hotlines, isNull);
-    });
+        final updated = await future as RequestUpdated;
+        expect(updated.status, RequestStatus.noExperts);
+        expect(updated.consultationId, isNull);
+        expect(updated.matchedExpert, isNull);
+        expect(updated.hotlines, isNull);
+      },
+    );
 
     test('callback-эскалация несёт hotlines', () async {
       final future = events.stream.first;
@@ -257,15 +260,17 @@ void main() {
       expect(received[1], isA<NotificationNew>());
     });
 
-    test('искажённый payload известного события деградирует в UnknownEvent',
-        () async {
-      final future = events.stream.first;
-      // 'status' отсутствует — RequestUpdated его требует.
-      socket.pushRaw('request.updated', {'id': 'r1'});
+    test(
+      'искажённый payload известного события деградирует в UnknownEvent',
+      () async {
+        final future = events.stream.first;
+        // 'status' отсутствует — RequestUpdated его требует.
+        socket.pushRaw('request.updated', {'id': 'r1'});
 
-      final event = await future;
-      expect(event, isA<UnknownEvent>());
-    });
+        final event = await future;
+        expect(event, isA<UnknownEvent>());
+      },
+    );
   });
 
   group('forConsultation', () {
@@ -338,13 +343,15 @@ void main() {
   });
 
   group('reconnectWith', () {
-    test('переустанавливает соединение через socket.connect с новым токеном',
-        () async {
-      await events.reconnectWith('new-token');
+    test(
+      'переустанавливает соединение через socket.connect с новым токеном',
+      () async {
+        await events.reconnectWith('new-token');
 
-      expect(socket.connectCalls, ['new-token']);
-      expect(socket.disconnectCalls, 0);
-    });
+        expect(socket.connectCalls, ['new-token']);
+        expect(socket.disconnectCalls, 0);
+      },
+    );
   });
 
   group('connectionState', () {

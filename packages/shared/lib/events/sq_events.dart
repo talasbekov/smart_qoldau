@@ -22,8 +22,9 @@ class SqEvents {
   final SqSocket _socket;
 
   /// Поток всех разобранных событий бэкенда.
-  late final Stream<SqEvent> stream =
-      _socket.events.map((raw) => SqEvent.fromRaw(raw.$1, raw.$2));
+  late final Stream<SqEvent> stream = _socket.events.map(
+    (raw) => SqEvent.fromRaw(raw.$1, raw.$2),
+  );
 
   /// Подмножество [stream], относящееся к консультации [consultationId]:
   /// `chat.message`, `chat.typing`, `consultation.updated` с совпадающим
@@ -40,23 +41,23 @@ class SqEvents {
   /// стало бы тавтологией и пропускало вообще все события, а не только
   /// «свои». Тест `forConsultation` ниже специально гоняет события ДВУХ
   /// консультаций одновременно — именно чтобы поймать такой регресс.
-  Stream<SqEvent> forConsultation(String consultationId) =>
-      stream.where((event) => switch (event) {
-            ChatMessageEvent(message: final message) =>
-              message.consultationId == consultationId,
-            ChatTypingEvent(consultationId: final typingId) =>
-              typingId == consultationId,
-            ConsultationUpdated(id: final updatedId) =>
-              updatedId == consultationId,
-            _ => false,
-          });
+  Stream<SqEvent> forConsultation(String consultationId) => stream.where(
+    (event) => switch (event) {
+      ChatMessageEvent(message: final message) =>
+        message.consultationId == consultationId,
+      ChatTypingEvent(consultationId: final typingId) =>
+        typingId == consultationId,
+      ConsultationUpdated(id: final updatedId) => updatedId == consultationId,
+      _ => false,
+    },
+  );
 
   /// `chat.send` — отправить сообщение [text] в чат консультации
   /// [consultationId].
   void sendChat(String consultationId, String text) => _socket.emit(
-        'chat.send',
-        {'consultationId': consultationId, 'text': text},
-      );
+    'chat.send',
+    {'consultationId': consultationId, 'text': text},
+  );
 
   /// `chat.typing` — сообщить собеседнику, что клиент печатает.
   void sendTyping(String consultationId) =>

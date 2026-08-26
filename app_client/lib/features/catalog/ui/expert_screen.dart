@@ -200,78 +200,110 @@ class _ExpertScreenState extends ConsumerState<ExpertScreen> {
               ),
             ),
           ),
-          data: (state) => ListView(
-            padding: const EdgeInsets.all(SqSpacing.l),
-            children: [
-              _Head(expert: state.expert),
-              const SizedBox(height: SqSpacing.l),
-              Text(l10n.expertTopicsTitle, style: SqTypography.title),
-              const SizedBox(height: SqSpacing.s),
-              Wrap(
-                spacing: SqSpacing.s,
-                runSpacing: SqSpacing.s,
-                children: [
-                  for (final slug in state.expert.topicSlugs)
-                    SqChip(label: topicName(topics, slug)),
-                ],
-              ),
-              const SizedBox(height: SqSpacing.l),
-              RatingDistributionView(
-                distribution: state.distribution,
-                ratingAvg: state.expert.ratingAvg,
-                ratingCount: state.expert.ratingCount,
-              ),
-              const SizedBox(height: SqSpacing.l),
-              Text(l10n.expertReviewsTitle, style: SqTypography.title),
-              const SizedBox(height: SqSpacing.s),
-              if (state.reviews.isEmpty)
-                Text(
-                  l10n.expertNoReviews,
-                  style: SqTypography.body.copyWith(
-                    color: SqColors.textSecondary,
+          // Прототип `Web - Профиль психолога` делит экран 1.4 : 1:
+          // слева читают, кто этот специалист, справа — цена и запись.
+          // На телефоне колонки становятся одной, и карточка записи
+          // уходит вниз: сначала человек читает, потом записывается.
+          data: (state) => SqSplitLayout(
+            main: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _Head(expert: state.expert),
+                const SizedBox(height: SqSpacing.l),
+                Text(l10n.expertTopicsTitle, style: SqTypography.title),
+                const SizedBox(height: SqSpacing.s),
+                Wrap(
+                  spacing: SqSpacing.s,
+                  runSpacing: SqSpacing.s,
+                  children: [
+                    for (final slug in state.expert.topicSlugs)
+                      SqChip(label: topicName(topics, slug)),
+                  ],
+                ),
+                const SizedBox(height: SqSpacing.l),
+                RatingDistributionView(
+                  distribution: state.distribution,
+                  ratingAvg: state.expert.ratingAvg,
+                  ratingCount: state.expert.ratingCount,
+                ),
+                const SizedBox(height: SqSpacing.l),
+                Text(l10n.expertReviewsTitle, style: SqTypography.title),
+                const SizedBox(height: SqSpacing.s),
+                if (state.reviews.isEmpty)
+                  Text(
+                    l10n.expertNoReviews,
+                    style: SqTypography.body.copyWith(
+                      color: SqColors.textSecondary,
+                    ),
                   ),
-                ),
-              for (final review in state.reviews)
-                ReviewItemView(review: review),
-              if (state.hasMore)
-                Center(
-                  child: TextButton(
-                    key: const Key('sq-expert-load-more'),
-                    onPressed: state.loadingMore
-                        ? null
-                        : () => ref.read(provider.notifier).loadMoreReviews(),
-                    child: Text(l10n.expertLoadMoreReviews),
+                for (final review in state.reviews)
+                  ReviewItemView(review: review),
+                if (state.hasMore)
+                  Center(
+                    child: TextButton(
+                      key: const Key('sq-expert-load-more'),
+                      onPressed: state.loadingMore
+                          ? null
+                          : () => ref.read(provider.notifier).loadMoreReviews(),
+                      child: Text(l10n.expertLoadMoreReviews),
+                    ),
                   ),
-                ),
-              if (_error != null) ...[
-                const SizedBox(height: SqSpacing.m),
-                Text(
-                  _error!,
-                  key: const Key('sq-expert-error'),
-                  style: SqTypography.body.copyWith(color: SqColors.danger),
-                  textAlign: TextAlign.center,
-                ),
               ],
-              const SizedBox(height: SqSpacing.xl),
-              SqButton(
-                key: const Key('sq-expert-book'),
-                label: l10n.bookingActionSchedule,
-                onPressed: _booking ? null : () => _schedule(state.expert),
+            ),
+            aside: SqCard(
+              key: const Key('sq-expert-booking-card'),
+              child: Padding(
+                padding: const EdgeInsets.all(SqSpacing.m),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text(
+                      formatTenge(state.expert.priceTiyn),
+                      style: SqTypography.h2.copyWith(color: SqColors.primary),
+                    ),
+                    Text(
+                      l10n.expertPricePerSession,
+                      style: SqTypography.caption.copyWith(
+                        color: SqColors.textSecondary,
+                      ),
+                    ),
+                    if (_error != null) ...[
+                      const SizedBox(height: SqSpacing.m),
+                      Text(
+                        _error!,
+                        key: const Key('sq-expert-error'),
+                        style: SqTypography.body.copyWith(
+                          color: SqColors.danger,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
+                    const SizedBox(height: SqSpacing.l),
+                    SqButton(
+                      key: const Key('sq-expert-book'),
+                      label: l10n.bookingActionSchedule,
+                      onPressed: _booking
+                          ? null
+                          : () => _schedule(state.expert),
+                    ),
+                    const SizedBox(height: SqSpacing.m),
+                    // Мгновенная консультация имеет смысл, только пока
+                    // специалист принимает заявки прямо сейчас.
+                    SqButton(
+                      key: const Key('sq-expert-book-now'),
+                      kind: SqButtonKind.secondary,
+                      label: l10n.bookingActionNow,
+                      loading: _booking,
+                      onPressed:
+                          _booking ||
+                              state.expert.workStatus != WorkStatus.accepting
+                          ? null
+                          : () => _book(state.expert),
+                    ),
+                  ],
+                ),
               ),
-              const SizedBox(height: SqSpacing.m),
-              // Мгновенная консультация имеет смысл, только пока
-              // специалист принимает заявки прямо сейчас.
-              SqButton(
-                key: const Key('sq-expert-book-now'),
-                kind: SqButtonKind.secondary,
-                label: l10n.bookingActionNow,
-                loading: _booking,
-                onPressed:
-                    _booking || state.expert.workStatus != WorkStatus.accepting
-                    ? null
-                    : () => _book(state.expert),
-              ),
-            ],
+            ),
           ),
         ),
       ),
@@ -320,12 +352,9 @@ class _Head extends StatelessWidget {
             ),
             style: SqTypography.caption.copyWith(color: SqColors.textSecondary),
           ),
-          const SizedBox(height: SqSpacing.m),
-          Text(
-            l10n.expertPriceLabel,
-            style: SqTypography.caption.copyWith(color: SqColors.textSecondary),
-          ),
-          Text(formatTenge(expert.priceTiyn), style: SqTypography.h2),
+          // Цена живёт в карточке записи (боковая колонка), как в
+          // прототипе `Web - Профиль психолога`. Дублировать её в шапке
+          // значит показывать одно и то же число дважды на одном экране.
           // Блок «о себе» рисуется только когда текст есть: пустой
           // заголовок хуже отсутствующего.
           if (expert.about case final about?) ...[

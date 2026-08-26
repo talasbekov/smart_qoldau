@@ -36,6 +36,7 @@ abstract class ReviewItem with _$ReviewItem {
     required int rating,
     String? publicText,
     String? expertReply,
+
     /// Коды тегов из [reviewTagsFor]; подписи живут в локализации клиента.
     @Default(<String>[]) List<String> tags,
     required DateTime createdAt,

@@ -28,20 +28,20 @@ class _RefreshOnly extends SqApiBase with SqApiAuth {
 }
 
 Tokens _tokens(String access, String refresh) => Tokens(
-      accessToken: access,
-      refreshToken: refresh,
-      user: const AuthUser(id: 'u1', phone: '+77011234567', isGuest: false),
-    );
+  accessToken: access,
+  refreshToken: refresh,
+  user: const AuthUser(id: 'u1', phone: '+77011234567', isGuest: false),
+);
 
 Map<String, dynamic> _tokensJson(String access, String refresh) => {
-      'accessToken': access,
-      'refreshToken': refresh,
-      'user': {'id': 'u1', 'phone': '+77011234567', 'isGuest': false},
-    };
+  'accessToken': access,
+  'refreshToken': refresh,
+  'user': {'id': 'u1', 'phone': '+77011234567', 'isGuest': false},
+};
 
 Map<String, dynamic> _unauthorizedBody() => {
-      'error': {'code': 'UNAUTHORIZED', 'message': 'expired'},
-    };
+  'error': {'code': 'UNAUTHORIZED', 'message': 'expired'},
+};
 
 void main() {
   setUpAll(() {
@@ -76,30 +76,34 @@ void main() {
     AuthInterceptor(dio, gateway.read, refresher, gateway.onLogout);
   });
 
-  test('refreshes once on 401 and retries the original request with the new token', () async {
-    adapter
-      ..onGet(
-        '/consultations',
-        (server) => server.reply(401, _unauthorizedBody()),
-        headers: {'Authorization': 'Bearer old-access'},
-      )
-      ..onGet(
-        '/consultations',
-        (server) => server.reply(200, <dynamic>[]),
-        headers: {'Authorization': 'Bearer new-access'},
-      )
-      ..onPost(
-        '/auth/refresh',
-        (server) => server.reply(200, _tokensJson('new-access', 'new-refresh')),
-        data: Matchers.any,
-      );
+  test(
+    'refreshes once on 401 and retries the original request with the new token',
+    () async {
+      adapter
+        ..onGet(
+          '/consultations',
+          (server) => server.reply(401, _unauthorizedBody()),
+          headers: {'Authorization': 'Bearer old-access'},
+        )
+        ..onGet(
+          '/consultations',
+          (server) => server.reply(200, <dynamic>[]),
+          headers: {'Authorization': 'Bearer new-access'},
+        )
+        ..onPost(
+          '/auth/refresh',
+          (server) =>
+              server.reply(200, _tokensJson('new-access', 'new-refresh')),
+          data: Matchers.any,
+        );
 
-    final response = await dio.get<List<dynamic>>('/consultations');
+      final response = await dio.get<List<dynamic>>('/consultations');
 
-    expect(response.statusCode, 200);
-    verify(() => gateway.write(any())).called(1);
-    expect(currentTokens.accessToken, 'new-access');
-  });
+      expect(response.statusCode, 200);
+      verify(() => gateway.write(any())).called(1);
+      expect(currentTokens.accessToken, 'new-access');
+    },
+  );
 
   test('two parallel 401s share exactly one refresh call', () async {
     var refreshCalls = 0;
@@ -134,14 +138,10 @@ void main() {
       )
       ..onPost(
         '/auth/refresh',
-        (server) => server.replyCallback(
-          200,
-          (options) {
-            refreshCalls++;
-            return _tokensJson('new-access', 'new-refresh');
-          },
-          delay: const Duration(milliseconds: 20),
-        ),
+        (server) => server.replyCallback(200, (options) {
+          refreshCalls++;
+          return _tokensJson('new-access', 'new-refresh');
+        }, delay: const Duration(milliseconds: 20)),
         data: Matchers.any,
       );
 
@@ -152,36 +152,43 @@ void main() {
 
     expect(responses[0].statusCode, 200);
     expect(responses[1].statusCode, 200);
-    expect(refreshCalls, 1, reason: 'два параллельных 401 должны были вызвать ровно один рефреш');
+    expect(
+      refreshCalls,
+      1,
+      reason: 'два параллельных 401 должны были вызвать ровно один рефреш',
+    );
   });
 
-  test('logs out and does not retry when the refresh call itself fails', () async {
-    adapter
-      ..onGet(
-        '/consultations',
-        (server) => server.reply(401, _unauthorizedBody()),
-        headers: {'Authorization': 'Bearer old-access'},
-      )
-      ..onPost(
-        '/auth/refresh',
-        (server) => server.reply(401, _unauthorizedBody()),
-        data: Matchers.any,
+  test(
+    'logs out and does not retry when the refresh call itself fails',
+    () async {
+      adapter
+        ..onGet(
+          '/consultations',
+          (server) => server.reply(401, _unauthorizedBody()),
+          headers: {'Authorization': 'Bearer old-access'},
+        )
+        ..onPost(
+          '/auth/refresh',
+          (server) => server.reply(401, _unauthorizedBody()),
+          data: Matchers.any,
+        );
+
+      await expectLater(
+        dio.get<List<dynamic>>('/consultations'),
+        throwsA(
+          isA<DioException>().having(
+            (e) => e.error,
+            'error',
+            isA<ApiException>().having((e) => e.code, 'code', 'UNAUTHORIZED'),
+          ),
+        ),
       );
 
-    await expectLater(
-      dio.get<List<dynamic>>('/consultations'),
-      throwsA(
-        isA<DioException>().having(
-          (e) => e.error,
-          'error',
-          isA<ApiException>().having((e) => e.code, 'code', 'UNAUTHORIZED'),
-        ),
-      ),
-    );
-
-    verify(() => gateway.onLogout()).called(1);
-    verifyNever(() => gateway.write(any()));
-  });
+      verify(() => gateway.onLogout()).called(1);
+      verifyNever(() => gateway.write(any()));
+    },
+  );
 
   test('refresh succeeds but the retry itself fails with 500 — no logout, the real error propagates', () async {
     adapter
@@ -255,22 +262,25 @@ void main() {
     verifyNever(() => gateway.onLogout());
   });
 
-  test('does not intercept 401s coming from /auth/* paths (no recursive refresh)', () async {
-    adapter.onPost(
-      '/auth/verify-code',
-      (server) => server.reply(401, _unauthorizedBody()),
-      data: Matchers.any,
-    );
-
-    await expectLater(
-      dio.post<Map<String, dynamic>>(
+  test(
+    'does not intercept 401s coming from /auth/* paths (no recursive refresh)',
+    () async {
+      adapter.onPost(
         '/auth/verify-code',
-        data: {'phone': '+77011234567', 'code': '0000'},
-      ),
-      throwsA(isA<DioException>()),
-    );
+        (server) => server.reply(401, _unauthorizedBody()),
+        data: Matchers.any,
+      );
 
-    verifyNever(() => gateway.onLogout());
-    verifyNever(() => gateway.write(any()));
-  });
+      await expectLater(
+        dio.post<Map<String, dynamic>>(
+          '/auth/verify-code',
+          data: {'phone': '+77011234567', 'code': '0000'},
+        ),
+        throwsA(isA<DioException>()),
+      );
+
+      verifyNever(() => gateway.onLogout());
+      verifyNever(() => gateway.write(any()));
+    },
+  );
 }

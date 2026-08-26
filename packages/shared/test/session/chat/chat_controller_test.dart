@@ -105,10 +105,7 @@ Map<String, dynamic> _messageJson(
   'createdAt': _startedAt.add(Duration(minutes: minute)).toIso8601String(),
 };
 
-ProviderContainer _container({
-  required SqApi api,
-  required SqSocket socket,
-}) {
+ProviderContainer _container({required SqApi api, required SqSocket socket}) {
   final container = ProviderContainer(
     overrides: [
       sqApiProvider.overrideWithValue(api),
@@ -140,9 +137,8 @@ void main() {
     api = MockSqApi();
     socket = _FakeSqSocket();
     addTearDown(socket.dispose);
-    when(
-      () => api.consultationById('c1'),
-    ).thenAnswer((_) async => _consultation());
+    when(() => api.consultationById('c1'))
+        .thenAnswer((_) async => _consultation());
     when(
       () => api.consultationMessages(
         'c1',
@@ -177,7 +173,11 @@ void main() {
     // содержит сообщения ПОЗЖЕ него. Значит догрузка дописывает в конец,
     // а не в начало, как предполагал бриф.
     when(
-      () => api.consultationMessages('c1', cursor: null, limit: any(named: 'limit')),
+      () => api.consultationMessages(
+        'c1',
+        cursor: null,
+        limit: any(named: 'limit'),
+      ),
     ).thenAnswer(
       (_) async => MessageHistory(
         items: [_message('m1', 'expert', 'Первое', 0)],
@@ -185,7 +185,11 @@ void main() {
       ),
     );
     when(
-      () => api.consultationMessages('c1', cursor: 'm1', limit: any(named: 'limit')),
+      () => api.consultationMessages(
+        'c1',
+        cursor: 'm1',
+        limit: any(named: 'limit'),
+      ),
     ).thenAnswer(
       (_) async => MessageHistory(
         items: [
@@ -378,7 +382,10 @@ void main() {
     final container = _container(api: api, socket: socket);
     await tester.pump();
 
-    socket.push('chat.message', _messageJson('m9', 'expert', 'Пока грузили', 3));
+    socket.push(
+      'chat.message',
+      _messageJson('m9', 'expert', 'Пока грузили', 3),
+    );
     await tester.pump();
 
     gate.complete();
@@ -396,10 +403,7 @@ void main() {
     final container = _container(api: api, socket: socket);
     await tester.pump();
 
-    expect(
-      _analytics.events.map((e) => e.name),
-      contains('session_started'),
-    );
+    expect(_analytics.events.map((e) => e.name), contains('session_started'));
     expect(
       _analytics.events
           .firstWhere((e) => e.name == 'session_started')
@@ -453,9 +457,7 @@ void main() {
     _disposeNow(container);
   });
 
-  testWidgets('сообщение чужой консультации в чат не попадает', (
-    tester,
-  ) async {
+  testWidgets('сообщение чужой консультации в чат не попадает', (tester) async {
     final container = _container(api: api, socket: socket);
     await tester.pump();
 

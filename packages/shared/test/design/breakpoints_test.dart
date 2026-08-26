@@ -10,10 +10,14 @@ void main() {
   group('sqLayoutFor', () {
     test('границы: снизу включительно', () {
       expect(sqLayoutFor(320), SqLayout.phone);
-      expect(sqLayoutFor(719.9), SqLayout.phone);
-      expect(sqLayoutFor(720), SqLayout.tablet);
-      expect(sqLayoutFor(1279.9), SqLayout.tablet);
-      expect(sqLayoutFor(1280), SqLayout.desktop);
+      // 800×600 — тестовая поверхность Flutter по умолчанию: она обязана
+      // оставаться телефоном, иначе существующие виджет-тесты начинают
+      // проверять не ту раскладку.
+      expect(sqLayoutFor(800), SqLayout.phone);
+      expect(sqLayoutFor(839.9), SqLayout.phone);
+      expect(sqLayoutFor(840), SqLayout.tablet);
+      expect(sqLayoutFor(1199.9), SqLayout.tablet);
+      expect(sqLayoutFor(1200), SqLayout.desktop);
       expect(sqLayoutFor(2560), SqLayout.desktop);
     });
 
@@ -49,7 +53,7 @@ void main() {
     });
 
     testWidgets('планшет', (tester) async {
-      expect(await layoutAt(tester, const Size(834, 1112)), SqLayout.tablet);
+      expect(await layoutAt(tester, const Size(1024, 1366)), SqLayout.tablet);
     });
 
     testWidgets('десктоп', (tester) async {

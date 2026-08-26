@@ -176,12 +176,14 @@ class ChatController extends AutoDisposeFamilyAsyncNotifier<ChatState, String> {
     if (consultation.status == ConsultationStatus.active) {
       // Сессия началась. Открытая из истории завершённая переписка — это
       // чтение, а не сессия: там события быть не должно.
-      ref.read(analyticsProvider).track(
-        SessionStarted(
-          consultationId: arg,
-          format: consultation.format.wireValue,
-        ),
-      );
+      ref
+          .read(analyticsProvider)
+          .track(
+            SessionStarted(
+              consultationId: arg,
+              format: consultation.format.wireValue,
+            ),
+          );
     }
     // Переигрываем то, что пришло, пока грузились: подписка открыта раньше
     // запроса именно ради этого окна.
@@ -227,15 +229,17 @@ class ChatController extends AutoDisposeFamilyAsyncNotifier<ChatState, String> {
 
     if (!wasActive || status == ConsultationStatus.active) return;
     final consultation = current!.consultation;
-    ref.read(analyticsProvider).track(
-      SessionEnded(
-        consultationId: arg,
-        outcome: _outcomeWire(outcome) ?? _statusWire(status),
-        durationSec: DateTime.now()
-            .difference(consultation.startedAt)
-            .inSeconds,
-      ),
-    );
+    ref
+        .read(analyticsProvider)
+        .track(
+          SessionEnded(
+            consultationId: arg,
+            outcome: _outcomeWire(outcome) ?? _statusWire(status),
+            durationSec: DateTime.now()
+                .difference(consultation.startedAt)
+                .inSeconds,
+          ),
+        );
   }
 
   /// Проводные значения бэкенда, а не `enum.name`: `clientNoShow` дал бы
@@ -400,7 +404,5 @@ class ChatController extends AutoDisposeFamilyAsyncNotifier<ChatState, String> {
   }
 }
 
-final chatControllerProvider =
-    AsyncNotifierProvider.autoDispose.family<ChatController, ChatState, String>(
-      ChatController.new,
-    );
+final chatControllerProvider = AsyncNotifierProvider.autoDispose
+    .family<ChatController, ChatState, String>(ChatController.new);

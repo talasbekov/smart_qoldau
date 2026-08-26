@@ -90,7 +90,8 @@ abstract final class SqEndpoints {
 
   /// Завершение консультации экспертом и его приватные заметки (E7 задача
   /// 13).
-  static String consultationComplete(String id) => '/consultations/$id/complete';
+  static String consultationComplete(String id) =>
+      '/consultations/$id/complete';
   static String consultationNote(String id) => '/consultations/$id/note';
 
   // --- отзывы ---
@@ -217,6 +218,5 @@ abstract final class SqEndpoints {
   /// Исключены из проверки контрактным тестом, потому что бэкенд ещё не
   /// реализует соответствующий путь. Задача 9 эпика E6 реализовала
   /// `/matching/online-count` — исключений больше нет.
-  static const Set<(String method, String path)> excludedFromContractTest =
-      {};
+  static const Set<(String method, String path)> excludedFromContractTest = {};
 }

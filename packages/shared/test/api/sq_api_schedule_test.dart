@@ -4,11 +4,11 @@ import 'package:http_mock_adapter/http_mock_adapter.dart';
 import 'package:shared/shared.dart';
 
 SqApi _buildApi() => SqApi(
-      baseUrl: 'https://api.test.local/v1',
-      readTokens: () async => null,
-      writeTokens: (_) async {},
-      onLogout: () async {},
-    );
+  baseUrl: 'https://api.test.local/v1',
+  readTokens: () async => null,
+  writeTokens: (_) async {},
+  onLogout: () async {},
+);
 
 final _scheduleFixture = {
   'days': [
@@ -19,7 +19,7 @@ final _scheduleFixture = {
     {'weekday': 4, 'enabled': true, 'startMin': 480, 'endMin': 960},
     {'weekday': 5, 'enabled': false},
     {'weekday': 6, 'enabled': false},
-  ]
+  ],
 };
 
 final _expertMeFixture = {
@@ -40,10 +40,7 @@ final _expertMeFixture = {
   'aboutStatus': 'NONE',
 };
 
-final _exceptionFixture = {
-  'date': '2026-08-25',
-  'isDayOff': true,
-};
+final _exceptionFixture = {'date': '2026-08-25', 'isDayOff': true};
 
 void main() {
   late SqApi api;
@@ -115,12 +112,15 @@ void main() {
 
   group('SqApiSchedule.updateSchedule', () {
     test('отправляет 7 дней и возвращает обновлённое расписание', () async {
-      final days = List.generate(7, (i) => ScheduleDay(
-        weekday: i,
-        enabled: i < 5,
-        startMin: i < 5 ? 480 : null,
-        endMin: i < 5 ? 960 : null,
-      ));
+      final days = List.generate(
+        7,
+        (i) => ScheduleDay(
+          weekday: i,
+          enabled: i < 5,
+          startMin: i < 5 ? 480 : null,
+          endMin: i < 5 ? 960 : null,
+        ),
+      );
 
       dioAdapter.onPut(
         '/experts/me/schedule',
@@ -134,31 +134,40 @@ void main() {
       expect(result[0].enabled, true);
     });
 
-    test('массив длины != 7 бросает ArgumentError до сетевого запроса', () async {
-      final sixDays = List.generate(6, (i) => ScheduleDay(
-        weekday: i,
-        enabled: true,
-        startMin: 480,
-        endMin: 960,
-      ));
+    test(
+      'массив длины != 7 бросает ArgumentError до сетевого запроса',
+      () async {
+        final sixDays = List.generate(
+          6,
+          (i) => ScheduleDay(
+            weekday: i,
+            enabled: true,
+            startMin: 480,
+            endMin: 960,
+          ),
+        );
 
-      expect(
-        () => api.updateSchedule(sixDays),
-        throwsA(isA<ArgumentError>()),
-      );
+        expect(
+          () => api.updateSchedule(sixDays),
+          throwsA(isA<ArgumentError>()),
+        );
 
-      final eightDays = List.generate(8, (i) => ScheduleDay(
-        weekday: i,
-        enabled: true,
-        startMin: 480,
-        endMin: 960,
-      ));
+        final eightDays = List.generate(
+          8,
+          (i) => ScheduleDay(
+            weekday: i,
+            enabled: true,
+            startMin: 480,
+            endMin: 960,
+          ),
+        );
 
-      expect(
-        () => api.updateSchedule(eightDays),
-        throwsA(isA<ArgumentError>()),
-      );
-    });
+        expect(
+          () => api.updateSchedule(eightDays),
+          throwsA(isA<ArgumentError>()),
+        );
+      },
+    );
   });
 
   group('SqApiSchedule.setAcceptsUrgent', () {
@@ -182,10 +191,7 @@ void main() {
         (server) => server.reply(200, [_exceptionFixture]),
       );
 
-      final result = await api.exceptions(
-        from: '2026-08-01',
-        to: '2026-08-31',
-      );
+      final result = await api.exceptions(from: '2026-08-01', to: '2026-08-31');
 
       expect(result, hasLength(1));
       expect(result[0].date, '2026-08-25');
@@ -201,10 +207,7 @@ void main() {
         data: {'isDayOff': true},
       );
 
-      final result = await api.upsertException(
-        '2026-08-25',
-        isDayOff: true,
-      );
+      final result = await api.upsertException('2026-08-25', isDayOff: true);
 
       expect(result.date, '2026-08-25');
       expect(result.isDayOff, true);
@@ -212,67 +215,57 @@ void main() {
 
     test('isDayOff: false без startMin/endMin бросает ArgumentError до сетевого запроса', () async {
       expect(
-        () => api.upsertException(
-          '2026-08-26',
-          isDayOff: false,
-        ),
+        () => api.upsertException('2026-08-26', isDayOff: false),
         throwsA(isA<ArgumentError>()),
       );
     });
 
-    test('isDayOff: false без endMin бросает ArgumentError до сетевого запроса', () async {
-      expect(
-        () => api.upsertException(
+    test(
+      'isDayOff: false без endMin бросает ArgumentError до сетевого запроса',
+      () async {
+        expect(
+          () =>
+              api.upsertException('2026-08-26', isDayOff: false, startMin: 480),
+          throwsA(isA<ArgumentError>()),
+        );
+      },
+    );
+
+    test(
+      'isDayOff: false с обоими startMin/endMin успешно отправляет',
+      () async {
+        dioAdapter.onPut(
+          '/experts/me/schedule/exceptions/2026-08-26',
+          (server) => server.reply(200, {
+            'date': '2026-08-26',
+            'isDayOff': false,
+            'startMin': 480,
+            'endMin': 720,
+          }),
+          data: {'isDayOff': false, 'startMin': 480, 'endMin': 720},
+        );
+
+        final result = await api.upsertException(
           '2026-08-26',
           isDayOff: false,
           startMin: 480,
-        ),
-        throwsA(isA<ArgumentError>()),
-      );
-    });
+          endMin: 720,
+        );
 
-    test('isDayOff: false с обоими startMin/endMin успешно отправляет', () async {
-      dioAdapter.onPut(
-        '/experts/me/schedule/exceptions/2026-08-26',
-        (server) => server.reply(200, {
-          'date': '2026-08-26',
-          'isDayOff': false,
-          'startMin': 480,
-          'endMin': 720,
-        }),
-        data: {
-          'isDayOff': false,
-          'startMin': 480,
-          'endMin': 720,
-        },
-      );
-
-      final result = await api.upsertException(
-        '2026-08-26',
-        isDayOff: false,
-        startMin: 480,
-        endMin: 720,
-      );
-
-      expect(result.isDayOff, false);
-      expect(result.startMin, 480);
-      expect(result.endMin, 720);
-    });
+        expect(result.isDayOff, false);
+        expect(result.startMin, 480);
+        expect(result.endMin, 720);
+      },
+    );
 
     test('isDayOff: true без startMin/endMin успешно отправляет', () async {
       dioAdapter.onPut(
         '/experts/me/schedule/exceptions/2026-08-27',
-        (server) => server.reply(200, {
-          'date': '2026-08-27',
-          'isDayOff': true,
-        }),
+        (server) => server.reply(200, {'date': '2026-08-27', 'isDayOff': true}),
         data: {'isDayOff': true},
       );
 
-      final result = await api.upsertException(
-        '2026-08-27',
-        isDayOff: true,
-      );
+      final result = await api.upsertException('2026-08-27', isDayOff: true);
 
       expect(result.isDayOff, true);
     });

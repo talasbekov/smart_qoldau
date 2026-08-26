@@ -17,42 +17,41 @@ mixin SqApiContent on SqApiBase {
     String? category,
     int? take,
     int? skip,
-  }) =>
-      guard(() async {
-        final response = await dio.get<List<dynamic>>(
-          SqEndpoints.content,
-          queryParameters: {
-            'kind': ?(kind == null ? null : _kindValues[kind]),
-            'category': ?category,
-            // Библиотека постраничная: без параметров сервер отдаёт первую
-            // страницу, и молча показать только её значило бы потерять
-            // остальные материалы.
-            'take': ?take,
-            'skip': ?skip,
-          },
-        );
-        return response.data!
-            .map((e) => ContentItem.fromJson(e as Map<String, dynamic>))
-            .toList();
-      });
+  }) => guard(() async {
+    final response = await dio.get<List<dynamic>>(
+      SqEndpoints.content,
+      queryParameters: {
+        'kind': ?(kind == null ? null : _kindValues[kind]),
+        'category': ?category,
+        // Библиотека постраничная: без параметров сервер отдаёт первую
+        // страницу, и молча показать только её значило бы потерять
+        // остальные материалы.
+        'take': ?take,
+        'skip': ?skip,
+      },
+    );
+    return response.data!
+        .map((e) => ContentItem.fromJson(e as Map<String, dynamic>))
+        .toList();
+  });
 
   /// `GET /content/{id}` — карточка с телом материала.
   Future<ContentItem> contentItem(String id) => guard(() async {
-        final response = await dio.get<Map<String, dynamic>>(
-          SqEndpoints.contentById(id),
-        );
-        return ContentItem.fromJson(response.data!);
-      });
+    final response = await dio.get<Map<String, dynamic>>(
+      SqEndpoints.contentById(id),
+    );
+    return ContentItem.fromJson(response.data!);
+  });
 
   /// `GET /content/{id}/media` — подписанная ссылка на файл. Материал за
   /// подпиской без неё отвечает 403 `PREMIUM_REQUIRED`: пейволл держится
   /// здесь, а не на замке в интерфейсе.
   Future<ContentMedia> contentMedia(String id) => guard(() async {
-        final response = await dio.get<Map<String, dynamic>>(
-          SqEndpoints.contentMedia(id),
-        );
-        return ContentMedia.fromJson(response.data!);
-      });
+    final response = await dio.get<Map<String, dynamic>>(
+      SqEndpoints.contentMedia(id),
+    );
+    return ContentMedia.fromJson(response.data!);
+  });
 
   /// `POST /content/{id}/progress` — доля прочитанного/прослушанного.
   Future<ContentProgress> saveContentProgress(String id, int permille) =>
@@ -76,9 +75,9 @@ mixin SqApiContent on SqApiBase {
 
   /// `GET /content/streak` — стрик и счётчик пройденного.
   Future<ContentStreak> contentStreak() => guard(() async {
-        final response = await dio.get<Map<String, dynamic>>(
-          SqEndpoints.contentStreak,
-        );
-        return ContentStreak.fromJson(response.data!);
-      });
+    final response = await dio.get<Map<String, dynamic>>(
+      SqEndpoints.contentStreak,
+    );
+    return ContentStreak.fromJson(response.data!);
+  });
 }

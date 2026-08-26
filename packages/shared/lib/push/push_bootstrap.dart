@@ -10,19 +10,21 @@ import 'package:shared/shared.dart';
 /// Куда уводит нажатый пуш. Переопределяется в `main()` реальной
 /// навигацией роутера; в тестах — записью маршрута.
 final pushNavigatorProvider = Provider<void Function(String route)>(
-  (ref) => (route) => developer.log(
-    'некому обработать переход по пушу: $route',
-    name: 'PushBootstrap',
-  ),
+  (ref) =>
+      (route) => developer.log(
+        'некому обработать переход по пушу: $route',
+        name: 'PushBootstrap',
+      ),
 );
 
 /// Показ локального уведомления для пуша, пришедшего в форграунде.
 final localNotificationPresenterProvider =
     Provider<void Function(PushMessage message)>(
-      (ref) => (message) => developer.log(
-        'локальное уведомление не показано: канал не настроен',
-        name: 'PushBootstrap',
-      ),
+      (ref) =>
+          (message) => developer.log(
+            'локальное уведомление не показано: канал не настроен',
+            name: 'PushBootstrap',
+          ),
     );
 
 /// Регистрация push-токена устройства на бэкенде — транспортный уровень
@@ -34,10 +36,11 @@ final localNotificationPresenterProvider =
 /// что уже [pushNavigatorProvider]/[localNotificationPresenterProvider].
 final deviceTokenRegistrarProvider =
     Provider<Future<void> Function(String token)>(
-      (ref) => (token) async => developer.log(
-        'push-токен не зарегистрирован: seam не переопределён',
-        name: 'PushBootstrap',
-      ),
+      (ref) =>
+          (token) async => developer.log(
+            'push-токен не зарегистрирован: seam не переопределён',
+            name: 'PushBootstrap',
+          ),
     );
 
 /// Резолвит маршрут пуша по его данным. Сигнатура зависит только от самого
@@ -46,7 +49,8 @@ final deviceTokenRegistrarProvider =
 /// `notificationRoute()` (знающую про `RoutePaths`) через `overrideWith` в
 /// `main()`; `app_expert` (задача 13) передаст свою. По умолчанию — некуда.
 final pushRouteResolverProvider = Provider<String? Function(AppNotification)>(
-  (ref) => (_) => null,
+  (ref) =>
+      (_) => null,
 );
 
 /// Пуш пришёл в форграунде: центр уведомлений приложения должен обновиться

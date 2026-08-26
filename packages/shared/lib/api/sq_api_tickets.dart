@@ -15,31 +15,27 @@ mixin SqApiTickets on SqApiBase {
     String? contactPhone,
     String? relatedConsultationId,
     String? relatedPayoutId,
-  }) =>
-      guard(() async {
-        await dio.post<void>(
-          SqEndpoints.tickets,
-          data: {
-            'category': category,
-            'subject': subject,
-            'body': body,
-            'contactEmail': ?contactEmail,
-            'contactPhone': ?contactPhone,
-            'relatedConsultationId': ?relatedConsultationId,
-            'relatedPayoutId': ?relatedPayoutId,
-          },
-        );
-      });
+  }) => guard(() async {
+    await dio.post<void>(
+      SqEndpoints.tickets,
+      data: {
+        'category': category,
+        'subject': subject,
+        'body': body,
+        'contactEmail': ?contactEmail,
+        'contactPhone': ?contactPhone,
+        'relatedConsultationId': ?relatedConsultationId,
+        'relatedPayoutId': ?relatedPayoutId,
+      },
+    );
+  });
 
   /// `GET /tickets` — мои обращения в поддержку.
   Future<List<TicketSummary>> tickets({int? take, int? skip}) =>
       guard(() async {
         final response = await dio.get<List<dynamic>>(
           SqEndpoints.tickets,
-          queryParameters: {
-            'take': ?take,
-            'skip': ?skip,
-          },
+          queryParameters: {'take': ?take, 'skip': ?skip},
         );
         return response.data!
             .map((e) => TicketSummary.fromJson(e as Map<String, dynamic>))
@@ -48,9 +44,9 @@ mixin SqApiTickets on SqApiBase {
 
   /// `GET /tickets/{id}` — своё обращение с перепиской.
   Future<TicketDetail> ticketById(String id) => guard(() async {
-        final response = await dio.get<Map<String, dynamic>>(
-          SqEndpoints.ticketById(id),
-        );
-        return TicketDetail.fromJson(response.data!);
-      });
+    final response = await dio.get<Map<String, dynamic>>(
+      SqEndpoints.ticketById(id),
+    );
+    return TicketDetail.fromJson(response.data!);
+  });
 }

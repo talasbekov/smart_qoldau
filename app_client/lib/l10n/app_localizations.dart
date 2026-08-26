@@ -1472,12 +1472,6 @@ abstract class AppLocalizations {
   /// **'Ответ специалиста'**
   String get expertReplyPrefix;
 
-  /// Подпись цены в профиле специалиста
-  ///
-  /// In ru, this message translates to:
-  /// **'Консультация'**
-  String get expertPriceLabel;
-
   /// Заголовок диалога при EXPERT_UNAVAILABLE
   ///
   /// In ru, this message translates to:
@@ -2347,6 +2341,12 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Бесплатно'**
   String get premiumPlanFree;
+
+  /// Подпись под ценой в карточке записи (прототип Web - Профиль психолога)
+  ///
+  /// In ru, this message translates to:
+  /// **'за консультацию'**
+  String get expertPricePerSession;
 }
 
 class _AppLocalizationsDelegate

@@ -5,11 +5,11 @@ import 'package:http_mock_adapter/http_mock_adapter.dart';
 import 'package:shared/shared.dart';
 
 SqApi _buildApi() => SqApi(
-      baseUrl: 'https://api.test.local/v1',
-      readTokens: () async => null,
-      writeTokens: (_) async {},
-      onLogout: () async {},
-    );
+  baseUrl: 'https://api.test.local/v1',
+  readTokens: () async => null,
+  writeTokens: (_) async {},
+  onLogout: () async {},
+);
 
 final _myReviewsFixture = {
   'items': [
@@ -114,8 +114,7 @@ void main() {
       );
     });
 
-    test('404 REVIEW_NOT_FOUND превращается в ApiException с кодом',
-        () async {
+    test('404 REVIEW_NOT_FOUND превращается в ApiException с кодом', () async {
       dioAdapter.onPost(
         '/reviews/foreign/reply',
         (server) => server.reply(404, {
@@ -127,32 +126,40 @@ void main() {
       expect(
         () => api.replyToReview('foreign', 'привет'),
         throwsA(
-          isA<ApiException>()
-              .having((e) => e.code, 'code', ApiErrorCode.reviewNotFound),
+          isA<ApiException>().having(
+            (e) => e.code,
+            'code',
+            ApiErrorCode.reviewNotFound,
+          ),
         ),
       );
     });
 
-    test('409 INVALID_STATE_TRANSITION на жалобе доходит как ApiException',
-        () async {
-      dioAdapter.onPost(
-        '/reviews/rev-1/complaint',
-        (server) => server.reply(409, {
-          'error': {
-            'code': 'INVALID_STATE_TRANSITION',
-            'message': 'Жалоба уже подана',
-          },
-        }),
-        data: {'text': 'повтор'},
-      );
+    test(
+      '409 INVALID_STATE_TRANSITION на жалобе доходит как ApiException',
+      () async {
+        dioAdapter.onPost(
+          '/reviews/rev-1/complaint',
+          (server) => server.reply(409, {
+            'error': {
+              'code': 'INVALID_STATE_TRANSITION',
+              'message': 'Жалоба уже подана',
+            },
+          }),
+          data: {'text': 'повтор'},
+        );
 
-      expect(
-        () => api.complainAboutReview('rev-1', 'повтор'),
-        throwsA(
-          isA<ApiException>().having((e) => e.code, 'code',
-              ApiErrorCode.invalidStateTransition),
-        ),
-      );
-    });
+        expect(
+          () => api.complainAboutReview('rev-1', 'повтор'),
+          throwsA(
+            isA<ApiException>().having(
+              (e) => e.code,
+              'code',
+              ApiErrorCode.invalidStateTransition,
+            ),
+          ),
+        );
+      },
+    );
   });
 }

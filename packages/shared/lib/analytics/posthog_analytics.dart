@@ -16,7 +16,6 @@ class PostHogAnalytics implements AnalyticsPort {
     : _dio = dio,
       _apiKey = apiKey;
 
-
   final Dio _dio;
   final String _apiKey;
 

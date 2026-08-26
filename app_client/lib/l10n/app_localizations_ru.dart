@@ -770,9 +770,6 @@ class AppLocalizationsRu extends AppLocalizations {
   String get expertReplyPrefix => 'Ответ специалиста';
 
   @override
-  String get expertPriceLabel => 'Консультация';
-
-  @override
   String get expertUnavailableTitle => 'Специалист сейчас недоступен';
 
   @override
@@ -1238,4 +1235,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get premiumPlanFree => 'Бесплатно';
+
+  @override
+  String get expertPricePerSession => 'за консультацию';
 }

@@ -20,20 +20,23 @@ DioException _errorWithResponse({
 
 void main() {
   group('ApiException.fromDioError', () {
-    test('parses code/message/statusCode from the {"error": {...}} envelope', () {
-      final exception = ApiException.fromDioError(
-        _errorWithResponse(
-          statusCode: 400,
-          data: {
-            'error': {'code': 'SMS_CODE_INVALID', 'message': 'Неверный код'},
-          },
-        ),
-      );
+    test(
+      'parses code/message/statusCode from the {"error": {...}} envelope',
+      () {
+        final exception = ApiException.fromDioError(
+          _errorWithResponse(
+            statusCode: 400,
+            data: {
+              'error': {'code': 'SMS_CODE_INVALID', 'message': 'Неверный код'},
+            },
+          ),
+        );
 
-      expect(exception.code, 'SMS_CODE_INVALID');
-      expect(exception.statusCode, 400);
-      expect(exception.message, 'Неверный код');
-    });
+        expect(exception.code, 'SMS_CODE_INVALID');
+        expect(exception.statusCode, 400);
+        expect(exception.message, 'Неверный код');
+      },
+    );
 
     test('carries the details payload when present', () {
       final exception = ApiException.fromDioError(

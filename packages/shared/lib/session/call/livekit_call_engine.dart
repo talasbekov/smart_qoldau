@@ -17,9 +17,7 @@ class LiveKitCallEngine implements CallEngine {
   LiveKitCallEngine() {
     _listener = _room.createListener();
     _listener
-      ..on<lk.RoomConnectedEvent>(
-        (_) => _states.add(CallEngineState.connected),
-      )
+      ..on<lk.RoomConnectedEvent>((_) => _states.add(CallEngineState.connected))
       ..on<lk.RoomReconnectingEvent>(
         (_) => _states.add(CallEngineState.reconnecting),
       )

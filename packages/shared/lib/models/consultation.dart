@@ -24,6 +24,7 @@ abstract class ClientConsultation with _$ClientConsultation {
     required int plannedDurationMin,
     required ConsultationPaymentStatus paymentStatus,
     required ExpertPublic expert,
+
     /// Идентификатор оставленного отзыва; `null` — отзыва нет. Приходит с
     /// бэкенда (E2a), поэтому переустановка приложения его не теряет.
     String? reviewId,

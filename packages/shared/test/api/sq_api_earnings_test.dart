@@ -4,11 +4,11 @@ import 'package:http_mock_adapter/http_mock_adapter.dart';
 import 'package:shared/shared.dart';
 
 SqApi _buildApi() => SqApi(
-      baseUrl: 'https://api.test.local/v1',
-      readTokens: () async => null,
-      writeTokens: (_) async {},
-      onLogout: () async {},
-    );
+  baseUrl: 'https://api.test.local/v1',
+  readTokens: () async => null,
+  writeTokens: (_) async {},
+  onLogout: () async {},
+);
 
 void main() {
   late SqApi api;
@@ -31,13 +31,19 @@ void main() {
       expect(item.netTiyn, 425000);
       expect(EarningsItemDto.fromJson(item.toJson()), item);
 
-      final earnings = EarningsDto.fromJson({'balanceTiyn': 1000000, 'items': [item.toJson()]});
+      final earnings = EarningsDto.fromJson({
+        'balanceTiyn': 1000000,
+        'items': [item.toJson()],
+      });
       expect(earnings.balanceTiyn, 1000000);
       expect(earnings.items, [item]);
     });
 
     test('BalanceDto', () {
-      final balance = BalanceDto.fromJson({'balanceTiyn': 500000, 'availableTiyn': 500000});
+      final balance = BalanceDto.fromJson({
+        'balanceTiyn': 500000,
+        'availableTiyn': 500000,
+      });
       expect(balance.availableTiyn, 500000);
       expect(BalanceDto.fromJson(balance.toJson()), balance);
     });
@@ -82,7 +88,8 @@ void main() {
     test('balance() → GET /experts/me/balance', () async {
       dioAdapter.onGet(
         '/experts/me/balance',
-        (server) => server.reply(200, {'balanceTiyn': 200000, 'availableTiyn': 200000}),
+        (server) =>
+            server.reply(200, {'balanceTiyn': 200000, 'availableTiyn': 200000}),
       );
 
       final result = await api.balance();
@@ -117,26 +124,29 @@ void main() {
       expect(result.status, PayoutStatus.processing);
     });
 
-    test('payouts() → GET /payouts, разбирает обёртку {items: [...]}', () async {
-      dioAdapter.onGet(
-        '/payouts',
-        (server) => server.reply(200, {
-          'items': [
-            {
-              'id': 'payout-1',
-              'amountTiyn': 1000000,
-              'maskedPan': '**** 1111',
-              'status': 'PAID',
-              'rejectReason': null,
-              'createdAt': '2026-08-25T10:00:00.000Z',
-            },
-          ],
-        }),
-      );
+    test(
+      'payouts() → GET /payouts, разбирает обёртку {items: [...]}',
+      () async {
+        dioAdapter.onGet(
+          '/payouts',
+          (server) => server.reply(200, {
+            'items': [
+              {
+                'id': 'payout-1',
+                'amountTiyn': 1000000,
+                'maskedPan': '**** 1111',
+                'status': 'PAID',
+                'rejectReason': null,
+                'createdAt': '2026-08-25T10:00:00.000Z',
+              },
+            ],
+          }),
+        );
 
-      final result = await api.payouts();
-      expect(result, hasLength(1));
-      expect(result.single.status, PayoutStatus.paid);
-    });
+        final result = await api.payouts();
+        expect(result, hasLength(1));
+        expect(result.single.status, PayoutStatus.paid);
+      },
+    );
   });
 }

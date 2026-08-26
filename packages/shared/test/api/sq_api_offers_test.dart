@@ -4,11 +4,11 @@ import 'package:http_mock_adapter/http_mock_adapter.dart';
 import 'package:shared/shared.dart';
 
 SqApi _buildApi() => SqApi(
-      baseUrl: 'https://api.test.local/v1',
-      readTokens: () async => null,
-      writeTokens: (_) async {},
-      onLogout: () async {},
-    );
+  baseUrl: 'https://api.test.local/v1',
+  readTokens: () async => null,
+  writeTokens: (_) async {},
+  onLogout: () async {},
+);
 
 final _offerFixture = {
   'offerId': 'offer-1',
@@ -81,21 +81,27 @@ void main() {
       expect(result.consultationId, 'cons-1');
     });
 
-    test('acceptOffer() при 410 пробрасывает ApiException(OFFER_EXPIRED)', () async {
-      dioAdapter.onPost(
-        '/offers/offer-1/accept',
-        (server) => server.reply(410, {
-          'error': {'code': 'OFFER_EXPIRED', 'message': 'Срок действия оффера истёк'},
-        }),
-      );
+    test(
+      'acceptOffer() при 410 пробрасывает ApiException(OFFER_EXPIRED)',
+      () async {
+        dioAdapter.onPost(
+          '/offers/offer-1/accept',
+          (server) => server.reply(410, {
+            'error': {
+              'code': 'OFFER_EXPIRED',
+              'message': 'Срок действия оффера истёк',
+            },
+          }),
+        );
 
-      await expectLater(
-        api.acceptOffer('offer-1'),
-        throwsA(
-          isA<ApiException>().having((e) => e.code, 'code', 'OFFER_EXPIRED'),
-        ),
-      );
-    });
+        await expectLater(
+          api.acceptOffer('offer-1'),
+          throwsA(
+            isA<ApiException>().having((e) => e.code, 'code', 'OFFER_EXPIRED'),
+          ),
+        );
+      },
+    );
 
     test('declineOffer() → POST /offers/{offerId}/decline', () async {
       dioAdapter.onPost(

@@ -15,7 +15,8 @@ void main() {
     expect(
       file.existsSync(),
       isTrue,
-      reason: 'Не найден ${file.path} — сначала выполни `npm run openapi:dump` в backend',
+      reason:
+          'Не найден ${file.path} — сначала выполни `npm run openapi:dump` в backend',
     );
 
     final spec = jsonDecode(file.readAsStringSync()) as Map<String, dynamic>;
@@ -29,7 +30,8 @@ void main() {
       final (method, path) = endpoint;
       final fullPath = '/v1$path';
       final methodsForPath = paths[fullPath];
-      final hasMethod = methodsForPath is Map &&
+      final hasMethod =
+          methodsForPath is Map &&
           methodsForPath.containsKey(method.toLowerCase());
       if (!hasMethod) {
         missing.add('$method $fullPath');

@@ -96,7 +96,10 @@ void main() {
       expect(consultation.outcome, isNull);
       expect(consultation.format, SessionFormat.video);
       expect(consultation.isEmergency, false);
-      expect(consultation.startedAt, DateTime.parse('2026-08-20T09:15:00.000Z'));
+      expect(
+        consultation.startedAt,
+        DateTime.parse('2026-08-20T09:15:00.000Z'),
+      );
       expect(consultation.endedAt, isNull);
       expect(consultation.priceTiyn, 500000);
       expect(consultation.plannedDurationMin, 50);
@@ -129,13 +132,19 @@ void main() {
       expect(request.toJson(), json);
     });
 
-    test('maps RequestStatus.callbackRequested to CALLBACK_REQUESTED on the wire', () {
-      expect(
-        MatchRequest.fromJson(json).status,
-        RequestStatus.callbackRequested,
-      );
-      expect(request(RequestStatus.callbackRequested).toJson()['status'], 'CALLBACK_REQUESTED');
-    });
+    test(
+      'maps RequestStatus.callbackRequested to CALLBACK_REQUESTED on the wire',
+      () {
+        expect(
+          MatchRequest.fromJson(json).status,
+          RequestStatus.callbackRequested,
+        );
+        expect(
+          request(RequestStatus.callbackRequested).toJson()['status'],
+          'CALLBACK_REQUESTED',
+        );
+      },
+    );
   });
 
   group('NotificationsPage', () {
@@ -198,20 +207,23 @@ void main() {
       ],
     };
 
-    test('round-trips through fromJson/toJson including the message thread', () {
-      final ticket = TicketDetail.fromJson(json);
+    test(
+      'round-trips through fromJson/toJson including the message thread',
+      () {
+        final ticket = TicketDetail.fromJson(json);
 
-      expect(ticket.id, 't1a2b3c4-d5e6-4f70-8899-aabbccddeeff');
-      expect(ticket.category, TicketCategory.technical);
-      expect(ticket.status, TicketStatus.inProgress);
-      expect(ticket.team, TicketTeam.supportOperator);
-      expect(ticket.resolvedAt, isNull);
-      expect(ticket.relatedPayoutId, isNull);
-      expect(ticket.messages, hasLength(2));
-      expect(ticket.messages.first.authorKind, TicketAuthorKind.user);
-      expect(ticket.messages.last.authorKind, TicketAuthorKind.staff);
-      expect(ticket.toJson(), json);
-    });
+        expect(ticket.id, 't1a2b3c4-d5e6-4f70-8899-aabbccddeeff');
+        expect(ticket.category, TicketCategory.technical);
+        expect(ticket.status, TicketStatus.inProgress);
+        expect(ticket.team, TicketTeam.supportOperator);
+        expect(ticket.resolvedAt, isNull);
+        expect(ticket.relatedPayoutId, isNull);
+        expect(ticket.messages, hasLength(2));
+        expect(ticket.messages.first.authorKind, TicketAuthorKind.user);
+        expect(ticket.messages.last.authorKind, TicketAuthorKind.staff);
+        expect(ticket.toJson(), json);
+      },
+    );
   });
 
   group('enum wire mapping', () {
@@ -236,37 +248,43 @@ void main() {
       expect(expert.toJson()['experience'], 'MORE_THAN_TEN');
     });
 
-    test('TicketStatus enum values map to the backend Prisma enum literally', () {
-      expect(_ticketWithStatus(TicketStatus.new_).toJson()['status'], 'NEW');
-      expect(
-        _ticketWithStatus(TicketStatus.inProgress).toJson()['status'],
-        'IN_PROGRESS',
-      );
-      expect(
-        _ticketWithStatus(TicketStatus.resolved).toJson()['status'],
-        'RESOLVED',
-      );
-    });
-
-    test('TicketCategory enum values map to the backend Prisma enum literally', () {
-      const expected = {
-        TicketCategory.consultations: 'CONSULTATIONS',
-        TicketCategory.payment: 'PAYMENT',
-        TicketCategory.payouts: 'PAYOUTS',
-        TicketCategory.technical: 'TECHNICAL',
-        TicketCategory.verification: 'VERIFICATION',
-        TicketCategory.security: 'SECURITY',
-        TicketCategory.clientQuestion: 'CLIENT_QUESTION',
-        TicketCategory.accountData: 'ACCOUNT_DATA',
-        TicketCategory.other: 'OTHER',
-      };
-      for (final entry in expected.entries) {
+    test(
+      'TicketStatus enum values map to the backend Prisma enum literally',
+      () {
+        expect(_ticketWithStatus(TicketStatus.new_).toJson()['status'], 'NEW');
         expect(
-          _ticketWithCategory(entry.key).toJson()['category'],
-          entry.value,
+          _ticketWithStatus(TicketStatus.inProgress).toJson()['status'],
+          'IN_PROGRESS',
         );
-      }
-    });
+        expect(
+          _ticketWithStatus(TicketStatus.resolved).toJson()['status'],
+          'RESOLVED',
+        );
+      },
+    );
+
+    test(
+      'TicketCategory enum values map to the backend Prisma enum literally',
+      () {
+        const expected = {
+          TicketCategory.consultations: 'CONSULTATIONS',
+          TicketCategory.payment: 'PAYMENT',
+          TicketCategory.payouts: 'PAYOUTS',
+          TicketCategory.technical: 'TECHNICAL',
+          TicketCategory.verification: 'VERIFICATION',
+          TicketCategory.security: 'SECURITY',
+          TicketCategory.clientQuestion: 'CLIENT_QUESTION',
+          TicketCategory.accountData: 'ACCOUNT_DATA',
+          TicketCategory.other: 'OTHER',
+        };
+        for (final entry in expected.entries) {
+          expect(
+            _ticketWithCategory(entry.key).toJson()['category'],
+            entry.value,
+          );
+        }
+      },
+    );
 
     test('TicketTeam enum values map to the backend Prisma enum literally', () {
       const expected = {
@@ -280,55 +298,54 @@ void main() {
       }
     });
 
-    test('TicketAuthorKind enum values map to the lowercase backend strings', () {
-      expect(
-        _messageWithAuthorKind(TicketAuthorKind.user).toJson()['authorKind'],
-        'user',
-      );
-      expect(
-        _messageWithAuthorKind(TicketAuthorKind.staff).toJson()['authorKind'],
-        'staff',
-      );
-    });
+    test(
+      'TicketAuthorKind enum values map to the lowercase backend strings',
+      () {
+        expect(
+          _messageWithAuthorKind(TicketAuthorKind.user).toJson()['authorKind'],
+          'user',
+        );
+        expect(
+          _messageWithAuthorKind(TicketAuthorKind.staff).toJson()['authorKind'],
+          'staff',
+        );
+      },
+    );
   });
 }
 
-MatchRequest request(RequestStatus status) => MatchRequest(
-      id: 'x',
-      status: status,
-      isEmergency: false,
-      clientCode: 1,
-    );
+MatchRequest request(RequestStatus status) =>
+    MatchRequest(id: 'x', status: status, isEmergency: false, clientCode: 1);
 
 TicketSummary _ticketWithStatus(TicketStatus status) => TicketSummary(
-      id: 't1',
-      category: TicketCategory.other,
-      subject: 's',
-      status: status,
-      team: TicketTeam.supportOperator,
-      createdAt: DateTime.utc(2026, 1, 1),
-      updatedAt: DateTime.utc(2026, 1, 1),
-    );
+  id: 't1',
+  category: TicketCategory.other,
+  subject: 's',
+  status: status,
+  team: TicketTeam.supportOperator,
+  createdAt: DateTime.utc(2026, 1, 1),
+  updatedAt: DateTime.utc(2026, 1, 1),
+);
 
 TicketSummary _ticketWithCategory(TicketCategory category) => TicketSummary(
-      id: 't1',
-      category: category,
-      subject: 's',
-      status: TicketStatus.new_,
-      team: TicketTeam.supportOperator,
-      createdAt: DateTime.utc(2026, 1, 1),
-      updatedAt: DateTime.utc(2026, 1, 1),
-    );
+  id: 't1',
+  category: category,
+  subject: 's',
+  status: TicketStatus.new_,
+  team: TicketTeam.supportOperator,
+  createdAt: DateTime.utc(2026, 1, 1),
+  updatedAt: DateTime.utc(2026, 1, 1),
+);
 
 TicketSummary _ticketWithTeam(TicketTeam team) => TicketSummary(
-      id: 't1',
-      category: TicketCategory.other,
-      subject: 's',
-      status: TicketStatus.new_,
-      team: team,
-      createdAt: DateTime.utc(2026, 1, 1),
-      updatedAt: DateTime.utc(2026, 1, 1),
-    );
+  id: 't1',
+  category: TicketCategory.other,
+  subject: 's',
+  status: TicketStatus.new_,
+  team: team,
+  createdAt: DateTime.utc(2026, 1, 1),
+  updatedAt: DateTime.utc(2026, 1, 1),
+);
 
 TicketMessage _messageWithAuthorKind(TicketAuthorKind authorKind) =>
     TicketMessage(

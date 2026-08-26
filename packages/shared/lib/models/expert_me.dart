@@ -32,4 +32,3 @@ abstract class ExpertMe with _$ExpertMe {
   factory ExpertMe.fromJson(Map<String, dynamic> json) =>
       _$ExpertMeFromJson(json);
 }
-

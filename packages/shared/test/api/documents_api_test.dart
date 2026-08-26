@@ -5,11 +5,11 @@ import 'package:http_mock_adapter/http_mock_adapter.dart';
 import 'package:shared/shared.dart';
 
 SqApi _buildApi() => SqApi(
-      baseUrl: 'https://api.test.local/v1',
-      readTokens: () async => null,
-      writeTokens: (_) async {},
-      onLogout: () async {},
-    );
+  baseUrl: 'https://api.test.local/v1',
+  readTokens: () async => null,
+  writeTokens: (_) async {},
+  onLogout: () async {},
+);
 
 final _documentJsonFixture = {
   'type': 'IDENTITY',
@@ -48,38 +48,44 @@ void main() {
   });
 
   group('SqApiDocuments.uploadDocument', () {
-    test('отправляет multipart POST с полем file и разбирает ExpertDocumentDto', () async {
-      final bytes = [0, 1, 2, 3];
-      dioAdapter.onPost(
-        '/experts/me/documents/IDENTITY',
-        (server) => server.reply(201, _documentJsonFixture),
-        data: FormData.fromMap({
-          'file': MultipartFile.fromBytes(bytes, filename: 'passport.pdf'),
-        }),
-      );
+    test(
+      'отправляет multipart POST с полем file и разбирает ExpertDocumentDto',
+      () async {
+        final bytes = [0, 1, 2, 3];
+        dioAdapter.onPost(
+          '/experts/me/documents/IDENTITY',
+          (server) => server.reply(201, _documentJsonFixture),
+          data: FormData.fromMap({
+            'file': MultipartFile.fromBytes(bytes, filename: 'passport.pdf'),
+          }),
+        );
 
-      final result = await api.uploadDocument(
-        DocumentType.identity,
-        bytes: bytes,
-        filename: 'passport.pdf',
-      );
-
-      expect(result.type, DocumentType.identity);
-      expect(result.status, DocumentStatus.uploaded);
-    });
-
-    test('файл больше 10 МБ отклоняется на клиенте без сетевого запроса', () async {
-      final oversized = List<int>.filled(documentMaxSizeBytes + 1, 0);
-
-      expect(
-        () => api.uploadDocument(
+        final result = await api.uploadDocument(
           DocumentType.identity,
-          bytes: oversized,
+          bytes: bytes,
           filename: 'passport.pdf',
-        ),
-        throwsA(isA<DocumentTooLargeException>()),
-      );
-    });
+        );
+
+        expect(result.type, DocumentType.identity);
+        expect(result.status, DocumentStatus.uploaded);
+      },
+    );
+
+    test(
+      'файл больше 10 МБ отклоняется на клиенте без сетевого запроса',
+      () async {
+        final oversized = List<int>.filled(documentMaxSizeBytes + 1, 0);
+
+        expect(
+          () => api.uploadDocument(
+            DocumentType.identity,
+            bytes: oversized,
+            filename: 'passport.pdf',
+          ),
+          throwsA(isA<DocumentTooLargeException>()),
+        );
+      },
+    );
   });
 
   group('SqApiDocuments.documents', () {
@@ -122,17 +128,19 @@ void main() {
           'error': {
             'code': 'DOCUMENTS_INCOMPLETE',
             'message': 'Не все документы загружены',
-          }
+          },
         }),
       );
 
       expect(
         () => api.submitForVerification(),
-        throwsA(isA<ApiException>().having(
-          (e) => e.code,
-          'code',
-          'DOCUMENTS_INCOMPLETE',
-        )),
+        throwsA(
+          isA<ApiException>().having(
+            (e) => e.code,
+            'code',
+            'DOCUMENTS_INCOMPLETE',
+          ),
+        ),
       );
     });
   });

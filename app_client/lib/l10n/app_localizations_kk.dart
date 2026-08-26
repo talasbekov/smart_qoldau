@@ -763,9 +763,6 @@ class AppLocalizationsKk extends AppLocalizations {
   String get expertReplyPrefix => 'Маманның жауабы';
 
   @override
-  String get expertPriceLabel => 'Кеңес';
-
-  @override
   String get expertUnavailableTitle => 'Маман қазір қолжетімсіз';
 
   @override
@@ -1232,4 +1229,7 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get premiumPlanFree => 'Тегін';
+
+  @override
+  String get expertPricePerSession => 'консультация үшін';
 }

@@ -961,10 +961,6 @@
   "@expertReplyPrefix": {
     "description": "Подпись ответа специалиста на отзыв"
   },
-  "expertPriceLabel": "Консультация",
-  "@expertPriceLabel": {
-    "description": "Подпись цены в профиле специалиста"
-  },
   "expertUnavailableTitle": "Специалист сейчас недоступен",
   "@expertUnavailableTitle": {
     "description": "Заголовок диалога при EXPERT_UNAVAILABLE"
@@ -1600,5 +1596,9 @@
   "premiumPlanFree": "Бесплатно",
   "@premiumPlanFree": {
     "description": "Цена базового тарифа в сравнении (прототип Web - Premium)"
+  },
+  "expertPricePerSession": "за консультацию",
+  "@expertPricePerSession": {
+    "description": "Подпись под ценой в карточке записи (прототип Web - Профиль психолога)"
   }
 }

@@ -4,11 +4,11 @@ import 'package:http_mock_adapter/http_mock_adapter.dart';
 import 'package:shared/shared.dart';
 
 SqApi _buildApi() => SqApi(
-      baseUrl: 'https://api.test.local/v1',
-      readTokens: () async => null,
-      writeTokens: (_) async {},
-      onLogout: () async {},
-    );
+  baseUrl: 'https://api.test.local/v1',
+  readTokens: () async => null,
+  writeTokens: (_) async {},
+  onLogout: () async {},
+);
 
 void main() {
   late SqApi api;
@@ -54,20 +54,32 @@ void main() {
     expect(note.text, 'новая заметка');
   });
 
-  test('saveNote() при 400 INVALID_NOTE_TEXT пробрасывает ApiException', () async {
-    dioAdapter.onPut(
-      '/consultations/cons-1/note',
-      (server) => server.reply(400, {
-        'error': {'code': 'INVALID_NOTE_TEXT', 'message': 'Текст не может быть пустым'},
-      }),
-      data: {'text': ''},
-    );
+  test(
+    'saveNote() при 400 INVALID_NOTE_TEXT пробрасывает ApiException',
+    () async {
+      dioAdapter.onPut(
+        '/consultations/cons-1/note',
+        (server) => server.reply(400, {
+          'error': {
+            'code': 'INVALID_NOTE_TEXT',
+            'message': 'Текст не может быть пустым',
+          },
+        }),
+        data: {'text': ''},
+      );
 
-    await expectLater(
-      api.saveNote('cons-1', ''),
-      throwsA(isA<ApiException>().having((e) => e.code, 'code', ApiErrorCode.invalidNoteText)),
-    );
-  });
+      await expectLater(
+        api.saveNote('cons-1', ''),
+        throwsA(
+          isA<ApiException>().having(
+            (e) => e.code,
+            'code',
+            ApiErrorCode.invalidNoteText,
+          ),
+        ),
+      );
+    },
+  );
 
   test('completeConsultation() → POST /consultations/{id}/complete', () async {
     dioAdapter.onPost(
@@ -89,7 +101,10 @@ void main() {
       data: {'outcome': 'COMPLETED'},
     );
 
-    final result = await api.completeConsultation('cons-1', ConsultationOutcome.completed);
+    final result = await api.completeConsultation(
+      'cons-1',
+      ConsultationOutcome.completed,
+    );
     expect(result.status, ConsultationStatus.completed);
     expect(result.outcome, ConsultationOutcome.completed);
   });
@@ -109,33 +124,39 @@ void main() {
     await expectLater(
       api.completeConsultation('cons-1', ConsultationOutcome.clientNoShow),
       throwsA(
-        isA<ApiException>()
-            .having((e) => e.code, 'code', ApiErrorCode.consultationNotActive),
+        isA<ApiException>().having(
+          (e) => e.code,
+          'code',
+          ApiErrorCode.consultationNotActive,
+        ),
       ),
     );
   });
 
-  test('expertConsultationById() парсит ответ как ConsultationExpertDto', () async {
-    dioAdapter.onGet(
-      '/consultations/cons-1',
-      (server) => server.reply(200, {
-        'id': 'cons-1',
-        'status': 'ACTIVE',
-        'outcome': null,
-        'format': 'chat',
-        'isEmergency': false,
-        'startedAt': '2026-08-25T10:00:00.000Z',
-        'endedAt': null,
-        'clientCode': 4821,
-        'topicSlug': 'anxiety-stress',
-        'priceTiyn': 500000,
-        'plannedDurationMin': 30,
-        'paymentStatus': 'HELD',
-      }),
-    );
+  test(
+    'expertConsultationById() парсит ответ как ConsultationExpertDto',
+    () async {
+      dioAdapter.onGet(
+        '/consultations/cons-1',
+        (server) => server.reply(200, {
+          'id': 'cons-1',
+          'status': 'ACTIVE',
+          'outcome': null,
+          'format': 'chat',
+          'isEmergency': false,
+          'startedAt': '2026-08-25T10:00:00.000Z',
+          'endedAt': null,
+          'clientCode': 4821,
+          'topicSlug': 'anxiety-stress',
+          'priceTiyn': 500000,
+          'plannedDurationMin': 30,
+          'paymentStatus': 'HELD',
+        }),
+      );
 
-    final result = await api.expertConsultationById('cons-1');
-    expect(result.clientCode, 4821);
-    expect(result.topicSlug, 'anxiety-stress');
-  });
+      final result = await api.expertConsultationById('cons-1');
+      expect(result.clientCode, 4821);
+      expect(result.topicSlug, 'anxiety-stress');
+    },
+  );
 }
