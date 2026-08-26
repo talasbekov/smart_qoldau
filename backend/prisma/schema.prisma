@@ -30,6 +30,8 @@ model User {
   refreshTokens RefreshToken[]
   expert        Expert?
   subscriptions Subscription[]
+  contentProgress ContentProgress[]
+  contentVotes    ContentVote[]
 
   @@map("users")
 }
@@ -811,4 +813,81 @@ model Subscription {
   //   UNIQUE(user_id) WHERE status IN ('ACTIVE','GRACE','CANCELLED').
   // Prisma частичные индексы не выражает — не удалять при prisma migrate dev.
   @@map("subscriptions")
+}
+
+enum ContentKind {
+  MEDITATION // аудио + категория
+  MUSIC // аудио, длинное, без «прохождения»
+  ARTICLE // markdown, прогресс чтения
+  BREATHING // фазы вдох/задержка/выдох
+}
+
+enum ContentAccess {
+  FREE
+  PREMIUM // требует активной подписки (E12)
+}
+
+model ContentItem {
+  id        String        @id @default(uuid())
+  kind      ContentKind
+  access    ContentAccess @default(FREE)
+  slug      String        @unique
+  category  String // плоский фильтр-чипс: 'sleep' | 'anxiety' | 'focus' | ...
+  titleRu   String        @map("title_ru")
+  titleKk   String        @map("title_kk")
+  summaryRu String        @map("summary_ru")
+  summaryKk String        @map("summary_kk")
+  // Тело материала, форма зависит от kind (валидируется DTO на входе):
+  //   MEDITATION/MUSIC -> { audioKey }
+  //   ARTICLE          -> { markdownRu, markdownKk }
+  //   BREATHING        -> { phases: [{ nameRu, nameKk, seconds }], cycles }
+  payload   Json
+  durationSec Int?        @map("duration_sec") // аудио и оценка чтения
+  coverKey  String?       @map("cover_key")
+  sortOrder Int           @default(0) @map("sort_order")
+  usefulYes Int           @default(0) @map("useful_yes")
+  usefulNo  Int           @default(0) @map("useful_no")
+  // Неопубликованный материал не виден клиенту: редактор готовит его в
+  // админке столько, сколько нужно.
+  publishedAt DateTime?   @map("published_at")
+  createdAt DateTime      @default(now()) @map("created_at")
+  updatedAt DateTime      @updatedAt @map("updated_at")
+
+  progress  ContentProgress[]
+  votes     ContentVote[]
+
+  @@index([kind, publishedAt, sortOrder])
+  @@index([category, publishedAt])
+  @@map("content_items")
+}
+
+model ContentProgress {
+  id     String      @id @default(uuid())
+  userId String      @map("user_id")
+  user   User        @relation(fields: [userId], references: [id])
+  itemId String      @map("item_id")
+  item   ContentItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  /// 0–1000: доля прослушанного/прочитанного. Одно поле на оба вида —
+  /// длительность известна из карточки, ветвление ни к чему.
+  positionPermille Int  @default(0) @map("position_permille")
+  completedAt DateTime? @map("completed_at")
+  updatedAt DateTime    @updatedAt @map("updated_at")
+
+  @@unique([userId, itemId])
+  // Рабочий запрос стрика: дни активности пользователя.
+  @@index([userId, updatedAt])
+  @@map("content_progress")
+}
+
+model ContentVote {
+  id        String      @id @default(uuid())
+  userId    String      @map("user_id")
+  user      User        @relation(fields: [userId], references: [id])
+  itemId    String      @map("item_id")
+  item      ContentItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  useful    Boolean
+  createdAt DateTime    @default(now()) @map("created_at")
+
+  @@unique([userId, itemId])
+  @@map("content_votes")
 }
