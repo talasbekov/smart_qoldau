@@ -5,6 +5,10 @@ import { PrismaService } from '../prisma/prisma.service';
 
 export const ACC_ACQUIRER = 'acquirer:settlement';
 export const ACC_COMMISSION = 'platform:commission';
+/// Деньги подписок: эксперты в них не участвуют, поэтому счёт отдельный от
+/// platform:commission — иначе выручка от подписок смешается с комиссией и
+/// отчёт «сколько заработали на консультациях» станет ложью.
+export const ACC_SUBSCRIPTION = 'platform:subscription';
 export const ACC_PAYOUT_PENDING = 'payout:pending';
 export const ACC_PAYOUT_SENT = 'payout:sent';
 
