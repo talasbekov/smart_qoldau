@@ -4,6 +4,7 @@ import {
   SubscriptionPlan,
   SubscriptionStatus,
 } from '@prisma/client';
+import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import { ClockService } from '../common/clock/clock.service';
@@ -70,14 +71,50 @@ export class PremiumService {
 
     const amountTiyn = PREMIUM_PRICES[plan];
     const now = this.clock.now();
-    // Ключ идемпотентности включает момент списания: дубль запроса в ту же
-    // секунду провайдер схлопнет, а продление через месяц — нет.
-    const charge = await this.provider.charge({
-      idempotencyKey: `sub:${userId}:${now.getTime()}`,
-      token: method.providerToken,
-      amountTiyn,
-    });
+
+    // Строка подписки заводится ДО списания. Проверка «живой подписки нет»
+    // выше гонку не решает: две вкладки проходят её обе и обе идут к
+    // провайдеру — с карты уходят две суммы, а вторая запись потом
+    // упирается в уникальный индекс. Арбитраж обязан быть в базе: кто
+    // первым занял индекс, тот и платит.
+    let sub: Subscription;
+    try {
+      sub = await this.prisma.subscription.create({
+        data: {
+          userId,
+          plan,
+          status: SubscriptionStatus.ACTIVE,
+          currentPeriodEnd: addDays(now, PERIOD_DAYS[plan]),
+          paymentMethodId,
+        },
+      });
+    } catch (e) {
+      if (e instanceof PrismaClientKnownRequestError && e.code === 'P2002') {
+        apiError('SUBSCRIPTION_EXISTS', 'Подписка уже оформлена', 409);
+      }
+      throw e;
+    }
+
+    let charge: Awaited<ReturnType<PaymentProviderPort['charge']>>;
+    try {
+      // В ключе обязательно назначение списания. Первый платёж и
+      // продление за тот же период — разные события с одинаковыми
+      // «подписка + период», и общий ключ означал бы, что продление
+      // молча возвращает результат первого платежа, ничего не списав.
+      charge = await this.provider.charge({
+        idempotencyKey: `sub:init:${sub.id}`,
+        token: method.providerToken,
+        amountTiyn,
+      });
+    } catch (e) {
+      // Провайдер не ответил — бронь снимаем: висящая живая подписка не
+      // даст человеку попробовать снова.
+      await this.prisma.subscription.delete({ where: { id: sub.id } });
+      throw e;
+    }
+
     if (charge.status === 'declined') {
+      await this.prisma.subscription.delete({ where: { id: sub.id } });
       apiError(
         'PAYMENT_DECLINED',
         charge.declineReason ?? 'Банк отклонил оплату',
@@ -85,15 +122,6 @@ export class PremiumService {
       );
     }
 
-    const sub = await this.prisma.subscription.create({
-      data: {
-        userId,
-        plan,
-        status: SubscriptionStatus.ACTIVE,
-        currentPeriodEnd: addDays(now, PERIOD_DAYS[plan]),
-        paymentMethodId,
-      },
-    });
     // Эксперты в подписочных деньгах не участвуют вообще — в проводке только
     // эквайер и счёт подписок.
     await this.ledger.post(

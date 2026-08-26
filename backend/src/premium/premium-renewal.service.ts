@@ -86,6 +86,11 @@ export class PremiumRenewalService {
   }
 
   private async attemptCharge(sub: Subscription, now: Date): Promise<void> {
+    // Период, за который платим, известен до списания — он и попадает в
+    // ключ: ретрай ОДНОЙ попытки схлопнется, следующий месяц спишется
+    // отдельно, а первый платёж подписки (sub:init:*) с ним не столкнётся.
+    const nextEnd = addDays(sub.currentPeriodEnd, PERIOD_DAYS[sub.plan]);
+
     const method = await this.prisma.paymentMethod.findFirst({
       where: { id: sub.paymentMethodId, deletedAt: null },
     });
@@ -93,9 +98,7 @@ export class PremiumRenewalService {
     // деньги не списались, начинается grace, а не молчаливая потеря доступа.
     const charge = method
       ? await this.provider.charge({
-          // Ключ включает период: ретрай ОДНОЙ попытки схлопнется у
-          // провайдера, а следующий месяц спишется отдельно.
-          idempotencyKey: `sub:${sub.id}:${sub.currentPeriodEnd.getTime()}`,
+          idempotencyKey: `sub:renew:${sub.id}:${nextEnd.getTime()}`,
           token: method.providerToken,
           amountTiyn: PREMIUM_PRICES[sub.plan],
         })
@@ -107,7 +110,6 @@ export class PremiumRenewalService {
     }
 
     const amountTiyn = PREMIUM_PRICES[sub.plan];
-    const nextEnd = addDays(sub.currentPeriodEnd, PERIOD_DAYS[sub.plan]);
     await this.prisma.subscription.update({
       where: { id: sub.id },
       data: {

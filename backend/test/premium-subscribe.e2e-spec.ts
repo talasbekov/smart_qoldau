@@ -200,6 +200,59 @@ describe('Premium: оформление, отмена, статус (e2e)', () =
     expect(after.body.cancelled).toBe(true);
   });
 
+  it('две подписки одновременно: одна оформлена, вторая — доменный отказ', async () => {
+    const cli = await clientWithCard();
+
+    // Две вкладки, две кнопки «оформить». Обе проходят проверку «живой
+    // подписки нет» — арбитраж обязан быть в базе, а не в проверке перед
+    // списанием, иначе с карты уйдут две суммы.
+    const responses = await Promise.all([
+      post(cli.accessToken, '/v1/premium/subscribe').send({
+        plan: 'MONTH',
+        paymentMethodId: cli.paymentMethodId,
+      }),
+      post(cli.accessToken, '/v1/premium/subscribe').send({
+        plan: 'MONTH',
+        paymentMethodId: cli.paymentMethodId,
+      }),
+    ]);
+
+    const statuses = responses.map((r) => r.status).sort();
+    expect(statuses[0]).toBe(201);
+    expect(statuses[1]).toBe(409);
+    const rejected = responses.find((r) => r.status !== 201)!;
+    expect(rejected.body.error.code).toBe('SUBSCRIPTION_EXISTS');
+
+    expect(
+      await prisma.subscription.count({ where: { userId: cli.userId } }),
+    ).toBe(1);
+    // И ровно одно списание в учёте.
+    const sub = await prisma.subscription.findFirstOrThrow({
+      where: { userId: cli.userId },
+    });
+    expect(
+      await prisma.ledgerTransaction.count({
+        where: {
+          kind: 'subscription_charge',
+          refId: { startsWith: sub.id },
+        },
+      }),
+    ).toBe(1);
+  });
+
+  it('отказ банка не оставляет за собой мёртвую подписку', async () => {
+    const cli = await clientWithCard(DECLINED_CARD);
+    await post(cli.accessToken, '/v1/premium/subscribe')
+      .send({ plan: 'MONTH', paymentMethodId: cli.paymentMethodId })
+      .expect(402);
+
+    // Ни ACTIVE, ни любой другой живой: подписаться заново должно быть
+    // можно сразу, другой картой.
+    expect(
+      await prisma.subscription.count({ where: { userId: cli.userId } }),
+    ).toBe(0);
+  });
+
   it('чужая карта не годится: 404 PAYMENT_METHOD_NOT_FOUND', async () => {
     const cli = await clientWithCard();
     const res = await post(cli.accessToken, '/v1/premium/subscribe')
