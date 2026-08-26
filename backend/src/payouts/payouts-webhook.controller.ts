@@ -2,6 +2,7 @@ import {
   Controller,
   Headers,
   HttpCode,
+  Logger,
   Post,
   RawBodyRequest,
   Req,
@@ -16,6 +17,7 @@ import { AuditService } from '../audit/audit.service';
 import { EventsService } from '../ws/events.service';
 import { apiError } from '../common/filters/app-exception.filter';
 import { WebhookSignature } from '../payments/provider/webhook-signature';
+import { logRejectedWebhook } from '../common/webhooks/rejected-webhook.log';
 import {
   ACC_PAYOUT_PENDING,
   ACC_PAYOUT_SENT,
@@ -38,6 +40,8 @@ interface PayoutWebhookBody {
 @ApiTags('webhooks')
 @Controller('webhooks')
 export class PayoutsWebhookController {
+  private readonly logger = new Logger('PayoutsWebhook');
+
   constructor(
     private prisma: PrismaService,
     private audit: AuditService,
@@ -61,6 +65,12 @@ export class PayoutsWebhookController {
     const secret = this.config.getOrThrow<string>('PAYOUT_WEBHOOK_SECRET');
 
     if (!signature || !WebhookSignature.verify(secret, rawBody, signature)) {
+      logRejectedWebhook(
+        this.logger,
+        req,
+        'payouts',
+        signature ? 'signature_invalid' : 'signature_missing',
+      );
       apiError('WEBHOOK_INVALID', 'Invalid webhook signature', 401);
       return;
     }
@@ -69,11 +79,13 @@ export class PayoutsWebhookController {
     try {
       body = JSON.parse(rawBody.toString('utf8'));
     } catch {
+      logRejectedWebhook(this.logger, req, 'payouts', 'payload_unparsable');
       apiError('WEBHOOK_INVALID', 'Invalid webhook payload', 401);
       return;
     }
 
     if (!body?.eventId) {
+      logRejectedWebhook(this.logger, req, 'payouts', 'payload_incomplete');
       apiError('WEBHOOK_INVALID', 'Missing eventId', 401);
       return;
     }
