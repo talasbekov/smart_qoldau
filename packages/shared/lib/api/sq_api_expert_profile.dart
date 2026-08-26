@@ -58,8 +58,9 @@ mixin SqApiExpertProfile on SqApiBase {
     if (education != null) data['education'] = education;
     if (priceTiyn != null) data['priceTiyn'] = priceTiyn;
     if (languages != null) data['languages'] = languages;
-    if (formats != null)
+    if (formats != null) {
       data['formats'] = formats.map((f) => f.wireValue).toList();
+    }
     if (topicSlugs != null) data['topicSlugs'] = topicSlugs;
     if (about != null) data['about'] = about;
 
