@@ -1,5 +1,6 @@
 import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
+import { RedisService } from '../../src/redis/redis.service';
 import { AdminAuth, verificationOperatorAuth } from './admin-helpers';
 
 // Кэш авторизации фикстур-оператора верификации по приложению (E8a, задача
@@ -188,6 +189,25 @@ export async function putScheduleAllDisabled(
 
 // verifiedExpert + ACCEPTING + расписание 24/7. Самый переиспользуемый
 // хелпер эпика E3 — задачи 4-9 его импортируют напрямую.
+/// Эксперты, поднятые этим хелпером в текущем тест-файле. Jest изолирует
+/// модули по файлу, поэтому набор — ровно «свои» для одного спека.
+const ownExperts = new Set<string>();
+
+/// Убирает из presence всех, кроме поднятых этим спеком.
+///
+/// Спеки делят одну тестовую базу и один Redis. Спек, который проверяет
+/// «оффер ушёл МОЕМУ эксперту», молча ломается, если рядом остался живой
+/// ACCEPTING-эксперт соседнего спека или мусор от прерванного прогона:
+/// матчинг честно выбирает лучшего из ВСЕХ доступных, и оффер уходит
+/// чужому. Изолированно спек проходит, в полном прогоне падает через
+/// раз — а тест, которому нельзя верить, хуже красного.
+async function isolatePresence(app: INestApplication): Promise<void> {
+  const redis = app.get(RedisService);
+  const available = await redis.smembers('experts:available');
+  const strangers = available.filter((id) => !ownExperts.has(id));
+  if (strangers.length) await redis.srem('experts:available', ...strangers);
+}
+
 export async function acceptingExpert(
   app: INestApplication,
   phone: string,
@@ -201,5 +221,7 @@ export async function acceptingExpert(
     .send({ workStatus: 'ACCEPTING' })
     .expect(200);
   await putScheduleAlwaysOn(app, result.accessToken);
+  ownExperts.add(result.expertId);
+  await isolatePresence(app);
   return result;
 }

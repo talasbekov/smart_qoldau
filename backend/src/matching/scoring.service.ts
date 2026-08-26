@@ -35,7 +35,10 @@ export class ScoringService {
           offered_at,
           responded_at,
           ROW_NUMBER() OVER (
-            PARTITION BY expert_id ORDER BY offered_at DESC
+            -- id вторым ключом: при одинаковом offered_at (два оффера в
+            -- одну миллисекунду) порядок иначе не определён, и на границе
+            -- окна в 50 записей две реализации скора могли бы разойтись.
+            PARTITION BY expert_id ORDER BY offered_at DESC, id DESC
           ) AS rn
         FROM request_candidates
         WHERE expert_id = ANY(${expertIds}::text[])
@@ -108,7 +111,9 @@ export class ScoringService {
         expertId,
         response: { in: ['ACCEPTED', 'DECLINED', 'TIMEOUT'] },
       },
-      orderBy: { offeredAt: 'desc' },
+      // Тот же порядок, что в scoreMany: id вторым ключом ради
+      // детерминизма на границе окна.
+      orderBy: [{ offeredAt: 'desc' }, { id: 'desc' }],
       take: HISTORY_WINDOW,
       select: { response: true, offeredAt: true, respondedAt: true },
     });

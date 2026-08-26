@@ -145,6 +145,11 @@ export class AccountService {
 
     await tx.device.deleteMany({ where: { userId } });
     await tx.notification.deleteMany({ where: { userId } });
+    // Очередь отправки хранит СВОЮ копию содержимого уведомления
+    // (`payload` — то, что ушло бы в пуш) и не связана с `notifications`
+    // внешним ключом: без этой строки тексты пережили бы удаление
+    // аккаунта в соседней таблице.
+    await tx.notificationOutbox.deleteMany({ where: { userId } });
     await tx.favorite.deleteMany({ where: { userId } });
     // Карты удаляются целиком, а не soft-delete, как при обычной отвязке:
     // токен провайдера — платёжный реквизит, ему незачем переживать
@@ -178,6 +183,16 @@ export class AccountService {
 
     // Запрошенный, но не использованный код входа — тоже след аккаунта.
     if (phone) await tx.smsCode.deleteMany({ where: { phone } });
+
+    // Журнал переходов остаётся целиком — он доказательство, что запрос
+    // исполнен, и вообще не должен редактироваться задним числом. Но одно
+    // событие хранит в payload номер телефона (`user.guest_converted`), а
+    // номер — ровно те данные, которые обещано удалить. Затираем только
+    // его, сохраняя сам факт события.
+    await tx.auditLog.updateMany({
+      where: { entityId: userId, transition: 'user.guest_converted' },
+      data: { payload: {} },
+    });
 
     await tx.user.update({
       where: { id: userId },

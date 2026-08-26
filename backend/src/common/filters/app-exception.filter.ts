@@ -26,6 +26,7 @@ const CODE_BY_STATUS: Record<number, string> = {
 // тексты английские, а клиент показывает `error.message` пользователю.
 const MESSAGE_BY_STATUS: Record<number, string> = {
   413: 'Файл слишком большой',
+  500: 'Internal server error',
 };
 
 export function apiError(code: string, message: string, status: number): never {
@@ -50,7 +51,11 @@ export class AppExceptionFilter implements ExceptionFilter {
     // `code` в теле есть только у ошибок, которые бросили мы сами (apiError и
     // ValidationPipe): у них и сообщение своё. У ошибок фреймворка код и
     // текст берутся из таблиц по статусу.
-    const ours = 'code' in fields;
+    // Своей ошибку считаем только до 5xx: у серверных сбоев текст наружу
+    // всегда обезличен, чей бы он ни был. Nest охотно кладёт в сообщение
+    // внутренности («connect ECONNREFUSED …», строки подключения), и это
+    // ровно то, что ASVS V7.4.1 запрещает показывать клиенту.
+    const ours = 'code' in fields && status < 500;
     const code = ours
       ? (fields.code as string)
       : (CODE_BY_STATUS[status] ?? 'INTERNAL');
