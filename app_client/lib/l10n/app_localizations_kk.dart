@@ -1098,4 +1098,61 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get outcomeExpertCancelled => 'Маман бас тартты';
+
+  @override
+  String get premiumTitle => 'Premium';
+
+  @override
+  String get premiumPitch =>
+      'Консультацияларға 10 % жеңілдік және маманды басым таңдау';
+
+  @override
+  String get premiumPlanMonth => 'Айға';
+
+  @override
+  String get premiumPlanYear => 'Жылға';
+
+  @override
+  String get premiumPlanYearHint => 'Айлықтан тиімді';
+
+  @override
+  String get premiumSubscribe => 'Жазылымды рәсімдеу';
+
+  @override
+  String get premiumCancel => 'Жазылымды тоқтату';
+
+  @override
+  String get premiumAddCard => 'Картаны байланыстыру';
+
+  @override
+  String get premiumNoCard =>
+      'Жазылым байланысқан картадан шегеріледі — ол әзірге жоқ';
+
+  @override
+  String get premiumStatusInactive => 'Базалық тариф';
+
+  @override
+  String get premiumStatusGrace =>
+      'Төлемді шегеру мүмкін болмады — картаңызды тексеріңіз';
+
+  @override
+  String get errorSubscriptionExists => 'Жазылым бұрыннан рәсімделген';
+
+  @override
+  String get errorSubscriptionNotFound => 'Белсенді жазылым жоқ';
+
+  @override
+  String premiumActiveUntil(String date) {
+    return '$date дейін белсенді';
+  }
+
+  @override
+  String premiumCancelledUntil(String date) {
+    return 'Тоқтатылды, $date дейін қолжетімді';
+  }
+
+  @override
+  String premiumPlanPrice(String price, String period) {
+    return '$price / $period';
+  }
 }

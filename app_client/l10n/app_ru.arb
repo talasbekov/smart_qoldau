@@ -1403,5 +1403,87 @@
   "outcomeExpertCancelled": "Отменена специалистом",
   "@outcomeExpertCancelled": {
     "description": "Исход: отмена специалистом (E6b)"
+  },
+  "premiumTitle": "Premium",
+  "@premiumTitle": {
+    "description": "Заголовок экрана Premium"
+  },
+  "premiumPitch": "Скидка 10 % на консультации и приоритетный подбор специалиста",
+  "@premiumPitch": {
+    "description": "Подзаголовок экрана Premium — состав подписки (Р-08)"
+  },
+  "premiumPlanMonth": "На месяц",
+  "@premiumPlanMonth": {
+    "description": "Название месячного тарифа"
+  },
+  "premiumPlanYear": "На год",
+  "@premiumPlanYear": {
+    "description": "Название годового тарифа"
+  },
+  "premiumPlanYearHint": "Выгоднее месячного",
+  "@premiumPlanYearHint": {
+    "description": "Пояснение к годовому тарифу"
+  },
+  "premiumSubscribe": "Оформить подписку",
+  "@premiumSubscribe": {
+    "description": "Кнопка оформления подписки"
+  },
+  "premiumCancel": "Отменить подписку",
+  "@premiumCancel": {
+    "description": "Кнопка отмены подписки"
+  },
+  "premiumAddCard": "Привязать карту",
+  "@premiumAddCard": {
+    "description": "Кнопка перехода к добавлению карты, когда карт нет"
+  },
+  "premiumNoCard": "Подписка списывается с привязанной карты — её пока нет",
+  "@premiumNoCard": {
+    "description": "Объяснение, почему нельзя оформить подписку"
+  },
+  "premiumStatusInactive": "Базовый тариф",
+  "@premiumStatusInactive": {
+    "description": "Статус: подписки нет"
+  },
+  "premiumStatusGrace": "Не удалось списать оплату — проверьте карту",
+  "@premiumStatusGrace": {
+    "description": "Статус: идут ретраи автопродления (Р-09)"
+  },
+  "errorSubscriptionExists": "Подписка уже оформлена",
+  "@errorSubscriptionExists": {
+    "description": "SUBSCRIPTION_EXISTS"
+  },
+  "errorSubscriptionNotFound": "Активной подписки нет",
+  "@errorSubscriptionNotFound": {
+    "description": "SUBSCRIPTION_NOT_FOUND"
+  },
+  "premiumActiveUntil": "Активна до {date}",
+  "@premiumActiveUntil": {
+    "description": "Статус активной подписки с датой окончания",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "premiumCancelledUntil": "Отменена, доступ до {date}",
+  "@premiumCancelledUntil": {
+    "description": "Статус отменённой подписки (Р-09)",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "premiumPlanPrice": "{price} / {period}",
+  "@premiumPlanPrice": {
+    "description": "Цена тарифа и период",
+    "placeholders": {
+      "price": {
+        "type": "String"
+      },
+      "period": {
+        "type": "String"
+      }
+    }
   }
 }

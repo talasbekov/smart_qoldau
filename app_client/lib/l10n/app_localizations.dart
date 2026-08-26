@@ -2113,6 +2113,102 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Отменена специалистом'**
   String get outcomeExpertCancelled;
+
+  /// Заголовок экрана Premium
+  ///
+  /// In ru, this message translates to:
+  /// **'Premium'**
+  String get premiumTitle;
+
+  /// Подзаголовок экрана Premium — состав подписки (Р-08)
+  ///
+  /// In ru, this message translates to:
+  /// **'Скидка 10 % на консультации и приоритетный подбор специалиста'**
+  String get premiumPitch;
+
+  /// Название месячного тарифа
+  ///
+  /// In ru, this message translates to:
+  /// **'На месяц'**
+  String get premiumPlanMonth;
+
+  /// Название годового тарифа
+  ///
+  /// In ru, this message translates to:
+  /// **'На год'**
+  String get premiumPlanYear;
+
+  /// Пояснение к годовому тарифу
+  ///
+  /// In ru, this message translates to:
+  /// **'Выгоднее месячного'**
+  String get premiumPlanYearHint;
+
+  /// Кнопка оформления подписки
+  ///
+  /// In ru, this message translates to:
+  /// **'Оформить подписку'**
+  String get premiumSubscribe;
+
+  /// Кнопка отмены подписки
+  ///
+  /// In ru, this message translates to:
+  /// **'Отменить подписку'**
+  String get premiumCancel;
+
+  /// Кнопка перехода к добавлению карты, когда карт нет
+  ///
+  /// In ru, this message translates to:
+  /// **'Привязать карту'**
+  String get premiumAddCard;
+
+  /// Объяснение, почему нельзя оформить подписку
+  ///
+  /// In ru, this message translates to:
+  /// **'Подписка списывается с привязанной карты — её пока нет'**
+  String get premiumNoCard;
+
+  /// Статус: подписки нет
+  ///
+  /// In ru, this message translates to:
+  /// **'Базовый тариф'**
+  String get premiumStatusInactive;
+
+  /// Статус: идут ретраи автопродления (Р-09)
+  ///
+  /// In ru, this message translates to:
+  /// **'Не удалось списать оплату — проверьте карту'**
+  String get premiumStatusGrace;
+
+  /// SUBSCRIPTION_EXISTS
+  ///
+  /// In ru, this message translates to:
+  /// **'Подписка уже оформлена'**
+  String get errorSubscriptionExists;
+
+  /// SUBSCRIPTION_NOT_FOUND
+  ///
+  /// In ru, this message translates to:
+  /// **'Активной подписки нет'**
+  String get errorSubscriptionNotFound;
+
+  /// Статус активной подписки с датой окончания
+  ///
+  /// In ru, this message translates to:
+  /// **'Активна до {date}'**
+  String premiumActiveUntil(String date);
+
+  /// Статус отменённой подписки (Р-09)
+  ///
+  /// In ru, this message translates to:
+  /// **'Отменена, доступ до {date}'**
+  String premiumCancelledUntil(String date);
+
+  /// Цена тарифа и период
+  ///
+  /// In ru, this message translates to:
+  /// **'{price} / {period}'**
+  String premiumPlanPrice(String price, String period);
 }
 
 class _AppLocalizationsDelegate

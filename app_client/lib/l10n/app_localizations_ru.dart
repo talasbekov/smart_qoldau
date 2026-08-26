@@ -1104,4 +1104,61 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get outcomeExpertCancelled => 'Отменена специалистом';
+
+  @override
+  String get premiumTitle => 'Premium';
+
+  @override
+  String get premiumPitch =>
+      'Скидка 10 % на консультации и приоритетный подбор специалиста';
+
+  @override
+  String get premiumPlanMonth => 'На месяц';
+
+  @override
+  String get premiumPlanYear => 'На год';
+
+  @override
+  String get premiumPlanYearHint => 'Выгоднее месячного';
+
+  @override
+  String get premiumSubscribe => 'Оформить подписку';
+
+  @override
+  String get premiumCancel => 'Отменить подписку';
+
+  @override
+  String get premiumAddCard => 'Привязать карту';
+
+  @override
+  String get premiumNoCard =>
+      'Подписка списывается с привязанной карты — её пока нет';
+
+  @override
+  String get premiumStatusInactive => 'Базовый тариф';
+
+  @override
+  String get premiumStatusGrace =>
+      'Не удалось списать оплату — проверьте карту';
+
+  @override
+  String get errorSubscriptionExists => 'Подписка уже оформлена';
+
+  @override
+  String get errorSubscriptionNotFound => 'Активной подписки нет';
+
+  @override
+  String premiumActiveUntil(String date) {
+    return 'Активна до $date';
+  }
+
+  @override
+  String premiumCancelledUntil(String date) {
+    return 'Отменена, доступ до $date';
+  }
+
+  @override
+  String premiumPlanPrice(String price, String period) {
+    return '$price / $period';
+  }
 }

@@ -97,6 +97,9 @@ abstract final class RoutePaths {
   static String found(String requestId) => '/found/$requestId';
 
   /// Привязанные карты клиента и добавление новой (задача 12).
+  /// Premium (E12): тарифы, оформление и отмена подписки.
+  static const premium = '/premium';
+
   static const cards = '/cards';
   static const cardsAdd = '/cards/add';
 

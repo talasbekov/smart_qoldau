@@ -36,6 +36,7 @@ import 'features/session/call/ui/call_screen.dart';
 import 'features/session/chat/ui/chat_screen.dart';
 import 'features/payment/ui/add_card_screen.dart';
 import 'features/payment/ui/cards_screen.dart';
+import 'features/premium/ui/premium_screen.dart';
 import 'features/payment/ui/found_screen.dart';
 import 'features/review/ui/review_screen.dart';
 import 'features/shell/ui/app_shell.dart';
@@ -205,6 +206,10 @@ GoRouter sqRouter(Ref ref) {
         path: RoutePaths.foundPattern,
         builder: (context, state) =>
             FoundScreen(requestId: state.pathParameters['requestId']!),
+      ),
+      GoRoute(
+        path: RoutePaths.premium,
+        builder: (context, state) => const PremiumScreen(),
       ),
       GoRoute(
         path: RoutePaths.cards,

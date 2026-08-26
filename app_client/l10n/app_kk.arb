@@ -335,5 +335,21 @@
   "consultationStartsIn": "{duration} кейін",
   "bookingActionSchedule": "Уақытқа жазылу",
   "bookingActionNow": "Қазір байланысу",
-  "outcomeExpertCancelled": "Маман бас тартты"
+  "outcomeExpertCancelled": "Маман бас тартты",
+  "premiumTitle": "Premium",
+  "premiumPitch": "Консультацияларға 10 % жеңілдік және маманды басым таңдау",
+  "premiumPlanMonth": "Айға",
+  "premiumPlanYear": "Жылға",
+  "premiumPlanYearHint": "Айлықтан тиімді",
+  "premiumSubscribe": "Жазылымды рәсімдеу",
+  "premiumCancel": "Жазылымды тоқтату",
+  "premiumAddCard": "Картаны байланыстыру",
+  "premiumNoCard": "Жазылым байланысқан картадан шегеріледі — ол әзірге жоқ",
+  "premiumStatusInactive": "Базалық тариф",
+  "premiumStatusGrace": "Төлемді шегеру мүмкін болмады — картаңызды тексеріңіз",
+  "errorSubscriptionExists": "Жазылым бұрыннан рәсімделген",
+  "errorSubscriptionNotFound": "Белсенді жазылым жоқ",
+  "premiumActiveUntil": "{date} дейін белсенді",
+  "premiumCancelledUntil": "Тоқтатылды, {date} дейін қолжетімді",
+  "premiumPlanPrice": "{price} / {period}"
 }
