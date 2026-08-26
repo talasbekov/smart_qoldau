@@ -130,18 +130,33 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
         data: (days) => ListView(
           padding: const EdgeInsets.all(SqSpacing.l),
           children: [
-            for (final day in days) ...[
-              DayRow(
-                day: day,
-                onToggle: () => _controller.toggleDay(day.weekday),
-                onPickStart: () => _pickStart(day),
-                onPickEnd: () => _pickEnd(day),
-                onPickBreakStart: () => _pickBreakStart(day),
-                onPickBreakEnd: () => _pickBreakEnd(day),
-                onClearBreak: () => _clearBreak(day),
-              ),
-              const SizedBox(height: SqSpacing.m),
-            ],
+            // Прототип `Expert Web - Расписание` показывает неделю
+            // сеткой из семи колонок. Строки-дни на широком экране
+            // растягиваются на весь монитор ради одного переключателя и
+            // двух времён — семь коротких колонок читаются целиком.
+            if (SqLayoutScope.of(context).isWide)
+              _WeekGrid(
+                days: days,
+                onToggle: (weekday) => _controller.toggleDay(weekday),
+                onPickStart: _pickStart,
+                onPickEnd: _pickEnd,
+                onPickBreakStart: _pickBreakStart,
+                onPickBreakEnd: _pickBreakEnd,
+                onClearBreak: _clearBreak,
+              )
+            else
+              for (final day in days) ...[
+                DayRow(
+                  day: day,
+                  onToggle: () => _controller.toggleDay(day.weekday),
+                  onPickStart: () => _pickStart(day),
+                  onPickEnd: () => _pickEnd(day),
+                  onPickBreakStart: () => _pickBreakStart(day),
+                  onPickBreakEnd: () => _pickBreakEnd(day),
+                  onClearBreak: () => _clearBreak(day),
+                ),
+                const SizedBox(height: SqSpacing.m),
+              ],
             if (_error != null) ...[
               Text(
                 _error!,
@@ -158,6 +173,60 @@ class _ScheduleScreenState extends ConsumerState<ScheduleScreen> {
           ],
         ),
       ),
+    );
+  }
+}
+
+/// Неделя семью колонками — раскладка прототипа `Expert Web -
+/// Расписание`. Внутри колонки тот же `DayRow`, что на телефоне: правила
+/// работы с днём одни и те же, различается только то, как дни стоят
+/// друг относительно друга.
+class _WeekGrid extends StatelessWidget {
+  const _WeekGrid({
+    required this.days,
+    required this.onToggle,
+    required this.onPickStart,
+    required this.onPickEnd,
+    required this.onPickBreakStart,
+    required this.onPickBreakEnd,
+    required this.onClearBreak,
+  });
+
+  final List<ScheduleDay> days;
+  final ValueChanged<int> onToggle;
+  final ValueChanged<ScheduleDay> onPickStart;
+  final ValueChanged<ScheduleDay> onPickEnd;
+  final ValueChanged<ScheduleDay> onPickBreakStart;
+  final ValueChanged<ScheduleDay> onPickBreakEnd;
+  final ValueChanged<ScheduleDay> onClearBreak;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final width = (constraints.maxWidth - SqSpacing.s * 6) / 7;
+        return Wrap(
+          spacing: SqSpacing.s,
+          runSpacing: SqSpacing.s,
+          children: [
+            for (final day in days)
+              SizedBox(
+                key: Key('sq-week-day-${day.weekday}'),
+                width: width,
+                child: DayRow(
+                  day: day,
+                  compact: true,
+                  onToggle: () => onToggle(day.weekday),
+                  onPickStart: () => onPickStart(day),
+                  onPickEnd: () => onPickEnd(day),
+                  onPickBreakStart: () => onPickBreakStart(day),
+                  onPickBreakEnd: () => onPickBreakEnd(day),
+                  onClearBreak: () => onClearBreak(day),
+                ),
+              ),
+          ],
+        );
+      },
     );
   }
 }
