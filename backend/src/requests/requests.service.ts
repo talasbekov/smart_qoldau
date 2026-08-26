@@ -19,6 +19,7 @@ import {
   ConsultationSlotTakenError,
 } from '../consultations/consultations.service';
 import { NotificationsService } from '../notifications/notifications.service';
+import { PremiumService } from '../premium/premium.service';
 import { apiError } from '../common/filters/app-exception.filter';
 import { CreateRequestDto } from './dto/create-request.dto';
 import { RequestDto } from './dto/request.dto';
@@ -55,6 +56,7 @@ export class RequestsService {
     private notifications: NotificationsService,
     @Inject(forwardRef(() => OFFER_TIMER_REGISTRY))
     private offerTimer: OfferTimerRegistry,
+    private premium: PremiumService,
   ) {}
 
   // Создание заявки. Одна активная (SEARCHING) заявка на клиента — проверка
@@ -217,6 +219,17 @@ export class RequestsService {
       // только среди acceptsUrgent-экспертов; после broadcastAt — полный
       // круг (расширение круга уже сделано EscalationService.broadcast(),
       // здесь urgentOnly=false просто не сужает дальнейшую ротацию).
+      // Р-08 «приоритетный подбор»: Premium-заявка идёт строго к лучшему из
+      // кандидатов, без разведения равных. Разведение (#29) существует ради
+      // пропускной способности базового потока — Premium за то и платит,
+      // чтобы попасть к сильнейшему из свободных, а не к случайному из
+      // равных. Заведомо НЕ делаем: перехват уже отправленного оффера,
+      // вытеснение чужой заявки, укорочение таймеров — это ухудшает опыт
+      // базовых клиентов, чего Р-08 не обещал.
+      const isPremium = await this.premium.isPremiumAt(
+        request.clientUserId,
+        this.clock.now(),
+      );
       const ranked = await this.matching.findCandidates({
         topicSlug: request.topic.slug,
         format: request.format,
@@ -225,7 +238,7 @@ export class RequestsService {
         // Равные по скору кандидаты раскладываются по-своему для каждой
         // заявки: иначе поток заявок бьётся в одного и того же
         // специалиста, а остальные свободные простаивают.
-        tieBreakSeed: request.id,
+        tieBreakSeed: isPremium ? undefined : request.id,
       });
       nextExpertId = ranked[0];
     }
