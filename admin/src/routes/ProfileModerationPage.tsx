@@ -51,10 +51,10 @@ export default function ProfileModerationPage() {
             render: (r) =>
               r.photoPendingUrl ? (
                 <span className="flex gap-2">
-                  <button onClick={() => approvePhoto(r.expertId)} className="text-teal-700">
+                  <button onClick={() => approvePhoto(r.expertId)} className="text-sq-primary">
                     Одобрить фото
                   </button>
-                  <button onClick={() => rejectPhoto(r.expertId)} className="text-red-600">
+                  <button onClick={() => rejectPhoto(r.expertId)} className="text-sq-danger">
                     Отклонить фото
                   </button>
                 </span>
@@ -67,10 +67,10 @@ export default function ProfileModerationPage() {
             render: (r) =>
               r.aboutPending ? (
                 <span className="flex gap-2">
-                  <button onClick={() => approveAbout(r.expertId)} className="text-teal-700">
+                  <button onClick={() => approveAbout(r.expertId)} className="text-sq-primary">
                     Одобрить текст
                   </button>
-                  <button onClick={() => rejectAbout(r.expertId)} className="text-red-600">
+                  <button onClick={() => rejectAbout(r.expertId)} className="text-sq-danger">
                     Отклонить текст
                   </button>
                 </span>

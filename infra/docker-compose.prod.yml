@@ -123,6 +123,19 @@ services:
     depends_on: [backend]
     networks: [edge]
 
+  # Веб-версия клиента (E15).
+  client-web:
+    image: ${CLIENT_WEB_IMAGE:-smartqoldau-client-web:latest}
+    build:
+      context: ..
+      dockerfile: app_client/Dockerfile
+      args:
+        API_BASE_URL: ${PUBLIC_API_BASE_URL}
+        WS_BASE_URL: ${PUBLIC_WS_BASE_URL:-}
+    restart: unless-stopped
+    depends_on: [backend]
+    networks: [edge]
+
   landing:
     image: ${LANDING_IMAGE:-smartqoldau-landing:latest}
     build:

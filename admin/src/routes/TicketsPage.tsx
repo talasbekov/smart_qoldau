@@ -20,7 +20,7 @@ export default function TicketsPage() {
           {
             header: 'Тема',
             render: (r) => (
-              <Link to={`/tickets/${r.id}`} className="text-teal-700">
+              <Link to={`/tickets/${r.id}`} className="text-sq-primary">
                 {r.subject}
               </Link>
             ),

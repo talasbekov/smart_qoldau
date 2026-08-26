@@ -56,7 +56,7 @@ export default function VerificationQueuePage() {
               const sla = verificationSla(r.submittedAt);
               return (
                 <span
-                  className={sla.overdue ? 'text-red-600 font-semibold' : 'text-gray-600'}
+                  className={sla.overdue ? 'text-sq-danger font-semibold' : 'text-sq-text-secondary'}
                   title={
                     sla.overdue
                       ? `Просрочка: SLA ${VERIFICATION_SLA_HOURS} ч`
@@ -75,11 +75,11 @@ export default function VerificationQueuePage() {
               <div className="flex flex-col gap-1">
                 {r.documents.map((doc) => (
                   <div key={doc.id} className="flex items-center gap-2">
-                    <a href={doc.downloadUrl} target="_blank" rel="noreferrer" className="text-teal-700">
+                    <a href={doc.downloadUrl} target="_blank" rel="noreferrer" className="text-sq-primary">
                       {doc.type}
                     </a>
-                    <span className="text-gray-400">{doc.status}</span>
-                    <button onClick={() => setModalFor({ kind: 'document', id: doc.id })} className="text-teal-700">
+                    <span className="text-sq-text-tertiary">{doc.status}</span>
+                    <button onClick={() => setModalFor({ kind: 'document', id: doc.id })} className="text-sq-primary">
                       Решение
                     </button>
                   </div>
@@ -91,13 +91,13 @@ export default function VerificationQueuePage() {
             header: '',
             render: (r) => (
               <div className="flex gap-2">
-                <button onClick={() => setModalFor({ kind: 'expert', id: r.id })} className="text-teal-700">
+                <button onClick={() => setModalFor({ kind: 'expert', id: r.id })} className="text-sq-primary">
                   Решение по анкете
                 </button>
-                <button onClick={() => handleBlock(r.id)} className="text-red-600">
+                <button onClick={() => handleBlock(r.id)} className="text-sq-danger">
                   Заблокировать
                 </button>
-                <button onClick={() => handleUnblock(r.id)} className="text-gray-600">
+                <button onClick={() => handleUnblock(r.id)} className="text-sq-text-secondary">
                   Разблокировать
                 </button>
               </div>

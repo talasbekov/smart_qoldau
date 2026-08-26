@@ -24,7 +24,7 @@ export default function TotpChallengePage({
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
+    <div className="min-h-screen flex items-center justify-center bg-sq-surface-muted">
       <form onSubmit={handleSubmit} className="bg-white p-8 rounded-xl border w-80 flex flex-col gap-3">
         <h1 className="font-bold text-lg mb-2">Код подтверждения</h1>
         <input
@@ -34,10 +34,10 @@ export default function TotpChallengePage({
           className="border rounded px-3 py-2"
           required
         />
-        <button type="submit" className="bg-teal-700 text-white rounded py-2 font-semibold">
+        <button type="submit" className="bg-sq-primary-dark text-white rounded py-2 font-semibold">
           Подтвердить
         </button>
-        {error && <p className="text-red-600 text-sm">{error}</p>}
+        {error && <p className="text-sq-danger text-sm">{error}</p>}
       </form>
     </div>
   );

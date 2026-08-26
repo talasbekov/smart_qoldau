@@ -24,7 +24,7 @@ export default function SettingsPage() {
     <div className="max-w-md">
       <h1 className="text-xl font-bold mb-4">Настройки</h1>
       {stage === 'idle' && (
-        <button onClick={handleStart} className="bg-teal-700 text-white rounded px-4 py-2">
+        <button onClick={handleStart} className="bg-sq-primary-dark text-white rounded px-4 py-2">
           Включить 2FA
         </button>
       )}
@@ -49,7 +49,7 @@ export default function SettingsPage() {
             className="border rounded px-3 py-2"
             required
           />
-          <button type="submit" className="bg-teal-700 text-white rounded px-4 py-2">
+          <button type="submit" className="bg-sq-primary-dark text-white rounded px-4 py-2">
             Подтвердить
           </button>
         </form>

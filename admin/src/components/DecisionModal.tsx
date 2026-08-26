@@ -33,15 +33,15 @@ export default function DecisionModal({
           className="border rounded px-3 py-2"
           rows={3}
         />
-        {error && <p className="text-red-600 text-sm">{error}</p>}
+        {error && <p className="text-sq-danger text-sm">{error}</p>}
         <div className="flex gap-2 justify-end">
           <button onClick={onClose} className="px-4 py-2 rounded border">
             Отмена
           </button>
-          <button onClick={() => handle(false)} className="px-4 py-2 rounded bg-red-600 text-white">
+          <button onClick={() => handle(false)} className="px-4 py-2 rounded bg-sq-danger text-white">
             Отклонить
           </button>
-          <button onClick={() => handle(true)} className="px-4 py-2 rounded bg-teal-700 text-white">
+          <button onClick={() => handle(true)} className="px-4 py-2 rounded bg-sq-primary-dark text-white">
             Одобрить
           </button>
         </div>

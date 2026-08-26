@@ -39,7 +39,7 @@ export default function ContentPage() {
 
   if (error) {
     return (
-      <div data-testid="content-error" className="p-4 text-red-700">
+      <div data-testid="content-error" className="p-4 text-sq-danger">
         {error}
       </div>
     );
@@ -50,7 +50,7 @@ export default function ContentPage() {
       <h1 className="text-xl font-semibold mb-4">Материалы</h1>
       <table className="w-full text-left border-collapse">
         <thead>
-          <tr className="border-b text-sm text-gray-600">
+          <tr className="border-b text-sm text-sq-text-secondary">
             <th className="py-2">Заголовок</th>
             <th>Вид</th>
             <th>Доступ</th>
@@ -63,7 +63,7 @@ export default function ContentPage() {
             <tr key={item.id} className="border-b">
               <td className="py-2">
                 <div className="font-medium">{item.titleRu}</div>
-                <div className="text-sm text-gray-500">{item.slug}</div>
+                <div className="text-sm text-sq-text-secondary">{item.slug}</div>
               </td>
               <td>{KIND_LABELS[item.kind]}</td>
               <td data-testid={`access-${item.id}`}>
@@ -75,7 +75,7 @@ export default function ContentPage() {
               <td className="text-right">
                 <button
                   data-testid={`publish-${item.id}`}
-                  className="px-3 py-1 rounded bg-teal-100 text-teal-800 mr-2"
+                  className="px-3 py-1 rounded bg-sq-chip text-sq-primary-dark mr-2"
                   onClick={() => void togglePublished(item)}
                 >
                   {item.publishedAt === null ? 'Опубликовать' : 'Снять'}
@@ -100,7 +100,7 @@ export default function ContentPage() {
           <p className="mb-2">Удалить материал вместе с прогрессом и голосами?</p>
           <button
             data-testid="confirm-delete"
-            className="px-3 py-1 rounded bg-red-600 text-white mr-2"
+            className="px-3 py-1 rounded bg-sq-danger text-white mr-2"
             onClick={() => void confirmDelete(pendingDelete)}
           >
             Удалить

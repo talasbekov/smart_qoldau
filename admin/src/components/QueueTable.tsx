@@ -12,7 +12,7 @@ export default function QueueTable<T extends { id: string }>({
   rows: T[];
   emptyText: string;
 }) {
-  if (rows.length === 0) return <p className="text-gray-500">{emptyText}</p>;
+  if (rows.length === 0) return <p className="text-sq-text-secondary">{emptyText}</p>;
   return (
     <table className="w-full text-sm">
       <thead>

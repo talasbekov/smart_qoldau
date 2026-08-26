@@ -45,10 +45,10 @@ export default function PayoutsPage() {
             header: '',
             render: (r) => (
               <span className="flex gap-2">
-                <button onClick={() => handleApprove(r.id)} className="text-teal-700">
+                <button onClick={() => handleApprove(r.id)} className="text-sq-primary">
                   Одобрить
                 </button>
-                <button onClick={() => handleReject(r.id)} className="text-red-600">
+                <button onClick={() => handleReject(r.id)} className="text-sq-danger">
                   Отклонить
                 </button>
               </span>
