@@ -14,7 +14,10 @@ import {
   ApiOkResponse,
   ApiTags,
 } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { UserThrottlerGuard } from '../common/throttle/throttle.guards';
+import { THROTTLE } from '../common/throttle/throttle.constants';
 import { CurrentUser } from '../auth/current-user.decorator';
 import { JwtPayload } from '../auth/jwt.strategy';
 import { PremiumService } from './premium.service';
@@ -34,7 +37,11 @@ export class PremiumController {
     return this.premium.status(user.sub);
   }
 
+  // Тот же вектор, что у оплаты консультации: списание по выбранной
+  // пользователем карте (см. THROTTLE.paymentAttempt).
   @Post('subscribe')
+  @UseGuards(UserThrottlerGuard)
+  @Throttle({ default: THROTTLE.paymentAttempt })
   @ApiCreatedResponse({
     type: PremiumStatusDto,
     description: 'Подписка оформлена',

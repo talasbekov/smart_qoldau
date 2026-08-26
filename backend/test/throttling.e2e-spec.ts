@@ -157,6 +157,47 @@ describe('Троттлинг открытых эндпоинтов (e2e)', () =>
       .expect(200);
   });
 
+  it('одиннадцатая попытка оплаты за час даёт 429, десятая проходит', async () => {
+    const client = await guestClient(app, `${DEVICE_PREFIX}payments`);
+
+    // Тело заведомо невалидное: проверяется лимит, а не оплата. Смысл
+    // лимита — перебор краденых карт: привязал, попробовал списать,
+    // посмотрел на ответ банка, повторил.
+    for (let i = 1; i <= 10; i++) {
+      const response = await request(app.getHttpServer())
+        .post('/v1/premium/subscribe')
+        .set('Authorization', `Bearer ${client.accessToken}`)
+        .send({});
+      expect(response.status).not.toBe(429);
+    }
+
+    const blocked = await request(app.getHttpServer())
+      .post('/v1/premium/subscribe')
+      .set('Authorization', `Bearer ${client.accessToken}`)
+      .send({})
+      .expect(429);
+    expect(blocked.body.error.code).toBe('RATE_LIMITED');
+  });
+
+  it('оплата консультации ограничена тем же лимитом', async () => {
+    const client = await guestClient(app, `${DEVICE_PREFIX}consultation-pay`);
+    const consultationId = '00000000-0000-0000-0000-000000000000';
+
+    for (let i = 1; i <= 10; i++) {
+      const response = await request(app.getHttpServer())
+        .post(`/v1/consultations/${consultationId}/pay`)
+        .set('Authorization', `Bearer ${client.accessToken}`)
+        .send({});
+      expect(response.status).not.toBe(429);
+    }
+
+    await request(app.getHttpServer())
+      .post(`/v1/consultations/${consultationId}/pay`)
+      .set('Authorization', `Bearer ${client.accessToken}`)
+      .send({})
+      .expect(429);
+  });
+
   it('одиннадцатая заявка за час даёт 429, десятая проходит', async () => {
     const client = await guestClient(app, `${DEVICE_PREFIX}requests`);
 
