@@ -25,14 +25,37 @@ class ProfileScreen extends ConsumerWidget {
     return Scaffold(
       backgroundColor: SqColors.background,
       appBar: AppBar(title: Text(l10n.profileScreenTitle)),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          if (me != null)
-            Text(me.displayName, style: SqTypography.h2)
-          else
-            const SizedBox.shrink(),
-          const SizedBox(height: 24),
+      body: _Body(
+        // Прототип `Expert Web - Профиль`: карточка специалиста колонкой
+        // 280 px слева, содержимое справа. На телефоне — прежний список.
+        card: me == null
+            ? const SizedBox.shrink()
+            : SqCard(
+                key: const Key('sq-profile-card'),
+                child: Padding(
+                  padding: const EdgeInsets.all(SqSpacing.m),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(me.displayName, style: SqTypography.h2),
+                      const SizedBox(height: SqSpacing.xs),
+                      Text(
+                        me.verificationStatus == VerificationStatus.verified
+                            ? l10n.verificationVerified
+                            : l10n.verificationPending,
+                        style: SqTypography.caption.copyWith(
+                          color:
+                              me.verificationStatus ==
+                                  VerificationStatus.verified
+                              ? SqColors.primary
+                              : SqColors.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+        items: [
           ListTile(
             key: const Key('sq-profile-notifications'),
             leading: const Icon(Icons.notifications_outlined),
@@ -67,6 +90,37 @@ class ProfileScreen extends ConsumerWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// Карточка специалиста и список настроек. На широком экране они стоят
+/// рядом (280 px + остальное), на телефоне — друг под другом.
+class _Body extends StatelessWidget {
+  const _Body({required this.card, required this.items});
+
+  final Widget card;
+  final List<Widget> items;
+
+  @override
+  Widget build(BuildContext context) {
+    final list = Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: items,
+    );
+
+    if (SqLayoutScope.of(context).isWide) {
+      return SqSplitLayout(
+        asideWidth: 280,
+        asideFirst: true,
+        aside: card,
+        main: list,
+      );
+    }
+
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [card, const SizedBox(height: 24), list],
     );
   }
 }
