@@ -4,9 +4,7 @@
 // На телефоне ничего не меняется — там чат остаётся отдельным экраном.
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-
-import 'package:app_expert/features/session/ui/session_layout.dart';
-import 'package:app_expert/l10n/app_localizations.dart';
+import 'package:shared/shared.dart';
 
 Future<void> _pumpAt(WidgetTester tester, Size size) async {
   tester.view.physicalSize = size;
@@ -16,10 +14,7 @@ Future<void> _pumpAt(WidgetTester tester, Size size) async {
 
   await tester.pumpWidget(
     MaterialApp(
-      locale: const Locale('ru'),
-      localizationsDelegates: AppLocalizations.localizationsDelegates,
-      supportedLocales: AppLocalizations.supportedLocales,
-      home: const SessionLayout(
+      home: const SqSessionLayout(
         media: ColoredBox(color: Colors.black, child: Text('видео')),
         chat: ColoredBox(color: Colors.white, child: Text('чат')),
       ),

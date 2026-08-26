@@ -13,6 +13,7 @@ import 'package:shared/shared.dart';
 import '../../../../core/error_text.dart';
 import '../../../../core/route_paths.dart';
 import '../../../../l10n/app_localizations.dart';
+import '../../chat/ui/chat_screen.dart';
 import '../../chat/ui/session_header.dart';
 import 'call_controls.dart';
 import 'connection_banner.dart';
@@ -97,15 +98,26 @@ class _CallScreenState extends ConsumerState<CallScreen> {
             offerChat: call.offerChatFallback,
             onBackToChat: _backToChat,
           ),
-          _ => _ActiveCall(
-            state: call,
-            onToggleMic: () => ref
-                .read(callControllerProvider(widget.consultationId).notifier)
-                .toggleMic(),
-            onToggleCam: () => ref
-                .read(callControllerProvider(widget.consultationId).notifier)
-                .toggleCam(),
-            onEnd: _end,
+          // На широком экране видео и переписка рядом — та же раскладка,
+          // что в кабинете эксперта (прототип `Expert Web -
+          // Видеоконсультация`). Клиенту это нужно ровно по той же
+          // причине: во время разговора нельзя уходить с экрана видео,
+          // чтобы прочитать сообщение.
+          _ => SqSessionLayout(
+            media: _ActiveCall(
+              state: call,
+              onToggleMic: () => ref
+                  .read(callControllerProvider(widget.consultationId).notifier)
+                  .toggleMic(),
+              onToggleCam: () => ref
+                  .read(callControllerProvider(widget.consultationId).notifier)
+                  .toggleCam(),
+              onEnd: _end,
+            ),
+            chat: ChatScreen(
+              consultationId: widget.consultationId,
+              embedded: true,
+            ),
           ),
         },
       ),

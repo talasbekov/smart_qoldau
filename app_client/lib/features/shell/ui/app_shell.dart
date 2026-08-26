@@ -71,41 +71,41 @@ class AppShell extends StatelessWidget {
         bottomNavigationBar: SqLayoutScope.of(context).isWide
             ? null
             : NavigationBar(
-          selectedIndex: navigationShell.currentIndex,
-          onDestinationSelected: _onDestinationSelected,
-          destinations: [
-            NavigationDestination(
-              key: const Key('sq-nav-home'),
-              icon: const Icon(Icons.home_outlined),
-              selectedIcon: const Icon(Icons.home),
-              label: l10n.navHome,
-            ),
-            NavigationDestination(
-              key: const Key('sq-nav-catalog'),
-              icon: const Icon(Icons.grid_view_outlined),
-              selectedIcon: const Icon(Icons.grid_view),
-              label: l10n.navCatalog,
-            ),
-            NavigationDestination(
-              key: const Key('sq-nav-materials'),
-              icon: const Icon(Icons.library_books_outlined),
-              selectedIcon: const Icon(Icons.library_books),
-              label: l10n.navMaterials,
-            ),
-            NavigationDestination(
-              key: const Key('sq-nav-consultations'),
-              icon: const Icon(Icons.forum_outlined),
-              selectedIcon: const Icon(Icons.forum),
-              label: l10n.navConsultations,
-            ),
-            NavigationDestination(
-              key: const Key('sq-nav-profile'),
-              icon: const Icon(Icons.person_outline),
-              selectedIcon: const Icon(Icons.person),
-              label: l10n.navProfile,
-            ),
-          ],
-        ),
+                selectedIndex: navigationShell.currentIndex,
+                onDestinationSelected: _onDestinationSelected,
+                destinations: [
+                  NavigationDestination(
+                    key: const Key('sq-nav-home'),
+                    icon: const Icon(Icons.home_outlined),
+                    selectedIcon: const Icon(Icons.home),
+                    label: l10n.navHome,
+                  ),
+                  NavigationDestination(
+                    key: const Key('sq-nav-catalog'),
+                    icon: const Icon(Icons.grid_view_outlined),
+                    selectedIcon: const Icon(Icons.grid_view),
+                    label: l10n.navCatalog,
+                  ),
+                  NavigationDestination(
+                    key: const Key('sq-nav-materials'),
+                    icon: const Icon(Icons.library_books_outlined),
+                    selectedIcon: const Icon(Icons.library_books),
+                    label: l10n.navMaterials,
+                  ),
+                  NavigationDestination(
+                    key: const Key('sq-nav-consultations'),
+                    icon: const Icon(Icons.forum_outlined),
+                    selectedIcon: const Icon(Icons.forum),
+                    label: l10n.navConsultations,
+                  ),
+                  NavigationDestination(
+                    key: const Key('sq-nav-profile'),
+                    icon: const Icon(Icons.person_outline),
+                    selectedIcon: const Icon(Icons.person),
+                    label: l10n.navProfile,
+                  ),
+                ],
+              ),
       ),
     );
   }

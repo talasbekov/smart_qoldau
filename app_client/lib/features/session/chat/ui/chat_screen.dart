@@ -20,7 +20,16 @@ import 'session_header.dart';
 import 'session_menu.dart';
 
 class ChatScreen extends ConsumerStatefulWidget {
-  const ChatScreen({super.key, required this.consultationId});
+  const ChatScreen({
+    super.key,
+    required this.consultationId,
+    this.embedded = false,
+  });
+
+  /// Встроен в раскладку сессии рядом с видео (веб). Тогда своя шапка не
+  /// нужна: заголовок консультации уже показан над видео, а вторая
+  /// панель с тем же именем — просто шум.
+  final bool embedded;
 
   final String consultationId;
 
@@ -122,7 +131,12 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
 
     return Scaffold(
       backgroundColor: SqColors.background,
-      appBar: asyncState.valueOrNull == null
+      // Встроенный чат (панель рядом с видео) своей шапки не имеет:
+      // заголовок консультации уже над видео, вторая панель с тем же
+      // именем — шум.
+      appBar: widget.embedded
+          ? null
+          : asyncState.valueOrNull == null
           ? AppBar()
           : SessionHeader(
               expertName:

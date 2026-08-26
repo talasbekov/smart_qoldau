@@ -79,10 +79,7 @@ class SqSplitLayout extends StatelessWidget {
         children: [
           if (asideFirst) ..._aside(),
           Expanded(flex: 14, child: SingleChildScrollView(child: main)),
-          if (!asideFirst) ...[
-            const SizedBox(width: SqSpacing.l),
-            ..._aside(),
-          ],
+          if (!asideFirst) ...[const SizedBox(width: SqSpacing.l), ..._aside()],
         ],
       ),
     );

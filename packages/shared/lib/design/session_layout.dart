@@ -1,4 +1,6 @@
-/// Раскладка сессии: видео и чат.
+/// Раскладка сессии: видео и чат. Общая для обоих приложений — клиенту
+/// она нужна ровно по той же причине, что эксперту: во время разговора
+/// нельзя уходить с экрана видео, чтобы прочитать сообщение.
 ///
 /// По прототипу `Expert Web - Видеоконсультация`: на широком экране видео
 /// занимает основную площадь, справа — панель чата 320 px. Психолог во
@@ -10,15 +12,17 @@
 library;
 
 import 'package:flutter/material.dart';
-import 'package:shared/shared.dart';
+
+import 'breakpoints.dart';
+import 'tokens.dart';
 
 /// Ширина панели из прототипа. На планшете столько же означало бы треть
 /// экрана под переписку, поэтому там панель уже.
 const double _chatPanelWidthDesktop = 320;
 const double _chatPanelWidthTablet = 260;
 
-class SessionLayout extends StatelessWidget {
-  const SessionLayout({super.key, required this.media, required this.chat});
+class SqSessionLayout extends StatelessWidget {
+  const SqSessionLayout({super.key, required this.media, required this.chat});
 
   final Widget media;
   final Widget chat;
