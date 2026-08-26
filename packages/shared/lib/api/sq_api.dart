@@ -13,6 +13,7 @@ import 'sq_api_notes.dart';
 import 'sq_api_notifications.dart';
 import 'sq_api_offers.dart';
 import 'sq_api_payments.dart';
+import 'sq_api_premium.dart';
 import 'sq_api_requests.dart';
 import 'sq_api_schedule.dart';
 import 'sq_api_tickets.dart';
@@ -41,6 +42,7 @@ class SqApi extends SqApiBase
         SqApiRequests,
         SqApiConsultations,
         SqApiPayments,
+        SqApiPremium,
         SqApiNotifications,
         SqApiTickets {
   SqApi({

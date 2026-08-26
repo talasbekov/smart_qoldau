@@ -101,6 +101,11 @@ abstract final class SqEndpoints {
 
   // --- способы оплаты ---
   static const paymentMethods = '/payment-methods';
+
+  // --- Premium (E12) ---
+  static const premium = '/premium';
+  static const premiumSubscribe = '/premium/subscribe';
+  static const premiumCancel = '/premium/cancel';
   static String paymentMethodById(String id) => '/payment-methods/$id';
 
   // --- уведомления, устройства, локаль ---
@@ -164,6 +169,9 @@ abstract final class SqEndpoints {
     ('GET', paymentMethods),
     ('POST', paymentMethods),
     ('DELETE', '/payment-methods/{id}'),
+    ('GET', premium),
+    ('POST', premiumSubscribe),
+    ('POST', premiumCancel),
     ('GET', notifications),
     ('POST', notificationsRead),
     ('POST', devices),

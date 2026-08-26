@@ -5,6 +5,7 @@ library;
 
 export 'auth_models.dart';
 export 'balance.dart';
+export 'premium_status.dart';
 export 'chat_message.dart';
 export 'consultation.dart';
 export 'consultation_expert.dart';

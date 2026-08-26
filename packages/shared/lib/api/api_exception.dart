@@ -69,6 +69,11 @@ abstract final class ApiErrorCode {
   /// модератором.
   static const invalidStateTransition = 'INVALID_STATE_TRANSITION';
 
+  /// Подписка Premium (E12).
+  static const subscriptionExists = 'SUBSCRIPTION_EXISTS';
+  static const subscriptionNotFound = 'SUBSCRIPTION_NOT_FOUND';
+  static const paymentDeclined = 'PAYMENT_DECLINED';
+
   /// Код, которым [ApiException.fromDioError] помечает сетевые сбои без
   /// ответа сервера (таймаут, обрыв соединения, DNS) — бэкенд его не знает,
   /// это чисто клиентское значение.
