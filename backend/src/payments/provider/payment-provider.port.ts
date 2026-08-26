@@ -18,6 +18,19 @@ export abstract class PaymentProviderPort {
     declineReason?: string;
   }>;
 
+  /// Разовое списание без холда — для подписки. У консультации холд нужен,
+  /// потому что деньги замораживаются до исхода сессии; у подписки исхода
+  /// нет: доступ выдаётся сразу по факту оплаты.
+  abstract charge(input: {
+    idempotencyKey: string;
+    token: string;
+    amountTiyn: number;
+  }): Promise<{
+    providerChargeId: string;
+    status: 'captured' | 'declined';
+    declineReason?: string;
+  }>;
+
   abstract capture(input: {
     idempotencyKey: string;
     providerHoldId: string;
