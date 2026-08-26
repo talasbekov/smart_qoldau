@@ -11,6 +11,7 @@ import '../../../core/route_paths.dart';
 import '../../../l10n/app_localizations.dart';
 import '../state/favorites_controller.dart';
 import 'expert_card.dart';
+import 'expert_grid.dart';
 
 class FavoritesScreen extends ConsumerWidget {
   const FavoritesScreen({super.key});
@@ -46,29 +47,33 @@ class FavoritesScreen extends ConsumerWidget {
                     title: l10n.favoritesEmpty,
                   ),
                 )
-              : ListView(
-                  padding: const EdgeInsets.all(SqSpacing.l),
-                  children: [
-                    for (final expert in experts)
-                      ExpertCard(
-                        expert: expert,
-                        isFavorite: true,
-                        onToggleFavorite: () => ref
-                            .read(favoritesControllerProvider.notifier)
-                            .toggle(expert),
-                        onTap: () => context.push(RoutePaths.expert(expert.id)),
-                      ),
-                    if (ref.read(favoritesControllerProvider.notifier).hasMore)
-                      Center(
-                        child: TextButton(
-                          key: const Key('sq-favorites-load-more'),
-                          onPressed: () => ref
-                              .read(favoritesControllerProvider.notifier)
-                              .loadMore(),
-                          child: Text(l10n.consultationLoadMore),
-                        ),
-                      ),
-                  ],
+              // Та же сетка, что в каталоге: избранное — это тот же
+              // список специалистов, и на широком экране он обязан
+              // выглядеть так же, а не столбцом в одну карточку.
+              : ExpertGrid(
+                  itemCount: experts.length,
+                  itemBuilder: (context, index) {
+                    final expert = experts[index];
+                    return ExpertCard(
+                      expert: expert,
+                      isFavorite: true,
+                      onToggleFavorite: () => ref
+                          .read(favoritesControllerProvider.notifier)
+                          .toggle(expert),
+                      onTap: () => context.push(RoutePaths.expert(expert.id)),
+                    );
+                  },
+                  footer: ref.read(favoritesControllerProvider.notifier).hasMore
+                      ? Center(
+                          child: TextButton(
+                            key: const Key('sq-favorites-load-more'),
+                            onPressed: () => ref
+                                .read(favoritesControllerProvider.notifier)
+                                .loadMore(),
+                            child: Text(l10n.consultationLoadMore),
+                          ),
+                        )
+                      : null,
                 ),
         ),
       ),
