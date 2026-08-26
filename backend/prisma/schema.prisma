@@ -568,6 +568,9 @@ model Device {
 
 enum AdminRole {
   VERIFICATION_OPERATOR
+  // Редактор библиотеки самопомощи (E13): заводит и публикует материалы.
+  // К заявкам, деньгам и данным консультаций отношения не имеет.
+  CONTENT_EDITOR
   SUPPORT_OPERATOR
   QUALITY_TEAM
   FINANCE_CONTROL
