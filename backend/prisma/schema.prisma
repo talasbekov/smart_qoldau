@@ -29,6 +29,7 @@ model User {
   createdAt     DateTime       @default(now()) @map("created_at")
   refreshTokens RefreshToken[]
   expert        Expert?
+  subscriptions Subscription[]
 
   @@map("users")
 }
@@ -462,7 +463,11 @@ model Payment {
   paymentMethodId     String        @map("payment_method_id")
   amountTiyn          Int           @map("amount_tiyn") // полная цена (снапшот priceTiyn)
   discountTiyn        Int           @default(0) @map("discount_tiyn") // Premium Р-03 — E12, пока 0
-  commissionTiyn      Int           @map("commission_tiyn") // Math.round(amount*0.15), фиксируется при capture
+  commissionTiyn      Int           @map("commission_tiyn") // Math.round(amount*rate), фиксируется при capture
+  // Снимок ставки комиссии в базисных пунктах: 1500 = 15 % (обычная),
+  // 500 = 5 % (Premium, Р-03 — скидку клиенту платит платформа). Без
+  // снимка через год не восстановить, почему на строке именно эта сумма.
+  commissionRateBp    Int           @default(1500) @map("commission_rate_bp")
   status              PaymentStatus @default(PENDING)
   providerHoldId      String?       @map("provider_hold_id") // id операции у провайдера
   holdCreatedAt       DateTime?     @map("hold_created_at") // для перехолда >5 дней
@@ -769,4 +774,41 @@ model TicketMessage {
 
   @@index([ticketId, createdAt])
   @@map("ticket_messages")
+}
+
+enum SubscriptionPlan {
+  MONTH
+  YEAR
+}
+
+enum SubscriptionStatus {
+  ACTIVE // оплачен текущий период
+  GRACE // оплата не прошла, идут ретраи — доступ сохраняется (Р-09)
+  CANCELLED // отменена клиентом, доступ до currentPeriodEnd
+  EXPIRED // период кончился, доступа нет
+}
+
+model Subscription {
+  id               String             @id @default(uuid())
+  userId           String             @map("user_id")
+  user             User               @relation(fields: [userId], references: [id])
+  plan             SubscriptionPlan
+  status           SubscriptionStatus @default(ACTIVE)
+  // Конец оплаченного периода. Доступ есть, пока now() < currentPeriodEnd,
+  // независимо от того, отменена подписка или нет (Р-09).
+  currentPeriodEnd DateTime           @map("current_period_end")
+  paymentMethodId  String             @map("payment_method_id")
+  // Ретраи автопродления: 3 попытки за 72 часа от firstFailedAt (Р-09).
+  renewAttempts    Int                @default(0) @map("renew_attempts")
+  firstFailedAt    DateTime?          @map("first_failed_at")
+  cancelledAt      DateTime?          @map("cancelled_at")
+  createdAt        DateTime           @default(now()) @map("created_at")
+
+  // Рабочий запрос sweep'а: кому пора продлевать.
+  @@index([status, currentPeriodEnd])
+  // Плюс частичный уникальный индекс subscriptions_active_uq (raw SQL в
+  // миграции 20260826170000_premium):
+  //   UNIQUE(user_id) WHERE status IN ('ACTIVE','GRACE','CANCELLED').
+  // Prisma частичные индексы не выражает — не удалять при prisma migrate dev.
+  @@map("subscriptions")
 }
