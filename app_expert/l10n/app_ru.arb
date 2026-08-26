@@ -361,5 +361,97 @@
   "earningsStatCommission": "Комиссия платформы",
   "@earningsStatCommission": {
     "description": "Плитки дохода (прототип Expert Web - Доход)"
+  },
+  "actionSend": "Отправить",
+  "@actionSend": {
+    "description": "Кнопка отправки формы (обращение в поддержку)"
+  },
+  "emergencyDisclaimerText": "Платформа не заменяет экстренные службы. Если жизни или здоровью угрожает опасность, звоните напрямую:",
+  "@emergencyDisclaimerText": {
+    "description": "Локализованный текст SqEmergencyDisclaimer.disclaimerText (ТЗ §4.3) — виджет из packages/shared не может зависеть от l10n приложения, значение передаётся явно"
+  },
+  "errorGeneric": "Что-то пошло не так",
+  "@errorGeneric": {
+    "description": "Текст-заглушка для непредвиденной ошибки без более точного объяснения"
+  },
+  "supportEmpty": "Обращений пока нет",
+  "@supportEmpty": {
+    "description": "Пустой список обращений"
+  },
+  "supportNewTicket": "Новое обращение",
+  "@supportNewTicket": {
+    "description": "Кнопка создания обращения"
+  },
+  "supportNoReplyNotice": "Дописать в это обращение нельзя — если нужно добавить детали, создайте новое",
+  "@supportNoReplyNotice": {
+    "description": "Пояснение в карточке обращения: бэкенд не даёт автору отвечать в тред"
+  },
+  "supportTitle": "Поддержка",
+  "@supportTitle": {
+    "description": "Заголовок экрана обращений"
+  },
+  "ticketAuthorStaff": "Поддержка",
+  "@ticketAuthorStaff": {
+    "description": "Автор сообщения обращения: сотрудник"
+  },
+  "ticketAuthorYou": "Вы",
+  "@ticketAuthorYou": {
+    "description": "Автор сообщения обращения: клиент"
+  },
+  "ticketBodyInvalid": "Опишите ситуацию подробнее",
+  "@ticketBodyInvalid": {
+    "description": "Ошибка валидации текста"
+  },
+  "ticketBodyLabel": "Опишите ситуацию",
+  "@ticketBodyLabel": {
+    "description": "Поле текста обращения"
+  },
+  "ticketCategoryAccountData": "Аккаунт и данные",
+  "@ticketCategoryAccountData": {
+    "description": "Категория обращения ACCOUNT_DATA"
+  },
+  "ticketCategoryConsultations": "Консультации",
+  "@ticketCategoryConsultations": {
+    "description": "Категория обращения CONSULTATIONS"
+  },
+  "ticketCategoryLabel": "Категория",
+  "@ticketCategoryLabel": {
+    "description": "Выбор категории обращения"
+  },
+  "ticketCategoryOther": "Другое",
+  "@ticketCategoryOther": {
+    "description": "Категория обращения OTHER"
+  },
+  "ticketCategoryPayment": "Оплата",
+  "@ticketCategoryPayment": {
+    "description": "Категория обращения PAYMENT"
+  },
+  "ticketCategorySecurity": "Безопасность",
+  "@ticketCategorySecurity": {
+    "description": "Категория обращения SECURITY"
+  },
+  "ticketCategoryTechnical": "Технические проблемы",
+  "@ticketCategoryTechnical": {
+    "description": "Категория обращения TECHNICAL"
+  },
+  "ticketStatusInProgress": "В работе",
+  "@ticketStatusInProgress": {
+    "description": "Статус обращения IN_PROGRESS"
+  },
+  "ticketStatusNew": "Новое",
+  "@ticketStatusNew": {
+    "description": "Статус обращения NEW"
+  },
+  "ticketStatusResolved": "Решено",
+  "@ticketStatusResolved": {
+    "description": "Статус обращения RESOLVED"
+  },
+  "ticketSubjectInvalid": "Укажите тему обращения",
+  "@ticketSubjectInvalid": {
+    "description": "Ошибка валидации темы"
+  },
+  "ticketSubjectLabel": "Тема",
+  "@ticketSubjectLabel": {
+    "description": "Поле темы обращения"
   }
 }

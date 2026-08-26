@@ -57,6 +57,12 @@ class ProfileScreen extends ConsumerWidget {
               ),
         items: [
           ListTile(
+            key: const Key('sq-profile-support'),
+            leading: const Icon(Icons.support_agent_outlined),
+            title: Text(l10n.supportTitle),
+            onTap: () => context.push(RoutePaths.support),
+          ),
+          ListTile(
             key: const Key('sq-profile-notifications'),
             leading: const Icon(Icons.notifications_outlined),
             title: Text(l10n.notificationsScreenTitle),

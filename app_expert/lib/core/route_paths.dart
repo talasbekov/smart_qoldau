@@ -84,4 +84,12 @@ abstract final class RoutePaths {
   /// Профиль и центр уведомлений (задача 16 эпика E7).
   static const profile = '/profile';
   static const notifications = '/notifications';
+
+  /// Поддержка эксперта (E14). Прототип мобильного эксперта такой экран
+  /// содержит, в продукте его не было: тикеты (E8a) заводил только
+  /// клиент, а психологу писать было некуда.
+  static const support = '/support';
+  static const supportNew = '/support/new';
+  static const supportTicketPattern = '/support/:id';
+  static String supportTicket(String id) => '/support/$id';
 }

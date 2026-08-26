@@ -31,6 +31,9 @@ import 'features/earnings/ui/payout_screen.dart';
 import 'features/home/ui/home_screen.dart';
 import 'features/notifications/ui/notifications_screen.dart';
 import 'features/profile/ui/profile_screen.dart';
+import 'features/support/ui/new_ticket_screen.dart';
+import 'features/support/ui/support_screen.dart';
+import 'features/support/ui/ticket_screen.dart';
 import 'features/reviews/ui/expert_reviews_screen.dart';
 import 'features/onboarding/state/onboarding_controller.dart';
 import 'features/onboarding/ui/profile_step_screen.dart';
@@ -153,6 +156,19 @@ GoRouter sqExpertRouter(Ref ref) {
       GoRoute(
         path: RoutePaths.reviews,
         builder: (context, state) => const ExpertReviewsScreen(),
+      ),
+      GoRoute(
+        path: RoutePaths.support,
+        builder: (context, state) => const SupportScreen(),
+      ),
+      GoRoute(
+        path: RoutePaths.supportNew,
+        builder: (context, state) => const NewTicketScreen(),
+      ),
+      GoRoute(
+        path: RoutePaths.supportTicketPattern,
+        builder: (context, state) =>
+            TicketScreen(ticketId: state.pathParameters['id']!),
       ),
       GoRoute(
         path: RoutePaths.profile,

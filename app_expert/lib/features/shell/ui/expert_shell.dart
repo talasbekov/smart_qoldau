@@ -44,6 +44,7 @@ const _sections = <_Section>[
 
 const _serviceSections = <_Section>[
   _Section('notifications', RoutePaths.notifications, Icons.notifications_none),
+  _Section('support', RoutePaths.support, Icons.support_agent_outlined),
   _Section('profile', RoutePaths.profile, Icons.person_outline),
 ];
 
@@ -69,6 +70,8 @@ class ExpertShell extends StatelessWidget {
         return l10n.reviewsScreenTitle;
       case 'notifications':
         return l10n.notificationsScreenTitle;
+      case 'support':
+        return l10n.supportTitle;
       default:
         return l10n.profileScreenTitle;
     }

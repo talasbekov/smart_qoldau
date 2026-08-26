@@ -593,4 +593,75 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get earningsStatCommission => 'Платформа комиссиясы';
+
+  @override
+  String get actionSend => 'Жіберу';
+
+  @override
+  String get emergencyDisclaimerText =>
+      'Платформа шұғыл қызметтерді алмастырмайды. Егер өмірге немесе денсаулыққа қауіп төнсе, тікелей хабарласыңыз:';
+
+  @override
+  String get errorGeneric => 'Бірдеңе дұрыс болмады';
+
+  @override
+  String get supportEmpty => 'Өтінімдер әзірге жоқ';
+
+  @override
+  String get supportNewTicket => 'Жаңа өтінім';
+
+  @override
+  String get supportNoReplyNotice =>
+      'Бұл өтінімге қосымша жазуға болмайды — егер дерек қосу керек болса, жаңа өтінім жасаңыз';
+
+  @override
+  String get supportTitle => 'Қолдау';
+
+  @override
+  String get ticketAuthorStaff => 'Қолдау';
+
+  @override
+  String get ticketAuthorYou => 'Сіз';
+
+  @override
+  String get ticketBodyInvalid => 'Жағдайды толығырақ сипаттаңыз';
+
+  @override
+  String get ticketBodyLabel => 'Жағдайды сипаттаңыз';
+
+  @override
+  String get ticketCategoryAccountData => 'Аккаунт және деректер';
+
+  @override
+  String get ticketCategoryConsultations => 'Кеңестер';
+
+  @override
+  String get ticketCategoryLabel => 'Санат';
+
+  @override
+  String get ticketCategoryOther => 'Басқа';
+
+  @override
+  String get ticketCategoryPayment => 'Төлем';
+
+  @override
+  String get ticketCategorySecurity => 'Қауіпсіздік';
+
+  @override
+  String get ticketCategoryTechnical => 'Техникалық мәселелер';
+
+  @override
+  String get ticketStatusInProgress => 'Жұмыста';
+
+  @override
+  String get ticketStatusNew => 'Жаңа';
+
+  @override
+  String get ticketStatusResolved => 'Шешілді';
+
+  @override
+  String get ticketSubjectInvalid => 'Өтінім тақырыбын жазыңыз';
+
+  @override
+  String get ticketSubjectLabel => 'Тақырып';
 }

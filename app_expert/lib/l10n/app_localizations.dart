@@ -1189,6 +1189,144 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Комиссия платформы'**
   String get earningsStatCommission;
+
+  /// Кнопка отправки формы (обращение в поддержку)
+  ///
+  /// In ru, this message translates to:
+  /// **'Отправить'**
+  String get actionSend;
+
+  /// Локализованный текст SqEmergencyDisclaimer.disclaimerText (ТЗ §4.3) — виджет из packages/shared не может зависеть от l10n приложения, значение передаётся явно
+  ///
+  /// In ru, this message translates to:
+  /// **'Платформа не заменяет экстренные службы. Если жизни или здоровью угрожает опасность, звоните напрямую:'**
+  String get emergencyDisclaimerText;
+
+  /// Текст-заглушка для непредвиденной ошибки без более точного объяснения
+  ///
+  /// In ru, this message translates to:
+  /// **'Что-то пошло не так'**
+  String get errorGeneric;
+
+  /// Пустой список обращений
+  ///
+  /// In ru, this message translates to:
+  /// **'Обращений пока нет'**
+  String get supportEmpty;
+
+  /// Кнопка создания обращения
+  ///
+  /// In ru, this message translates to:
+  /// **'Новое обращение'**
+  String get supportNewTicket;
+
+  /// Пояснение в карточке обращения: бэкенд не даёт автору отвечать в тред
+  ///
+  /// In ru, this message translates to:
+  /// **'Дописать в это обращение нельзя — если нужно добавить детали, создайте новое'**
+  String get supportNoReplyNotice;
+
+  /// Заголовок экрана обращений
+  ///
+  /// In ru, this message translates to:
+  /// **'Поддержка'**
+  String get supportTitle;
+
+  /// Автор сообщения обращения: сотрудник
+  ///
+  /// In ru, this message translates to:
+  /// **'Поддержка'**
+  String get ticketAuthorStaff;
+
+  /// Автор сообщения обращения: клиент
+  ///
+  /// In ru, this message translates to:
+  /// **'Вы'**
+  String get ticketAuthorYou;
+
+  /// Ошибка валидации текста
+  ///
+  /// In ru, this message translates to:
+  /// **'Опишите ситуацию подробнее'**
+  String get ticketBodyInvalid;
+
+  /// Поле текста обращения
+  ///
+  /// In ru, this message translates to:
+  /// **'Опишите ситуацию'**
+  String get ticketBodyLabel;
+
+  /// Категория обращения ACCOUNT_DATA
+  ///
+  /// In ru, this message translates to:
+  /// **'Аккаунт и данные'**
+  String get ticketCategoryAccountData;
+
+  /// Категория обращения CONSULTATIONS
+  ///
+  /// In ru, this message translates to:
+  /// **'Консультации'**
+  String get ticketCategoryConsultations;
+
+  /// Выбор категории обращения
+  ///
+  /// In ru, this message translates to:
+  /// **'Категория'**
+  String get ticketCategoryLabel;
+
+  /// Категория обращения OTHER
+  ///
+  /// In ru, this message translates to:
+  /// **'Другое'**
+  String get ticketCategoryOther;
+
+  /// Категория обращения PAYMENT
+  ///
+  /// In ru, this message translates to:
+  /// **'Оплата'**
+  String get ticketCategoryPayment;
+
+  /// Категория обращения SECURITY
+  ///
+  /// In ru, this message translates to:
+  /// **'Безопасность'**
+  String get ticketCategorySecurity;
+
+  /// Категория обращения TECHNICAL
+  ///
+  /// In ru, this message translates to:
+  /// **'Технические проблемы'**
+  String get ticketCategoryTechnical;
+
+  /// Статус обращения IN_PROGRESS
+  ///
+  /// In ru, this message translates to:
+  /// **'В работе'**
+  String get ticketStatusInProgress;
+
+  /// Статус обращения NEW
+  ///
+  /// In ru, this message translates to:
+  /// **'Новое'**
+  String get ticketStatusNew;
+
+  /// Статус обращения RESOLVED
+  ///
+  /// In ru, this message translates to:
+  /// **'Решено'**
+  String get ticketStatusResolved;
+
+  /// Ошибка валидации темы
+  ///
+  /// In ru, this message translates to:
+  /// **'Укажите тему обращения'**
+  String get ticketSubjectInvalid;
+
+  /// Поле темы обращения
+  ///
+  /// In ru, this message translates to:
+  /// **'Тема'**
+  String get ticketSubjectLabel;
 }
 
 class _AppLocalizationsDelegate

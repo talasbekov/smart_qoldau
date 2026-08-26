@@ -594,4 +594,75 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get earningsStatCommission => 'Комиссия платформы';
+
+  @override
+  String get actionSend => 'Отправить';
+
+  @override
+  String get emergencyDisclaimerText =>
+      'Платформа не заменяет экстренные службы. Если жизни или здоровью угрожает опасность, звоните напрямую:';
+
+  @override
+  String get errorGeneric => 'Что-то пошло не так';
+
+  @override
+  String get supportEmpty => 'Обращений пока нет';
+
+  @override
+  String get supportNewTicket => 'Новое обращение';
+
+  @override
+  String get supportNoReplyNotice =>
+      'Дописать в это обращение нельзя — если нужно добавить детали, создайте новое';
+
+  @override
+  String get supportTitle => 'Поддержка';
+
+  @override
+  String get ticketAuthorStaff => 'Поддержка';
+
+  @override
+  String get ticketAuthorYou => 'Вы';
+
+  @override
+  String get ticketBodyInvalid => 'Опишите ситуацию подробнее';
+
+  @override
+  String get ticketBodyLabel => 'Опишите ситуацию';
+
+  @override
+  String get ticketCategoryAccountData => 'Аккаунт и данные';
+
+  @override
+  String get ticketCategoryConsultations => 'Консультации';
+
+  @override
+  String get ticketCategoryLabel => 'Категория';
+
+  @override
+  String get ticketCategoryOther => 'Другое';
+
+  @override
+  String get ticketCategoryPayment => 'Оплата';
+
+  @override
+  String get ticketCategorySecurity => 'Безопасность';
+
+  @override
+  String get ticketCategoryTechnical => 'Технические проблемы';
+
+  @override
+  String get ticketStatusInProgress => 'В работе';
+
+  @override
+  String get ticketStatusNew => 'Новое';
+
+  @override
+  String get ticketStatusResolved => 'Решено';
+
+  @override
+  String get ticketSubjectInvalid => 'Укажите тему обращения';
+
+  @override
+  String get ticketSubjectLabel => 'Тема';
 }
