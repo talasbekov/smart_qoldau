@@ -2341,6 +2341,12 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Цикл {current} из {total}'**
   String breathingCycle(int current, int total);
+
+  /// Цена базового тарифа в сравнении (прототип Web - Premium)
+  ///
+  /// In ru, this message translates to:
+  /// **'Бесплатно'**
+  String get premiumPlanFree;
 }
 
 class _AppLocalizationsDelegate

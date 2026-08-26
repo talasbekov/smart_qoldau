@@ -373,5 +373,6 @@
   "materialsStreak": "{days} күн қатарынан",
   "materialsCompleted": "Өтілген материалдар: {count}",
   "materialsDuration": "{minutes} мин",
-  "breathingCycle": "{total} циклдің {current}-і"
+  "breathingCycle": "{total} циклдің {current}-і",
+  "premiumPlanFree": "Тегін"
 }

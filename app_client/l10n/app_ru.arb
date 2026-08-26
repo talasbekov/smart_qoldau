@@ -1596,5 +1596,9 @@
         "type": "int"
       }
     }
+  },
+  "premiumPlanFree": "Бесплатно",
+  "@premiumPlanFree": {
+    "description": "Цена базового тарифа в сравнении (прототип Web - Premium)"
   }
 }

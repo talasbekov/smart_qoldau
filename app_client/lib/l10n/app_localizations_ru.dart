@@ -1235,4 +1235,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String breathingCycle(int current, int total) {
     return 'Цикл $current из $total';
   }
+
+  @override
+  String get premiumPlanFree => 'Бесплатно';
 }

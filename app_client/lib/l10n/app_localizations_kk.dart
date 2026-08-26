@@ -1229,4 +1229,7 @@ class AppLocalizationsKk extends AppLocalizations {
   String breathingCycle(int current, int total) {
     return '$total циклдің $current-і';
   }
+
+  @override
+  String get premiumPlanFree => 'Тегін';
 }

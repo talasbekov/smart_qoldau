@@ -9,9 +9,10 @@ library;
 import 'package:flutter/material.dart';
 import 'package:shared/shared.dart';
 
-/// Минимальная ширина карточки из прототипа. Уже — и в карточку перестают
-/// помещаться имя, специализации и цена в одну строку.
-const double _minCardWidth = 270;
+/// Минимальная ширина карточки каталога из прототипа. Уже — и в карточку
+/// перестают помещаться имя, специализации и цена в одну строку. У
+/// материалов прототип задаёт 260 px, поэтому значение параметризовано.
+const double _defaultMinCardWidth = 270;
 
 class ExpertGrid extends StatelessWidget {
   const ExpertGrid({
@@ -20,12 +21,16 @@ class ExpertGrid extends StatelessWidget {
     required this.itemBuilder,
     this.footer,
     this.padding = const EdgeInsets.all(SqSpacing.l),
+    this.minItemWidth = _defaultMinCardWidth,
+    this.controller,
   });
 
   final int itemCount;
   final IndexedWidgetBuilder itemBuilder;
   final Widget? footer;
   final EdgeInsets padding;
+  final double minItemWidth;
+  final ScrollController? controller;
 
   @override
   Widget build(BuildContext context) {
@@ -33,9 +38,10 @@ class ExpertGrid extends StatelessWidget {
       builder: (context, constraints) {
         final available = constraints.maxWidth - padding.horizontal;
         // auto-fit: столько колонок, сколько влезает целиком.
-        final columns = (available / _minCardWidth).floor().clamp(1, 4);
+        final columns = (available / minItemWidth).floor().clamp(1, 4);
 
         return ListView(
+          controller: controller,
           padding: padding,
           children: [
             if (columns == 1)

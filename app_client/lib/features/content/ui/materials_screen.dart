@@ -11,6 +11,7 @@ import 'package:shared/shared.dart';
 import '../../../core/error_text.dart';
 import '../../../core/route_paths.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../catalog/ui/expert_grid.dart';
 import '../state/content_controller.dart';
 
 const _kindLabels = <ContentKind?, String>{
@@ -127,18 +128,21 @@ class _MaterialsScreenState extends ConsumerState<MaterialsScreen> {
                           title: l10n.materialsEmpty,
                         ),
                       )
-                    : ListView.builder(
+                    // Прототип `Web - Материалы` раскладывает карточки как
+                    // auto-fit minmax(260px, 1fr); на телефоне это одна
+                    // колонка — прежний список.
+                    : ExpertGrid(
                         controller: _scroll,
-                        padding: const EdgeInsets.all(SqSpacing.l),
-                        itemCount:
-                            page.items.length + (page.loadingMore ? 1 : 0),
+                        minItemWidth: 260,
+                        itemCount: page.items.length,
                         itemBuilder: (context, index) =>
-                            index >= page.items.length
+                            _ItemCard(item: page.items[index]),
+                        footer: page.loadingMore
                             ? const Padding(
                                 padding: EdgeInsets.all(SqSpacing.l),
                                 child: SqLoader(),
                               )
-                            : _ItemCard(item: page.items[index]),
+                            : null,
                       ),
               ),
             ),
