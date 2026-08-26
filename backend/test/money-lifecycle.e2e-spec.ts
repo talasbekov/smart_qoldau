@@ -119,21 +119,20 @@ describe('Сквозной e2e денежного цикла (E5, задача 9
     });
     const paymentIds = payments.map((p) => p.id);
 
+    // Только записи СВОИХ проводок. Раньше чистились все записи на общих
+    // счетах (эквайер, комиссия, выплаты) — то есть спек сносил половинки
+    // чужих проводок, включая подписочные, оставляя их несбалансированными.
     await prisma.ledgerEntry.deleteMany({
       where: {
-        OR: [
-          { account: { in: expertIds.map((id) => expertAccount(id)) } },
-          {
-            account: {
-              in: [
-                ACC_ACQUIRER,
-                ACC_COMMISSION,
-                ACC_PAYOUT_PENDING,
-                ACC_PAYOUT_SENT,
-              ],
+        transaction: {
+          OR: [
+            { kind: 'capture', refId: { in: paymentIds } },
+            {
+              kind: { in: ['payout_reserve', 'payout_sent', 'payout_reject'] },
+              refId: { in: payoutIds },
             },
-          },
-        ],
+          ],
+        },
       },
     });
     await prisma.ledgerTransaction.deleteMany({
@@ -229,9 +228,23 @@ describe('Сквозной e2e денежного цикла (E5, задача 9
     timer = app.get(OfferTimerService);
   });
 
+  // Базовые балансы ОБЩИХ счетов на начало теста. Счёт эксперта
+  // принадлежит спеку целиком, а эквайер, комиссия и выплаты общие для
+  // всей базы — по ним проверяется движение за сценарий, а не абсолютный
+  // итог. Раньше спек добивался абсолютных чисел тем, что вычищал эти
+  // счета целиком, снося половинки чужих проводок.
+  let acquirerBefore = 0;
+  let commissionBefore = 0;
+  let payoutPendingBefore = 0;
+  let payoutSentBefore = 0;
+
   beforeEach(async () => {
     fakeClock.current = new Date('2026-08-20T05:00:00Z');
     await cleanup();
+    acquirerBefore = await ledger.balanceTiyn(ACC_ACQUIRER);
+    commissionBefore = await ledger.balanceTiyn(ACC_COMMISSION);
+    payoutPendingBefore = await ledger.balanceTiyn(ACC_PAYOUT_PENDING);
+    payoutSentBefore = await ledger.balanceTiyn(ACC_PAYOUT_SENT);
   });
 
   afterAll(async () => {
@@ -379,10 +392,20 @@ describe('Сквозной e2e денежного цикла (E5, задача 9
     expect(await ledger.balanceTiyn(expertAccount(exp.expertId))).toBe(
       NET_TIYN - PAYOUT_TIYN,
     );
-    expect(await ledger.balanceTiyn(ACC_COMMISSION)).toBe(COMMISSION_TIYN);
-    expect(await ledger.balanceTiyn(ACC_PAYOUT_PENDING)).toBe(0);
-    expect(await ledger.balanceTiyn(ACC_PAYOUT_SENT)).toBe(PAYOUT_TIYN);
-    expect(await ledger.balanceTiyn(ACC_ACQUIRER)).toBe(-PRICE_TIYN);
+    expect((await ledger.balanceTiyn(ACC_COMMISSION)) - commissionBefore).toBe(
+      COMMISSION_TIYN,
+    );
+    expect(
+      (await ledger.balanceTiyn(ACC_PAYOUT_PENDING)) - payoutPendingBefore,
+    ).toBe(0);
+    expect((await ledger.balanceTiyn(ACC_PAYOUT_SENT)) - payoutSentBefore).toBe(
+      PAYOUT_TIYN,
+    );
+    // Эквайер — общий счёт: на него пишут и подписки Premium, поэтому
+    // сравниваем движение за сценарий, а не абсолютный баланс базы.
+    expect((await ledger.balanceTiyn(ACC_ACQUIRER)) - acquirerBefore).toBe(
+      -PRICE_TIYN,
+    );
 
     // Полная audit-цепочка payment.*/payout.*.
     const auditRows = await prisma.auditLog.findMany({
@@ -449,8 +472,10 @@ describe('Сквозной e2e денежного цикла (E5, задача 9
       }),
     ).toBe(0);
     expect(await ledger.balanceTiyn(expertAccount(exp.expertId))).toBe(0);
-    expect(await ledger.balanceTiyn(ACC_ACQUIRER)).toBe(0);
-    expect(await ledger.balanceTiyn(ACC_COMMISSION)).toBe(0);
+    expect((await ledger.balanceTiyn(ACC_ACQUIRER)) - acquirerBefore).toBe(0);
+    expect((await ledger.balanceTiyn(ACC_COMMISSION)) - commissionBefore).toBe(
+      0,
+    );
 
     const auditTransitions = (
       await prisma.auditLog.findMany({

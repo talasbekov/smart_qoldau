@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable, Logger, forwardRef } from '@nestjs/common';
 import {
   ConsultationOutcome,
   ConsultationPaymentStatus,
@@ -19,6 +19,12 @@ import {
   LedgerService,
 } from '../ledger/ledger.service';
 import { NotificationsService } from '../notifications/notifications.service';
+import { PremiumService } from '../premium/premium.service';
+import {
+  COMMISSION_BP_PREMIUM,
+  COMMISSION_BP_REGULAR,
+  PREMIUM_DISCOUNT_BP,
+} from '../premium/premium.constants';
 import { formatTenge } from '../notifications/notification-templates';
 import { PaymentProviderPort } from './provider/payment-provider.port';
 import { PayResultDto } from './dto/pay-result.dto';
@@ -26,7 +32,9 @@ import { PaymentStatusDto } from './dto/payment-status.dto';
 import { EarningsDto } from './dto/earnings.dto';
 import { ListEarningsDto } from './dto/list-earnings.dto';
 
-const COMMISSION_RATE = 0.15;
+// Ставка комиссии переехала в premium.constants как COMMISSION_BP_REGULAR
+// (базисные пункты): с приходом Premium ставок стало две, и держать их в
+// разных файлах — верный способ развести их значения.
 const DEFAULT_TAKE = 20;
 const MAX_TAKE = 100;
 
@@ -43,6 +51,8 @@ export class PaymentsService {
     private provider: PaymentProviderPort,
     private ledger: LedgerService,
     private notifications: NotificationsService,
+    @Inject(forwardRef(() => PremiumService))
+    private premium: PremiumService,
   ) {}
 
   // POST /v1/consultations/:id/pay — только клиент-участник ACTIVE-
@@ -90,8 +100,25 @@ export class PaymentsService {
       apiError('ALREADY_PAID', 'Консультация уже оплачена', 409);
     }
 
-    const amountTiyn = consultation.priceTiyn;
-    const commissionTiyn = Math.round(amountTiyn * COMMISSION_RATE);
+    const isPremium = await this.premium.isPremiumAt(
+      consultation.clientUserId,
+      this.clock.now(),
+    );
+    const fullPriceTiyn = consultation.priceTiyn;
+    // Р-03: клиент платит на 10 % меньше, а эксперт всё равно получает 85 %
+    // ПОЛНОЙ цены — скидку оплачивает платформа из своей комиссии (5 %
+    // вместо 15 %). Поэтому и скидка, и комиссия считаются от полной цены,
+    // а не от суммы со скидкой: иначе за чужую подписку платил бы эксперт.
+    const discountTiyn = isPremium
+      ? Math.round((fullPriceTiyn * PREMIUM_DISCOUNT_BP) / 10_000)
+      : 0;
+    const amountTiyn = fullPriceTiyn - discountTiyn;
+    const commissionRateBp = isPremium
+      ? COMMISSION_BP_PREMIUM
+      : COMMISSION_BP_REGULAR;
+    const commissionTiyn = Math.round(
+      (fullPriceTiyn * commissionRateBp) / 10_000,
+    );
 
     const payment = await this.upsertPending(
       consultationId,
@@ -100,6 +127,8 @@ export class PaymentsService {
       method!.id,
       amountTiyn,
       commissionTiyn,
+      discountTiyn,
+      commissionRateBp,
     );
 
     // Ключ идемпотентности — на ПОПЫТКУ оплаты (holdAttempts инкрементится в
@@ -208,6 +237,10 @@ export class PaymentsService {
     paymentMethodId: string,
     amountTiyn: number,
     commissionTiyn: number,
+    // Снимок Premium на момент оплаты: отмена подписки завтра не должна
+    // пересчитывать вчерашний платёж.
+    discountTiyn: number,
+    commissionRateBp: number,
   ) {
     try {
       return await this.prisma.payment.create({
@@ -218,6 +251,8 @@ export class PaymentsService {
           paymentMethodId,
           amountTiyn,
           commissionTiyn,
+          discountTiyn,
+          commissionRateBp,
           status: PaymentStatus.PENDING,
           holdAttempts: 1,
         },
@@ -239,6 +274,8 @@ export class PaymentsService {
             paymentMethodId,
             amountTiyn,
             commissionTiyn,
+            discountTiyn,
+            commissionRateBp,
             status: PaymentStatus.PENDING,
             failReason: null,
             holdAttempts: { increment: 1 },
@@ -247,7 +284,13 @@ export class PaymentsService {
         if (revived.count === 0) {
           const refreshed = await this.prisma.payment.updateMany({
             where: { consultationId, status: PaymentStatus.PENDING },
-            data: { paymentMethodId, amountTiyn, commissionTiyn },
+            data: {
+              paymentMethodId,
+              amountTiyn,
+              commissionTiyn,
+              discountTiyn,
+              commissionRateBp,
+            },
           });
           if (refreshed.count === 0) {
             apiError('ALREADY_PAID', 'Консультация уже оплачена', 409);
@@ -356,6 +399,7 @@ export class PaymentsService {
       consultationId: string;
       amountTiyn: number;
       commissionTiyn: number;
+      discountTiyn: number;
       providerHoldId: string | null;
       clientUserId: string;
       expertId: string;
@@ -368,7 +412,18 @@ export class PaymentsService {
       amountTiyn: payment.amountTiyn,
     });
 
-    const netTiyn = payment.amountTiyn - payment.commissionTiyn;
+    // Эксперт получает 85 % ПОЛНОЙ цены при любой ставке комиссии (Р-03),
+    // поэтому его доля считается от полной цены по обычной ставке, а не от
+    // того, что заплатил клиент. Полная цена восстанавливается как
+    // «уплачено + скидка».
+    //
+    // Проводка сходится сама собой: скидка клиенту ровно равна тому, что
+    // платформа недобрала комиссии (10 % = 15 % − 5 %), поэтому
+    // amountTiyn = netTiyn + commissionTiyn и на Premium, и без него.
+    const fullPriceTiyn = payment.amountTiyn + payment.discountTiyn;
+    const netTiyn =
+      fullPriceTiyn -
+      Math.round((fullPriceTiyn * COMMISSION_BP_REGULAR) / 10_000);
 
     await this.prisma.$transaction(async (tx) => {
       await tx.payment.update({
@@ -482,9 +537,23 @@ export class PaymentsService {
       balanceTiyn,
       items: payments.map((p) => ({
         consultationId: p.consultationId,
-        priceTiyn: p.amountTiyn,
-        commissionTiyn: p.commissionTiyn,
-        netTiyn: p.amountTiyn - p.commissionTiyn,
+        // Эксперту показывается ПОЛНАЯ цена и его 85 % от неё: чужая
+        // Premium-скидка — расход платформы, в разбивке эксперта её нет.
+        priceTiyn: p.amountTiyn + p.discountTiyn,
+        // Эксперту показывается ЕГО удержание — всегда 15 % полной цены
+        // (Р-02: «цена − 15 % = итого»). Ставка из Payment — это фактический
+        // доход платформы: на Premium она берёт 5 %, доплачивая скидку
+        // клиента из своих. К деньгам эксперта это отношения не имеет, и
+        // разбивка у него обязана сходиться.
+        commissionTiyn: Math.round(
+          ((p.amountTiyn + p.discountTiyn) * COMMISSION_BP_REGULAR) / 10_000,
+        ),
+        netTiyn:
+          p.amountTiyn +
+          p.discountTiyn -
+          Math.round(
+            ((p.amountTiyn + p.discountTiyn) * COMMISSION_BP_REGULAR) / 10_000,
+          ),
         createdAt: p.updatedAt,
       })),
     };
