@@ -22,6 +22,9 @@ type ContentLocale = 'ru' | 'kk';
 /// медитацию и без запаса на пересылку ссылки знакомым.
 const MEDIA_TTL_SEC = 900;
 
+/// Материал считается пройденным на этой отметке.
+const COMPLETE_PERMILLE = 1000;
+
 function localeOf(userLocale: string): ContentLocale {
   return userLocale === 'kz' || userLocale === 'kk' ? 'kk' : 'ru';
 }
@@ -128,6 +131,67 @@ export class ContentService {
         this.clock.now().getTime() + MEDIA_TTL_SEC * 1000,
       ).toISOString(),
     };
+  }
+
+  /// Прогресс — upsert по паре (пользователь, материал). completedAt
+  /// ставится на 1000 и больше не сбрасывается: перечитал статью — она не
+  /// «разучилась», завершение это факт биографии, а не положение ползунка.
+  async saveProgress(
+    userId: string,
+    id: string,
+    positionPermille: number,
+  ): Promise<{ positionPermille: number; completed: boolean }> {
+    await this.findPublished(id);
+    const completedAt =
+      positionPermille >= COMPLETE_PERMILLE ? this.clock.now() : undefined;
+
+    const row = await this.prisma.contentProgress.upsert({
+      where: { userId_itemId: { userId, itemId: id } },
+      create: {
+        userId,
+        itemId: id,
+        positionPermille,
+        completedAt: completedAt ?? null,
+      },
+      update: {
+        positionPermille,
+        ...(completedAt ? { completedAt } : {}),
+      },
+    });
+
+    return {
+      positionPermille: row.positionPermille,
+      completed: row.completedAt !== null,
+    };
+  }
+
+  /// Голос «было полезно» — один на пользователя, повтор меняет решение.
+  /// Счётчики на карточке пересчитываются в той же транзакции: два числа
+  /// обязаны сходиться с числом строк, иначе они врут ровно тогда, когда на
+  /// них смотрят.
+  async vote(
+    userId: string,
+    id: string,
+    useful: boolean,
+  ): Promise<{ usefulYes: number; usefulNo: number }> {
+    await this.findPublished(id);
+
+    return this.prisma.$transaction(async (tx) => {
+      await tx.contentVote.upsert({
+        where: { userId_itemId: { userId, itemId: id } },
+        create: { userId, itemId: id, useful },
+        update: { useful },
+      });
+      const [yes, no] = await Promise.all([
+        tx.contentVote.count({ where: { itemId: id, useful: true } }),
+        tx.contentVote.count({ where: { itemId: id, useful: false } }),
+      ]);
+      await tx.contentItem.update({
+        where: { id },
+        data: { usefulYes: yes, usefulNo: no },
+      });
+      return { usefulYes: yes, usefulNo: no };
+    });
   }
 
   private async assertAccess(userId: string, item: ContentItem): Promise<void> {
