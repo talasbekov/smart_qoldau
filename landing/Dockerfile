@@ -17,6 +17,10 @@ FROM node:24-slim AS runtime
 WORKDIR /app
 ENV NODE_ENV=production
 ENV PORT=3000
+# Без этого standalone-сервер Next слушает на имени контейнера, а не на
+# всех интерфейсах: снаружи он доступен, а healthcheck по 127.0.0.1 —
+# нет, и контейнер вечно числится unhealthy.
+ENV HOSTNAME=0.0.0.0
 # standalone-сборка Next: сервер и ровно те зависимости, что ему нужны.
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
