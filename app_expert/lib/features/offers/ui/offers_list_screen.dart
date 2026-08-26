@@ -42,10 +42,32 @@ class OffersListScreen extends StatelessWidget {
             child: Text(l10n.offersEmpty, style: SqTypography.body),
           );
         }
-        return ListView.separated(
-          padding: const EdgeInsets.all(16),
+        // Прототип веб-кабинета (`Expert Web - Заявки`) раскладывает
+        // карточки сеткой в две колонки: на широком экране столбец в одну
+        // карточку оставляет две трети экрана пустыми, а заявок у
+        // занятого психолога бывает несколько сразу.
+        final wide = SqLayoutScope.of(context).isWide;
+        if (!wide) {
+          return ListView.separated(
+            padding: const EdgeInsets.all(16),
+            itemCount: list.length,
+            separatorBuilder: (_, _) => const SizedBox(height: 12),
+            itemBuilder: (context, index) =>
+                _OfferTile(offer: list[index], onHandled: onRefresh),
+          );
+        }
+
+        return GridView.builder(
+          padding: const EdgeInsets.all(24),
           itemCount: list.length,
-          separatorBuilder: (_, _) => const SizedBox(height: 12),
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 2,
+            mainAxisSpacing: 16,
+            crossAxisSpacing: 16,
+            // Карточка заявки — заголовок, тема, формат, длительность и
+            // две кнопки: ниже этого она начинает резать текст.
+            mainAxisExtent: 220,
+          ),
           itemBuilder: (context, index) =>
               _OfferTile(offer: list[index], onHandled: onRefresh),
         );
@@ -79,7 +101,9 @@ class _OfferTileState extends ConsumerState<_OfferTile> {
   void _tick() {
     final remaining = widget.offer.deadlineAt.difference(DateTime.now());
     if (!mounted) return;
-    setState(() => _remaining = remaining.isNegative ? Duration.zero : remaining);
+    setState(
+      () => _remaining = remaining.isNegative ? Duration.zero : remaining,
+    );
   }
 
   @override
@@ -102,7 +126,8 @@ class _OfferTileState extends ConsumerState<_OfferTile> {
   void _reportUnexpected(ApiException error) {
     if (_expectedOfferErrorCodes.contains(error.code)) return;
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error.message)));
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(error.message)));
   }
 
   Future<void> _decline() async {
@@ -122,7 +147,9 @@ class _OfferTileState extends ConsumerState<_OfferTile> {
     if (_busy) return;
     setState(() => _busy = true);
     try {
-      final result = await ref.read(offersRepositoryProvider).accept(widget.offer.offerId);
+      final result = await ref
+          .read(offersRepositoryProvider)
+          .accept(widget.offer.offerId);
       if (mounted) context.push(RoutePaths.session(result.consultationId));
     } on ApiException catch (e) {
       _reportUnexpected(e);
@@ -137,6 +164,7 @@ class _OfferTileState extends ConsumerState<_OfferTile> {
     final l10n = AppLocalizations.of(context)!;
     final offer = widget.offer;
     return Container(
+      key: const Key('sq-offer-card'),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: SqColors.surface,
@@ -153,7 +181,9 @@ class _OfferTileState extends ConsumerState<_OfferTile> {
               Text(
                 l10n.secondsShort(_remaining.inSeconds),
                 key: Key('sq-offer-countdown-${offer.offerId}'),
-                style: SqTypography.body.copyWith(color: SqColors.textSecondary),
+                style: SqTypography.body.copyWith(
+                  color: SqColors.textSecondary,
+                ),
               ),
             ],
           ),

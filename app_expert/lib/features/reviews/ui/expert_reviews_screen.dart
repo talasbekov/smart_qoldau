@@ -99,7 +99,8 @@ class ExpertReviewsScreen extends ConsumerWidget {
           ),
         ),
         data: (reviews) => RefreshIndicator(
-          onRefresh: () => ref.read(expertReviewsControllerProvider.notifier).refresh(),
+          onRefresh: () =>
+              ref.read(expertReviewsControllerProvider.notifier).refresh(),
           child: ListView(
             padding: const EdgeInsets.all(16),
             children: [
@@ -112,7 +113,9 @@ class ExpertReviewsScreen extends ConsumerWidget {
                   const SizedBox(width: 8),
                   Text(
                     l10n.reviewsCount(reviews.ratingCount),
-                    style: SqTypography.body.copyWith(color: SqColors.textSecondary),
+                    style: SqTypography.body.copyWith(
+                      color: SqColors.textSecondary,
+                    ),
                   ),
                 ],
               ),
@@ -120,7 +123,9 @@ class ExpertReviewsScreen extends ConsumerWidget {
               if (reviews.items.isEmpty)
                 Padding(
                   padding: const EdgeInsets.only(top: 24),
-                  child: Center(child: Text(l10n.reviewsEmpty, style: SqTypography.body)),
+                  child: Center(
+                    child: Text(l10n.reviewsEmpty, style: SqTypography.body),
+                  ),
                 )
               else
                 for (final review in reviews.items)

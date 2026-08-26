@@ -4,12 +4,10 @@
   "@appTitle": {
     "description": "Заголовок приложения (MaterialApp.onGenerateTitle)."
   },
-
   "splashLoading": "Загружаем ваш кабинет…",
   "@splashLoading": {
     "description": "Экран заставки: подпись под заголовком, пока идёт restore() сессии."
   },
-
   "phoneScreenTitle": "Вход для специалиста",
   "@phoneScreenTitle": {
     "description": "Заголовок AppBar экрана входа по телефону."
@@ -26,7 +24,6 @@
   "@actionGetCode": {
     "description": "Кнопка отправки SMS-кода."
   },
-
   "codeScreenTitle": "Код подтверждения",
   "@codeScreenTitle": {
     "description": "Заголовок AppBar экрана ввода SMS-кода."
@@ -53,12 +50,10 @@
       }
     }
   },
-
   "actionRetry": "Повторить",
   "actionNext": "Далее",
   "actionSubmitProfile": "Отправить анкету",
   "errorLoadFailed": "Не удалось загрузить данные",
-
   "onboardingProfileTitle": "Анкета специалиста — шаг 1 из 2",
   "fieldFullName": "Имя и фамилия",
   "fieldCity": "Город",
@@ -67,24 +62,19 @@
   "fieldPriceTenge": "Стоимость консультации, ₸",
   "fieldLanguages": "Языки консультации",
   "fieldFormats": "Форматы консультаций",
-
   "languageRussian": "Русский",
   "languageKazakh": "Казахский",
   "languageEnglish": "Английский",
-
   "experienceLessThanYear": "Менее 1 года",
   "experienceOneToThree": "1–3 года",
   "experienceThreeToFive": "3–5 лет",
   "experienceFiveToTen": "5–10 лет",
   "experienceMoreThanTen": "Более 10 лет",
-
   "formatChat": "Чат",
   "formatAudio": "Аудио",
   "formatVideo": "Видео",
-
   "onboardingTopicsTitle": "Анкета специалиста — шаг 2 из 2",
   "onboardingTopicsHint": "Выберите темы консультаций, с которыми вы работаете",
-
   "documentsScreenTitle": "Документы верификации",
   "documentTypeIdentity": "Удостоверение личности",
   "documentTypeDiploma": "Диплом об образовании",
@@ -98,7 +88,6 @@
   "actionSubmitForReview": "Отправить на проверку",
   "actionUpload": "Загрузить",
   "actionReplace": "Заменить",
-
   "photoScreenTitle": "Фото профиля",
   "actionUploadPhoto": "Загрузить фото",
   "actionDeletePhoto": "Удалить фото",
@@ -106,7 +95,6 @@
   "photoStatusPending": "Фото отправлено на проверку",
   "photoStatusApproved": "Фото одобрено",
   "photoStatusRejected": "Фото отклонено",
-
   "verificationScreenTitle": "Статус верификации",
   "verificationDraft": "Анкета не отправлена",
   "verificationPending": "Анкета на проверке. Срок рассмотрения — до 24 часов",
@@ -115,22 +103,37 @@
   "fieldAbout": "О себе",
   "fieldStatusNone": "{field}: не заполнено",
   "@fieldStatusNone": {
-    "placeholders": { "field": { "type": "String" } }
+    "placeholders": {
+      "field": {
+        "type": "String"
+      }
+    }
   },
   "fieldStatusPending": "{field}: на проверке",
   "@fieldStatusPending": {
-    "placeholders": { "field": { "type": "String" } }
+    "placeholders": {
+      "field": {
+        "type": "String"
+      }
+    }
   },
   "fieldStatusApproved": "{field}: одобрено",
   "@fieldStatusApproved": {
-    "placeholders": { "field": { "type": "String" } }
+    "placeholders": {
+      "field": {
+        "type": "String"
+      }
+    }
   },
   "fieldStatusRejected": "{field}: отклонено",
   "@fieldStatusRejected": {
-    "placeholders": { "field": { "type": "String" } }
+    "placeholders": {
+      "field": {
+        "type": "String"
+      }
+    }
   },
   "actionReupload": "Загрузить заново",
-
   "weekdayMon": "Пн",
   "weekdayTue": "Вт",
   "weekdayWed": "Ср",
@@ -138,7 +141,6 @@
   "weekdayFri": "Пт",
   "weekdaySat": "Сб",
   "weekdaySun": "Вс",
-
   "scheduleScreenTitle": "Расписание",
   "scheduleStart": "Начало",
   "scheduleEnd": "Конец",
@@ -146,13 +148,11 @@
   "scheduleBreakEnd": "Перерыв до",
   "actionClearBreak": "Убрать перерыв",
   "actionSave": "Сохранить",
-
   "exceptionsScreenTitle": "Исключения в расписании",
   "scheduleDayOff": "Выходной",
   "actionMakeDayOff": "Сделать выходным",
   "actionCustomHours": "Другие часы работы",
   "actionRemoveException": "Убрать исключение",
-
   "homeScreenTitle": "Главная",
   "homeAcceptingBlockedByVerification": "Приём заявок откроется после проверки анкеты",
   "homeAcceptingOn": "Приём заявок включён",
@@ -160,17 +160,19 @@
   "homeNavConsultations": "Заявки и консультации",
   "homeNavEarnings": "Доход",
   "homeNavReviews": "Отзывы",
-
   "offerEmergencyBadge": "Срочный запрос",
   "offerNewTitle": "Новый оффер",
   "secondsShort": "{seconds} с",
   "@secondsShort": {
-    "placeholders": { "seconds": { "type": "int" } }
+    "placeholders": {
+      "seconds": {
+        "type": "int"
+      }
+    }
   },
   "actionDecline": "Отклонить",
   "actionAccept": "Принять",
   "offersEmpty": "Пока нет новых заявок",
-
   "consultationsScreenTitle": "Заявки и консультации",
   "consultationsTabOffers": "Заявки",
   "consultationsTabActive": "Идёт/Плановые",
@@ -178,24 +180,24 @@
   "listEmpty": "Пусто",
   "clientCode": "Клиент #{code}",
   "@clientCode": {
-    "placeholders": { "code": { "type": "int" } }
+    "placeholders": {
+      "code": {
+        "type": "int"
+      }
+    }
   },
   "consultationStatusScheduled": "Плановая запись",
   "consultationStatusActive": "Идёт сейчас",
   "consultationStatusCompleted": "Завершена",
   "consultationStatusCancelled": "Отменена",
-
   "noteEditorTitle": "Приватная заметка",
   "noteEditorHint": "Видна только вам. Не используйте медицинские диагнозы.",
-
   "outcomeSheetTitle": "Завершить консультацию",
   "outcomeCompleted": "Консультация состоялась",
   "outcomeClientNoShow": "Клиент не пришёл",
   "outcomeClientCancelled": "Клиент отменил",
   "outcomeTechIssue": "Технический сбой",
-
   "consultationFinished": "Консультация завершена",
-
   "callScreenTitle": "Звонок",
   "callConnecting": "Подключение…",
   "callReconnecting": "Связь восстанавливается…",
@@ -205,31 +207,40 @@
   "actionBackToChat": "Вернуться в чат",
   "callOfferChatFallback": "Связь не восстановилась — продолжите в чате",
   "callFailed": "Звонок не удался",
-
   "sessionHeaderTitle": "Клиент #{code} · {topic}",
   "@sessionHeaderTitle": {
     "placeholders": {
-      "code": { "type": "int" },
-      "topic": { "type": "String" }
+      "code": {
+        "type": "int"
+      },
+      "topic": {
+        "type": "String"
+      }
     }
   },
-
   "earningsScreenTitle": "Доход",
   "earningsBalance": "Баланс",
   "actionWithdraw": "Вывести",
   "earningsEmpty": "Пока нет начислений",
   "earningsCommission": "Комиссия: {amount}",
   "@earningsCommission": {
-    "placeholders": { "amount": { "type": "String" } }
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
   },
-
   "payoutScreenTitle": "Вывод средств",
   "payoutPendingReview": "Заявка на проверке у финконтроля",
   "payoutProcessing": "Заявка одобрена, отправлена на выплату",
   "payoutPaid": "Выплачено",
   "payoutRejected": "Заявка отклонена: {reason}",
   "@payoutRejected": {
-    "placeholders": { "reason": { "type": "String" } }
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
   },
   "payoutAmountLabel": "Сумма, ₸",
   "payoutPanLabel": "Номер карты",
@@ -238,11 +249,14 @@
   "payoutErrorInvalidPan": "Неверный номер карты",
   "payoutErrorInvalidExpiry": "Неверный срок действия (MM/YY)",
   "actionSubmitPayout": "Отправить заявку",
-
   "reviewsScreenTitle": "Отзывы",
   "reviewsCount": "{count} отзывов",
   "@reviewsCount": {
-    "placeholders": { "count": { "type": "int" } }
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   },
   "reviewsEmpty": "Пока нет отзывов",
   "reviewYourReply": "Ваш ответ",
@@ -256,12 +270,18 @@
   "reviewComplaintHint": "Опишите, почему отзыв нарушает правила. Отзыв скроют и исключат из рейтинга до решения модератора.",
   "reviewComplaintSent": "Жалоба отправлена, отзыв скрыт до решения модератора",
   "actionCancel": "Отмена",
-
   "notificationsScreenTitle": "Уведомления",
   "actionMarkAllRead": "Прочитать все",
   "notificationsEmpty": "Пока нет уведомлений",
-
   "profileScreenTitle": "Профиль",
   "profileLanguage": "Язык",
-  "actionLogout": "Выйти"
+  "actionLogout": "Выйти",
+  "webPresenceNotice": "Заявки приходят, пока открыта эта вкладка. Закроете — приём выключится, и клиент вас не увидит.",
+  "@webPresenceNotice": {
+    "description": "Предупреждение о присутствии в веб-кабинете (Р-26)"
+  },
+  "offersScreenTitle": "Заявки",
+  "@offersScreenTitle": {
+    "description": "Заголовок раздела заявок (веб-кабинет)"
+  }
 }

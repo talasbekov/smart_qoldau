@@ -531,4 +531,11 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get actionLogout => 'Выйти';
+
+  @override
+  String get webPresenceNotice =>
+      'Заявки приходят, пока открыта эта вкладка. Закроете — приём выключится, и клиент вас не увидит.';
+
+  @override
+  String get offersScreenTitle => 'Заявки';
 }

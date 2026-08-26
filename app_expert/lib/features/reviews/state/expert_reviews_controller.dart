@@ -39,5 +39,5 @@ class ExpertReviewsController extends AsyncNotifier<MyExpertReviews> {
 
 final expertReviewsControllerProvider =
     AsyncNotifierProvider<ExpertReviewsController, MyExpertReviews>(
-  ExpertReviewsController.new,
-);
+      ExpertReviewsController.new,
+    );

@@ -26,7 +26,8 @@ Widget _wrap(SqApi api) {
       ),
       GoRoute(
         path: RoutePaths.onboardingProfile,
-        builder: (context, state) => const Scaffold(body: Text('sq-stub-onboarding')),
+        builder: (context, state) =>
+            const Scaffold(body: Text('sq-stub-onboarding')),
       ),
     ],
   );

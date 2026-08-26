@@ -59,7 +59,10 @@ class DayRow extends StatelessWidget {
           Row(
             children: [
               Expanded(
-                child: Text(dayLabel(l10n, day.weekday), style: SqTypography.title),
+                child: Text(
+                  dayLabel(l10n, day.weekday),
+                  style: SqTypography.title,
+                ),
               ),
               Switch(
                 key: Key('day-${day.weekday}-toggle'),

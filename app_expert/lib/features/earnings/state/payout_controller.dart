@@ -33,7 +33,8 @@ bool isValidPan(String digits) {
 
 /// `MM/YY` с реально существующим месяцем — та же проверка, что
 /// `add_card_screen.dart`.
-bool isValidExpiry(String value) => RegExp(r'^(0[1-9]|1[0-2])/\d{2}$').hasMatch(value);
+bool isValidExpiry(String value) =>
+    RegExp(r'^(0[1-9]|1[0-2])/\d{2}$').hasMatch(value);
 
 /// Тип клиентской ошибки валидации — экран переводит его в локализованный
 /// текст через `AppLocalizations` (контроллер не имеет доступа к
@@ -99,7 +100,11 @@ class PayoutController extends Notifier<PayoutState> {
   }) async {
     if (state.submitting) return;
 
-    final validationError = _validate(amountTiyn: amountTiyn, pan: pan, expiry: expiry);
+    final validationError = _validate(
+      amountTiyn: amountTiyn,
+      pan: pan,
+      expiry: expiry,
+    );
     if (validationError != null) {
       state = PayoutState(validationError: validationError);
       return;
@@ -107,7 +112,9 @@ class PayoutController extends Notifier<PayoutState> {
 
     state = state.copyWith(submitting: true);
     try {
-      final result = await ref.read(earningsRepositoryProvider).requestPayout(
+      final result = await ref
+          .read(earningsRepositoryProvider)
+          .requestPayout(
             amountTiyn: amountTiyn,
             pan: pan.replaceAll(RegExp(r'\D'), ''),
             expiry: expiry,
@@ -120,6 +127,5 @@ class PayoutController extends Notifier<PayoutState> {
   }
 }
 
-final payoutControllerProvider = NotifierProvider<PayoutController, PayoutState>(
-  PayoutController.new,
-);
+final payoutControllerProvider =
+    NotifierProvider<PayoutController, PayoutState>(PayoutController.new);

@@ -40,7 +40,8 @@ Future<void> main() async {
       // паттерн, что `app_client`, с локалью и перерегистрацией при смене
       // языка (`core/locale_controller.dart`).
       deviceTokenRegistrarProvider.overrideWith(
-        (ref) => (token) => ref.read(deviceRegistrarProvider).registerToken(token),
+        (ref) =>
+            (token) => ref.read(deviceRegistrarProvider).registerToken(token),
       ),
       // Маршрут пуша — `PushBootstrap` не знает про `RoutePaths`; разбор
       // тот же самый, что у тайла центра уведомлений.
@@ -59,13 +60,15 @@ Future<void> main() async {
       // Навигация по нажатому пушу — тем же роутером, что и всё
       // остальное: отдельный стек разошёлся бы с редирект-гардом сессии.
       pushNavigatorProvider.overrideWith(
-        (ref) => (route) => ref.read(routerProvider).go(route),
+        (ref) =>
+            (route) => ref.read(routerProvider).go(route),
       ),
       // Полноэкранный алерт входящего оффера (задача 11) — рисуется
       // `showDialog` через корневой навигатор, а не отдельным маршрутом
       // (см. `IncomingOfferAlertPort`).
       incomingOfferAlertPortProvider.overrideWith(
-        (ref) => NavigatorIncomingOfferAlertPort(ref.watch(appNavigatorKeyProvider)),
+        (ref) =>
+            NavigatorIncomingOfferAlertPort(ref.watch(appNavigatorKeyProvider)),
       ),
     ],
   );
@@ -81,10 +84,7 @@ Future<void> main() async {
   container.read(deviceRegistrationProvider);
 
   runApp(
-    UncontrolledProviderScope(
-      container: container,
-      child: const SqExpertApp(),
-    ),
+    UncontrolledProviderScope(container: container, child: const SqExpertApp()),
   );
 
   // Инициализация пуш-канала — после запуска приложения: она не должна

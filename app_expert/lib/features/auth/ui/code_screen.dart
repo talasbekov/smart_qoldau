@@ -112,9 +112,7 @@ class _CodeScreenState extends ConsumerState<CodeScreen> {
   Future<void> _resend() async {
     if (_secondsLeft > 0) return;
     try {
-      await ref
-          .read(authControllerProvider.notifier)
-          .requestCode(widget.phone);
+      await ref.read(authControllerProvider.notifier).requestCode(widget.phone);
     } on ApiException catch (e) {
       if (!mounted) return;
       // Сознательно не перезапускаем отсчёт здесь — бэкенд не сообщает,

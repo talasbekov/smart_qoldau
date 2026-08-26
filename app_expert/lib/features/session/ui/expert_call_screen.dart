@@ -36,14 +36,18 @@ class _ExpertCallScreenState extends ConsumerState<ExpertCallScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(callControllerProvider(widget.consultationId).notifier).start(widget.format);
+      ref
+          .read(callControllerProvider(widget.consultationId).notifier)
+          .start(widget.format);
     });
   }
 
   void _backToChat() => context.go(RoutePaths.session(widget.consultationId));
 
   Future<void> _end() async {
-    await ref.read(callControllerProvider(widget.consultationId).notifier).hangUp();
+    await ref
+        .read(callControllerProvider(widget.consultationId).notifier)
+        .hangUp();
     if (mounted) _backToChat();
   }
 
@@ -68,25 +72,25 @@ class _ExpertCallScreenState extends ConsumerState<ExpertCallScreen> {
         child: Center(
           child: switch (call.phase) {
             CallPhase.permissionDenied => _PermissionDenied(
-                onOpenSettings: () => ref
-                    .read(callControllerProvider(widget.consultationId).notifier)
-                    .openSettings(),
-                onBackToChat: _backToChat,
-              ),
+              onOpenSettings: () => ref
+                  .read(callControllerProvider(widget.consultationId).notifier)
+                  .openSettings(),
+              onBackToChat: _backToChat,
+            ),
             CallPhase.failed => _Failed(
-                offerChat: call.offerChatFallback,
-                onBackToChat: _backToChat,
-              ),
+              offerChat: call.offerChatFallback,
+              onBackToChat: _backToChat,
+            ),
             _ => _ActiveCall(
-                state: call,
-                onToggleMic: () => ref
-                    .read(callControllerProvider(widget.consultationId).notifier)
-                    .toggleMic(),
-                onToggleCam: () => ref
-                    .read(callControllerProvider(widget.consultationId).notifier)
-                    .toggleCam(),
-                onEnd: _end,
-              ),
+              state: call,
+              onToggleMic: () => ref
+                  .read(callControllerProvider(widget.consultationId).notifier)
+                  .toggleMic(),
+              onToggleCam: () => ref
+                  .read(callControllerProvider(widget.consultationId).notifier)
+                  .toggleCam(),
+              onEnd: _end,
+            ),
           },
         ),
       ),
@@ -113,14 +117,11 @@ class _ActiveCall extends StatelessWidget {
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Text(
-          switch (state.phase) {
-            CallPhase.connecting => l10n.callConnecting,
-            CallPhase.reconnecting => l10n.callReconnecting,
-            _ => l10n.callInProgress,
-          },
-          style: SqTypography.title,
-        ),
+        Text(switch (state.phase) {
+          CallPhase.connecting => l10n.callConnecting,
+          CallPhase.reconnecting => l10n.callReconnecting,
+          _ => l10n.callInProgress,
+        }, style: SqTypography.title),
         const SizedBox(height: 24),
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -133,7 +134,9 @@ class _ActiveCall extends StatelessWidget {
             if (state.format == SessionFormat.video && !state.cameraBlocked)
               IconButton(
                 key: const Key('sq-call-cam'),
-                icon: Icon(state.camEnabled ? Icons.videocam : Icons.videocam_off),
+                icon: Icon(
+                  state.camEnabled ? Icons.videocam : Icons.videocam_off,
+                ),
                 onPressed: onToggleCam,
               ),
             IconButton(
@@ -149,7 +152,10 @@ class _ActiveCall extends StatelessWidget {
 }
 
 class _PermissionDenied extends StatelessWidget {
-  const _PermissionDenied({required this.onOpenSettings, required this.onBackToChat});
+  const _PermissionDenied({
+    required this.onOpenSettings,
+    required this.onBackToChat,
+  });
 
   final VoidCallback onOpenSettings;
   final VoidCallback onBackToChat;
@@ -162,7 +168,10 @@ class _PermissionDenied extends StatelessWidget {
       children: [
         Text(l10n.callMicDenied, style: SqTypography.body),
         const SizedBox(height: 16),
-        ElevatedButton(onPressed: onOpenSettings, child: Text(l10n.actionOpenSettings)),
+        ElevatedButton(
+          onPressed: onOpenSettings,
+          child: Text(l10n.actionOpenSettings),
+        ),
         TextButton(onPressed: onBackToChat, child: Text(l10n.actionBackToChat)),
       ],
     );
@@ -186,7 +195,10 @@ class _Failed extends StatelessWidget {
           style: SqTypography.body,
         ),
         const SizedBox(height: 16),
-        ElevatedButton(onPressed: onBackToChat, child: Text(l10n.actionBackToChat)),
+        ElevatedButton(
+          onPressed: onBackToChat,
+          child: Text(l10n.actionBackToChat),
+        ),
       ],
     );
   }

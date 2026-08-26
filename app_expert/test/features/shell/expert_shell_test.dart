@@ -16,10 +16,11 @@ import 'package:app_expert/core/route_paths.dart';
 import 'package:app_expert/features/shell/ui/expert_shell.dart';
 import 'package:app_expert/l10n/app_localizations.dart';
 
-// «Заявки» прототипа отдельного экрана в приложении не имеют: оффер
-// приходит полноэкранным алертом поверх любого маршрута (E7, задача 11).
-// На десктопе это отдельная задача 3 — колонка офферов, а не пункт меню.
+// «Заявки» — отдельный раздел веб-кабинета (прототип `Expert Web -
+// Заявки`). В мобильном приложении такого экрана нет: там оффер приходит
+// полноэкранным алертом поверх любого маршрута (E7, задача 11).
 const _sections = <String, String>{
+  'offers': RoutePaths.offers,
   'consultations': RoutePaths.consultations,
   'schedule': RoutePaths.schedule,
   'earnings': RoutePaths.earnings,
@@ -83,7 +84,7 @@ void main() {
     );
   });
 
-  testWidgets('десктоп: все шесть существующих разделов на месте', (
+  testWidgets('десктоп: все семь разделов прототипа, у которых есть экраны', (
     tester,
   ) async {
     await _pumpAt(tester, const Size(1440, 1024));
@@ -102,13 +103,7 @@ void main() {
 
     // Расхождение №10: обещать «Клиентов» и «Чаты» до решения продукта
     // нельзя, а «скоро будет» — худший вариант из возможных.
-    for (final missing in [
-      'clients',
-      'chats',
-      'support',
-      'settings',
-      'offers',
-    ]) {
+    for (final missing in ['clients', 'chats', 'support', 'settings']) {
       expect(find.byKey(Key('sq-nav-$missing')), findsNothing);
     }
   });

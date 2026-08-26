@@ -76,7 +76,9 @@ class _PhotoScreenState extends ConsumerState<PhotoScreen> {
             if (_lastStatus != null) ...[
               Text(
                 _statusLabel(l10n, _lastStatus!),
-                style: SqTypography.body.copyWith(color: SqColors.textSecondary),
+                style: SqTypography.body.copyWith(
+                  color: SqColors.textSecondary,
+                ),
               ),
               const SizedBox(height: SqSpacing.m),
             ],
@@ -105,9 +107,10 @@ class _PhotoScreenState extends ConsumerState<PhotoScreen> {
   }
 }
 
-String _statusLabel(AppLocalizations l10n, ProfileFieldStatus status) => switch (status) {
-  ProfileFieldStatus.none => l10n.photoStatusNone,
-  ProfileFieldStatus.pending => l10n.photoStatusPending,
-  ProfileFieldStatus.approved => l10n.photoStatusApproved,
-  ProfileFieldStatus.rejected => l10n.photoStatusRejected,
-};
+String _statusLabel(AppLocalizations l10n, ProfileFieldStatus status) =>
+    switch (status) {
+      ProfileFieldStatus.none => l10n.photoStatusNone,
+      ProfileFieldStatus.pending => l10n.photoStatusPending,
+      ProfileFieldStatus.approved => l10n.photoStatusApproved,
+      ProfileFieldStatus.rejected => l10n.photoStatusRejected,
+    };

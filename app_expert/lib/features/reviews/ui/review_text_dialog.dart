@@ -34,8 +34,9 @@ class ReviewTextDialog extends StatefulWidget {
 }
 
 class _ReviewTextDialogState extends State<ReviewTextDialog> {
-  late final TextEditingController _controller =
-      TextEditingController(text: widget.initialText ?? '');
+  late final TextEditingController _controller = TextEditingController(
+    text: widget.initialText ?? '',
+  );
 
   @override
   void dispose() {

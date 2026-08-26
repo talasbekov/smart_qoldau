@@ -12,19 +12,23 @@ class ExpertConsultationsRepository {
 
   /// `GET /consultations?as=expert&status=...` — список консультаций
   /// эксперта по одному статусу.
-  Future<List<ConsultationExpertDto>> list({required ConsultationStatus status}) =>
-      _api.expertConsultations(status: status);
+  Future<List<ConsultationExpertDto>> list({
+    required ConsultationStatus status,
+  }) => _api.expertConsultations(status: status);
 
   /// `GET /consultations/{id}` — консультация, где вызывающий — эксперт-
   /// участник (E7 задача 13).
-  Future<ConsultationExpertDto> byId(String id) => _api.expertConsultationById(id);
+  Future<ConsultationExpertDto> byId(String id) =>
+      _api.expertConsultationById(id);
 
   /// `POST /consultations/{id}/complete` — завершить с исходом.
-  Future<ConsultationExpertDto> complete(String id, ConsultationOutcome outcome) =>
-      _api.completeConsultation(id, outcome);
+  Future<ConsultationExpertDto> complete(
+    String id,
+    ConsultationOutcome outcome,
+  ) => _api.completeConsultation(id, outcome);
 }
 
 final expertConsultationsRepositoryProvider =
     Provider<ExpertConsultationsRepository>(
-  (ref) => ExpertConsultationsRepository(ref.watch(sqApiProvider)),
-);
+      (ref) => ExpertConsultationsRepository(ref.watch(sqApiProvider)),
+    );

@@ -14,7 +14,9 @@ const _validPan = '4111111111111111'; // проходит проверку Лу�
 const _validExpiry = '12/28';
 
 ProviderContainer _container(SqApi api) {
-  final container = ProviderContainer(overrides: [sqApiProvider.overrideWithValue(api)]);
+  final container = ProviderContainer(
+    overrides: [sqApiProvider.overrideWithValue(api)],
+  );
   addTearDown(container.dispose);
   return container;
 }
@@ -94,36 +96,39 @@ void main() {
     expect(container.read(payoutControllerProvider).validationError, isNotNull);
   });
 
-  test('валидные поля вызывают requestPayout и кладут результат в состояние', () async {
-    when(
-      () => api.requestPayout(
+  test(
+    'валидные поля вызывают requestPayout и кладут результат в состояние',
+    () async {
+      when(
+        () => api.requestPayout(
+          amountTiyn: 1000000,
+          pan: _validPan,
+          expiry: _validExpiry,
+          holderName: 'Ivan Petrov',
+        ),
+      ).thenAnswer(
+        (_) async => PayoutDto(
+          id: 'payout-1',
+          amountTiyn: 1000000,
+          maskedPan: '**** 1111',
+          status: PayoutStatus.processing,
+          createdAt: DateTime.now(),
+        ),
+      );
+
+      final container = _container(api);
+      final controller = container.read(payoutControllerProvider.notifier);
+
+      await controller.submit(
         amountTiyn: 1000000,
         pan: _validPan,
         expiry: _validExpiry,
         holderName: 'Ivan Petrov',
-      ),
-    ).thenAnswer(
-      (_) async => PayoutDto(
-        id: 'payout-1',
-        amountTiyn: 1000000,
-        maskedPan: '**** 1111',
-        status: PayoutStatus.processing,
-        createdAt: DateTime.now(),
-      ),
-    );
+      );
 
-    final container = _container(api);
-    final controller = container.read(payoutControllerProvider.notifier);
-
-    await controller.submit(
-      amountTiyn: 1000000,
-      pan: _validPan,
-      expiry: _validExpiry,
-      holderName: 'Ivan Petrov',
-    );
-
-    final state = container.read(payoutControllerProvider);
-    expect(state.result?.status, PayoutStatus.processing);
-    expect(state.validationError, isNull);
-  });
+      final state = container.read(payoutControllerProvider);
+      expect(state.result?.status, PayoutStatus.processing);
+      expect(state.validationError, isNull);
+    },
+  );
 }

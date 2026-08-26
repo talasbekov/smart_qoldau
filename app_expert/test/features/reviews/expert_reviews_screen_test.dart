@@ -51,10 +51,13 @@ void main() {
     api = MockSqApi();
   });
 
-  testWidgets('«Ответить» отправляет текст в POST /reviews/{id}/reply', (tester) async {
+  testWidgets('«Ответить» отправляет текст в POST /reviews/{id}/reply', (
+    tester,
+  ) async {
     var replied = false;
-    when(() => api.myReviews(take: null, skip: null))
-        .thenAnswer((_) async => _reviews(expertReply: replied ? 'Спасибо!' : null));
+    when(() => api.myReviews(take: null, skip: null)).thenAnswer(
+      (_) async => _reviews(expertReply: replied ? 'Спасибо!' : null),
+    );
     when(() => api.replyToReview('rev-1', 'Спасибо!')).thenAnswer((_) async {
       replied = true;
     });
@@ -75,27 +78,35 @@ void main() {
     expect(find.text('Спасибо!'), findsWidgets);
   });
 
-  testWidgets('«Пожаловаться» отправляет текст в POST /reviews/{id}/complaint', (tester) async {
-    when(() => api.myReviews(take: null, skip: null))
-        .thenAnswer((_) async => _reviews());
-    when(() => api.complainAboutReview('rev-1', 'не по делу'))
-        .thenAnswer((_) async {});
+  testWidgets(
+    '«Пожаловаться» отправляет текст в POST /reviews/{id}/complaint',
+    (tester) async {
+      when(() => api.myReviews(take: null, skip: null))
+          .thenAnswer((_) async => _reviews());
+      when(() => api.complainAboutReview('rev-1', 'не по делу'))
+          .thenAnswer((_) async {});
 
-    await tester.pumpWidget(_wrap(api));
-    await tester.pumpAndSettle();
+      await tester.pumpWidget(_wrap(api));
+      await tester.pumpAndSettle();
 
-    await tester.tap(find.byKey(const Key('sq-review-complaint-rev-1')));
-    await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('sq-review-complaint-rev-1')));
+      await tester.pumpAndSettle();
 
-    await tester.enterText(find.byKey(const Key('sq-review-text')), 'не по делу');
-    await tester.tap(find.byKey(const Key('sq-review-text-confirm')));
-    await tester.pumpAndSettle();
+      await tester.enterText(
+        find.byKey(const Key('sq-review-text')),
+        'не по делу',
+      );
+      await tester.tap(find.byKey(const Key('sq-review-text-confirm')));
+      await tester.pumpAndSettle();
 
-    verify(() => api.complainAboutReview('rev-1', 'не по делу')).called(1);
-    expect(find.textContaining('Жалоба отправлена'), findsOneWidget);
-  });
+      verify(() => api.complainAboutReview('rev-1', 'не по делу')).called(1);
+      expect(find.textContaining('Жалоба отправлена'), findsOneWidget);
+    },
+  );
 
-  testWidgets('пустой текст отправить нельзя — диалог остаётся открытым', (tester) async {
+  testWidgets('пустой текст отправить нельзя — диалог остаётся открытым', (
+    tester,
+  ) async {
     when(() => api.myReviews(take: null, skip: null))
         .thenAnswer((_) async => _reviews());
 
@@ -113,7 +124,9 @@ void main() {
     expect(find.byKey(const Key('sq-review-text')), findsOneWidget);
   });
 
-  testWidgets('409 от бэкенда показывается snackbar\'ом, лента остаётся', (tester) async {
+  testWidgets('409 от бэкенда показывается snackbar\'ом, лента остаётся', (
+    tester,
+  ) async {
     when(() => api.myReviews(take: null, skip: null))
         .thenAnswer((_) async => _reviews());
     when(() => api.replyToReview('rev-1', 'поздно')).thenThrow(
@@ -140,20 +153,24 @@ void main() {
     expect(find.text('Очень помогло'), findsOneWidget);
   });
 
-  testWidgets('на отзыв с ответом кнопка называется «Изменить ответ» и предзаполняет текст',
-      (tester) async {
-    when(() => api.myReviews(take: null, skip: null))
-        .thenAnswer((_) async => _reviews(expertReply: 'Старый ответ'));
+  testWidgets(
+    'на отзыв с ответом кнопка называется «Изменить ответ» и предзаполняет текст',
+    (tester) async {
+      when(() => api.myReviews(take: null, skip: null))
+          .thenAnswer((_) async => _reviews(expertReply: 'Старый ответ'));
 
-    await tester.pumpWidget(_wrap(api));
-    await tester.pumpAndSettle();
+      await tester.pumpWidget(_wrap(api));
+      await tester.pumpAndSettle();
 
-    expect(find.text('Изменить ответ'), findsOneWidget);
+      expect(find.text('Изменить ответ'), findsOneWidget);
 
-    await tester.tap(find.byKey(const Key('sq-review-reply-rev-1')));
-    await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('sq-review-reply-rev-1')));
+      await tester.pumpAndSettle();
 
-    final field = tester.widget<TextField>(find.byKey(const Key('sq-review-text')));
-    expect(field.controller?.text, 'Старый ответ');
-  });
+      final field = tester.widget<TextField>(
+        find.byKey(const Key('sq-review-text')),
+      );
+      expect(field.controller?.text, 'Старый ответ');
+    },
+  );
 }

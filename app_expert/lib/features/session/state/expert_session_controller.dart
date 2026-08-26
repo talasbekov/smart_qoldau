@@ -74,8 +74,9 @@ class ExpertSessionController
   }
 
   Future<ExpertSessionState> _load() async {
-    final consultation =
-        await ref.read(expertConsultationsRepositoryProvider).byId(arg);
+    final consultation = await ref
+        .read(expertConsultationsRepositoryProvider)
+        .byId(arg);
     final history = await ref.read(sqApiProvider).consultationMessages(arg);
 
     final elapsed = DateTime.now().difference(consultation.startedAt);
@@ -117,7 +118,8 @@ class ExpertSessionController
           consultation: current.consultation.copyWith(
             status: event.status ?? current.consultation.status,
             outcome: event.outcome ?? current.consultation.outcome,
-            paymentStatus: event.paymentStatus ?? current.consultation.paymentStatus,
+            paymentStatus:
+                event.paymentStatus ?? current.consultation.paymentStatus,
             format: event.format ?? current.consultation.format,
           ),
         );
@@ -143,5 +145,5 @@ class ExpertSessionController
 
 final expertSessionControllerProvider = AsyncNotifierProvider.autoDispose
     .family<ExpertSessionController, ExpertSessionState, String>(
-  ExpertSessionController.new,
-);
+      ExpertSessionController.new,
+    );

@@ -33,7 +33,9 @@ MyExpertReviews _reviews({String? expertReply}) => MyExpertReviews(
 );
 
 ProviderContainer _container(SqApi api) {
-  final container = ProviderContainer(overrides: [sqApiProvider.overrideWithValue(api)]);
+  final container = ProviderContainer(
+    overrides: [sqApiProvider.overrideWithValue(api)],
+  );
   addTearDown(container.dispose);
   return container;
 }
@@ -68,7 +70,11 @@ void main() {
     });
 
     final container = _container(api);
-    container.listen(expertReviewsControllerProvider, (previous, next) {}, fireImmediately: true);
+    container.listen(
+      expertReviewsControllerProvider,
+      (previous, next) {},
+      fireImmediately: true,
+    );
     await Future<void>.delayed(Duration.zero);
 
     expect(container.read(expertReviewsControllerProvider).hasError, isTrue);
@@ -76,13 +82,17 @@ void main() {
     fail = false;
     await container.read(expertReviewsControllerProvider.notifier).refresh();
 
-    expect(container.read(expertReviewsControllerProvider).value?.ratingCount, 5);
+    expect(
+      container.read(expertReviewsControllerProvider).value?.ratingCount,
+      5,
+    );
   });
 
   test('reply() отправляет текст и перечитывает ленту', () async {
     var replied = false;
-    when(() => api.myReviews(take: null, skip: null))
-        .thenAnswer((_) async => _reviews(expertReply: replied ? 'Спасибо!' : null));
+    when(() => api.myReviews(take: null, skip: null)).thenAnswer(
+      (_) async => _reviews(expertReply: replied ? 'Спасибо!' : null),
+    );
     when(() => api.replyToReview('rev-1', 'Спасибо!')).thenAnswer((_) async {
       replied = true;
     });
@@ -96,7 +106,12 @@ void main() {
 
     verify(() => api.replyToReview('rev-1', 'Спасибо!')).called(1);
     expect(
-      container.read(expertReviewsControllerProvider).value?.items.single.expertReply,
+      container
+          .read(expertReviewsControllerProvider)
+          .value
+          ?.items
+          .single
+          .expertReply,
       'Спасибо!',
     );
   });
@@ -119,9 +134,10 @@ void main() {
             )
           : _reviews(),
     );
-    when(() => api.complainAboutReview('rev-1', 'не по делу')).thenAnswer((_) async {
-      complained = true;
-    });
+    when(() => api.complainAboutReview('rev-1', 'не по делу'))
+        .thenAnswer((_) async {
+          complained = true;
+        });
 
     final container = _container(api);
     await container.read(expertReviewsControllerProvider.future);
@@ -131,24 +147,42 @@ void main() {
         .complaint('rev-1', 'не по делу');
 
     verify(() => api.complainAboutReview('rev-1', 'не по делу')).called(1);
-    expect(container.read(expertReviewsControllerProvider).value?.items, isEmpty);
-    expect(container.read(expertReviewsControllerProvider).value?.ratingCount, 4);
+    expect(
+      container.read(expertReviewsControllerProvider).value?.items,
+      isEmpty,
+    );
+    expect(
+      container.read(expertReviewsControllerProvider).value?.ratingCount,
+      4,
+    );
   });
 
-  test('ошибка reply() пробрасывается наружу, лента остаётся видимой', () async {
-    when(() => api.myReviews(take: null, skip: null))
-        .thenAnswer((_) async => _reviews());
-    when(() => api.replyToReview('rev-1', 'поздно')).thenThrow(
-      const ApiException(ApiErrorCode.invalidStateTransition, 'отзыв скрыт', 409),
-    );
+  test(
+    'ошибка reply() пробрасывается наружу, лента остаётся видимой',
+    () async {
+      when(() => api.myReviews(take: null, skip: null))
+          .thenAnswer((_) async => _reviews());
+      when(() => api.replyToReview('rev-1', 'поздно')).thenThrow(
+        const ApiException(
+          ApiErrorCode.invalidStateTransition,
+          'отзыв скрыт',
+          409,
+        ),
+      );
 
-    final container = _container(api);
-    await container.read(expertReviewsControllerProvider.future);
+      final container = _container(api);
+      await container.read(expertReviewsControllerProvider.future);
 
-    await expectLater(
-      container.read(expertReviewsControllerProvider.notifier).reply('rev-1', 'поздно'),
-      throwsA(isA<ApiException>()),
-    );
-    expect(container.read(expertReviewsControllerProvider).value?.items, hasLength(1));
-  });
+      await expectLater(
+        container
+            .read(expertReviewsControllerProvider.notifier)
+            .reply('rev-1', 'поздно'),
+        throwsA(isA<ApiException>()),
+      );
+      expect(
+        container.read(expertReviewsControllerProvider).value?.items,
+        hasLength(1),
+      );
+    },
+  );
 }

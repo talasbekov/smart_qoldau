@@ -79,5 +79,5 @@ class IncomingOfferController extends Notifier<OfferNew?> {
 
 final incomingOfferControllerProvider =
     NotifierProvider<IncomingOfferController, OfferNew?>(
-  IncomingOfferController.new,
-);
+      IncomingOfferController.new,
+    );

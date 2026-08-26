@@ -23,13 +23,12 @@ class EarningsRepository {
     required String pan,
     required String expiry,
     required String holderName,
-  }) =>
-      _api.requestPayout(
-        amountTiyn: amountTiyn,
-        pan: pan,
-        expiry: expiry,
-        holderName: holderName,
-      );
+  }) => _api.requestPayout(
+    amountTiyn: amountTiyn,
+    pan: pan,
+    expiry: expiry,
+    holderName: holderName,
+  );
 
   /// `GET /payouts` — свои выводы.
   Future<List<PayoutDto>> payouts({int? take, int? skip}) =>

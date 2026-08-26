@@ -24,7 +24,9 @@ class NotificationsScreen extends ConsumerWidget {
         title: Text(l10n.notificationsScreenTitle),
         actions: [
           TextButton(
-            onPressed: () => ref.read(notificationsControllerProvider.notifier).markAllRead(),
+            onPressed: () => ref
+                .read(notificationsControllerProvider.notifier)
+                .markAllRead(),
             child: Text(l10n.actionMarkAllRead),
           ),
         ],
@@ -39,10 +41,13 @@ class NotificationsScreen extends ConsumerWidget {
         ),
         data: (data) {
           if (data.items.isEmpty) {
-            return Center(child: Text(l10n.notificationsEmpty, style: SqTypography.body));
+            return Center(
+              child: Text(l10n.notificationsEmpty, style: SqTypography.body),
+            );
           }
           return RefreshIndicator(
-            onRefresh: () => ref.read(notificationsControllerProvider.notifier).refresh(),
+            onRefresh: () =>
+                ref.read(notificationsControllerProvider.notifier).refresh(),
             child: ListView.builder(
               itemCount: data.items.length,
               itemBuilder: (context, index) {
@@ -50,9 +55,9 @@ class NotificationsScreen extends ConsumerWidget {
                 return NotificationTile(
                   notification: notification,
                   onTap: () {
-                    ref
-                        .read(notificationsControllerProvider.notifier)
-                        .markRead([notification.id]);
+                    ref.read(notificationsControllerProvider.notifier).markRead(
+                      [notification.id],
+                    );
                     final route = notificationRoute(notification);
                     if (route != null) context.push(route);
                   },

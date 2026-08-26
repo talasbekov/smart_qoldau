@@ -8,7 +8,8 @@ import 'package:flutter/material.dart';
 
 import '../../../l10n/app_localizations.dart';
 
-class SessionHeaderWrapper extends StatelessWidget implements PreferredSizeWidget {
+class SessionHeaderWrapper extends StatelessWidget
+    implements PreferredSizeWidget {
   const SessionHeaderWrapper({
     super.key,
     required this.clientCode,
@@ -40,7 +41,10 @@ class SessionHeaderWrapper extends StatelessWidget implements PreferredSizeWidge
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 12),
           child: Center(
-            child: Text(_remainingLabel, key: const Key('sq-session-remaining')),
+            child: Text(
+              _remainingLabel,
+              key: const Key('sq-session-remaining'),
+            ),
           ),
         ),
         ...actions,

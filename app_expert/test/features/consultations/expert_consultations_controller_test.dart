@@ -58,28 +58,54 @@ void main() {
   test('три раздела грузятся независимо и попадают в состояние', () async {
     when(() => api.myOffers()).thenAnswer((_) async => [_offer()]);
     when(
-      () => api.expertConsultations(status: ConsultationStatus.scheduled, take: null, skip: null),
+      () => api.expertConsultations(
+        status: ConsultationStatus.scheduled,
+        take: null,
+        skip: null,
+      ),
     ).thenAnswer((_) async => []);
     when(
-      () => api.expertConsultations(status: ConsultationStatus.active, take: null, skip: null),
+      () => api.expertConsultations(
+        status: ConsultationStatus.active,
+        take: null,
+        skip: null,
+      ),
     ).thenAnswer(
       (_) async => [
-        _consultation(id: 'c1', status: ConsultationStatus.active, startedAt: DateTime(2026, 1, 1)),
+        _consultation(
+          id: 'c1',
+          status: ConsultationStatus.active,
+          startedAt: DateTime(2026, 1, 1),
+        ),
       ],
     );
     when(
-      () => api.expertConsultations(status: ConsultationStatus.completed, take: null, skip: null),
+      () => api.expertConsultations(
+        status: ConsultationStatus.completed,
+        take: null,
+        skip: null,
+      ),
     ).thenAnswer(
       (_) async => [
-        _consultation(id: 'c2', status: ConsultationStatus.completed, startedAt: DateTime(2026, 1, 2)),
+        _consultation(
+          id: 'c2',
+          status: ConsultationStatus.completed,
+          startedAt: DateTime(2026, 1, 2),
+        ),
       ],
     );
     when(
-      () => api.expertConsultations(status: ConsultationStatus.cancelled, take: null, skip: null),
+      () => api.expertConsultations(
+        status: ConsultationStatus.cancelled,
+        take: null,
+        skip: null,
+      ),
     ).thenAnswer((_) async => []);
 
     final container = _container(api);
-    final controller = container.read(expertConsultationsControllerProvider.notifier);
+    final controller = container.read(
+      expertConsultationsControllerProvider.notifier,
+    );
 
     // build() запускает три раздела фоном (Future.microtask) — ждём их
     // завершения явно, а не полагаемся на порядок построения провайдера.
@@ -96,15 +122,20 @@ void main() {
   });
 
   test('сбой ОДНОГО раздела (офферы) не блокирует два остальных', () async {
-    when(() => api.myOffers()).thenThrow(
-      const ApiException(ApiErrorCode.internal, 'сбой', 500),
-    );
+    when(() => api.myOffers())
+        .thenThrow(const ApiException(ApiErrorCode.internal, 'сбой', 500));
     when(
-      () => api.expertConsultations(status: any(named: 'status'), take: null, skip: null),
+      () => api.expertConsultations(
+        status: any(named: 'status'),
+        take: null,
+        skip: null,
+      ),
     ).thenAnswer((_) async => []);
 
     final container = _container(api);
-    final controller = container.read(expertConsultationsControllerProvider.notifier);
+    final controller = container.read(
+      expertConsultationsControllerProvider.notifier,
+    );
 
     await Future.wait([
       controller.refreshOffers(),

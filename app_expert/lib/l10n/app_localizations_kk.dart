@@ -530,4 +530,11 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get actionLogout => 'Шығу';
+
+  @override
+  String get webPresenceNotice =>
+      'Өтінімдер осы қойынды ашық тұрғанда келеді. Жапсаңыз — қабылдау өшеді.';
+
+  @override
+  String get offersScreenTitle => 'Өтінімдер';
 }

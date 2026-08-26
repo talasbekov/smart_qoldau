@@ -109,8 +109,9 @@ class AuthController extends AsyncNotifier<AuthState> {
   }
 }
 
-final authControllerProvider =
-    AsyncNotifierProvider<AuthController, AuthState>(AuthController.new);
+final authControllerProvider = AsyncNotifierProvider<AuthController, AuthState>(
+  AuthController.new,
+);
 
 /// Есть ли у эксперта живая (зарегистрированная) сессия.
 final hasSessionProvider = Provider<bool>((ref) {

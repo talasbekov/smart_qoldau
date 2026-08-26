@@ -51,13 +51,14 @@ ConsultationExpertDto _consultation() => ConsultationExpertDto(
   paymentStatus: ConsultationPaymentStatus.held,
 );
 
-ChatMessage _message(String id, String text, {String senderRole = 'client'}) => ChatMessage(
-  id: id,
-  consultationId: 'cons-1',
-  senderRole: senderRole,
-  text: text,
-  createdAt: DateTime.now(),
-);
+ChatMessage _message(String id, String text, {String senderRole = 'client'}) =>
+    ChatMessage(
+      id: id,
+      consultationId: 'cons-1',
+      senderRole: senderRole,
+      text: text,
+      createdAt: DateTime.now(),
+    );
 
 Widget _wrap(SqApi api, SqSocket socket) {
   final router = GoRouter(
@@ -65,11 +66,13 @@ Widget _wrap(SqApi api, SqSocket socket) {
     routes: [
       GoRoute(
         path: '/session/:id',
-        builder: (context, state) => const ExpertChatScreen(consultationId: 'cons-1'),
+        builder: (context, state) =>
+            const ExpertChatScreen(consultationId: 'cons-1'),
       ),
       GoRoute(
         path: '/consultations',
-        builder: (context, state) => const Scaffold(body: Text('sq-stub-consultations')),
+        builder: (context, state) =>
+            const Scaffold(body: Text('sq-stub-consultations')),
       ),
     ],
   );
@@ -92,7 +95,8 @@ Widget _wrap(SqApi api, SqSocket socket) {
 /// Снимает дерево до конца теста: пока экран жив, живёт `Timer.periodic`
 /// таймера сессии (`ExpertSessionController`), а `flutter_test` считает
 /// незакрытый таймер утечкой ещё до tearDown.
-Future<void> _teardownTree(WidgetTester tester) => tester.pumpWidget(const SizedBox());
+Future<void> _teardownTree(WidgetTester tester) =>
+    tester.pumpWidget(const SizedBox());
 
 void main() {
   late MockSqApi api;
@@ -102,13 +106,15 @@ void main() {
     api = MockSqApi();
     socket = _FakeSqSocket();
     addTearDown(socket.dispose);
-    when(() => api.expertConsultationById('cons-1')).thenAnswer((_) async => _consultation());
+    when(() => api.expertConsultationById('cons-1'))
+        .thenAnswer((_) async => _consultation());
   });
 
   testWidgets('история сообщений отображается', (tester) async {
-    when(() => api.consultationMessages('cons-1', cursor: null, limit: null)).thenAnswer(
-      (_) async => MessageHistory(items: [_message('m1', 'Здравствуйте')]),
-    );
+    when(() => api.consultationMessages('cons-1', cursor: null, limit: null))
+        .thenAnswer(
+          (_) async => MessageHistory(items: [_message('m1', 'Здравствуйте')]),
+        );
 
     await tester.pumpWidget(_wrap(api, socket));
     await tester.pump();
@@ -119,35 +125,39 @@ void main() {
     await _teardownTree(tester);
   });
 
-  testWidgets('отправка сообщения зовёт SqEvents.sendChat, а эхо дописывает его в ленту', (
-    tester,
-  ) async {
-    when(() => api.consultationMessages('cons-1', cursor: null, limit: null))
-        .thenAnswer((_) async => const MessageHistory(items: []));
+  testWidgets(
+    'отправка сообщения зовёт SqEvents.sendChat, а эхо дописывает его в ленту',
+    (tester) async {
+      when(() => api.consultationMessages('cons-1', cursor: null, limit: null))
+          .thenAnswer((_) async => const MessageHistory(items: []));
 
-    await tester.pumpWidget(_wrap(api, socket));
-    await tester.pump();
-    await tester.pump();
+      await tester.pumpWidget(_wrap(api, socket));
+      await tester.pump();
+      await tester.pump();
 
-    await tester.enterText(find.byKey(const Key('sq-chat-input')), 'Как ваше самочувствие?');
-    await tester.tap(find.byKey(const Key('sq-chat-send')));
-    await tester.pump();
+      await tester.enterText(
+        find.byKey(const Key('sq-chat-input')),
+        'Как ваше самочувствие?',
+      );
+      await tester.tap(find.byKey(const Key('sq-chat-send')));
+      await tester.pump();
 
-    // Сообщение появляется в ленте только через WS-эхо (POST-отправки нет
-    // у бэкенда, см. `ExpertSessionController`), не оптимистично.
-    expect(find.text('Как ваше самочувствие?'), findsNothing);
+      // Сообщение появляется в ленте только через WS-эхо (POST-отправки нет
+      // у бэкенда, см. `ExpertSessionController`), не оптимистично.
+      expect(find.text('Как ваше самочувствие?'), findsNothing);
 
-    socket.push('chat.message', {
-      'id': 'm2',
-      'consultationId': 'cons-1',
-      'senderRole': 'expert',
-      'text': 'Как ваше самочувствие?',
-      'createdAt': DateTime.now().toIso8601String(),
-    });
-    await tester.pump();
+      socket.push('chat.message', {
+        'id': 'm2',
+        'consultationId': 'cons-1',
+        'senderRole': 'expert',
+        'text': 'Как ваше самочувствие?',
+        'createdAt': DateTime.now().toIso8601String(),
+      });
+      await tester.pump();
 
-    expect(find.text('Как ваше самочувствие?'), findsOneWidget);
+      expect(find.text('Как ваше самочувствие?'), findsOneWidget);
 
-    await _teardownTree(tester);
-  });
+      await _teardownTree(tester);
+    },
+  );
 }

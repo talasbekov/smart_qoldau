@@ -126,12 +126,13 @@ class NotificationsController extends AsyncNotifier<NotificationsState> {
 
 final notificationsControllerProvider =
     AsyncNotifierProvider<NotificationsController, NotificationsState>(
-  NotificationsController.new,
-);
+      NotificationsController.new,
+    );
 
 /// Счётчик для бейджа. `0`, пока список не загружен.
 final unreadCountProvider = Provider<int>(
-  (ref) => ref.watch(notificationsControllerProvider).valueOrNull?.unreadCount ?? 0,
+  (ref) =>
+      ref.watch(notificationsControllerProvider).valueOrNull?.unreadCount ?? 0,
 );
 
 /// Регистрирует устройство для пушей и перерегистрирует его при смене
@@ -172,7 +173,9 @@ class DeviceRegistrar {
       );
 }
 
-final deviceRegistrarProvider = Provider<DeviceRegistrar>((ref) => DeviceRegistrar(ref));
+final deviceRegistrarProvider = Provider<DeviceRegistrar>(
+  (ref) => DeviceRegistrar(ref),
+);
 
 /// Запускает регистрацию устройства, как только у эксперта появляется
 /// сессия — `POST /devices` требует JWT. Наблюдается из `app.dart`.

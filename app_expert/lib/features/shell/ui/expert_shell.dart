@@ -35,6 +35,7 @@ class _Section {
 /// `brain/WIKI/Расхождения в прототипе.md`: пункт меню, ведущий в «скоро
 /// будет», обещает функциональность, которой нет.
 const _sections = <_Section>[
+  _Section('offers', RoutePaths.offers, Icons.inbox_outlined),
   _Section('consultations', RoutePaths.consultations, Icons.forum_outlined),
   _Section('schedule', RoutePaths.schedule, Icons.calendar_today_outlined),
   _Section('earnings', RoutePaths.earnings, Icons.payments_outlined),
@@ -56,6 +57,8 @@ class ExpertShell extends StatelessWidget {
       // Названия берём из уже существующих строк экранов — новых ключей
       // локализации ради меню не заводим, иначе одно и то же слово
       // начинает жить в двух местах и расходится.
+      case 'offers':
+        return l10n.offersScreenTitle;
       case 'consultations':
         return l10n.homeNavConsultations;
       case 'schedule':

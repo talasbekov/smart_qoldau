@@ -1075,6 +1075,18 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Выйти'**
   String get actionLogout;
+
+  /// Предупреждение о присутствии в веб-кабинете (Р-26)
+  ///
+  /// In ru, this message translates to:
+  /// **'Заявки приходят, пока открыта эта вкладка. Закроете — приём выключится, и клиент вас не увидит.'**
+  String get webPresenceNotice;
+
+  /// Заголовок раздела заявок (веб-кабинет)
+  ///
+  /// In ru, this message translates to:
+  /// **'Заявки'**
+  String get offersScreenTitle;
 }
 
 class _AppLocalizationsDelegate

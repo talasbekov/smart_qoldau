@@ -15,19 +15,23 @@ import '../../../core/route_paths.dart';
 import '../../../l10n/app_localizations.dart';
 import '../state/verification_status_controller.dart';
 
-String _verificationLabel(AppLocalizations l10n, VerificationStatus status) => switch (status) {
-  VerificationStatus.draft => l10n.verificationDraft,
-  VerificationStatus.pending => l10n.verificationPending,
-  VerificationStatus.verified => l10n.verificationVerified,
-};
-
-String _fieldStatusLabel(AppLocalizations l10n, String fieldName, ProfileFieldStatus status) =>
+String _verificationLabel(AppLocalizations l10n, VerificationStatus status) =>
     switch (status) {
-      ProfileFieldStatus.none => l10n.fieldStatusNone(fieldName),
-      ProfileFieldStatus.pending => l10n.fieldStatusPending(fieldName),
-      ProfileFieldStatus.approved => l10n.fieldStatusApproved(fieldName),
-      ProfileFieldStatus.rejected => l10n.fieldStatusRejected(fieldName),
+      VerificationStatus.draft => l10n.verificationDraft,
+      VerificationStatus.pending => l10n.verificationPending,
+      VerificationStatus.verified => l10n.verificationVerified,
     };
+
+String _fieldStatusLabel(
+  AppLocalizations l10n,
+  String fieldName,
+  ProfileFieldStatus status,
+) => switch (status) {
+  ProfileFieldStatus.none => l10n.fieldStatusNone(fieldName),
+  ProfileFieldStatus.pending => l10n.fieldStatusPending(fieldName),
+  ProfileFieldStatus.approved => l10n.fieldStatusApproved(fieldName),
+  ProfileFieldStatus.rejected => l10n.fieldStatusRejected(fieldName),
+};
 
 class VerificationStatusScreen extends ConsumerWidget {
   const VerificationStatusScreen({super.key});
@@ -62,9 +66,10 @@ class VerificationStatusScreen extends ConsumerWidget {
           child: Padding(
             padding: const EdgeInsets.all(SqSpacing.l),
             child: SqErrorView(
-              text: error is ApiException ? error.message : l10n.errorLoadFailed,
-              onRetry: () =>
-                  ref.read(provider.notifier).refresh(),
+              text: error is ApiException
+                  ? error.message
+                  : l10n.errorLoadFailed,
+              onRetry: () => ref.read(provider.notifier).refresh(),
             ),
           ),
         ),

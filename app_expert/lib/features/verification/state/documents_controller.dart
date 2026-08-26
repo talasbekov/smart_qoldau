@@ -60,6 +60,7 @@ class DocumentsController
 }
 
 final documentsControllerProvider =
-    AsyncNotifierProvider<DocumentsController, Map<DocumentType, ExpertDocumentDto>>(
-  DocumentsController.new,
-);
+    AsyncNotifierProvider<
+      DocumentsController,
+      Map<DocumentType, ExpertDocumentDto>
+    >(DocumentsController.new);

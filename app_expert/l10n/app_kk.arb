@@ -1,24 +1,19 @@
 {
   "@@locale": "kk",
   "appTitle": "SmartQoldau Маман",
-
   "splashLoading": "Кабинетіңізді жүктеп жатырмыз…",
-
   "phoneScreenTitle": "Маман үшін кіру",
   "phoneScreenHint": "Телефон нөмірін енгізіңіз — оған растау коды келеді",
   "phoneNumberLabel": "Телефон нөмірі",
   "actionGetCode": "Кодты алу",
-
   "codeScreenTitle": "Растау коды",
   "codeScreenSentTo": "Кодты {phone} нөміріне жібердік",
   "actionResendCode": "Кодты қайта жіберу",
   "resendCodeCountdown": "{seconds} с кейін қайта жіберу",
-
   "actionRetry": "Қайталау",
   "actionNext": "Келесі",
   "actionSubmitProfile": "Анкетаны жіберу",
   "errorLoadFailed": "Деректерді жүктеу мүмкін болмады",
-
   "onboardingProfileTitle": "Маман анкетасы — 1/2 қадам",
   "fieldFullName": "Аты-жөні",
   "fieldCity": "Қала",
@@ -27,24 +22,19 @@
   "fieldPriceTenge": "Кеңес құны, ₸",
   "fieldLanguages": "Кеңес беру тілдері",
   "fieldFormats": "Кеңес беру форматтары",
-
   "languageRussian": "Орысша",
   "languageKazakh": "Қазақша",
   "languageEnglish": "Ағылшынша",
-
   "experienceLessThanYear": "Бір жылдан аз",
   "experienceOneToThree": "1–3 жыл",
   "experienceThreeToFive": "3–5 жыл",
   "experienceFiveToTen": "5–10 жыл",
   "experienceMoreThanTen": "10 жылдан астам",
-
   "formatChat": "Чат",
   "formatAudio": "Аудио",
   "formatVideo": "Бейне",
-
   "onboardingTopicsTitle": "Маман анкетасы — 2/2 қадам",
   "onboardingTopicsHint": "Жұмыс істейтін кеңес тақырыптарын таңдаңыз",
-
   "documentsScreenTitle": "Верификация құжаттары",
   "documentTypeIdentity": "Жеке куәлік",
   "documentTypeDiploma": "Білімі туралы диплом",
@@ -58,7 +48,6 @@
   "actionSubmitForReview": "Тексеруге жіберу",
   "actionUpload": "Жүктеу",
   "actionReplace": "Ауыстыру",
-
   "photoScreenTitle": "Профиль фотосы",
   "actionUploadPhoto": "Фото жүктеу",
   "actionDeletePhoto": "Фотоны жою",
@@ -66,7 +55,6 @@
   "photoStatusPending": "Фото тексеруге жіберілді",
   "photoStatusApproved": "Фото мақұлданды",
   "photoStatusRejected": "Фото қабылданбады",
-
   "verificationScreenTitle": "Верификация мәртебесі",
   "verificationDraft": "Анкета жіберілмеген",
   "verificationPending": "Анкета тексерілуде. Қарау мерзімі — 24 сағатқа дейін",
@@ -78,7 +66,6 @@
   "fieldStatusApproved": "{field}: мақұлданды",
   "fieldStatusRejected": "{field}: қабылданбады",
   "actionReupload": "Қайта жүктеу",
-
   "weekdayMon": "Дс",
   "weekdayTue": "Сс",
   "weekdayWed": "Ср",
@@ -86,7 +73,6 @@
   "weekdayFri": "Жм",
   "weekdaySat": "Сб",
   "weekdaySun": "Жс",
-
   "scheduleScreenTitle": "Кесте",
   "scheduleStart": "Басталуы",
   "scheduleEnd": "Аяқталуы",
@@ -94,13 +80,11 @@
   "scheduleBreakEnd": "Үзіліс аяғы",
   "actionClearBreak": "Үзілісті алып тастау",
   "actionSave": "Сақтау",
-
   "exceptionsScreenTitle": "Кестедегі ерекшеліктер",
   "scheduleDayOff": "Демалыс",
   "actionMakeDayOff": "Демалыс ету",
   "actionCustomHours": "Басқа жұмыс уақыты",
   "actionRemoveException": "Ерекшелікті алып тастау",
-
   "homeScreenTitle": "Басты бет",
   "homeAcceptingBlockedByVerification": "Өтінімдерді қабылдау анкета тексерілгеннен кейін ашылады",
   "homeAcceptingOn": "Өтінімдерді қабылдау қосулы",
@@ -108,14 +92,12 @@
   "homeNavConsultations": "Өтінімдер мен кеңестер",
   "homeNavEarnings": "Табыс",
   "homeNavReviews": "Пікірлер",
-
   "offerEmergencyBadge": "Шұғыл сұраныс",
   "offerNewTitle": "Жаңа өтінім",
   "secondsShort": "{seconds} с",
   "actionDecline": "Бас тарту",
   "actionAccept": "Қабылдау",
   "offersEmpty": "Әзірге жаңа өтінімдер жоқ",
-
   "consultationsScreenTitle": "Өтінімдер мен кеңестер",
   "consultationsTabOffers": "Өтінімдер",
   "consultationsTabActive": "Жүріп жатыр/Жоспарлы",
@@ -126,18 +108,14 @@
   "consultationStatusActive": "Қазір жүріп жатыр",
   "consultationStatusCompleted": "Аяқталды",
   "consultationStatusCancelled": "Бас тартылды",
-
   "noteEditorTitle": "Жеке жазба",
   "noteEditorHint": "Тек сізге көрінеді. Медициналық диагноздарды пайдаланбаңыз.",
-
   "outcomeSheetTitle": "Кеңесті аяқтау",
   "outcomeCompleted": "Кеңес өтті",
   "outcomeClientNoShow": "Клиент келмеді",
   "outcomeClientCancelled": "Клиент бас тартты",
   "outcomeTechIssue": "Техникалық ақау",
-
   "consultationFinished": "Кеңес аяқталды",
-
   "callScreenTitle": "Қоңырау",
   "callConnecting": "Қосылуда…",
   "callReconnecting": "Байланыс қалпына келтірілуде…",
@@ -147,15 +125,12 @@
   "actionBackToChat": "Чатқа оралу",
   "callOfferChatFallback": "Байланыс қалпына келмеді — чатта жалғастырыңыз",
   "callFailed": "Қоңырау сәтсіз аяқталды",
-
   "sessionHeaderTitle": "Клиент #{code} · {topic}",
-
   "earningsScreenTitle": "Табыс",
   "earningsBalance": "Баланс",
   "actionWithdraw": "Шығару",
   "earningsEmpty": "Әзірге есептеулер жоқ",
   "earningsCommission": "Комиссия: {amount}",
-
   "payoutScreenTitle": "Қаражатты шығару",
   "payoutPendingReview": "Өтінім қаржы бақылауында тексерілуде",
   "payoutProcessing": "Өтінім мақұлданды, төлемге жіберілді",
@@ -168,7 +143,6 @@
   "payoutErrorInvalidPan": "Карта нөмірін тексеріңіз",
   "payoutErrorInvalidExpiry": "Мерзімі АА/ЖЖ пішімінде",
   "actionSubmitPayout": "Өтінімді жіберу",
-
   "reviewsScreenTitle": "Пікірлер",
   "reviewsCount": "{count} пікір",
   "reviewsEmpty": "Әзірге пікірлер жоқ",
@@ -183,12 +157,12 @@
   "reviewComplaintHint": "Пікір ережені неге бұзатынын сипаттаңыз. Модератор шешім қабылдағанша пікір жасырылады және рейтингтен шығарылады.",
   "reviewComplaintSent": "Шағым жіберілді, модератор шешім қабылдағанша пікір жасырылды",
   "actionCancel": "Болдырмау",
-
   "notificationsScreenTitle": "Хабарламалар",
   "actionMarkAllRead": "Барлығын оқылды деп белгілеу",
   "notificationsEmpty": "Әзірге хабарламалар жоқ",
-
   "profileScreenTitle": "Профиль",
   "profileLanguage": "Тіл",
-  "actionLogout": "Шығу"
+  "actionLogout": "Шығу",
+  "webPresenceNotice": "Өтінімдер осы қойынды ашық тұрғанда келеді. Жапсаңыз — қабылдау өшеді.",
+  "offersScreenTitle": "Өтінімдер"
 }

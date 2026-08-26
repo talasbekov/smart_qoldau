@@ -33,7 +33,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     try {
       await ref
           .read(homeControllerProvider.notifier)
-          .setStatus(accepting ? WorkStatus.accepting : WorkStatus.notAccepting);
+          .setStatus(
+            accepting ? WorkStatus.accepting : WorkStatus.notAccepting,
+          );
     } on ApiException catch (e) {
       if (mounted) setState(() => _error = e.message);
     } finally {
@@ -91,14 +93,19 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     padding: const EdgeInsets.only(bottom: 16),
                     child: Text(
                       l10n.homeAcceptingBlockedByVerification,
-                      style: SqTypography.body.copyWith(color: SqColors.textSecondary),
+                      style: SqTypography.body.copyWith(
+                        color: SqColors.textSecondary,
+                      ),
                     ),
                   ),
                 SwitchListTile(
                   key: const Key('sq-home-accepting-switch'),
-                  title: Text(accepting ? l10n.homeAcceptingOn : l10n.homeAcceptingOff),
+                  title: Text(
+                    accepting ? l10n.homeAcceptingOn : l10n.homeAcceptingOff,
+                  ),
                   value: accepting,
-                  onChanged: (_saving ||
+                  onChanged:
+                      (_saving ||
                           me.verificationStatus != VerificationStatus.verified)
                       ? null
                       : _toggle,

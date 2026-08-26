@@ -59,7 +59,12 @@ class ReviewItemCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(l10n.reviewYourReply, style: SqTypography.caption.copyWith(color: SqColors.textSecondary)),
+                  Text(
+                    l10n.reviewYourReply,
+                    style: SqTypography.caption.copyWith(
+                      color: SqColors.textSecondary,
+                    ),
+                  ),
                   const SizedBox(height: 4),
                   Text(review.expertReply!, style: SqTypography.body),
                 ],

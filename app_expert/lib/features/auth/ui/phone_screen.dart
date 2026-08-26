@@ -110,9 +110,8 @@ class _PhoneScreenState extends ConsumerState<PhoneScreen> {
     }
     if (!mounted) return;
     setState(() => _submitting = false);
-    await Navigator.of(
-      context,
-    ).push(MaterialPageRoute(builder: (_) => CodeScreen(phone: phone)));
+    await Navigator.of(context)
+        .push(MaterialPageRoute(builder: (_) => CodeScreen(phone: phone)));
   }
 
   @override

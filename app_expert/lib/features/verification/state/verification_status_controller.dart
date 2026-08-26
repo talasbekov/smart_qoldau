@@ -75,7 +75,9 @@ class VerificationStatusController extends AutoDisposeAsyncNotifier<ExpertMe> {
   /// опрос, если статус после обновления всё ещё не `VERIFIED`.
   Future<void> refresh() async {
     state = const AsyncLoading<ExpertMe>().copyWithPrevious(state);
-    state = await AsyncValue.guard(() => ref.read(verificationRepositoryProvider).me());
+    state = await AsyncValue.guard(
+      () => ref.read(verificationRepositoryProvider).me(),
+    );
     final me = state.valueOrNull;
     if (me == null) return;
     if (me.verificationStatus == VerificationStatus.verified) {
@@ -88,5 +90,5 @@ class VerificationStatusController extends AutoDisposeAsyncNotifier<ExpertMe> {
 
 final verificationStatusControllerProvider =
     AsyncNotifierProvider.autoDispose<VerificationStatusController, ExpertMe>(
-  VerificationStatusController.new,
-);
+      VerificationStatusController.new,
+    );

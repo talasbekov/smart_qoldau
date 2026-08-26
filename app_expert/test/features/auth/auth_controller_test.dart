@@ -76,20 +76,17 @@ void main() {
       );
     });
 
-    test(
-      'при сохранённых токенах эксперта даёт AuthRegistered',
-      () async {
-        final store = _FakeSecureStore();
-        await TokenStore(store).write(_tokens());
-        final container = _makeContainer(api: MockSqApi(), store: store);
+    test('при сохранённых токенах эксперта даёт AuthRegistered', () async {
+      final store = _FakeSecureStore();
+      await TokenStore(store).write(_tokens());
+      final container = _makeContainer(api: MockSqApi(), store: store);
 
-        await container.read(authControllerProvider.notifier).restore();
+      await container.read(authControllerProvider.notifier).restore();
 
-        final state = container.read(authControllerProvider).value;
-        expect(state, isA<AuthRegistered>());
-        expect((state as AuthRegistered).user.isGuest, isFalse);
-      },
-    );
+      final state = container.read(authControllerProvider).value;
+      expect(state, isA<AuthRegistered>());
+      expect((state as AuthRegistered).user.isGuest, isFalse);
+    });
 
     test(
       'при ошибке чтения хранилища не виснет и даёт AuthAnonymous',
@@ -110,42 +107,38 @@ void main() {
   });
 
   group('AuthController.verifyCode', () {
-    test(
-      'при SMS_CODE_INVALID оставляет состояние прежним и пробрасывает ApiException',
-      () async {
-        final api = MockSqApi();
-        when(() => api.verifyCode(any(), any())).thenThrow(
-          const ApiException(ApiErrorCode.smsCodeInvalid, 'bad code', 400),
-        );
-        final container = _makeContainer(api: api);
-        await container.read(authControllerProvider.notifier).restore();
-        final before = container.read(authControllerProvider).value;
+    test('при SMS_CODE_INVALID оставляет состояние прежним и пробрасывает ApiException', () async {
+      final api = MockSqApi();
+      when(() => api.verifyCode(any(), any())).thenThrow(
+        const ApiException(ApiErrorCode.smsCodeInvalid, 'bad code', 400),
+      );
+      final container = _makeContainer(api: api);
+      await container.read(authControllerProvider.notifier).restore();
+      final before = container.read(authControllerProvider).value;
 
-        await expectLater(
-          container
-              .read(authControllerProvider.notifier)
-              .verifyCode('+77011234567', '0000'),
-          throwsA(
-            isA<ApiException>().having(
-              (e) => e.code,
-              'code',
-              ApiErrorCode.smsCodeInvalid,
-            ),
+      await expectLater(
+        container
+            .read(authControllerProvider.notifier)
+            .verifyCode('+77011234567', '0000'),
+        throwsA(
+          isA<ApiException>().having(
+            (e) => e.code,
+            'code',
+            ApiErrorCode.smsCodeInvalid,
           ),
-        );
+        ),
+      );
 
-        expect(container.read(authControllerProvider).value, same(before));
-      },
-    );
+      expect(container.read(authControllerProvider).value, same(before));
+    });
 
     test(
       'успешный вызов пишет токены в TokenStore и переводит в AuthRegistered',
       () async {
         final api = MockSqApi();
         final tokens = _tokens();
-        when(
-          () => api.verifyCode(any(), any()),
-        ).thenAnswer((_) async => tokens);
+        when(() => api.verifyCode(any(), any()))
+            .thenAnswer((_) async => tokens);
         final store = _FakeSecureStore();
         final container = _makeContainer(api: api, store: store);
 
@@ -183,26 +176,23 @@ void main() {
   });
 
   group('sessionInvalidatedProvider', () {
-    test(
-      'принудительный разлогин (тик сигнала из core) переводит контроллер в AuthAnonymous',
-      () async {
-        final store = _FakeSecureStore();
-        await TokenStore(store).write(_tokens());
-        final container = _makeContainer(api: MockSqApi(), store: store);
-        await container.read(authControllerProvider.notifier).restore();
-        expect(
-          container.read(authControllerProvider).value,
-          isA<AuthRegistered>(),
-          reason: 'предусловие: сессия действительно восстановлена',
-        );
+    test('принудительный разлогин (тик сигнала из core) переводит контроллер в AuthAnonymous', () async {
+      final store = _FakeSecureStore();
+      await TokenStore(store).write(_tokens());
+      final container = _makeContainer(api: MockSqApi(), store: store);
+      await container.read(authControllerProvider.notifier).restore();
+      expect(
+        container.read(authControllerProvider).value,
+        isA<AuthRegistered>(),
+        reason: 'предусловие: сессия действительно восстановлена',
+      );
 
-        container.read(sessionInvalidatedProvider.notifier).state++;
+      container.read(sessionInvalidatedProvider.notifier).state++;
 
-        expect(
-          container.read(authControllerProvider).value,
-          isA<AuthAnonymous>(),
-        );
-      },
-    );
+      expect(
+        container.read(authControllerProvider).value,
+        isA<AuthAnonymous>(),
+      );
+    });
   });
 }

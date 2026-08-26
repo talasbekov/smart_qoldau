@@ -24,19 +24,21 @@ String _languageLabel(AppLocalizations l10n, String code) => switch (code) {
   _ => code,
 };
 
-String _experienceLabel(AppLocalizations l10n, ExperienceLevel level) => switch (level) {
-  ExperienceLevel.lessThanYear => l10n.experienceLessThanYear,
-  ExperienceLevel.oneToThree => l10n.experienceOneToThree,
-  ExperienceLevel.threeToFive => l10n.experienceThreeToFive,
-  ExperienceLevel.fiveToTen => l10n.experienceFiveToTen,
-  ExperienceLevel.moreThanTen => l10n.experienceMoreThanTen,
-};
+String _experienceLabel(AppLocalizations l10n, ExperienceLevel level) =>
+    switch (level) {
+      ExperienceLevel.lessThanYear => l10n.experienceLessThanYear,
+      ExperienceLevel.oneToThree => l10n.experienceOneToThree,
+      ExperienceLevel.threeToFive => l10n.experienceThreeToFive,
+      ExperienceLevel.fiveToTen => l10n.experienceFiveToTen,
+      ExperienceLevel.moreThanTen => l10n.experienceMoreThanTen,
+    };
 
-String _formatLabel(AppLocalizations l10n, SessionFormat format) => switch (format) {
-  SessionFormat.chat => l10n.formatChat,
-  SessionFormat.audio => l10n.formatAudio,
-  SessionFormat.video => l10n.formatVideo,
-};
+String _formatLabel(AppLocalizations l10n, SessionFormat format) =>
+    switch (format) {
+      SessionFormat.chat => l10n.formatChat,
+      SessionFormat.audio => l10n.formatAudio,
+      SessionFormat.video => l10n.formatVideo,
+    };
 
 class ProfileStepScreen extends StatefulWidget {
   const ProfileStepScreen({super.key});

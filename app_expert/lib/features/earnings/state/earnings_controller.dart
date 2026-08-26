@@ -10,13 +10,17 @@ import '../data/earnings_repository.dart';
 
 class EarningsController extends AsyncNotifier<EarningsDto> {
   @override
-  FutureOr<EarningsDto> build() => ref.read(earningsRepositoryProvider).earnings();
+  FutureOr<EarningsDto> build() =>
+      ref.read(earningsRepositoryProvider).earnings();
 
   Future<void> refresh() async {
-    state = await AsyncValue.guard(() => ref.read(earningsRepositoryProvider).earnings());
+    state = await AsyncValue.guard(
+      () => ref.read(earningsRepositoryProvider).earnings(),
+    );
   }
 }
 
-final earningsControllerProvider = AsyncNotifierProvider<EarningsController, EarningsDto>(
-  EarningsController.new,
-);
+final earningsControllerProvider =
+    AsyncNotifierProvider<EarningsController, EarningsDto>(
+      EarningsController.new,
+    );
