@@ -351,5 +351,7 @@
   "errorSubscriptionNotFound": "Белсенді жазылым жоқ",
   "premiumActiveUntil": "{date} дейін белсенді",
   "premiumCancelledUntil": "Тоқтатылды, {date} дейін қолжетімді",
-  "premiumPlanPrice": "{price} / {period}"
+  "premiumPlanPrice": "{price} / {period}",
+  "premiumUpsell": "Premium: консультацияларға −10 %",
+  "premiumDiscountApplied": "Premium жеңілдігі қолданылды"
 }

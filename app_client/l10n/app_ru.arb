@@ -1485,5 +1485,13 @@
         "type": "String"
       }
     }
+  },
+  "premiumUpsell": "Premium: −10 % на консультации",
+  "@premiumUpsell": {
+    "description": "Апселл в шторке оплаты для базового клиента"
+  },
+  "premiumDiscountApplied": "Скидка Premium уже применена",
+  "@premiumDiscountApplied": {
+    "description": "Строка в шторке оплаты для клиента с подпиской"
   }
 }

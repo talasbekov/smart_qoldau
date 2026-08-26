@@ -2209,6 +2209,18 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'{price} / {period}'**
   String premiumPlanPrice(String price, String period);
+
+  /// Апселл в шторке оплаты для базового клиента
+  ///
+  /// In ru, this message translates to:
+  /// **'Premium: −10 % на консультации'**
+  String get premiumUpsell;
+
+  /// Строка в шторке оплаты для клиента с подпиской
+  ///
+  /// In ru, this message translates to:
+  /// **'Скидка Premium уже применена'**
+  String get premiumDiscountApplied;
 }
 
 class _AppLocalizationsDelegate

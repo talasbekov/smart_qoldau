@@ -64,3 +64,10 @@ final premiumControllerProvider =
     AsyncNotifierProvider.autoDispose<PremiumController, PremiumState>(
       PremiumController.new,
     );
+
+/// Только статус подписки, без карт. Профилю и апселлу в шторке оплаты
+/// нужен ответ «Premium или базовый» — тянуть ради него список карт значит
+/// добавить точку отказа там, где она ничего не решает.
+final premiumStatusProvider = FutureProvider.autoDispose<PremiumStatus>(
+  (ref) => ref.watch(premiumRepositoryProvider).status(),
+);

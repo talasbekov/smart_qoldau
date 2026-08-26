@@ -74,6 +74,11 @@ Future<Widget> _wrap(SqApi api, {required bool isGuest}) async {
         builder: (context, state) => const Scaffold(body: Text('sq-stub-cards')),
       ),
       GoRoute(
+        path: RoutePaths.premium,
+        builder: (context, state) =>
+            const Scaffold(body: Text('sq-stub-premium')),
+      ),
+      GoRoute(
         path: RoutePaths.favorites,
         builder: (context, state) =>
             const Scaffold(body: Text('sq-stub-favorites')),
@@ -143,6 +148,41 @@ void main() {
     when(
       () => api.tickets(take: any(named: 'take'), skip: any(named: 'skip')),
     ).thenAnswer((_) async => []);
+    when(() => api.premiumStatus()).thenAnswer((_) async => PremiumStatus.none);
+  });
+
+  testWidgets('профиль показывает статус Premium и ведёт на экран', (
+    tester,
+  ) async {
+    when(() => api.premiumStatus()).thenAnswer(
+      (_) async => PremiumStatus(
+        active: true,
+        cancelled: false,
+        inGrace: false,
+        plan: PremiumPlan.month,
+        currentPeriodEnd: DateTime.utc(2026, 9, 26),
+      ),
+    );
+
+    await tester.pumpWidget(await _wrap(api, isGuest: false));
+    await tester.pumpAndSettle();
+    await _restoreSession(tester);
+
+    // Статус виден прямо в списке: ради ответа «подписан я или нет»
+    // открывать отдельный экран человек не должен.
+    expect(find.textContaining('26.09.2026'), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('sq-profile-item-premium')));
+    await tester.pumpAndSettle();
+    expect(find.text('sq-stub-premium'), findsOneWidget);
+  });
+
+  testWidgets('без подписки в профиле написан базовый тариф', (tester) async {
+    await tester.pumpWidget(await _wrap(api, isGuest: false));
+    await tester.pumpAndSettle();
+    await _restoreSession(tester);
+
+    expect(find.text('Базовый тариф'), findsOneWidget);
   });
 
   testWidgets('гость видит блок создания аккаунта', (tester) async {

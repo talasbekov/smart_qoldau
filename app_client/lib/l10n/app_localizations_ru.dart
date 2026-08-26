@@ -1161,4 +1161,10 @@ class AppLocalizationsRu extends AppLocalizations {
   String premiumPlanPrice(String price, String period) {
     return '$price / $period';
   }
+
+  @override
+  String get premiumUpsell => 'Premium: −10 % на консультации';
+
+  @override
+  String get premiumDiscountApplied => 'Скидка Premium уже применена';
 }

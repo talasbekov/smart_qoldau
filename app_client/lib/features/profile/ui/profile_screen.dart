@@ -15,6 +15,7 @@ import '../../../core/url_launcher_port.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../auth/state/auth_controller.dart';
 import '../../consultations/data/consultations_repository.dart';
+import '../../premium/state/premium_controller.dart';
 
 /// Сколько консультаций спрашиваем ради счётчика в профиле. Отдельного
 /// эндпоинта «сколько у меня завершённых» бэкенд не даёт, поэтому берём
@@ -212,6 +213,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               icon: Icons.favorite_border,
               onTap: () => context.push(RoutePaths.favorites),
             ),
+            _PremiumItem(),
             _Item(
               label: l10n.profilePaymentMethods,
               icon: Icons.credit_card,
@@ -296,4 +298,48 @@ class _Item extends StatelessWidget {
     ),
     onTap: onTap,
   );
+}
+
+/// Пункт Premium со статусом подписки прямо в строке: ради ответа
+/// «подписан я или нет» открывать отдельный экран человек не должен.
+/// Статус не загрузился — показываем пункт без подписи, а не прячем его:
+/// сбой запроса не повод терять точку входа.
+class _PremiumItem extends ConsumerWidget {
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
+    final status = ref.watch(premiumStatusProvider).valueOrNull;
+
+    String? subtitle;
+    if (status != null) {
+      final until = status.currentPeriodEnd;
+      if (!status.active || until == null) {
+        subtitle = l10n.premiumStatusInactive;
+      } else {
+        final local = until.toLocal();
+        final date =
+            '${local.day.toString().padLeft(2, '0')}.'
+            '${local.month.toString().padLeft(2, '0')}.${local.year}';
+        subtitle = status.cancelled
+            ? l10n.premiumCancelledUntil(date)
+            : l10n.premiumActiveUntil(date);
+      }
+    }
+
+    return ListTile(
+      key: const Key('sq-profile-item-premium'),
+      leading: const Icon(Icons.workspace_premium_outlined,
+          color: SqColors.primary),
+      title: Text(l10n.premiumTitle, style: SqTypography.body),
+      subtitle: subtitle == null
+          ? null
+          : Text(
+              subtitle,
+              style: SqTypography.caption.copyWith(
+                color: SqColors.textSecondary,
+              ),
+            ),
+      onTap: () => context.push(RoutePaths.premium),
+    );
+  }
 }

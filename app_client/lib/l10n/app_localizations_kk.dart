@@ -1155,4 +1155,10 @@ class AppLocalizationsKk extends AppLocalizations {
   String premiumPlanPrice(String price, String period) {
     return '$price / $period';
   }
+
+  @override
+  String get premiumUpsell => 'Premium: консультацияларға −10 %';
+
+  @override
+  String get premiumDiscountApplied => 'Premium жеңілдігі қолданылды';
 }
