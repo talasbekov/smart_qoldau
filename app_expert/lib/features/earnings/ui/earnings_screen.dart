@@ -9,6 +9,7 @@ import 'package:shared/shared.dart';
 
 import '../../../core/route_paths.dart';
 import '../../../l10n/app_localizations.dart';
+import 'earnings_stats.dart';
 import '../state/earnings_controller.dart';
 
 class EarningsScreen extends ConsumerWidget {
@@ -64,6 +65,11 @@ class EarningsScreen extends ConsumerWidget {
                   ],
                 ),
               ),
+              const SizedBox(height: 16),
+              // Плитки прототипа `Expert Web - Доход`. На телефоне они в
+              // две колонки и стоят под балансом, на широком экране — в
+              // ряд, как нарисовано.
+              EarningsStats(items: earnings.items),
               const SizedBox(height: 16),
               if (earnings.items.isEmpty)
                 Padding(

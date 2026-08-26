@@ -1165,6 +1165,30 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Сегодня у вас {count} консультаций'**
   String dashboardTodayCount(int count);
+
+  /// Плитки дохода (прототип Expert Web - Доход)
+  ///
+  /// In ru, this message translates to:
+  /// **'Доход за период'**
+  String get earningsStatTotal;
+
+  /// Плитки дохода (прототип Expert Web - Доход)
+  ///
+  /// In ru, this message translates to:
+  /// **'Консультаций'**
+  String get earningsStatCount;
+
+  /// Плитки дохода (прототип Expert Web - Доход)
+  ///
+  /// In ru, this message translates to:
+  /// **'Средний чек'**
+  String get earningsStatAverage;
+
+  /// Плитки дохода (прототип Expert Web - Доход)
+  ///
+  /// In ru, this message translates to:
+  /// **'Комиссия платформы'**
+  String get earningsStatCommission;
 }
 
 class _AppLocalizationsDelegate

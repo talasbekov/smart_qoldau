@@ -17,11 +17,34 @@ class SqSplitLayout extends StatelessWidget {
     required this.main,
     required this.aside,
     this.padding = const EdgeInsets.all(SqSpacing.l),
+    this.asideWidth,
+    this.asideFirst = false,
   });
 
   final Widget main;
   final Widget aside;
   final EdgeInsets padding;
+
+  /// Фиксированная ширина боковой колонки. Прототипы задают её то долей
+  /// (1.4 : 1 у профиля психолога), то числом (340 px у рейтинга,
+  /// 320 px у дохода) — поддерживаем оба способа, а не подгоняем один
+  /// под другой.
+  final double? asideWidth;
+
+  /// Боковая колонка слева. У рейтинга сводка стоит перед списком
+  /// отзывов, а не после него.
+  final bool asideFirst;
+
+  List<Widget> _aside() => [
+    if (asideWidth == null)
+      Expanded(flex: 10, child: SingleChildScrollView(child: aside))
+    else
+      SizedBox(
+        width: asideWidth,
+        child: SingleChildScrollView(child: aside),
+      ),
+    if (asideFirst) const SizedBox(width: SqSpacing.l),
+  ];
 
   @override
   Widget build(BuildContext context) {
@@ -54,9 +77,12 @@ class SqSplitLayout extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          if (asideFirst) ..._aside(),
           Expanded(flex: 14, child: SingleChildScrollView(child: main)),
-          const SizedBox(width: SqSpacing.l),
-          Expanded(flex: 10, child: SingleChildScrollView(child: aside)),
+          if (!asideFirst) ...[
+            const SizedBox(width: SqSpacing.l),
+            ..._aside(),
+          ],
         ],
       ),
     );

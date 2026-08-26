@@ -24,7 +24,43 @@ Future<void> _pumpAt(WidgetTester tester, Size size) async {
   await tester.pumpAndSettle();
 }
 
+Future<void> _pumpFixed(WidgetTester tester, {required bool asideFirst}) async {
+  tester.view.physicalSize = const Size(1440, 900);
+  tester.view.devicePixelRatio = 1;
+  addTearDown(tester.view.resetPhysicalSize);
+  addTearDown(tester.view.resetDevicePixelRatio);
+
+  await tester.pumpWidget(
+    MaterialApp(
+      home: Scaffold(
+        body: SqSplitLayout(
+          asideWidth: 340,
+          asideFirst: asideFirst,
+          main: const SizedBox(key: Key('main'), height: 100),
+          aside: const SizedBox(key: Key('aside'), height: 100),
+        ),
+      ),
+    ),
+  );
+  await tester.pumpAndSettle();
+}
+
 void main() {
+  testWidgets('боковая колонка фиксированной ширины (340 px у рейтинга)', (
+    tester,
+  ) async {
+    await _pumpFixed(tester, asideFirst: false);
+    expect(tester.getSize(find.byKey(const Key('aside'))).width, 340);
+  });
+
+  testWidgets('боковая колонка может стоять слева', (tester) async {
+    await _pumpFixed(tester, asideFirst: true);
+    expect(
+      tester.getTopLeft(find.byKey(const Key('aside'))).dx,
+      lessThan(tester.getTopLeft(find.byKey(const Key('main'))).dx),
+    );
+  });
+
   testWidgets('десктоп: колонки рядом, основная шире', (tester) async {
     await _pumpAt(tester, const Size(1440, 900));
 

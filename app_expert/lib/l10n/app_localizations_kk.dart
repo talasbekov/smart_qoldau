@@ -581,4 +581,16 @@ class AppLocalizationsKk extends AppLocalizations {
   String dashboardTodayCount(int count) {
     return 'Бүгін сізде $count консультация';
   }
+
+  @override
+  String get earningsStatTotal => 'Кезең табысы';
+
+  @override
+  String get earningsStatCount => 'Консультациялар';
+
+  @override
+  String get earningsStatAverage => 'Орташа чек';
+
+  @override
+  String get earningsStatCommission => 'Платформа комиссиясы';
 }

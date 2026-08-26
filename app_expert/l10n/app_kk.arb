@@ -177,5 +177,9 @@
   "dashboardNextTitle": "Ең жақын консультация",
   "dashboardOpenConsultation": "Консультацияны ашу",
   "dashboardGreeting": "Сәлеметсіз бе, {name} 👋",
-  "dashboardTodayCount": "Бүгін сізде {count} консультация"
+  "dashboardTodayCount": "Бүгін сізде {count} консультация",
+  "earningsStatTotal": "Кезең табысы",
+  "earningsStatCount": "Консультациялар",
+  "earningsStatAverage": "Орташа чек",
+  "earningsStatCommission": "Платформа комиссиясы"
 }

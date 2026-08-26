@@ -98,11 +98,9 @@ class ExpertReviewsScreen extends ConsumerWidget {
             style: SqTypography.body.copyWith(color: SqColors.danger),
           ),
         ),
-        data: (reviews) => RefreshIndicator(
-          onRefresh: () =>
-              ref.read(expertReviewsControllerProvider.notifier).refresh(),
-          child: ListView(
-            padding: const EdgeInsets.all(16),
+        data: (reviews) {
+          final summary = Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
                 children: [
@@ -119,7 +117,12 @@ class ExpertReviewsScreen extends ConsumerWidget {
                   ),
                 ],
               ),
-              const SizedBox(height: 16),
+            ],
+          );
+
+          final list = Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
               if (reviews.items.isEmpty)
                 Padding(
                   padding: const EdgeInsets.only(top: 24),
@@ -138,8 +141,29 @@ class ExpertReviewsScreen extends ConsumerWidget {
                     ),
                   ),
             ],
-          ),
-        ),
+          );
+
+          // Прототип `Expert Web - Рейтинг`: сводка колонкой 340 px
+          // СЛЕВА, отзывы справа. На телефоне порядок прежний — сводка
+          // сверху, список под ней.
+          if (SqLayoutScope.of(context).isWide) {
+            return SqSplitLayout(
+              asideWidth: 340,
+              asideFirst: true,
+              aside: summary,
+              main: list,
+            );
+          }
+
+          return RefreshIndicator(
+            onRefresh: () =>
+                ref.read(expertReviewsControllerProvider.notifier).refresh(),
+            child: ListView(
+              padding: const EdgeInsets.all(16),
+              children: [summary, const SizedBox(height: 16), list],
+            ),
+          );
+        },
       ),
     );
   }

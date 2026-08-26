@@ -345,5 +345,21 @@
         "type": "int"
       }
     }
+  },
+  "earningsStatTotal": "Доход за период",
+  "@earningsStatTotal": {
+    "description": "Плитки дохода (прототип Expert Web - Доход)"
+  },
+  "earningsStatCount": "Консультаций",
+  "@earningsStatCount": {
+    "description": "Плитки дохода (прототип Expert Web - Доход)"
+  },
+  "earningsStatAverage": "Средний чек",
+  "@earningsStatAverage": {
+    "description": "Плитки дохода (прототип Expert Web - Доход)"
+  },
+  "earningsStatCommission": "Комиссия платформы",
+  "@earningsStatCommission": {
+    "description": "Плитки дохода (прототип Expert Web - Доход)"
   }
 }

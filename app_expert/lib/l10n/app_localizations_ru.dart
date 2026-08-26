@@ -582,4 +582,16 @@ class AppLocalizationsRu extends AppLocalizations {
   String dashboardTodayCount(int count) {
     return 'Сегодня у вас $count консультаций';
   }
+
+  @override
+  String get earningsStatTotal => 'Доход за период';
+
+  @override
+  String get earningsStatCount => 'Консультаций';
+
+  @override
+  String get earningsStatAverage => 'Средний чек';
+
+  @override
+  String get earningsStatCommission => 'Комиссия платформы';
 }
