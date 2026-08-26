@@ -93,8 +93,17 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
                 onPressed: _continuingAnonymously ? null : _continueAnonymously,
               ),
               const SizedBox(height: SqSpacing.l),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
+              // Wrap, а не Row: две ссылки с разделителем не помещаются в
+              // одну строку на телефоне шириной 411 dp — на эмуляторе
+              // Android это давало RenderFlex overflow на 78 пикселей.
+              // Виджет-тесты этого не видели: тестовый экран шире
+              // реального телефона.
+              Wrap(
+                alignment: WrapAlignment.center,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                // Разделителя между ссылками нет намеренно: при переносе
+                // на вторую строку он повисал в конце первой. Ссылки
+                // разделяет отступ кнопок.
                 children: [
                   TextButton(
                     onPressed: () =>
@@ -102,12 +111,6 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
                     child: Text(
                       l10n.welcomeTermsLink,
                       style: SqTypography.caption,
-                    ),
-                  ),
-                  Text(
-                    '·',
-                    style: SqTypography.caption.copyWith(
-                      color: SqColors.textTertiary,
                     ),
                   ),
                   TextButton(

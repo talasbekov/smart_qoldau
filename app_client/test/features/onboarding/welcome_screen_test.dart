@@ -197,4 +197,20 @@ void main() {
       expect(launcher.launched, [privacyUrl]);
     },
   );
+
+  // Экран приветствия целиком помещается на настоящем телефоне, а не
+  // только на широком тестовом холсте: строка юрдокументов на 411 dp
+  // (типовой Android, 1080 px при dpr 2.625) давала RenderFlex overflow
+  // на 78 пикселей — увидели это только на эмуляторе.
+  testWidgets('на экране 411 dp ничего не переполняется', (tester) async {
+    tester.view.physicalSize = const Size(1080, 2400);
+    tester.view.devicePixelRatio = 2.625;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(_wrap(MockSqApi()));
+    await tester.pumpAndSettle();
+
+    expect(tester.takeException(), isNull);
+  });
 }
