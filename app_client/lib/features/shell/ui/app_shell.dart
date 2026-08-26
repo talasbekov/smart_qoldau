@@ -5,8 +5,11 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shared/shared.dart';
 
+import '../../../core/route_paths.dart';
 import '../../../l10n/app_localizations.dart';
+import 'web_header.dart';
 
 /// Общий каркас четырёх вкладок `StatefulShellRoute.indexedStack`.
 ///
@@ -50,8 +53,24 @@ class AppShell extends StatelessWidget {
         navigationShell.goBranch(0);
       },
       child: Scaffold(
-        body: navigationShell,
-        bottomNavigationBar: NavigationBar(
+        // На широком экране разделы живут в веб-шапке (прототипы
+        // `SmartQoldau Web - *`), а нижняя навигация исчезает: полоса с
+        // четырьмя иконками внизу монитора выглядит как растянутый
+        // телефон и ничего не даёт.
+        body: SqLayoutScope.of(context).isWide
+            ? WebHeader(
+                onHelp: () => context.push(RoutePaths.emergency),
+                onSection: (section) => switch (section) {
+                  WebSection.catalog => context.go(RoutePaths.catalog),
+                  WebSection.materials => context.go(RoutePaths.materials),
+                  WebSection.premium => context.push(RoutePaths.premium),
+                },
+                child: navigationShell,
+              )
+            : navigationShell,
+        bottomNavigationBar: SqLayoutScope.of(context).isWide
+            ? null
+            : NavigationBar(
           selectedIndex: navigationShell.currentIndex,
           onDestinationSelected: _onDestinationSelected,
           destinations: [
