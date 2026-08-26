@@ -68,39 +68,42 @@ class _PhotoScreenState extends ConsumerState<PhotoScreen> {
     return Scaffold(
       backgroundColor: SqColors.background,
       appBar: AppBar(title: Text(l10n.photoScreenTitle)),
-      body: Padding(
-        padding: const EdgeInsets.all(SqSpacing.l),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            if (_lastStatus != null) ...[
-              Text(
-                _statusLabel(l10n, _lastStatus!),
-                style: SqTypography.body.copyWith(
-                  color: SqColors.textSecondary,
+      body: SqReadableWidth(
+        maxWidth: 520,
+        child: Padding(
+          padding: const EdgeInsets.all(SqSpacing.l),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              if (_lastStatus != null) ...[
+                Text(
+                  _statusLabel(l10n, _lastStatus!),
+                  style: SqTypography.body.copyWith(
+                    color: SqColors.textSecondary,
+                  ),
                 ),
+                const SizedBox(height: SqSpacing.m),
+              ],
+              if (_error != null) ...[
+                Text(
+                  _error!,
+                  style: SqTypography.body.copyWith(color: SqColors.danger),
+                ),
+                const SizedBox(height: SqSpacing.m),
+              ],
+              SqButton(
+                label: l10n.actionUploadPhoto,
+                onPressed: _busy ? null : _pickAndUpload,
+                loading: _busy,
               ),
               const SizedBox(height: SqSpacing.m),
-            ],
-            if (_error != null) ...[
-              Text(
-                _error!,
-                style: SqTypography.body.copyWith(color: SqColors.danger),
+              SqButton(
+                label: l10n.actionDeletePhoto,
+                kind: SqButtonKind.danger,
+                onPressed: _busy ? null : _delete,
               ),
-              const SizedBox(height: SqSpacing.m),
             ],
-            SqButton(
-              label: l10n.actionUploadPhoto,
-              onPressed: _busy ? null : _pickAndUpload,
-              loading: _busy,
-            ),
-            const SizedBox(height: SqSpacing.m),
-            SqButton(
-              label: l10n.actionDeletePhoto,
-              kind: SqButtonKind.danger,
-              onPressed: _busy ? null : _delete,
-            ),
-          ],
+          ),
         ),
       ),
     );

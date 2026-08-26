@@ -131,40 +131,45 @@ class _CodeScreenState extends ConsumerState<CodeScreen> {
     return Scaffold(
       backgroundColor: SqColors.background,
       appBar: AppBar(title: Text(l10n.codeScreenTitle)),
-      body: Padding(
-        padding: const EdgeInsets.all(SqSpacing.l),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(
-              l10n.codeScreenSentTo(widget.phone),
-              style: SqTypography.body.copyWith(color: SqColors.textSecondary),
-            ),
-            const SizedBox(height: SqSpacing.xl),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: List.generate(_cellCount, _buildCell),
-            ),
-            if (_errorText != null) ...[
-              const SizedBox(height: SqSpacing.m),
+      body: SqReadableWidth(
+        maxWidth: 520,
+        child: Padding(
+          padding: const EdgeInsets.all(SqSpacing.l),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
               Text(
-                _errorText!,
-                textAlign: TextAlign.center,
-                style: SqTypography.caption.copyWith(color: SqColors.danger),
-              ),
-            ],
-            const SizedBox(height: SqSpacing.xl),
-            Center(
-              child: TextButton(
-                onPressed: _secondsLeft == 0 ? _resend : null,
-                child: Text(
-                  _secondsLeft == 0
-                      ? l10n.actionResendCode
-                      : l10n.resendCodeCountdown(_secondsLeft),
+                l10n.codeScreenSentTo(widget.phone),
+                style: SqTypography.body.copyWith(
+                  color: SqColors.textSecondary,
                 ),
               ),
-            ),
-          ],
+              const SizedBox(height: SqSpacing.xl),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: List.generate(_cellCount, _buildCell),
+              ),
+              if (_errorText != null) ...[
+                const SizedBox(height: SqSpacing.m),
+                Text(
+                  _errorText!,
+                  textAlign: TextAlign.center,
+                  style: SqTypography.caption.copyWith(color: SqColors.danger),
+                ),
+              ],
+              const SizedBox(height: SqSpacing.xl),
+              Center(
+                child: TextButton(
+                  onPressed: _secondsLeft == 0 ? _resend : null,
+                  child: Text(
+                    _secondsLeft == 0
+                        ? l10n.actionResendCode
+                        : l10n.resendCodeCountdown(_secondsLeft),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
