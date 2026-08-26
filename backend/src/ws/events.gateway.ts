@@ -98,6 +98,14 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection {
         e instanceof Error ? e.stack : undefined,
       );
     }
+
+    // Готовность подписок: socket.io шлёт клиенту 'connect' сразу после
+    // рукопожатия, а комнаты (user:{sub}, expert:{id}) назначаются здесь —
+    // асинхронно, с запросом в БД. До этого момента адресные события
+    // уходят в пустоту. Живому приложению это незаметно (человек не
+    // начинает печатать в ту же миллисекунду), но полагаться на удачу
+    // нельзя: тот, кому важно не пропустить событие, ждёт 'ready'.
+    client.emit('ready', { expertId: data.expertId ?? null });
   }
 
   // Персист + рассылка в ОБЕ комнаты (user:{clientUserId} и
