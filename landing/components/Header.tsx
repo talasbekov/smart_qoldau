@@ -16,6 +16,9 @@ export default async function Header() {
           <Link href="/become-expert" className="text-xs font-semibold text-ink-soft">
             {t('becomeExpert')}
           </Link>
+          <Link href="/about" className="text-xs font-semibold text-ink-soft">
+            {t('about')}
+          </Link>
           <Link href="/premium" className="text-xs font-semibold text-ink-soft">
             {t('premium')}
           </Link>

@@ -14,6 +14,9 @@ export default async function Footer() {
           <div>
             <div className="text-white/90 font-bold text-xs mb-3">{t('clientsTitle')}</div>
             <div className="flex flex-col gap-2">
+              <Link href="/about" className="text-white/55 text-xs">
+                {t('about')}
+              </Link>
               <Link href="/support" className="text-white/55 text-xs">
                 {t('clientsSupport')}
               </Link>
