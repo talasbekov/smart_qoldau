@@ -169,5 +169,13 @@
   "devicesCamera": "Камера",
   "devicesMicrophone": "Микрофон",
   "devicesJoin": "Консультацияға кіру",
-  "devicesNotFound": "Камера мен микрофон табылмады. Браузерде рұқсат беріп, қайталап көріңіз."
+  "devicesNotFound": "Камера мен микрофон табылмады. Браузерде рұқсат беріп, қайталап көріңіз.",
+  "dashboardStatToday": "Бүгін",
+  "dashboardStatCompleted": "Аяқталды",
+  "dashboardStatEarned": "Бүгінгі табыс",
+  "dashboardStatRating": "Рейтинг",
+  "dashboardNextTitle": "Ең жақын консультация",
+  "dashboardOpenConsultation": "Консультацияны ашу",
+  "dashboardGreeting": "Сәлеметсіз бе, {name} 👋",
+  "dashboardTodayCount": "Бүгін сізде {count} консультация"
 }

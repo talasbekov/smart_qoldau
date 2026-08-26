@@ -554,4 +554,32 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get devicesNotFound =>
       'Камера и микрофон не найдены. Разрешите доступ в браузере и попробуйте снова.';
+
+  @override
+  String get dashboardStatToday => 'Сегодня';
+
+  @override
+  String get dashboardStatCompleted => 'Завершено';
+
+  @override
+  String get dashboardStatEarned => 'Доход сегодня';
+
+  @override
+  String get dashboardStatRating => 'Рейтинг';
+
+  @override
+  String get dashboardNextTitle => 'Ближайшая консультация';
+
+  @override
+  String get dashboardOpenConsultation => 'Открыть консультацию';
+
+  @override
+  String dashboardGreeting(String name) {
+    return 'Здравствуйте, $name 👋';
+  }
+
+  @override
+  String dashboardTodayCount(int count) {
+    return 'Сегодня у вас $count консультаций';
+  }
 }

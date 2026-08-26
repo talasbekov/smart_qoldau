@@ -12,7 +12,11 @@ import 'package:shared/shared.dart';
 
 import '../../../core/route_paths.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../consultations/state/expert_consultations_controller.dart';
+import '../../reviews/state/expert_reviews_controller.dart';
+import '../../shell/state/tab_presence.dart';
 import '../state/home_controller.dart';
+import 'dashboard.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -84,6 +88,75 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         ),
         data: (me) {
           final accepting = me.workStatus == WorkStatus.accepting;
+
+          // На широком экране главная — дашборд из прототипа
+          // `Expert Web - Главная`, а не список ссылок: разделы уже в
+          // боковом меню, и дублировать их в теле экрана незачем.
+          if (SqLayoutScope.of(context).isWide) {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(
+                    SqSpacing.l,
+                    SqSpacing.l,
+                    SqSpacing.l,
+                    0,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      SwitchListTile(
+                        key: const Key('sq-home-accepting-switch'),
+                        title: Text(
+                          accepting
+                              ? l10n.homeAcceptingOn
+                              : l10n.homeAcceptingOff,
+                        ),
+                        value: accepting,
+                        onChanged:
+                            (_saving ||
+                                me.verificationStatus !=
+                                    VerificationStatus.verified)
+                            ? null
+                            : _toggle,
+                      ),
+                      // Присутствие в браузере живёт, пока открыта вкладка
+                      // (Р-26) — говорим об этом до того, как заявки
+                      // начнут теряться.
+                      WebPresenceNotice(accepting: accepting),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: Consumer(
+                    builder: (context, ref, _) {
+                      final consultations = ref.watch(
+                        expertConsultationsControllerProvider,
+                      );
+                      // Рейтинг живёт в своей выдаче
+                      // (`GET /experts/me/reviews`), в ExpertMe его нет.
+                      final reviews = ref
+                          .watch(expertReviewsControllerProvider)
+                          .valueOrNull;
+                      return Dashboard(
+                        expertName: me.displayName,
+                        consultations: [
+                          ...consultations.active.valueOrNull ?? const [],
+                          ...consultations.history.valueOrNull ?? const [],
+                        ],
+                        ratingAvg: reviews?.ratingAvg,
+                        now: DateTime.now(),
+                        onOpenNext: (id) =>
+                            context.push(RoutePaths.session(id)),
+                      );
+                    },
+                  ),
+                ),
+              ],
+            );
+          }
+
           return Padding(
             padding: const EdgeInsets.all(16),
             child: Column(

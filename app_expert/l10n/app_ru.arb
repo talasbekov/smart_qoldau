@@ -303,5 +303,47 @@
   "devicesNotFound": "Камера и микрофон не найдены. Разрешите доступ в браузере и попробуйте снова.",
   "@devicesNotFound": {
     "description": "Выбор медиаустройств (E14)"
+  },
+  "dashboardStatToday": "Сегодня",
+  "@dashboardStatToday": {
+    "description": "Дашборд кабинета эксперта (прототип Expert Web - Главная)"
+  },
+  "dashboardStatCompleted": "Завершено",
+  "@dashboardStatCompleted": {
+    "description": "Дашборд кабинета эксперта (прототип Expert Web - Главная)"
+  },
+  "dashboardStatEarned": "Доход сегодня",
+  "@dashboardStatEarned": {
+    "description": "Дашборд кабинета эксперта (прототип Expert Web - Главная)"
+  },
+  "dashboardStatRating": "Рейтинг",
+  "@dashboardStatRating": {
+    "description": "Дашборд кабинета эксперта (прототип Expert Web - Главная)"
+  },
+  "dashboardNextTitle": "Ближайшая консультация",
+  "@dashboardNextTitle": {
+    "description": "Дашборд кабинета эксперта (прототип Expert Web - Главная)"
+  },
+  "dashboardOpenConsultation": "Открыть консультацию",
+  "@dashboardOpenConsultation": {
+    "description": "Дашборд кабинета эксперта (прототип Expert Web - Главная)"
+  },
+  "dashboardGreeting": "Здравствуйте, {name} 👋",
+  "@dashboardGreeting": {
+    "description": "Дашборд кабинета эксперта",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "dashboardTodayCount": "Сегодня у вас {count} консультаций",
+  "@dashboardTodayCount": {
+    "description": "Дашборд кабинета эксперта",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   }
 }

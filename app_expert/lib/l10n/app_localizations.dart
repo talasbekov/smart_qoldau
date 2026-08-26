@@ -1117,6 +1117,54 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Камера и микрофон не найдены. Разрешите доступ в браузере и попробуйте снова.'**
   String get devicesNotFound;
+
+  /// Дашборд кабинета эксперта (прототип Expert Web - Главная)
+  ///
+  /// In ru, this message translates to:
+  /// **'Сегодня'**
+  String get dashboardStatToday;
+
+  /// Дашборд кабинета эксперта (прототип Expert Web - Главная)
+  ///
+  /// In ru, this message translates to:
+  /// **'Завершено'**
+  String get dashboardStatCompleted;
+
+  /// Дашборд кабинета эксперта (прототип Expert Web - Главная)
+  ///
+  /// In ru, this message translates to:
+  /// **'Доход сегодня'**
+  String get dashboardStatEarned;
+
+  /// Дашборд кабинета эксперта (прототип Expert Web - Главная)
+  ///
+  /// In ru, this message translates to:
+  /// **'Рейтинг'**
+  String get dashboardStatRating;
+
+  /// Дашборд кабинета эксперта (прототип Expert Web - Главная)
+  ///
+  /// In ru, this message translates to:
+  /// **'Ближайшая консультация'**
+  String get dashboardNextTitle;
+
+  /// Дашборд кабинета эксперта (прототип Expert Web - Главная)
+  ///
+  /// In ru, this message translates to:
+  /// **'Открыть консультацию'**
+  String get dashboardOpenConsultation;
+
+  /// Дашборд кабинета эксперта
+  ///
+  /// In ru, this message translates to:
+  /// **'Здравствуйте, {name} 👋'**
+  String dashboardGreeting(String name);
+
+  /// Дашборд кабинета эксперта
+  ///
+  /// In ru, this message translates to:
+  /// **'Сегодня у вас {count} консультаций'**
+  String dashboardTodayCount(int count);
 }
 
 class _AppLocalizationsDelegate

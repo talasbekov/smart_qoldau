@@ -553,4 +553,32 @@ class AppLocalizationsKk extends AppLocalizations {
   @override
   String get devicesNotFound =>
       'Камера мен микрофон табылмады. Браузерде рұқсат беріп, қайталап көріңіз.';
+
+  @override
+  String get dashboardStatToday => 'Бүгін';
+
+  @override
+  String get dashboardStatCompleted => 'Аяқталды';
+
+  @override
+  String get dashboardStatEarned => 'Бүгінгі табыс';
+
+  @override
+  String get dashboardStatRating => 'Рейтинг';
+
+  @override
+  String get dashboardNextTitle => 'Ең жақын консультация';
+
+  @override
+  String get dashboardOpenConsultation => 'Консультацияны ашу';
+
+  @override
+  String dashboardGreeting(String name) {
+    return 'Сәлеметсіз бе, $name 👋';
+  }
+
+  @override
+  String dashboardTodayCount(int count) {
+    return 'Бүгін сізде $count консультация';
+  }
 }
