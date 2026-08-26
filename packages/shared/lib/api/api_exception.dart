@@ -69,6 +69,10 @@ abstract final class ApiErrorCode {
   /// модератором.
   static const invalidStateTransition = 'INVALID_STATE_TRANSITION';
 
+  /// Контент и самопомощь (E13): материал за подпиской.
+  static const premiumRequired = 'PREMIUM_REQUIRED';
+  static const contentNotFound = 'CONTENT_NOT_FOUND';
+
   /// Подписка Premium (E12).
   static const subscriptionExists = 'SUBSCRIPTION_EXISTS';
   static const subscriptionNotFound = 'SUBSCRIPTION_NOT_FOUND';

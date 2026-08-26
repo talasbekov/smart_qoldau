@@ -4001,6 +4001,345 @@
         ]
       }
     },
+    "/v1/content/streak": {
+      "get": {
+        "operationId": "ContentController_streakOf",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Стрик практик и счётчик завершённых"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "content"
+        ]
+      }
+    },
+    "/v1/content": {
+      "get": {
+        "operationId": "ContentController_list",
+        "parameters": [
+          {
+            "name": "kind",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "MEDITATION",
+                "MUSIC",
+                "ARTICLE",
+                "BREATHING"
+              ]
+            }
+          },
+          {
+            "name": "category",
+            "required": false,
+            "in": "query",
+            "description": "Категория-чипс: sleep | anxiety | ...",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Материалы",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ContentItemDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "content"
+        ]
+      }
+    },
+    "/v1/content/{id}/progress": {
+      "post": {
+        "operationId": "ContentController_saveProgress",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveProgressDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Прогресс сохранён"
+          },
+          "404": {
+            "description": "CONTENT_NOT_FOUND"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "content"
+        ]
+      }
+    },
+    "/v1/content/{id}/vote": {
+      "post": {
+        "operationId": "ContentController_vote",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VoteDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Голос учтён"
+          },
+          "404": {
+            "description": "CONTENT_NOT_FOUND"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "content"
+        ]
+      }
+    },
+    "/v1/content/{id}/media": {
+      "get": {
+        "operationId": "ContentController_media",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Подписанная ссылка на файл материала"
+          },
+          "403": {
+            "description": "PREMIUM_REQUIRED"
+          },
+          "404": {
+            "description": "CONTENT_NOT_FOUND"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "content"
+        ]
+      }
+    },
+    "/v1/content/{id}": {
+      "get": {
+        "operationId": "ContentController_byId",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Материал с телом",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ContentItemDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "CONTENT_NOT_FOUND"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "content"
+        ]
+      }
+    },
+    "/v1/admin/content": {
+      "get": {
+        "operationId": "ContentAdminController_list",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Материалы, включая черновики"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "admin-content"
+        ]
+      },
+      "post": {
+        "operationId": "ContentAdminController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpsertContentDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Материал заведён"
+          },
+          "409": {
+            "description": "CONTENT_SLUG_TAKEN"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "admin-content"
+        ]
+      }
+    },
+    "/v1/admin/content/{id}": {
+      "patch": {
+        "operationId": "ContentAdminController_patch",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PatchContentDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Материал обновлён"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "admin-content"
+        ]
+      },
+      "delete": {
+        "operationId": "ContentAdminController_remove",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Материал удалён"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "admin-content"
+        ]
+      }
+    },
     "/v1/devices": {
       "post": {
         "operationId": "DevicesController_register",
@@ -5434,6 +5773,7 @@
               "type": "string",
               "enum": [
                 "VERIFICATION_OPERATOR",
+                "CONTENT_EDITOR",
                 "SUPPORT_OPERATOR",
                 "QUALITY_TEAM",
                 "FINANCE_CONTROL",
@@ -5552,6 +5892,7 @@
               "type": "string",
               "enum": [
                 "VERIFICATION_OPERATOR",
+                "CONTENT_EDITOR",
                 "SUPPORT_OPERATOR",
                 "QUALITY_TEAM",
                 "FINANCE_CONTROL",
@@ -5581,6 +5922,7 @@
               "type": "string",
               "enum": [
                 "VERIFICATION_OPERATOR",
+                "CONTENT_EDITOR",
                 "SUPPORT_OPERATOR",
                 "QUALITY_TEAM",
                 "FINANCE_CONTROL",
@@ -5614,6 +5956,7 @@
               "type": "string",
               "enum": [
                 "VERIFICATION_OPERATOR",
+                "CONTENT_EDITOR",
                 "SUPPORT_OPERATOR",
                 "QUALITY_TEAM",
                 "FINANCE_CONTROL",
@@ -5671,6 +6014,7 @@
               "type": "string",
               "enum": [
                 "VERIFICATION_OPERATOR",
+                "CONTENT_EDITOR",
                 "SUPPORT_OPERATOR",
                 "QUALITY_TEAM",
                 "FINANCE_CONTROL",
@@ -7128,6 +7472,226 @@
         "required": [
           "action"
         ]
+      },
+      "ContentBodyDto": {
+        "type": "object",
+        "properties": {
+          "markdown": {
+            "type": "string",
+            "description": "ARTICLE: текст на языке пользователя"
+          },
+          "phases": {
+            "description": "BREATHING: фазы цикла",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "cycles": {
+            "type": "number",
+            "description": "BREATHING: сколько циклов"
+          }
+        }
+      },
+      "ContentItemDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "MEDITATION",
+              "MUSIC",
+              "ARTICLE",
+              "BREATHING"
+            ]
+          },
+          "access": {
+            "type": "string",
+            "enum": [
+              "FREE",
+              "PREMIUM"
+            ]
+          },
+          "slug": {
+            "type": "string"
+          },
+          "category": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string",
+            "description": "Заголовок на языке пользователя"
+          },
+          "summary": {
+            "type": "string",
+            "description": "Краткое описание на языке пользователя"
+          },
+          "durationSec": {
+            "type": "number",
+            "nullable": true
+          },
+          "coverUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "locked": {
+            "type": "boolean",
+            "description": "Материал за подпиской, а подписки нет. Карточку всё равно показываем: человек должен понимать, что именно за пейволлом. Решение о доступе принимает сервер при выдаче ссылки, а не приложение по этому флагу."
+          },
+          "positionPermille": {
+            "type": "number",
+            "description": "Прогресс 0–1000, если он есть"
+          },
+          "body": {
+            "$ref": "#/components/schemas/ContentBodyDto"
+          },
+          "usefulYes": {
+            "type": "number",
+            "description": "Сколько человек сочли материал полезным"
+          },
+          "usefulNo": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "access",
+          "slug",
+          "category",
+          "title",
+          "summary",
+          "locked"
+        ]
+      },
+      "SaveProgressDto": {
+        "type": "object",
+        "properties": {
+          "positionPermille": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1000,
+            "description": "Доля прослушанного или прочитанного в промилле. Одно поле на оба вида: длительность известна из карточки."
+          }
+        },
+        "required": [
+          "positionPermille"
+        ]
+      },
+      "VoteDto": {
+        "type": "object",
+        "properties": {
+          "useful": {
+            "type": "boolean",
+            "description": "Был ли материал полезен"
+          }
+        },
+        "required": [
+          "useful"
+        ]
+      },
+      "UpsertContentDto": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "MEDITATION",
+              "MUSIC",
+              "ARTICLE",
+              "BREATHING"
+            ]
+          },
+          "access": {
+            "type": "string",
+            "enum": [
+              "FREE",
+              "PREMIUM"
+            ]
+          },
+          "slug": {
+            "type": "string",
+            "description": "Латиница, цифры и дефис"
+          },
+          "category": {
+            "type": "string"
+          },
+          "titleRu": {
+            "type": "string"
+          },
+          "titleKk": {
+            "type": "string"
+          },
+          "summaryRu": {
+            "type": "string"
+          },
+          "summaryKk": {
+            "type": "string"
+          },
+          "payload": {
+            "type": "object",
+            "description": "Форма зависит от kind"
+          },
+          "durationSec": {
+            "type": "number"
+          },
+          "coverKey": {
+            "type": "string"
+          },
+          "sortOrder": {
+            "type": "number"
+          },
+          "published": {
+            "type": "boolean",
+            "description": "Публиковать сразу"
+          }
+        },
+        "required": [
+          "kind",
+          "slug",
+          "category",
+          "titleRu",
+          "titleKk",
+          "summaryRu",
+          "summaryKk",
+          "payload"
+        ]
+      },
+      "PatchContentDto": {
+        "type": "object",
+        "properties": {
+          "published": {
+            "type": "boolean"
+          },
+          "access": {
+            "type": "string",
+            "enum": [
+              "FREE",
+              "PREMIUM"
+            ]
+          },
+          "titleRu": {
+            "type": "string"
+          },
+          "titleKk": {
+            "type": "string"
+          },
+          "summaryRu": {
+            "type": "string"
+          },
+          "summaryKk": {
+            "type": "string"
+          },
+          "payload": {
+            "type": "object"
+          },
+          "sortOrder": {
+            "type": "number"
+          }
+        }
       },
       "RegisterDeviceDto": {
         "type": "object",

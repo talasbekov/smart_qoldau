@@ -102,6 +102,14 @@ abstract final class SqEndpoints {
   // --- способы оплаты ---
   static const paymentMethods = '/payment-methods';
 
+  // --- контент и самопомощь (E13) ---
+  static const content = '/content';
+  static const contentStreak = '/content/streak';
+  static String contentById(String id) => '/content/$id';
+  static String contentMedia(String id) => '/content/$id/media';
+  static String contentProgress(String id) => '/content/$id/progress';
+  static String contentVote(String id) => '/content/$id/vote';
+
   // --- Premium (E12) ---
   static const premium = '/premium';
   static const premiumSubscribe = '/premium/subscribe';
@@ -169,6 +177,12 @@ abstract final class SqEndpoints {
     ('GET', paymentMethods),
     ('POST', paymentMethods),
     ('DELETE', '/payment-methods/{id}'),
+    ('GET', content),
+    ('GET', contentStreak),
+    ('GET', '/content/{id}'),
+    ('GET', '/content/{id}/media'),
+    ('POST', '/content/{id}/progress'),
+    ('POST', '/content/{id}/vote'),
     ('GET', premium),
     ('POST', premiumSubscribe),
     ('POST', premiumCancel),
