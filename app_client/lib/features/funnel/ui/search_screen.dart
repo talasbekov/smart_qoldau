@@ -198,9 +198,16 @@ class _SearchingContent extends ConsumerWidget {
     final onlineCount = state.onlineCount;
     final accent = isEmergency ? SqColors.danger : SqColors.primary;
 
+    // Прототип `Web - Поиск специалиста` держит блок по центру: экран
+    // ожидания, растянутый на монитор, выглядит как пустая страница с
+    // текстом по краям.
     return Column(
       children: [
-        Expanded(child: _list(context, l10n, onlineCount, accent)),
+        Expanded(
+          child: SqReadableWidth(
+            child: _list(context, l10n, onlineCount, accent),
+          ),
+        ),
         if (isEmergency)
           Padding(
             padding: const EdgeInsets.fromLTRB(

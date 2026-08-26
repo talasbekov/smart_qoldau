@@ -58,72 +58,77 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
     final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       backgroundColor: SqColors.background,
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(SqSpacing.l),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const Spacer(),
-              Text(
-                l10n.welcomeTitle,
-                style: SqTypography.h1,
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: SqSpacing.s),
-              Text(
-                l10n.welcomeSubtitle,
-                style: SqTypography.body.copyWith(
-                  color: SqColors.textSecondary,
+      body: SqReadableWidth(
+        maxWidth: 520,
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(SqSpacing.l),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const Spacer(),
+                Text(
+                  l10n.welcomeTitle,
+                  style: SqTypography.h1,
+                  textAlign: TextAlign.center,
                 ),
-                textAlign: TextAlign.center,
-              ),
-              const Spacer(),
-              SqButton(
-                key: const Key('sq-welcome-phone-button'),
-                label: l10n.actionLoginByPhone,
-                onPressed: _continuingAnonymously ? null : _loginByPhone,
-              ),
-              const SizedBox(height: SqSpacing.m),
-              SqButton(
-                key: const Key('sq-welcome-guest-button'),
-                kind: SqButtonKind.secondary,
-                label: l10n.actionContinueAnonymously,
-                loading: _continuingAnonymously,
-                onPressed: _continuingAnonymously ? null : _continueAnonymously,
-              ),
-              const SizedBox(height: SqSpacing.l),
-              // Wrap, а не Row: две ссылки с разделителем не помещаются в
-              // одну строку на телефоне шириной 411 dp — на эмуляторе
-              // Android это давало RenderFlex overflow на 78 пикселей.
-              // Виджет-тесты этого не видели: тестовый экран шире
-              // реального телефона.
-              Wrap(
-                alignment: WrapAlignment.center,
-                crossAxisAlignment: WrapCrossAlignment.center,
-                // Разделителя между ссылками нет намеренно: при переносе
-                // на вторую строку он повисал в конце первой. Ссылки
-                // разделяет отступ кнопок.
-                children: [
-                  TextButton(
-                    onPressed: () =>
-                        ref.read(urlLauncherPortProvider).launch(termsUrl),
-                    child: Text(
-                      l10n.welcomeTermsLink,
-                      style: SqTypography.caption,
-                    ),
+                const SizedBox(height: SqSpacing.s),
+                Text(
+                  l10n.welcomeSubtitle,
+                  style: SqTypography.body.copyWith(
+                    color: SqColors.textSecondary,
                   ),
-                  TextButton(
-                    onPressed: () =>
-                        ref.read(urlLauncherPortProvider).launch(privacyUrl),
-                    child: Text(
-                      l10n.welcomePrivacyLink,
-                      style: SqTypography.caption,
+                  textAlign: TextAlign.center,
+                ),
+                const Spacer(),
+                SqButton(
+                  key: const Key('sq-welcome-phone-button'),
+                  label: l10n.actionLoginByPhone,
+                  onPressed: _continuingAnonymously ? null : _loginByPhone,
+                ),
+                const SizedBox(height: SqSpacing.m),
+                SqButton(
+                  key: const Key('sq-welcome-guest-button'),
+                  kind: SqButtonKind.secondary,
+                  label: l10n.actionContinueAnonymously,
+                  loading: _continuingAnonymously,
+                  onPressed: _continuingAnonymously
+                      ? null
+                      : _continueAnonymously,
+                ),
+                const SizedBox(height: SqSpacing.l),
+                // Wrap, а не Row: две ссылки с разделителем не помещаются в
+                // одну строку на телефоне шириной 411 dp — на эмуляторе
+                // Android это давало RenderFlex overflow на 78 пикселей.
+                // Виджет-тесты этого не видели: тестовый экран шире
+                // реального телефона.
+                Wrap(
+                  alignment: WrapAlignment.center,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  // Разделителя между ссылками нет намеренно: при переносе
+                  // на вторую строку он повисал в конце первой. Ссылки
+                  // разделяет отступ кнопок.
+                  children: [
+                    TextButton(
+                      onPressed: () =>
+                          ref.read(urlLauncherPortProvider).launch(termsUrl),
+                      child: Text(
+                        l10n.welcomeTermsLink,
+                        style: SqTypography.caption,
+                      ),
                     ),
-                  ),
-                ],
-              ),
-            ],
+                    TextButton(
+                      onPressed: () =>
+                          ref.read(urlLauncherPortProvider).launch(privacyUrl),
+                      child: Text(
+                        l10n.welcomePrivacyLink,
+                        style: SqTypography.caption,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
       ),

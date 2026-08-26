@@ -12,6 +12,7 @@ export 'analytics/analytics_provider.dart';
 export 'analytics/noop_analytics.dart';
 export 'analytics/posthog_analytics.dart';
 export 'design/breakpoints.dart';
+export 'design/readable_width.dart';
 export 'design/session_layout.dart';
 export 'design/sheet_or_dialog.dart';
 export 'design/split_layout.dart';

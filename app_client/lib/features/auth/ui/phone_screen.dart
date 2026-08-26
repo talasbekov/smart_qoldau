@@ -145,50 +145,55 @@ class _PhoneScreenState extends ConsumerState<PhoneScreen> {
     return Scaffold(
       backgroundColor: SqColors.background,
       appBar: AppBar(title: Text(l10n.phoneScreenTitle)),
-      body: Padding(
-        padding: const EdgeInsets.all(SqSpacing.l),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(
-              l10n.phoneScreenSubtitle,
-              style: SqTypography.body.copyWith(color: SqColors.textSecondary),
-            ),
-            const SizedBox(height: SqSpacing.xl),
-            TextField(
-              controller: _controller,
-              keyboardType: TextInputType.phone,
-              inputFormatters: [_PhoneMaskFormatter()],
-              style: SqTypography.body.copyWith(color: SqColors.textPrimary),
-              decoration: InputDecoration(
-                labelText: l10n.phoneNumberLabel,
-                prefixText: '+7 (7',
-                prefixStyle: SqTypography.body.copyWith(
-                  color: SqColors.textPrimary,
-                ),
-                hintText: l10n.phoneNumberHint,
-                errorText: _errorText,
-                filled: true,
-                fillColor: SqColors.surface,
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: SqSpacing.m,
-                  vertical: SqSpacing.m,
-                ),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(SqRadius.m),
-                  borderSide: const BorderSide(color: SqColors.border),
+      body: SqReadableWidth(
+        maxWidth: 520,
+        child: Padding(
+          padding: const EdgeInsets.all(SqSpacing.l),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                l10n.phoneScreenSubtitle,
+                style: SqTypography.body.copyWith(
+                  color: SqColors.textSecondary,
                 ),
               ),
-            ),
-            const SizedBox(height: SqSpacing.s),
-            Text(l10n.phoneScreenHelper, style: SqTypography.caption),
-            const SizedBox(height: SqSpacing.xl),
-            SqButton(
-              label: l10n.actionGetCode,
-              loading: _submitting,
-              onPressed: _canSubmit ? () => _submit() : null,
-            ),
-          ],
+              const SizedBox(height: SqSpacing.xl),
+              TextField(
+                controller: _controller,
+                keyboardType: TextInputType.phone,
+                inputFormatters: [_PhoneMaskFormatter()],
+                style: SqTypography.body.copyWith(color: SqColors.textPrimary),
+                decoration: InputDecoration(
+                  labelText: l10n.phoneNumberLabel,
+                  prefixText: '+7 (7',
+                  prefixStyle: SqTypography.body.copyWith(
+                    color: SqColors.textPrimary,
+                  ),
+                  hintText: l10n.phoneNumberHint,
+                  errorText: _errorText,
+                  filled: true,
+                  fillColor: SqColors.surface,
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: SqSpacing.m,
+                    vertical: SqSpacing.m,
+                  ),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(SqRadius.m),
+                    borderSide: const BorderSide(color: SqColors.border),
+                  ),
+                ),
+              ),
+              const SizedBox(height: SqSpacing.s),
+              Text(l10n.phoneScreenHelper, style: SqTypography.caption),
+              const SizedBox(height: SqSpacing.xl),
+              SqButton(
+                label: l10n.actionGetCode,
+                loading: _submitting,
+                onPressed: _canSubmit ? () => _submit() : null,
+              ),
+            ],
+          ),
         ),
       ),
     );
