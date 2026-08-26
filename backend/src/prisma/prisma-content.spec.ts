@@ -1,7 +1,24 @@
 import { PrismaClient } from '@prisma/client';
 
 const s = new PrismaClient();
+const PHONE = '+77070000031';
+
 afterAll(() => s.$disconnect());
+
+// Уборка ПЕРЕД тестом: прерванный прогон (таймаут, Ctrl+C) оставляет
+// пользователя в dev-БД, и следующий запуск падает на уникальном
+// телефоне — один сбой отравляет все последующие.
+beforeAll(async () => {
+  const stale = await s.user.findMany({
+    where: { phone: PHONE },
+    select: { id: true },
+  });
+  const ids = stale.map((u) => u.id);
+  if (ids.length === 0) return;
+  await s.contentVote.deleteMany({ where: { userId: { in: ids } } });
+  await s.contentProgress.deleteMany({ where: { userId: { in: ids } } });
+  await s.user.deleteMany({ where: { id: { in: ids } } });
+});
 
 it('материал, прогресс и один голос на пользователя', async () => {
   const item = await s.contentItem.create({
@@ -18,7 +35,7 @@ it('материал, прогресс и один голос на пользо�
       sortOrder: 10,
     },
   });
-  const user = await s.user.create({ data: { phone: '+77070000031' } });
+  const user = await s.user.create({ data: { phone: PHONE } });
   try {
     // Прогресс уникален по (user, item): повторное чтение обновляет
     // позицию, а не плодит строки — иначе «сколько прочитано» перестаёт

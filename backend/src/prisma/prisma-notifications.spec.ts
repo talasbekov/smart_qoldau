@@ -6,6 +6,24 @@ describe('Prisma Notifications schema', () => {
   beforeAll(() => s.$connect());
   afterAll(() => s.$disconnect());
 
+  const phones = ['+77070000015', '+77070000016'];
+
+  // Уборка ПЕРЕД тестом, а не только после. try/finally в теле спасает от
+  // падения assert'а, но не от прерванного прогона: убитый по таймауту
+  // тест оставляет пользователей в dev-БД, и следующий запуск падает на
+  // уникальном телефоне — то есть один сбой отравляет все последующие.
+  beforeAll(async () => {
+    const stale = await s.user.findMany({
+      where: { phone: { in: phones } },
+      select: { id: true },
+    });
+    const ids = stale.map((u) => u.id);
+    if (ids.length === 0) return;
+    await s.notification.deleteMany({ where: { userId: { in: ids } } });
+    await s.device.deleteMany({ where: { userId: { in: ids } } });
+    await s.user.deleteMany({ where: { id: { in: ids } } });
+  });
+
   it('Device уникален по token (перепривязка через upsert, не дубль); Notification хранит data и читается по userId; User.locale по умолчанию ru', async () => {
     const user = await s.user.create({ data: { phone: '+77070000015' } });
     const other = await s.user.create({ data: { phone: '+77070000016' } });

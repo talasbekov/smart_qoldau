@@ -1,10 +1,26 @@
 import { PrismaClient } from '@prisma/client';
 
 const s = new PrismaClient();
+const PHONE = '+77070000021';
+
 afterAll(() => s.$disconnect());
 
+// Уборка ПЕРЕД тестом — по той же причине, что в остальных схемных
+// спеках: прерванный прогон оставляет пользователя, и следующий падает
+// на уникальном телефоне.
+beforeAll(async () => {
+  const stale = await s.user.findMany({
+    where: { phone: PHONE },
+    select: { id: true },
+  });
+  const ids = stale.map((u) => u.id);
+  if (ids.length === 0) return;
+  await s.subscription.deleteMany({ where: { userId: { in: ids } } });
+  await s.user.deleteMany({ where: { id: { in: ids } } });
+});
+
 it('одна активная подписка на пользователя; период и попытки хранятся', async () => {
-  const user = await s.user.create({ data: { phone: '+77070000021' } });
+  const user = await s.user.create({ data: { phone: PHONE } });
   try {
     const sub = await s.subscription.create({
       data: {
