@@ -14,7 +14,10 @@ import { RedisService } from '../redis/redis.service';
 import { MatchingService } from '../matching/matching.service';
 import { ExpertsService } from '../experts/experts.service';
 import { EventsService } from '../ws/events.service';
-import { ConsultationsService } from '../consultations/consultations.service';
+import {
+  ConsultationsService,
+  ConsultationSlotTakenError,
+} from '../consultations/consultations.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { apiError } from '../common/filters/app-exception.filter';
 import { CreateRequestDto } from './dto/create-request.dto';
@@ -356,6 +359,32 @@ export class RequestsService {
         )
           apiError('OFFER_EXPIRED', 'Срок действия оффера истёк', 410);
         apiError('OFFER_ALREADY_TAKEN', 'Оффер уже принят', 409);
+      }
+      if (e instanceof ConsultationSlotTakenError) {
+        // Эксперт уже ведёт консультацию: BUSY выставляется после коммита
+        // первого accept, поэтому второй оффер он получить успевает.
+        // Отказ штатный, но оставлять оффер висеть PENDING до 45-секундного
+        // таймаута нельзя: под пиковой нагрузкой десятки заявок ждали бы
+        // впустую (видно в нагрузочном прогоне E11). Поступаем как с
+        // отказом эксперта — снимаем оффер и сразу предлагаем следующему.
+        await this.offerTimer.cancel(offerId);
+        await this.prisma.requestCandidate.updateMany({
+          where: { id: offerId, response: CandidateResponse.PENDING },
+          data: { response: CandidateResponse.REVOKED, respondedAt: now },
+        });
+        await this.audit.log({
+          actorType: 'system',
+          entity: 'offer',
+          entityId: offerId,
+          transition: 'offer.revoked',
+          payload: { reason: 'expert_busy' },
+        });
+        await this.offerToNext(offer!.requestId);
+        apiError(
+          'EXPERT_BUSY',
+          'У вас уже идёт консультация — этот запрос уйдёт другому специалисту',
+          409,
+        );
       }
       if (e instanceof RequestNotSearchingError) {
         // Заявка уже закрыта (отменена/сматчена иначе). Транзакция

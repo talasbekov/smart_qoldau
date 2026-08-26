@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Interval } from '@nestjs/schedule';
+import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 import { ConsultationStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { ClockService } from '../common/clock/clock.service';
@@ -101,10 +102,26 @@ export class ScheduledSweepService {
     });
 
     for (const row of rows) {
-      const claimed = await this.prisma.consultation.updateMany({
-        where: { id: row.id, status: ConsultationStatus.SCHEDULED },
-        data: { status: ConsultationStatus.ACTIVE },
-      });
+      let claimed: { count: number };
+      try {
+        claimed = await this.prisma.consultation.updateMany({
+          where: { id: row.id, status: ConsultationStatus.SCHEDULED },
+          data: { status: ConsultationStatus.ACTIVE },
+        });
+      } catch (e) {
+        // consultations_expert_active_uq: специалист прямо сейчас ведёт
+        // другую консультацию — затянувшуюся предыдущую или мгновенную,
+        // взятую до слота. Двух сразу человек не ведёт, поэтому запись
+        // остаётся SCHEDULED и активируется следующим тиком, как только
+        // он освободится; ронять весь тик из-за этого нельзя.
+        if (e instanceof PrismaClientKnownRequestError && e.code === 'P2002') {
+          this.logger.warn(
+            `консультация ${row.id} не активирована: специалист ${row.expertId} занят другой`,
+          );
+          continue;
+        }
+        throw e;
+      }
       if (claimed.count === 0) continue;
 
       // Авто-BUSY (Р-13): в момент слота специалист занят так же, как при

@@ -32,6 +32,11 @@ const MAX_TAKE = 100;
 
 export type ParticipantRole = 'client' | 'expert';
 
+/// Консультацию создать не удалось: уникальный индекс уже держит
+/// активную консультацию этого эксперта на это же время. Бросается ТОЛЬКО
+/// изнутри транзакции вызывающего — там любая диагностика запрещена.
+export class ConsultationSlotTakenError extends Error {}
+
 @Injectable()
 export class ConsultationsService {
   private readonly logger = new Logger(ConsultationsService.name);
@@ -85,6 +90,13 @@ export class ConsultationsService {
       });
     } catch (e) {
       if (e instanceof PrismaClientKnownRequestError && e.code === 'P2002') {
+        // Внутри чужой транзакции разбираться уже нельзя: после ошибки
+        // Postgres она аборчена, и следующий же запрос падает с 25P02
+        // «current transaction is aborted» — наружу это уходило как 500
+        // (найдено нагрузочным прогоном E11: эксперт, которому под
+        // нагрузкой прилетели два оффера, получал INTERNAL вместо
+        // отказа). Решение принимает вызывающий, уже после отката.
+        if (tx) throw new ConsultationSlotTakenError();
         const existing = await db.consultation.findUnique({
           where: { requestId: request.id },
         });

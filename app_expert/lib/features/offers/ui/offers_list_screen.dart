@@ -92,6 +92,7 @@ class _OfferTileState extends ConsumerState<_OfferTile> {
     ApiErrorCode.offerExpired,
     ApiErrorCode.offerAlreadyTaken,
     ApiErrorCode.offerNotFound,
+    ApiErrorCode.expertBusy,
   };
 
   /// Показывает ошибку, только если код не входит в ожидаемые

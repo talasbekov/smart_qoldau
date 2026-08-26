@@ -66,8 +66,9 @@ class _IncomingOfferScreenState extends ConsumerState<IncomingOfferScreen> {
       onSuccess?.call(result);
       Navigator.of(context, rootNavigator: true).pop();
     } on ApiException catch (e) {
-      // OFFER_EXPIRED/OFFER_ALREADY_TAKEN/OFFER_NOT_FOUND — оффер уже
-      // недоступен (перехвачен другим экспертом или истёк); закрываем
+      // OFFER_EXPIRED/OFFER_ALREADY_TAKEN/OFFER_NOT_FOUND/EXPERT_BUSY —
+      // оффер уже недоступен (перехвачен другим, истёк, или эксперт
+      // только что принял другую заявку); закрываем
       // алерт тем же путём, что и обычный успех — второй попытки тут
       // всё равно быть не может.
       if (!mounted) return;
@@ -75,7 +76,8 @@ class _IncomingOfferScreenState extends ConsumerState<IncomingOfferScreen> {
       Navigator.of(context, rootNavigator: true).pop();
       if (e.code != ApiErrorCode.offerExpired &&
           e.code != ApiErrorCode.offerAlreadyTaken &&
-          e.code != ApiErrorCode.offerNotFound) {
+          e.code != ApiErrorCode.offerNotFound &&
+          e.code != ApiErrorCode.expertBusy) {
         setState(() => _error = e.message);
       }
     } finally {

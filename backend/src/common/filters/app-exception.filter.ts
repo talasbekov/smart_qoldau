@@ -4,6 +4,7 @@ import {
   ExceptionFilter,
   HttpException,
   HttpStatus,
+  Logger,
 } from '@nestjs/common';
 
 const CODE_BY_STATUS: Record<number, string> = {
@@ -33,8 +34,11 @@ export function apiError(code: string, message: string, status: number): never {
 
 @Catch()
 export class AppExceptionFilter implements ExceptionFilter {
+  private readonly logger = new Logger('HTTP');
+
   catch(exception: unknown, host: ArgumentsHost) {
     const res = host.switchToHttp().getResponse();
+    const req = host.switchToHttp().getRequest();
     const status =
       exception instanceof HttpException
         ? exception.getStatus()
@@ -57,6 +61,16 @@ export class AppExceptionFilter implements ExceptionFilter {
           ? String(fields.message)
           : 'Internal server error'));
     const details = 'details' in fields ? fields.details : undefined;
+    // Ответ наружу остаётся обезличенным ('Internal server error'), но
+    // внутрь пишется всё: без этого 500 в бою не диагностируется вовсе —
+    // ни стека, ни маршрута, ни даже факта. Найдено нагрузочным
+    // прогоном E11, где сотни 500 не оставили в логе ни строки.
+    if (status >= 500) {
+      this.logger.error(
+        `${req?.method ?? '?'} ${req?.originalUrl ?? req?.url ?? '?'} -> ${status}`,
+        exception instanceof Error ? exception.stack : String(exception),
+      );
+    }
     res
       .status(status)
       .json({ error: { code, message, ...(details ? { details } : {}) } });

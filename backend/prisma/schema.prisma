@@ -378,11 +378,17 @@ model Consultation {
   @@index([expertId, status])
   // Рабочий запрос sweep'а плановых: status = 'SCHEDULED' AND started_at <= now().
   @@index([status, startedAt])
-  // Плюс частичный уникальный индекс consultations_expert_slot_uq
-  // (raw SQL в миграции 20260823120000_scheduled_slot_unique):
-  //   UNIQUE(expert_id, started_at) WHERE status IN ('SCHEDULED','ACTIVE').
-  // Он и есть защита от гонки двух клиентов на один слот — проверка перед
-  // вставкой под нагрузкой даёт двойную запись.
+  // Плюс два частичных уникальных индекса (raw SQL в миграциях, Prisma их
+  // не выражает):
+  //   consultations_expert_slot_uq — UNIQUE(expert_id, started_at)
+  //     WHERE status IN ('SCHEDULED','ACTIVE'): защита от гонки двух
+  //     клиентов на один плановый слот (проверка перед вставкой под
+  //     нагрузкой даёт двойную запись);
+  //   consultations_expert_active_uq — UNIQUE(expert_id)
+  //     WHERE status = 'ACTIVE': эксперт ведёт не больше одной
+  //     консультации одновременно. BUSY выставляется уже после коммита
+  //     первого accept, поэтому до него эксперт успевает принять второй
+  //     оффер (найдено нагрузочным прогоном E11).
   @@map("consultations")
 }
 

@@ -246,16 +246,36 @@ describe('Активация и напоминание плановой конс
     expect(audit).not.toBeNull();
   });
 
-  it('просроченная запись активируется без запоздалого напоминания', async () => {
-    // Инстанс «лежал»: слот наступил, пока sweep не работал.
+  it('пока специалист ведёт другую консультацию, плановая ждёт: SCHEDULED, а не вторая ACTIVE', async () => {
+    // Предыдущий тест оставил специалиста в активной консультации.
+    // Двух сразу человек не ведёт (consultations_expert_active_uq), и тик
+    // обязан это пережить, а не упасть целиком.
     fakeClock.current = new Date('2026-08-24T03:00:00Z');
-    const late = await book('2026-08-26T10:00:00.000Z');
+    const queued = await book('2026-08-26T10:00:00.000Z');
     fakeClock.current = new Date('2026-08-26T10:05:00.000Z');
 
     await sweep.tick();
 
     const row = await prisma.consultation.findUniqueOrThrow({
-      where: { id: late },
+      where: { id: queued },
+    });
+    expect(row.status).toBe('SCHEDULED');
+  });
+
+  it('просроченная запись активируется, когда специалист освободился', async () => {
+    // Инстанс «лежал»: слот наступил, пока sweep не работал.
+    await prisma.consultation.updateMany({
+      where: { expertId: expert.expertId, status: 'ACTIVE' },
+      data: { status: 'COMPLETED', outcome: 'COMPLETED', endedAt: new Date() },
+    });
+
+    await sweep.tick();
+
+    const row = await prisma.consultation.findFirstOrThrow({
+      where: {
+        expertId: expert.expertId,
+        startedAt: new Date('2026-08-26T10:00:00.000Z'),
+      },
     });
     expect(row.status).toBe('ACTIVE');
     // Напоминание «через 15 минут» о начавшемся дезориентирует.

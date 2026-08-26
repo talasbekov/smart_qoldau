@@ -129,6 +129,11 @@ describe('Схема публичного профиля специалиста 
         format: 'chat',
         priceTiyn: 399000,
         startedAt: new Date(),
+        // Отзыв пишут к уже завершённой консультации; заодно активной у
+        // специалиста может быть только одна (consultations_expert_active_uq).
+        status: 'COMPLETED',
+        outcome: 'COMPLETED',
+        endedAt: new Date(),
       },
     });
     const created = await prisma.review.create({
@@ -155,6 +160,9 @@ describe('Схема публичного профиля специалиста 
         format: 'chat',
         priceTiyn: 399000,
         startedAt: new Date(),
+        status: 'COMPLETED',
+        outcome: 'COMPLETED',
+        endedAt: new Date(),
       },
     });
     const withoutTags = await prisma.review.create({

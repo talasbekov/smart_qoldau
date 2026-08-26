@@ -48,6 +48,12 @@ abstract final class ApiErrorCode {
   static const offerExpired = 'OFFER_EXPIRED';
   static const offerAlreadyTaken = 'OFFER_ALREADY_TAKEN';
 
+  /// Эксперт уже ведёт консультацию: BUSY выставляется после коммита
+  /// первого accept, поэтому до этого момента второй оффер он получить
+  /// успевает. Для интерфейса это тот же случай, что «оффер уже
+  /// недоступен» — вторая попытка бессмысленна.
+  static const expertBusy = 'EXPERT_BUSY';
+
   /// Завершение консультации и заметки эксперта (E7 задача 13).
   static const invalidOutcome = 'INVALID_OUTCOME';
   static const invalidNoteText = 'INVALID_NOTE_TEXT';
