@@ -30,7 +30,9 @@ Future<int> _columnsAt(WidgetTester tester, Size size) async {
   await tester.pumpAndSettle();
 
   // Сколько плиток в первом ряду: у них совпадает верхняя координата.
-  final firstTop = tester.getTopLeft(find.byKey(const Key('sq-topic-topic-0'))).dy;
+  final firstTop = tester
+      .getTopLeft(find.byKey(const Key('sq-topic-topic-0')))
+      .dy;
   var columns = 0;
   for (var i = 0; i < 12; i++) {
     final finder = find.byKey(Key('sq-topic-topic-$i'));

@@ -10,10 +10,14 @@ import 'package:shared/shared.dart';
 
 import '../../../l10n/app_localizations.dart';
 
-/// Разделы шапки. Ровно те, что в прототипе: каталог, материалы,
-/// Premium. Личное (консультации, профиль) в шапку не выносим — оно за
-/// входом, и в прототипе там кнопка «Войти».
-enum WebSection { catalog, materials, premium }
+/// Разделы шапки.
+///
+/// Прототип показывает каталог, материалы и Premium — он нарисован для
+/// незалогиненного посетителя, у которого справа «Войти». Но в
+/// приложении шапка заменяет собой нижнюю навигацию, и без «Консультаций»
+/// с «Профилем» человек на десктопе просто теряет к ним доступ. Добавлены
+/// они, а не что-то ещё: ровно то, что было в нижней навигации.
+enum WebSection { catalog, materials, premium, consultations, profile }
 
 class WebHeader extends StatelessWidget {
   const WebHeader({
@@ -67,11 +71,26 @@ class WebHeader extends StatelessWidget {
                 label: l10n.premiumTitle,
                 onTap: () => onSection(WebSection.premium),
               ),
+              _NavLink(
+                id: 'consultations',
+                label: l10n.navConsultations,
+                onTap: () => onSection(WebSection.consultations),
+              ),
+              _NavLink(
+                id: 'profile',
+                label: l10n.navProfile,
+                onTap: () => onSection(WebSection.profile),
+              ),
               const Spacer(),
               // «Мне нужна помощь» — главное действие всей поверхности:
               // человек, которому плохо, не должен искать его глазами.
+              // Ширина меньше на планшете: пять разделов и кнопка в 220 px
+              // в 1280 не помещаются, а резать нужно кнопку, а не
+              // навигацию.
               SizedBox(
-                width: 220,
+                width: SqLayoutScope.of(context) == SqLayout.desktop
+                    ? 220
+                    : 170,
                 child: SqButton(
                   key: const Key('sq-web-cta-help'),
                   label: l10n.homeEmergencyCta,
@@ -97,7 +116,7 @@ class _NavLink extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(right: SqSpacing.l),
+      padding: const EdgeInsets.only(right: SqSpacing.s),
       child: TextButton(
         key: Key('sq-web-nav-$id'),
         onPressed: onTap,

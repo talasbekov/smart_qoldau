@@ -64,6 +64,10 @@ class AppShell extends StatelessWidget {
                   WebSection.catalog => context.go(RoutePaths.catalog),
                   WebSection.materials => context.go(RoutePaths.materials),
                   WebSection.premium => context.push(RoutePaths.premium),
+                  WebSection.consultations => context.go(
+                    RoutePaths.consultations,
+                  ),
+                  WebSection.profile => context.go(RoutePaths.profile),
                 },
                 child: navigationShell,
               )

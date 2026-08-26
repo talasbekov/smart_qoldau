@@ -39,6 +39,10 @@ void main() {
     expect(find.byKey(const Key('sq-web-cta-help')), findsOneWidget);
     expect(find.byKey(const Key('sq-web-nav-catalog')), findsOneWidget);
     expect(find.byKey(const Key('sq-web-nav-materials')), findsOneWidget);
+    // Консультации и профиль обязаны быть в шапке: на широком экране она
+    // заменяет нижнюю навигацию, и без них человек теряет к ним доступ.
+    expect(find.byKey(const Key('sq-web-nav-consultations')), findsOneWidget);
+    expect(find.byKey(const Key('sq-web-nav-profile')), findsOneWidget);
     expect(find.text('содержимое'), findsOneWidget);
   });
 
