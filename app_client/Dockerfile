@@ -1,22 +1,17 @@
-# Веб-версия клиента (E15): тот же код, что мобильное приложение,
-# собранный под браузер. Экстренный путь (Р-16) остаётся мобильным —
-# см. Р-26; веб полезен для каталога, записи, материалов и подписки.
-FROM ghcr.io/cirruslabs/flutter:stable AS builder
-WORKDIR /build
-COPY packages/shared ./packages/shared
-COPY app_client ./app_client
-WORKDIR /build/app_client
-
-ARG API_BASE_URL=/v1
-ARG WS_BASE_URL=
-RUN flutter pub get \
- && flutter build web --release \
-      --base-href=/app/ \
-      --dart-define=API_BASE_URL=$API_BASE_URL \
-      --dart-define=WS_BASE_URL=$WS_BASE_URL
-
-FROM nginx:1.27-alpine AS runtime
-COPY --from=builder /build/app_client/build/web /usr/share/nginx/html
+# Упаковка уже собранного веб-бандла в nginx.
+#
+# Почему не многоступенчатая сборка с образом Flutter: опубликованные
+# образы (ghcr.io/cirruslabs/flutter) отстают от SDK проекта — на
+# 2026-08-27 там 3.29, а проекту нужен Dart ^3.13.1 из Flutter 3.47.
+# Сборка с ними падает на version solving. Бандл собирается там, где
+# нужный SDK уже стоит (машина разработчика или CI с setup-flutter):
+#
+#   cd app_client && flutter build web --release --base-href=/PREFIX/ \
+#     --dart-define=API_BASE_URL=... --dart-define=WS_BASE_URL=...
+#
+# Точную команду см. в README-web.md.
+FROM nginx:1.27-alpine
+COPY app_client/build/web /usr/share/nginx/html
 COPY app_client/nginx.conf /etc/nginx/conf.d/default.conf
 EXPOSE 80
 HEALTHCHECK --interval=30s --timeout=5s --retries=3 \

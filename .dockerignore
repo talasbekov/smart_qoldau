@@ -1,7 +1,10 @@
 # Для сборок с корнем репозитория в качестве контекста (веб-кабинет
 # эксперта: ему нужны и app_expert, и packages/shared).
 **/node_modules
+# Собранные веб-бандлы нужны образам expert-web и client-web.
 **/build
+!app_expert/build/web
+!app_client/build/web
 **/.dart_tool
 **/dist
 **/.next

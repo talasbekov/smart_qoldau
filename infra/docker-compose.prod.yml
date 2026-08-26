@@ -116,9 +116,6 @@ services:
     build:
       context: ..
       dockerfile: app_expert/Dockerfile
-      args:
-        API_BASE_URL: ${PUBLIC_API_BASE_URL}
-        WS_BASE_URL: ${PUBLIC_WS_BASE_URL:-}
     restart: unless-stopped
     depends_on: [backend]
     networks: [edge]
@@ -129,9 +126,6 @@ services:
     build:
       context: ..
       dockerfile: app_client/Dockerfile
-      args:
-        API_BASE_URL: ${PUBLIC_API_BASE_URL}
-        WS_BASE_URL: ${PUBLIC_WS_BASE_URL:-}
     restart: unless-stopped
     depends_on: [backend]
     networks: [edge]
