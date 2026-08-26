@@ -239,7 +239,9 @@ void main() {
       await tester.tap(find.text('Да'));
       await tester.pumpAndSettle();
 
-      await tester.tap(find.text('Мне не угрожает опасность, продолжить подбор'));
+      await tester.tap(
+        find.text('Мне не угрожает опасность, продолжить подбор'),
+      );
       await tester.pumpAndSettle();
 
       verify(

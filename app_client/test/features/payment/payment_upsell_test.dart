@@ -126,9 +126,8 @@ void main() {
   testWidgets('статус не загрузился — шторка оплаты работает без апселла', (
     tester,
   ) async {
-    when(() => api.premiumStatus()).thenThrow(
-      const ApiException(ApiErrorCode.network, 'нет сети', 0),
-    );
+    when(() => api.premiumStatus())
+        .thenThrow(const ApiException(ApiErrorCode.network, 'нет сети', 0));
 
     await tester.pumpWidget(_wrap(api));
     await tester.pumpAndSettle();

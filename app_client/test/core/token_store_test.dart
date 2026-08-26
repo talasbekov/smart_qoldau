@@ -123,29 +123,32 @@ void main() {
       await sub.cancel();
     });
 
-    test('broadcast: несколько подписчиков получают одно и то же событие', () async {
-      final store = TokenStore(_FakeSecureStore());
-      final a = <String?>[];
-      final b = <String?>[];
-      final subA = store.accessTokenChanges.listen(a.add);
-      final subB = store.accessTokenChanges.listen(b.add);
+    test(
+      'broadcast: несколько подписчиков получают одно и то же событие',
+      () async {
+        final store = TokenStore(_FakeSecureStore());
+        final a = <String?>[];
+        final b = <String?>[];
+        final subA = store.accessTokenChanges.listen(a.add);
+        final subB = store.accessTokenChanges.listen(b.add);
 
-      await store.write(_tokens('t1'));
-      await pumpEventQueue();
+        await store.write(_tokens('t1'));
+        await pumpEventQueue();
 
-      expect(a, ['t1']);
-      expect(b, ['t1']);
-      await subA.cancel();
-      await subB.cancel();
-    });
+        expect(a, ['t1']);
+        expect(b, ['t1']);
+        await subA.cancel();
+        await subB.cancel();
+      },
+    );
   });
 
-  group('TokenStore — очередь write()/clear() (Round 1 ревью задачи 8, п.3)', () {
-    test(
-      'write(), вызванный раньше, но завершающийся дольше, не даёт '
-      'обогнать себя более быстрым clear() — уведомления идут в порядке '
-      'вызова, а не завершения',
-      () async {
+  group(
+    'TokenStore — очередь write()/clear() (Round 1 ревью задачи 8, п.3)',
+    () {
+      test('write(), вызванный раньше, но завершающийся дольше, не даёт '
+          'обогнать себя более быстрым clear() — уведомления идут в порядке '
+          'вызова, а не завершения', () async {
         // Сценарий из ревью: молчаливый рефреш начал write() раньше, чем
         // пользователь успел разлогиниться, но его собственные внутренние
         // await медленнее, чем быстрый clear() логаута. Без очереди
@@ -185,13 +188,10 @@ void main() {
               'первым, даже если clear() физически завершился быстрее',
         );
         await sub.cancel();
-      },
-    );
+      });
 
-    test(
-      'сбой одной операции в очереди не запирает последующие '
-      '(try/finally-принцип задачи 6, применённый к очереди)',
-      () async {
+      test('сбой одной операции в очереди не запирает последующие '
+          '(try/finally-принцип задачи 6, применённый к очереди)', () async {
         final store = TokenStore(_ThrowingOnceSecureStore());
         final received = <String?>[];
         final sub = store.accessTokenChanges.listen(received.add);
@@ -203,11 +203,10 @@ void main() {
         expect(
           received,
           ['t2'],
-          reason:
-              'первый write() упал, но очередь обязана остаться рабочей для второго',
+          reason: 'первый write() упал, но очередь обязана остаться рабочей для второго',
         );
         await sub.cancel();
-      },
-    );
-  });
+      });
+    },
+  );
 }

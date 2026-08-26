@@ -47,8 +47,12 @@ const _args = SearchArgs(
   format: SessionFormat.chat,
 );
 
-MatchRequest _request(RequestStatus status) =>
-    MatchRequest(id: 'r1', status: status, isEmergency: false, clientCode: 4821);
+MatchRequest _request(RequestStatus status) => MatchRequest(
+  id: 'r1',
+  status: status,
+  isEmergency: false,
+  clientCode: 4821,
+);
 
 Map<String, dynamic> _expertJson() => {
   'id': 'e1',
@@ -129,9 +133,8 @@ void main() {
     api = MockSqApi();
     socket = _FakeSqSocket();
     addTearDown(socket.dispose);
-    when(
-      () => api.requestById(any()),
-    ).thenAnswer((_) async => _request(RequestStatus.searching));
+    when(() => api.requestById(any()))
+        .thenAnswer((_) async => _request(RequestStatus.searching));
     when(
       () => api.onlineCount(
         topicSlug: any(named: 'topicSlug'),
@@ -147,7 +150,10 @@ void main() {
     await tester.pumpWidget(_wrap(api: api, socket: socket));
     await tester.pump();
 
-    expect(find.text('Подбираем для вас подходящего психолога'), findsOneWidget);
+    expect(
+      find.text('Подбираем для вас подходящего психолога'),
+      findsOneWidget,
+    );
     expect(find.text('Сейчас онлайн: 3 специалиста'), findsOneWidget);
     expect(find.text('00:00'), findsOneWidget);
     expect(find.text('Отменить поиск'), findsOneWidget);
@@ -172,7 +178,11 @@ void main() {
     tester,
   ) async {
     await tester.pumpWidget(
-      _wrap(api: api, socket: socket, args: const SearchArgs(requestId: 'r1')),
+      _wrap(
+        api: api,
+        socket: socket,
+        args: const SearchArgs(requestId: 'r1'),
+      ),
     );
     await tester.pump();
 
@@ -231,9 +241,8 @@ void main() {
   testWidgets('«Отменить поиск» отменяет заявку и возвращает на главную', (
     tester,
   ) async {
-    when(
-      () => api.cancelRequest('r1'),
-    ).thenAnswer((_) async => _request(RequestStatus.cancelled));
+    when(() => api.cancelRequest('r1'))
+        .thenAnswer((_) async => _request(RequestStatus.cancelled));
 
     await tester.pumpWidget(_wrap(api: api, socket: socket));
     await tester.pump();
@@ -291,9 +300,8 @@ void main() {
     tester,
   ) async {
     // Урок 4 плана эпика: флаг занятости обязан сниматься и на исключении.
-    when(
-      () => api.cancelRequest('r1'),
-    ).thenThrow(const ApiException(ApiErrorCode.network, 'нет сети', 0));
+    when(() => api.cancelRequest('r1'))
+        .thenThrow(const ApiException(ApiErrorCode.network, 'нет сети', 0));
 
     await tester.pumpWidget(_wrap(api: api, socket: socket));
     await tester.pump();

@@ -40,9 +40,11 @@ class FunnelController extends AutoDisposeAsyncNotifier<void> {
             isEmergency: isEmergency,
             expertId: expertId,
           );
-      ref.read(analyticsProvider).track(
-        RequestCreated(requestId: request.id, isEmergency: isEmergency),
-      );
+      ref
+          .read(analyticsProvider)
+          .track(
+            RequestCreated(requestId: request.id, isEmergency: isEmergency),
+          );
       state = const AsyncData(null);
       return request;
     } catch (error, stackTrace) {

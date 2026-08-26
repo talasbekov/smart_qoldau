@@ -13,15 +13,17 @@ import '../../../l10n/app_localizations.dart';
 import '../../payment/state/cards_controller.dart';
 
 /// Возвращает id выбранной карты или `null`, если пользователь передумал.
-Future<String?> showCardPickerSheet(BuildContext context, String confirmLabel) =>
-    showModalBottomSheet<String>(
-      context: context,
-      backgroundColor: SqColors.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(SqRadius.l)),
-      ),
-      builder: (sheetContext) => _CardPickerSheet(confirmLabel: confirmLabel),
-    );
+Future<String?> showCardPickerSheet(
+  BuildContext context,
+  String confirmLabel,
+) => showModalBottomSheet<String>(
+  context: context,
+  backgroundColor: SqColors.surface,
+  shape: const RoundedRectangleBorder(
+    borderRadius: BorderRadius.vertical(top: Radius.circular(SqRadius.l)),
+  ),
+  builder: (sheetContext) => _CardPickerSheet(confirmLabel: confirmLabel),
+);
 
 class _CardPickerSheet extends ConsumerStatefulWidget {
   const _CardPickerSheet({required this.confirmLabel});
@@ -49,7 +51,8 @@ class _CardPickerSheetState extends ConsumerState<_CardPickerSheet> {
         ),
         error: (error, stackTrace) => Text(l10n.errorGeneric),
         data: (list) {
-          final selected = _selected ?? (list.isNotEmpty ? list.first.id : null);
+          final selected =
+              _selected ?? (list.isNotEmpty ? list.first.id : null);
           return Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,

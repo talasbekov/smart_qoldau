@@ -64,18 +64,14 @@ class ReviewState {
   );
 }
 
-class ReviewController
-    extends AutoDisposeFamilyNotifier<ReviewState, String> {
+class ReviewController extends AutoDisposeFamilyNotifier<ReviewState, String> {
   @override
   ReviewState build(String arg) => const ReviewState();
 
   /// Смена оценки снимает выбранные теги: набор четвёрки бессмысленен при
   /// единице, и оставленный выбор бэкенд всё равно отверг бы.
-  void setRating(int rating) => state = state.copyWith(
-    rating: rating,
-    tags: const [],
-    clearError: true,
-  );
+  void setRating(int rating) =>
+      state = state.copyWith(rating: rating, tags: const [], clearError: true);
 
   /// Повторный тап снимает выбор; больше [maxReviewTags] выбрать нельзя.
   void toggleTag(String code) {
@@ -115,9 +111,9 @@ class ReviewController
             tags: state.tags.isEmpty ? null : state.tags,
           );
       await _rememberReviewed(reviewId: review.id);
-      ref.read(analyticsProvider).track(
-        ReviewSubmitted(consultationId: arg, rating: state.rating),
-      );
+      ref
+          .read(analyticsProvider)
+          .track(ReviewSubmitted(consultationId: arg, rating: state.rating));
       state = state.copyWith(phase: ReviewPhase.sent);
     } on ApiException catch (error) {
       if (error.code == ApiErrorCode.reviewExists) {
@@ -130,10 +126,7 @@ class ReviewController
         'отзыв не отправлен: ${error.code}',
         name: 'ReviewController',
       );
-      state = state.copyWith(
-        phase: ReviewPhase.editing,
-        errorCode: error.code,
-      );
+      state = state.copyWith(phase: ReviewPhase.editing, errorCode: error.code);
     } catch (error) {
       developer.log(
         'отзыв не отправлен: ${error.runtimeType}',
@@ -179,7 +172,5 @@ class ReviewController
   }
 }
 
-final reviewControllerProvider =
-    NotifierProvider.autoDispose.family<ReviewController, ReviewState, String>(
-      ReviewController.new,
-    );
+final reviewControllerProvider = NotifierProvider.autoDispose
+    .family<ReviewController, ReviewState, String>(ReviewController.new);

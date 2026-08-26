@@ -28,7 +28,10 @@ final _completedConsultationsProvider = FutureProvider.autoDispose<int>((
 ) async {
   final list = await ref
       .read(consultationsRepositoryProvider)
-      .list(status: ConsultationStatus.completed, take: _completedCountPageSize);
+      .list(
+        status: ConsultationStatus.completed,
+        take: _completedCountPageSize,
+      );
   return list.length;
 });
 
@@ -109,13 +112,15 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       if (!mounted) return;
       // Отказы удаления объясняются своими словами: сообщение бэкенда
       // русское, а приложение обязано говорить и по-казахски.
-      setState(() => _error = switch (error.code) {
-            ApiErrorCode.consultationInProgress =>
-              l10n.profileDeleteAccountBlockedConsultation,
-            ApiErrorCode.paymentInProgress =>
-              l10n.profileDeleteAccountBlockedPayment,
-            _ => errorText(context, error),
-          });
+      setState(
+        () => _error = switch (error.code) {
+          ApiErrorCode.consultationInProgress =>
+            l10n.profileDeleteAccountBlockedConsultation,
+          ApiErrorCode.paymentInProgress =>
+            l10n.profileDeleteAccountBlockedPayment,
+          _ => errorText(context, error),
+        },
+      );
     }
   }
 
@@ -191,8 +196,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    if (phone != null)
-                      Text(phone, style: SqTypography.h2),
+                    if (phone != null) Text(phone, style: SqTypography.h2),
                     if (completed != null) ...[
                       const SizedBox(height: SqSpacing.s),
                       Text(
@@ -328,8 +332,10 @@ class _PremiumItem extends ConsumerWidget {
 
     return ListTile(
       key: const Key('sq-profile-item-premium'),
-      leading: const Icon(Icons.workspace_premium_outlined,
-          color: SqColors.primary),
+      leading: const Icon(
+        Icons.workspace_premium_outlined,
+        color: SqColors.primary,
+      ),
       title: Text(l10n.premiumTitle, style: SqTypography.body),
       subtitle: subtitle == null
           ? null

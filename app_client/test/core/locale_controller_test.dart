@@ -65,14 +65,17 @@ void main() {
       expect(container.read(localeControllerProvider), const Locale('ru'));
     });
 
-    test('мусорное сохранённое значение откатывается на русский, а не падает', () async {
-      final container = await _makeContainer(
-        initialPrefs: {'sq.locale': 'zz'},
-        systemLocale: const Locale('kk'),
-      );
+    test(
+      'мусорное сохранённое значение откатывается на русский, а не падает',
+      () async {
+        final container = await _makeContainer(
+          initialPrefs: {'sq.locale': 'zz'},
+          systemLocale: const Locale('kk'),
+        );
 
-      expect(container.read(localeControllerProvider), const Locale('ru'));
-    });
+        expect(container.read(localeControllerProvider), const Locale('ru'));
+      },
+    );
 
     test('setLocale персистит выбор в SharedPreferences', () async {
       final container = await _makeContainer();
@@ -86,16 +89,19 @@ void main() {
       expect(prefs.getString('sq.locale'), 'kk');
     });
 
-    test('setLocale вызывает LocaleSyncPort с kz при выборе казахского', () async {
-      final fake = _FakeLocaleSync();
-      final container = await _makeContainer(syncPort: fake);
+    test(
+      'setLocale вызывает LocaleSyncPort с kz при выборе казахского',
+      () async {
+        final fake = _FakeLocaleSync();
+        final container = await _makeContainer(syncPort: fake);
 
-      await container
-          .read(localeControllerProvider.notifier)
-          .setLocale(const Locale('kk'));
+        await container
+            .read(localeControllerProvider.notifier)
+            .setLocale(const Locale('kk'));
 
-      expect(fake.pushed, ['kz']);
-    });
+        expect(fake.pushed, ['kz']);
+      },
+    );
 
     test('setLocale глотает ошибку синхронизации с бэкендом', () async {
       final fake = _FakeLocaleSync()..throwOnPush = Exception('network down');

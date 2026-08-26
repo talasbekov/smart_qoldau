@@ -66,10 +66,7 @@ class NotificationsController extends AsyncNotifier<NotificationsState> {
     final page = await ref
         .read(notificationsRepositoryProvider)
         .page(take: notificationsPageSize, skip: 0);
-    return NotificationsState(
-      items: page.items,
-      unreadCount: page.unreadCount,
-    );
+    return NotificationsState(items: page.items, unreadCount: page.unreadCount);
   }
 
   /// В событии `notification.new` приходит только `{id, type}` — тела нет,

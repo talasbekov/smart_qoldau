@@ -40,7 +40,8 @@ class SlotsState {
 
 /// Весь горизонт загружается одним запросом: 14 дней слотов — это десятки
 /// строк, а по запросу на день экран мигал бы при каждом переключении.
-class SlotsController extends AutoDisposeFamilyAsyncNotifier<SlotsState, String> {
+class SlotsController
+    extends AutoDisposeFamilyAsyncNotifier<SlotsState, String> {
   @override
   Future<SlotsState> build(String arg) async {
     final now = ref.watch(nowProvider)();

@@ -53,7 +53,8 @@ List<Topic> _fakeTopics() => [
   const Topic(id: 't0', slug: 'anxiety-stress', name: 'Тревога и стресс'),
   ...List.generate(
     11,
-    (i) => Topic(id: 't${i + 1}', slug: 'topic-${i + 1}', name: 'Тема ${i + 1}'),
+    (i) =>
+        Topic(id: 't${i + 1}', slug: 'topic-${i + 1}', name: 'Тема ${i + 1}'),
   ),
 ];
 
@@ -107,16 +108,14 @@ void main() {
   });
 
   void stubNoActiveConsultation(MockSqApi api) {
-    when(
-      () => api.consultations(status: any(named: 'status')),
-    ).thenAnswer((_) async => <ClientConsultation>[]);
+    when(() => api.consultations(status: any(named: 'status')))
+        .thenAnswer((_) async => <ClientConsultation>[]);
   }
 
   testWidgets('12 тем отрисованы из мока API', (tester) async {
     final api = MockSqApi();
-    when(
-      () => api.topics(locale: any(named: 'locale')),
-    ).thenAnswer((_) async => _fakeTopics());
+    when(() => api.topics(locale: any(named: 'locale')))
+        .thenAnswer((_) async => _fakeTopics());
     stubNoActiveConsultation(api);
 
     await tester.pumpWidget(await _wrap(api));
@@ -133,9 +132,7 @@ void main() {
     // Ревью раунда 1 задачи 7: сверка с прототипом `07-home.png` была
     // сделана только ради одного поля (счётчик онлайна) — эти два элемента
     // из того же прототипа изначально были пропущены.
-    final l10n = AppLocalizations.of(
-      tester.element(find.byType(HomeScreen)),
-    )!;
+    final l10n = AppLocalizations.of(tester.element(find.byType(HomeScreen)))!;
     expect(find.text(l10n.homeTopicsSubtitle), findsOneWidget);
 
     // Панель ниже сетки из 12 тем не помещается в высоту тестового
@@ -165,9 +162,8 @@ void main() {
     'тап по теме anxiety-stress переводит на /topic?slug=anxiety-stress',
     (tester) async {
       final api = MockSqApi();
-      when(
-        () => api.topics(locale: any(named: 'locale')),
-      ).thenAnswer((_) async => _fakeTopics());
+      when(() => api.topics(locale: any(named: 'locale')))
+          .thenAnswer((_) async => _fakeTopics());
       stubNoActiveConsultation(api);
 
       await tester.pumpWidget(await _wrap(api));
@@ -180,16 +176,12 @@ void main() {
     },
   );
 
-  testWidgets('при наличии активной консультации виден баннер', (
-    tester,
-  ) async {
+  testWidgets('при наличии активной консультации виден баннер', (tester) async {
     final api = MockSqApi();
-    when(
-      () => api.topics(locale: any(named: 'locale')),
-    ).thenAnswer((_) async => _fakeTopics());
-    when(
-      () => api.consultations(status: any(named: 'status')),
-    ).thenAnswer((_) async => [_fakeActiveConsultation()]);
+    when(() => api.topics(locale: any(named: 'locale')))
+        .thenAnswer((_) async => _fakeTopics());
+    when(() => api.consultations(status: any(named: 'status')))
+        .thenAnswer((_) async => [_fakeActiveConsultation()]);
 
     await tester.pumpWidget(await _wrap(api));
     await tester.pumpAndSettle();
@@ -205,13 +197,10 @@ void main() {
     expect(find.text('sq-stub-session:c1'), findsOneWidget);
   });
 
-  testWidgets('без активной консультации баннер не отрисован', (
-    tester,
-  ) async {
+  testWidgets('без активной консультации баннер не отрисован', (tester) async {
     final api = MockSqApi();
-    when(
-      () => api.topics(locale: any(named: 'locale')),
-    ).thenAnswer((_) async => _fakeTopics());
+    when(() => api.topics(locale: any(named: 'locale')))
+        .thenAnswer((_) async => _fakeTopics());
     stubNoActiveConsultation(api);
 
     await tester.pumpWidget(await _wrap(api));
@@ -228,15 +217,14 @@ void main() {
     (tester) async {
       final api = MockSqApi();
       var attempt = 0;
-      when(() => api.topics(locale: any(named: 'locale'))).thenAnswer((
-        _,
-      ) async {
-        attempt++;
-        if (attempt == 1) {
-          throw const ApiException(ApiErrorCode.network, 'нет сети', 0);
-        }
-        return _fakeTopics();
-      });
+      when(() => api.topics(locale: any(named: 'locale')))
+          .thenAnswer((_) async {
+            attempt++;
+            if (attempt == 1) {
+              throw const ApiException(ApiErrorCode.network, 'нет сети', 0);
+            }
+            return _fakeTopics();
+          });
       stubNoActiveConsultation(api);
 
       await tester.pumpWidget(await _wrap(api));
@@ -268,9 +256,8 @@ void main() {
     'пустой (но не ошибочный) ответ topics — тоже SqErrorView, а не пустой экран',
     (tester) async {
       final api = MockSqApi();
-      when(
-        () => api.topics(locale: any(named: 'locale')),
-      ).thenAnswer((_) async => <Topic>[]);
+      when(() => api.topics(locale: any(named: 'locale')))
+          .thenAnswer((_) async => <Topic>[]);
       stubNoActiveConsultation(api);
 
       await tester.pumpWidget(await _wrap(api));
@@ -288,9 +275,8 @@ void main() {
     tester,
   ) async {
     final api = MockSqApi();
-    when(
-      () => api.topics(locale: any(named: 'locale')),
-    ).thenAnswer((_) async => _fakeTopics());
+    when(() => api.topics(locale: any(named: 'locale')))
+        .thenAnswer((_) async => _fakeTopics());
     stubNoActiveConsultation(api);
 
     await tester.pumpWidget(await _wrap(api));
@@ -306,9 +292,8 @@ void main() {
     tester,
   ) async {
     final api = MockSqApi();
-    when(
-      () => api.topics(locale: any(named: 'locale')),
-    ).thenAnswer((_) async => _fakeTopics());
+    when(() => api.topics(locale: any(named: 'locale')))
+        .thenAnswer((_) async => _fakeTopics());
     stubNoActiveConsultation(api);
 
     await tester.pumpWidget(await _wrap(api));

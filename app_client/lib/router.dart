@@ -330,9 +330,8 @@ GoRouter sqRouter(Ref ref) {
                 routes: [
                   GoRoute(
                     path: ':id',
-                    builder: (context, state) => ContentRouterScreen(
-                      id: state.pathParameters['id']!,
-                    ),
+                    builder: (context, state) =>
+                        ContentRouterScreen(id: state.pathParameters['id']!),
                   ),
                 ],
               ),

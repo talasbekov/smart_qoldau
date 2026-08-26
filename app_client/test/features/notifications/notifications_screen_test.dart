@@ -104,15 +104,19 @@ void main() {
     api = MockSqApi();
     socket = _FakeSqSocket();
     addTearDown(socket.dispose);
-    when(
-      () => api.markNotificationsRead(ids: any(named: 'ids')),
-    ).thenAnswer((_) async {});
+    when(() => api.markNotificationsRead(ids: any(named: 'ids')))
+        .thenAnswer((_) async {});
   });
 
   testWidgets('пустой центр показывает своё состояние', (tester) async {
     when(
-      () => api.notifications(take: any(named: 'take'), skip: any(named: 'skip')),
-    ).thenAnswer((_) async => const NotificationsPage(items: [], unreadCount: 0));
+      () => api.notifications(
+        take: any(named: 'take'),
+        skip: any(named: 'skip'),
+      ),
+    ).thenAnswer(
+      (_) async => const NotificationsPage(items: [], unreadCount: 0),
+    );
 
     await tester.pumpWidget(await _wrap(api, socket: socket));
     await tester.pumpAndSettle();
@@ -124,7 +128,10 @@ void main() {
     tester,
   ) async {
     when(
-      () => api.notifications(take: any(named: 'take'), skip: any(named: 'skip')),
+      () => api.notifications(
+        take: any(named: 'take'),
+        skip: any(named: 'skip'),
+      ),
     ).thenAnswer(
       (_) async => NotificationsPage(
         items: [
@@ -153,7 +160,10 @@ void main() {
     tester,
   ) async {
     when(
-      () => api.notifications(take: any(named: 'take'), skip: any(named: 'skip')),
+      () => api.notifications(
+        take: any(named: 'take'),
+        skip: any(named: 'skip'),
+      ),
     ).thenAnswer(
       (_) async => NotificationsPage(
         items: [
@@ -180,7 +190,10 @@ void main() {
     // Экспертные типы (`offer.incoming`, `payout.*`) клиенту не приходят, но
     // рассинхрон с бэкендом не должен ронять центр уведомлений.
     when(
-      () => api.notifications(take: any(named: 'take'), skip: any(named: 'skip')),
+      () => api.notifications(
+        take: any(named: 'take'),
+        skip: any(named: 'skip'),
+      ),
     ).thenAnswer(
       (_) async => NotificationsPage(
         items: [
@@ -216,7 +229,10 @@ void main() {
 
   testWidgets('«Прочитать все» обнуляет непрочитанные', (tester) async {
     when(
-      () => api.notifications(take: any(named: 'take'), skip: any(named: 'skip')),
+      () => api.notifications(
+        take: any(named: 'take'),
+        skip: any(named: 'skip'),
+      ),
     ).thenAnswer(
       (_) async => NotificationsPage(
         items: [_notification(id: 'n1', type: 'chat.message')],

@@ -56,8 +56,7 @@ class FavoritesScreen extends ConsumerWidget {
                         onToggleFavorite: () => ref
                             .read(favoritesControllerProvider.notifier)
                             .toggle(expert),
-                        onTap: () =>
-                            context.push(RoutePaths.expert(expert.id)),
+                        onTap: () => context.push(RoutePaths.expert(expert.id)),
                       ),
                     if (ref.read(favoritesControllerProvider.notifier).hasMore)
                       Center(

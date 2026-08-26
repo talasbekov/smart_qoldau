@@ -116,8 +116,8 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
               ),
               data: (list) => _CardsList(
                 cards: list,
-                selectedId: _selectedCardId ??
-                    (list.isEmpty ? null : list.first.id),
+                selectedId:
+                    _selectedCardId ?? (list.isEmpty ? null : list.first.id),
                 onSelect: (id) => setState(() => _selectedCardId = id),
               ),
             ),
@@ -278,8 +278,11 @@ class _PremiumLine extends ConsumerWidget {
     if (status.active) {
       return Row(
         children: [
-          const Icon(Icons.check_circle_outline,
-              size: 18, color: SqColors.primary),
+          const Icon(
+            Icons.check_circle_outline,
+            size: 18,
+            color: SqColors.primary,
+          ),
           const SizedBox(width: SqSpacing.s),
           Expanded(
             child: Text(
@@ -298,8 +301,11 @@ class _PremiumLine extends ConsumerWidget {
         padding: const EdgeInsets.symmetric(vertical: SqSpacing.xs),
         child: Row(
           children: [
-            const Icon(Icons.workspace_premium_outlined,
-                size: 18, color: SqColors.primary),
+            const Icon(
+              Icons.workspace_premium_outlined,
+              size: 18,
+              color: SqColors.primary,
+            ),
             const SizedBox(width: SqSpacing.s),
             Expanded(
               child: Text(
@@ -307,8 +313,11 @@ class _PremiumLine extends ConsumerWidget {
                 style: SqTypography.caption.copyWith(color: SqColors.primary),
               ),
             ),
-            const Icon(Icons.chevron_right, size: 18,
-                color: SqColors.textSecondary),
+            const Icon(
+              Icons.chevron_right,
+              size: 18,
+              color: SqColors.textSecondary,
+            ),
           ],
         ),
       ),

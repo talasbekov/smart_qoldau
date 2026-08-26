@@ -63,9 +63,12 @@ void main() {
     expect(notificationRoute(_notification(type: 'ticket.replied')), isNull);
   });
 
-  test('неизвестный тип (например, экспертный) никуда не ведёт и не падает', () {
-    // Экспертные типы (offer.*, earning.*, payout.*, verification.*)
-    // клиенту по контракту не приходят — но переживать их обязаны.
-    expect(notificationRoute(_notification(type: 'payout.updated')), isNull);
-  });
+  test(
+    'неизвестный тип (например, экспертный) никуда не ведёт и не падает',
+    () {
+      // Экспертные типы (offer.*, earning.*, payout.*, verification.*)
+      // клиенту по контракту не приходят — но переживать их обязаны.
+      expect(notificationRoute(_notification(type: 'payout.updated')), isNull);
+    },
+  );
 }

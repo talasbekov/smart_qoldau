@@ -45,9 +45,9 @@ void main() {
     when(() => api.saveContentProgress(any(), any())).thenAnswer(
       (_) async => const ContentProgress(positionPermille: 0, completed: false),
     );
-    when(() => api.voteContent(any(), useful: any(named: 'useful'))).thenAnswer(
-      (_) async => const ContentVotes(usefulYes: 11, usefulNo: 1),
-    );
+    when(
+      () => api.voteContent(any(), useful: any(named: 'useful')),
+    ).thenAnswer((_) async => const ContentVotes(usefulYes: 11, usefulNo: 1));
   });
 
   testWidgets('показывает заголовок и текст статьи', (tester) async {
@@ -65,9 +65,8 @@ void main() {
     await tester.drag(find.byType(Scrollable).first, const Offset(0, -4000));
     await tester.pumpAndSettle();
 
-    final captured = verify(
-      () => api.saveContentProgress('c1', captureAny()),
-    ).captured;
+    final captured = verify(() => api.saveContentProgress('c1', captureAny()))
+        .captured;
     expect(captured.last as int, greaterThan(0));
   });
 

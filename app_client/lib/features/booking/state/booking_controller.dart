@@ -70,7 +70,10 @@ class BookingController extends AutoDisposeNotifier<BookingState> {
       state = BookingState(phase: BookingPhase.done, result: result);
       return true;
     } on ApiException catch (error) {
-      developer.log('запись не создана: ${error.code}', name: 'BookingController');
+      developer.log(
+        'запись не создана: ${error.code}',
+        name: 'BookingController',
+      );
       state = BookingState(errorCode: error.code);
       return false;
     } catch (error) {

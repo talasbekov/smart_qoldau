@@ -93,9 +93,8 @@ void main() {
   setUp(() {
     api = MockSqApi();
     when(() => api.requestById('r1')).thenAnswer((_) async => _matched());
-    when(
-      () => api.consultationById('c1'),
-    ).thenAnswer((_) async => _consultation());
+    when(() => api.consultationById('c1'))
+        .thenAnswer((_) async => _consultation());
     when(() => api.paymentMethods()).thenAnswer(
       (_) async => const [
         PaymentMethod(
@@ -131,9 +130,8 @@ void main() {
   });
 
   testWidgets('успешный холд уводит в сессию консультации', (tester) async {
-    when(
-      () => api.payConsultation('c1', paymentMethodId: 'pm1'),
-    ).thenAnswer((_) async => const PayResult(status: PaymentStatus.held));
+    when(() => api.payConsultation('c1', paymentMethodId: 'pm1'))
+        .thenAnswer((_) async => const PayResult(status: PaymentStatus.held));
 
     await tester.pumpWidget(_wrap(api));
     await tester.pumpAndSettle();

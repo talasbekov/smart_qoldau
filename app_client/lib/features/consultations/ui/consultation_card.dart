@@ -62,11 +62,7 @@ String formatAlmatyDateTime(DateTime value) {
 }
 
 /// Человекочитаемый отсчёт до начала: «2 ч 15 мин», «45 мин».
-String? startsInLabel(
-  AppLocalizations l10n,
-  DateTime startedAt,
-  DateTime now,
-) {
+String? startsInLabel(AppLocalizations l10n, DateTime startedAt, DateTime now) {
   final left = startedAt.difference(now);
   if (left.isNegative) return null;
   final hours = left.inHours;
@@ -165,10 +161,7 @@ class ConsultationCard extends StatelessWidget {
                         : consultationStatusLabel(l10n, consultation.status),
                   ),
                   SqChip(
-                    label: paymentStatusLabel(
-                      l10n,
-                      consultation.paymentStatus,
-                    ),
+                    label: paymentStatusLabel(l10n, consultation.paymentStatus),
                   ),
                 ],
               ),

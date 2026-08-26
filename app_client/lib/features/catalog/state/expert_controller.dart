@@ -101,9 +101,5 @@ class ExpertController
   }
 }
 
-final expertControllerProvider =
-    AsyncNotifierProvider.autoDispose.family<
-      ExpertController,
-      ExpertProfileState,
-      String
-    >(ExpertController.new);
+final expertControllerProvider = AsyncNotifierProvider.autoDispose
+    .family<ExpertController, ExpertProfileState, String>(ExpertController.new);

@@ -96,9 +96,9 @@ class _MaterialsScreenState extends ConsumerState<MaterialsScreen> {
                         key: Key('sq-content-filter-${_kindLabels[kind]}'),
                         label: Text(_kindLabel(l10n, kind)),
                         selected: filter.kind == kind,
-                        onSelected: (_) => ref
-                            .read(contentFilterProvider.notifier)
-                            .state = ContentFilter(kind: kind),
+                        onSelected: (_) =>
+                            ref.read(contentFilterProvider.notifier).state =
+                                ContentFilter(kind: kind),
                       ),
                     ),
                 ],

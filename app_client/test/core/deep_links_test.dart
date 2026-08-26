@@ -32,7 +32,10 @@ void main() {
         DeepLinks.resolve(Uri.parse('https://smartqoldau.kz/t/anxiety-stress')),
         '/topic?slug=anxiety-stress',
       );
-      expect(DeepLinks.resolve(Uri.parse('https://smartqoldau.kz/sos')), '/emergency');
+      expect(
+        DeepLinks.resolve(Uri.parse('https://smartqoldau.kz/sos')),
+        '/emergency',
+      );
       expect(
         DeepLinks.resolve(Uri.parse('https://smartqoldau.kz/c/c1')),
         '/session/c1',
@@ -42,12 +45,18 @@ void main() {
     test('чужой хост и чужая схема не разбираются', () {
       // Иначе любая ссылка с чужого сайта уводила бы человека внутрь
       // приложения по нашим маршрутам.
-      expect(DeepLinks.resolve(Uri.parse('https://example.com/e/expert-1')), isNull);
+      expect(
+        DeepLinks.resolve(Uri.parse('https://example.com/e/expert-1')),
+        isNull,
+      );
       expect(DeepLinks.resolve(Uri.parse('ftp://smartqoldau.kz/sos')), isNull);
     });
 
     test('неизвестный путь, мусор и пустой идентификатор дают null', () {
-      expect(DeepLinks.resolve(Uri.parse('https://smartqoldau.kz/unknown')), isNull);
+      expect(
+        DeepLinks.resolve(Uri.parse('https://smartqoldau.kz/unknown')),
+        isNull,
+      );
       expect(DeepLinks.resolve(Uri.parse('https://smartqoldau.kz/e/')), isNull);
       expect(DeepLinks.resolve(Uri.parse('https://smartqoldau.kz/')), isNull);
       expect(DeepLinks.resolve(Uri.parse('не-ссылка')), isNull);
@@ -61,7 +70,9 @@ void main() {
         isNull,
       );
       expect(
-        DeepLinks.resolve(Uri.parse('https://smartqoldau.kz/t/тема%20с%20пробелом')),
+        DeepLinks.resolve(
+          Uri.parse('https://smartqoldau.kz/t/тема%20с%20пробелом'),
+        ),
         isNull,
       );
     });
@@ -86,22 +97,25 @@ void main() {
 
     setUp(() => navigated = []);
 
-    test('ссылка, открытая до восстановления сессии, применяется ПОСЛЕ неё', () async {
-      // При `AuthUnknown` редирект-гард уводит на `/splash`, и немедленный
-      // переход по ссылке потерялся бы.
-      final c = await container();
-      final handler = c.read(deepLinkHandlerProvider);
+    test(
+      'ссылка, открытая до восстановления сессии, применяется ПОСЛЕ неё',
+      () async {
+        // При `AuthUnknown` редирект-гард уводит на `/splash`, и немедленный
+        // переход по ссылке потерялся бы.
+        final c = await container();
+        final handler = c.read(deepLinkHandlerProvider);
 
-      handler.handle(Uri.parse('https://smartqoldau.kz/c/c1'));
-      expect(navigated, isEmpty, reason: 'сессии ещё нет — переход отложен');
+        handler.handle(Uri.parse('https://smartqoldau.kz/c/c1'));
+        expect(navigated, isEmpty, reason: 'сессии ещё нет — переход отложен');
 
-      c.read(authControllerProvider.notifier).state = const AsyncData(
-        AuthGuest(AuthUser(id: 'u1', phone: null, isGuest: true)),
-      );
-      await Future<void>.delayed(Duration.zero);
+        c.read(authControllerProvider.notifier).state = const AsyncData(
+          AuthGuest(AuthUser(id: 'u1', phone: null, isGuest: true)),
+        );
+        await Future<void>.delayed(Duration.zero);
 
-      expect(navigated, ['/session/c1']);
-    });
+        expect(navigated, ['/session/c1']);
+      },
+    );
 
     test('при уже готовой сессии переход происходит сразу', () async {
       final c = await container();

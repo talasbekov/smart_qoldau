@@ -102,7 +102,9 @@ void main() {
     final container = _container(api);
     await container.read(catalogControllerProvider.future);
 
-    container.read(catalogFiltersProvider.notifier).update(sort: CatalogSort.rating);
+    container
+        .read(catalogFiltersProvider.notifier)
+        .update(sort: CatalogSort.rating);
     await container.read(catalogControllerProvider.future);
 
     verify(
@@ -169,7 +171,9 @@ void main() {
     ).thenAnswer((_) async => [expensive, cheap]);
 
     final container = _container(api);
-    container.read(catalogFiltersProvider.notifier).update(sort: CatalogSort.priceAsc);
+    container
+        .read(catalogFiltersProvider.notifier)
+        .update(sort: CatalogSort.priceAsc);
     final list = await container.read(catalogControllerProvider.future);
 
     expect(list.map((e) => e.id), ['expensive', 'cheap']);
@@ -234,7 +238,8 @@ void main() {
     expect(
       container.read(catalogControllerProvider.notifier).hasMore,
       isFalse,
-      reason: 'отдельного признака «есть ещё» у эндпоинта нет — судим по '
+      reason:
+          'отдельного признака «есть ещё» у эндпоинта нет — судим по '
           'неполной странице',
     );
   });

@@ -82,10 +82,8 @@ class _BreathingScreenState extends ConsumerState<BreathingScreen> {
             .read(contentRepositoryProvider)
             .saveProgress(widget.id, 1000)
             .catchError(
-              (_) => const ContentProgress(
-                positionPermille: 0,
-                completed: false,
-              ),
+              (_) =>
+                  const ContentProgress(positionPermille: 0, completed: false),
             ),
       );
       setState(() {
@@ -157,7 +155,9 @@ class _BreathingScreenState extends ConsumerState<BreathingScreen> {
                   const SizedBox(height: SqSpacing.xl),
                   SqButton(
                     key: const Key('sq-breathing-start'),
-                    label: _cycle > 0 ? l10n.breathingStop : l10n.breathingStart,
+                    label: _cycle > 0
+                        ? l10n.breathingStop
+                        : l10n.breathingStart,
                     onPressed: () => _toggle(body),
                   ),
                 ],

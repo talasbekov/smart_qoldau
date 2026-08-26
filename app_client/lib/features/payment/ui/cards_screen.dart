@@ -78,10 +78,7 @@ class CardsScreen extends ConsumerWidget {
                   SqCard(
                     child: Row(
                       children: [
-                        const Icon(
-                          Icons.credit_card,
-                          color: SqColors.primary,
-                        ),
+                        const Icon(Icons.credit_card, color: SqColors.primary),
                         const SizedBox(width: SqSpacing.m),
                         Expanded(
                           child: Column(

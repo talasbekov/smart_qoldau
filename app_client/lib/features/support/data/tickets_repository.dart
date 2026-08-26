@@ -4,7 +4,6 @@ library;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared/shared.dart';
 
-
 /// Проводные значения категорий (`TicketCategory` бэкенда).
 String ticketCategoryWire(TicketCategory category) => switch (category) {
   TicketCategory.consultations => 'CONSULTATIONS',

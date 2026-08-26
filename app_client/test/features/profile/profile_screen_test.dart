@@ -71,7 +71,8 @@ Future<Widget> _wrap(SqApi api, {required bool isGuest}) async {
       ),
       GoRoute(
         path: RoutePaths.cards,
-        builder: (context, state) => const Scaffold(body: Text('sq-stub-cards')),
+        builder: (context, state) =>
+            const Scaffold(body: Text('sq-stub-cards')),
       ),
       GoRoute(
         path: RoutePaths.premium,
@@ -146,7 +147,10 @@ void main() {
       ),
     ).thenAnswer((_) async {});
     when(
-      () => api.tickets(take: any(named: 'take'), skip: any(named: 'skip')),
+      () => api.tickets(
+        take: any(named: 'take'),
+        skip: any(named: 'skip'),
+      ),
     ).thenAnswer((_) async => []);
     when(() => api.premiumStatus()).thenAnswer((_) async => PremiumStatus.none);
   });

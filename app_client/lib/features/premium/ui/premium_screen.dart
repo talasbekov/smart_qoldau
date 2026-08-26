@@ -137,9 +137,8 @@ class _PremiumScreenState extends ConsumerState<PremiumScreen> {
           label: l10n.premiumCancel,
           kind: SqButtonKind.secondary,
           loading: _busy,
-          onPressed: () => _run(
-            () => ref.read(premiumControllerProvider.notifier).cancel(),
-          ),
+          onPressed: () =>
+              _run(() => ref.read(premiumControllerProvider.notifier).cancel()),
         ),
     ];
   }
@@ -229,8 +228,7 @@ class _PremiumScreenState extends ConsumerState<PremiumScreen> {
                       ),
                       style: SqTypography.body,
                     ),
-                    if (hint != null)
-                      Text(hint, style: SqTypography.caption),
+                    if (hint != null) Text(hint, style: SqTypography.caption),
                   ],
                 ),
               ),

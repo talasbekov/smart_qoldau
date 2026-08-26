@@ -96,16 +96,18 @@ void main() {
     socket = _FakeSqSocket();
     addTearDown(socket.dispose);
     when(
-      () => api.notifications(take: any(named: 'take'), skip: any(named: 'skip')),
+      () => api.notifications(
+        take: any(named: 'take'),
+        skip: any(named: 'skip'),
+      ),
     ).thenAnswer(
       (_) async => NotificationsPage(
         items: [_notification('n1'), _notification('n2')],
         unreadCount: 2,
       ),
     );
-    when(
-      () => api.markNotificationsRead(ids: any(named: 'ids')),
-    ).thenAnswer((_) async {});
+    when(() => api.markNotificationsRead(ids: any(named: 'ids')))
+        .thenAnswer((_) async {});
     when(
       () => api.registerDevice(
         platform: any(named: 'platform'),
@@ -141,9 +143,9 @@ void main() {
     );
     await container.read(notificationsControllerProvider.future);
 
-    await container
-        .read(notificationsControllerProvider.notifier)
-        .markRead(['n1']);
+    await container.read(notificationsControllerProvider.notifier).markRead([
+      'n1',
+    ]);
 
     final state = container.read(notificationsControllerProvider).requireValue;
     verify(() => api.markNotificationsRead(ids: ['n1'])).called(1);
@@ -166,7 +168,9 @@ void main() {
     );
     await container.read(notificationsControllerProvider.future);
 
-    await container.read(notificationsControllerProvider.notifier).markAllRead();
+    await container
+        .read(notificationsControllerProvider.notifier)
+        .markAllRead();
 
     verify(() => api.markNotificationsRead(ids: null)).called(1);
     final state = container.read(notificationsControllerProvider).requireValue;
@@ -195,7 +199,10 @@ void main() {
     await tester.pump();
 
     verify(
-      () => api.notifications(take: any(named: 'take'), skip: any(named: 'skip')),
+      () => api.notifications(
+        take: any(named: 'take'),
+        skip: any(named: 'skip'),
+      ),
     ).called(1);
 
     container.dispose();
@@ -350,7 +357,8 @@ void main() {
           locale: any(named: 'locale'),
         ),
       ).thenAnswer(
-        (_) async => throw const ApiException(ApiErrorCode.network, 'нет сети', 0),
+        (_) async =>
+            throw const ApiException(ApiErrorCode.network, 'нет сети', 0),
       );
 
       final container = await _container(

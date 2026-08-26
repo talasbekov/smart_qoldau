@@ -200,13 +200,9 @@ void main() {
       'expert_matched',
     ]);
 
-    final matched =
-        analytics.events.last.properties['seconds_to_match'] as int;
+    final matched = analytics.events.last.properties['seconds_to_match'] as int;
     expect(matched, greaterThanOrEqualTo(0));
-    expect(
-      analytics.events[2].properties['is_emergency'],
-      isFalse,
-    );
+    expect(analytics.events[2].properties['is_emergency'], isFalse);
 
     // Снимаем дерево: на экране поиска живут периодические таймеры.
     await tester.pumpWidget(const SizedBox());
@@ -228,7 +224,8 @@ void main() {
     for (final event in analytics.events) {
       expect(
         event.properties.keys.any(
-          (key) => const ['phone', 'name', 'display_name', 'text'].contains(key),
+          (key) =>
+              const ['phone', 'name', 'display_name', 'text'].contains(key),
         ),
         isFalse,
       );

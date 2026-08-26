@@ -94,7 +94,10 @@ void main() {
       ),
     );
 
-    expect(find.byKey(const Key('sq-consultation-continue-c1')), findsOneWidget);
+    expect(
+      find.byKey(const Key('sq-consultation-continue-c1')),
+      findsOneWidget,
+    );
     expect(find.textContaining('Через'), findsNothing);
     expect(
       find.byKey(const Key('sq-consultation-reschedule-c1')),

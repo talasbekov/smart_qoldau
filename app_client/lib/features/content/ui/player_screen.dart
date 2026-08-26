@@ -56,10 +56,8 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
             .read(contentRepositoryProvider)
             .saveProgress(widget.id, 1000)
             .catchError(
-              (_) => const ContentProgress(
-                positionPermille: 0,
-                completed: false,
-              ),
+              (_) =>
+                  const ContentProgress(positionPermille: 0, completed: false),
             ),
       );
     } on ApiException catch (e) {

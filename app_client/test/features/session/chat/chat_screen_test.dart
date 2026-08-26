@@ -140,9 +140,8 @@ void main() {
     api = MockSqApi();
     socket = _FakeSqSocket();
     addTearDown(socket.dispose);
-    when(
-      () => api.consultationById('c1'),
-    ).thenAnswer((_) async => _consultation());
+    when(() => api.consultationById('c1'))
+        .thenAnswer((_) async => _consultation());
     when(
       () => api.consultationMessages(
         'c1',
@@ -287,7 +286,10 @@ void main() {
     await tester.tap(find.text('Отменить консультацию'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Время освободится для другого пользователя'), findsOneWidget);
+    expect(
+      find.text('Время освободится для другого пользователя'),
+      findsOneWidget,
+    );
 
     await tester.tap(find.text('Отменить консультацию').last);
     await tester.pumpAndSettle();
@@ -296,9 +298,7 @@ void main() {
     expect(find.text('sq-stub-home'), findsOneWidget);
   });
 
-  testWidgets('завершение консультации уводит на экран оценки', (
-    tester,
-  ) async {
+  testWidgets('завершение консультации уводит на экран оценки', (tester) async {
     SharedPreferences.setMockInitialValues({});
     final prefs = await SharedPreferences.getInstance();
 
@@ -344,21 +344,22 @@ void main() {
     expect(find.text('sq-stub-home'), findsOneWidget);
   });
 
-  testWidgets('«Сообщить о проблеме» открывает обращение по этой консультации', (
-    tester,
-  ) async {
-    // Задача 19: обращение создаётся с привязкой к консультации, иначе
-    // поддержке пришлось бы выяснять, о какой именно сессии речь.
-    await tester.pumpWidget(_wrap(api: api, socket: socket));
-    await tester.pumpAndSettle();
+  testWidgets(
+    '«Сообщить о проблеме» открывает обращение по этой консультации',
+    (tester) async {
+      // Задача 19: обращение создаётся с привязкой к консультации, иначе
+      // поддержке пришлось бы выяснять, о какой именно сессии речь.
+      await tester.pumpWidget(_wrap(api: api, socket: socket));
+      await tester.pumpAndSettle();
 
-    await tester.tap(find.byKey(const Key('sq-session-menu')));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Сообщить о проблеме'));
-    await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('sq-session-menu')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Сообщить о проблеме'));
+      await tester.pumpAndSettle();
 
-    expect(find.text('sq-stub-new-ticket:c1'), findsOneWidget);
-  });
+      expect(find.text('sq-stub-new-ticket:c1'), findsOneWidget);
+    },
+  );
 
   testWidgets('плашка о конфиденциальности видна над перепиской', (
     tester,

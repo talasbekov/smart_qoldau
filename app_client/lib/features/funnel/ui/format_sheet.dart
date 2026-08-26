@@ -63,7 +63,10 @@ class _FormatSheet extends StatelessWidget {
               ListTile(
                 key: Key('sq-format-${format.wireValue}'),
                 leading: Icon(_formatIcon(format), color: SqColors.primary),
-                title: Text(formatLabel(l10n, format), style: SqTypography.body),
+                title: Text(
+                  formatLabel(l10n, format),
+                  style: SqTypography.body,
+                ),
                 subtitle: Text(
                   l10n.formatSheetCaption,
                   style: SqTypography.caption.copyWith(

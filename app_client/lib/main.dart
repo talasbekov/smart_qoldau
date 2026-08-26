@@ -59,10 +59,12 @@ Future<void> main() async {
       // роутером, что и всё остальное: отдельный стек разошёлся бы с
       // редирект-гардом сессии.
       pushNavigatorProvider.overrideWith(
-        (ref) => (route) => ref.read(routerProvider).go(route),
+        (ref) =>
+            (route) => ref.read(routerProvider).go(route),
       ),
       deepLinkNavigatorProvider.overrideWith(
-        (ref) => (route) => ref.read(routerProvider).go(route),
+        (ref) =>
+            (route) => ref.read(routerProvider).go(route),
       ),
     ],
   );
@@ -73,10 +75,7 @@ Future<void> main() async {
   container.read(deepLinkHandlerProvider);
 
   runApp(
-    UncontrolledProviderScope(
-      container: container,
-      child: const SqClientApp(),
-    ),
+    UncontrolledProviderScope(container: container, child: const SqClientApp()),
   );
 
   // Инициализация пуш-канала — после запуска приложения: она не должна

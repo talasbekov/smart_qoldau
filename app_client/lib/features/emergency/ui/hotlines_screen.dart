@@ -70,10 +70,9 @@ class HotlinesScreen extends ConsumerWidget {
                       key: Key('sq-hotline-$number'),
                       kind: SqButtonKind.danger,
                       label: l10n.hotlineCall(number),
-                      onPressed: () =>
-                          ref.read(urlLauncherPortProvider).launch(
-                            'tel:$number',
-                          ),
+                      onPressed: () => ref
+                          .read(urlLauncherPortProvider)
+                          .launch('tel:$number'),
                     ),
                   ],
                 ),

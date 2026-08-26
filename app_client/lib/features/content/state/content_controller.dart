@@ -45,8 +45,7 @@ class ContentListState {
   final bool hasMore;
 }
 
-class ContentListController
-    extends AutoDisposeAsyncNotifier<ContentListState> {
+class ContentListController extends AutoDisposeAsyncNotifier<ContentListState> {
   @override
   FutureOr<ContentListState> build() async {
     final filter = ref.watch(contentFilterProvider);
@@ -57,15 +56,14 @@ class ContentListController
     );
   }
 
-  Future<List<ContentItem>> _fetch(ContentFilter filter, int skip) =>
-      ref
-          .read(contentRepositoryProvider)
-          .list(
-            kind: filter.kind,
-            category: filter.category,
-            take: contentPageSize,
-            skip: skip,
-          );
+  Future<List<ContentItem>> _fetch(ContentFilter filter, int skip) => ref
+      .read(contentRepositoryProvider)
+      .list(
+        kind: filter.kind,
+        category: filter.category,
+        take: contentPageSize,
+        skip: skip,
+      );
 
   /// Догружает следующую страницу. Повторные вызовы во время загрузки
   /// игнорируются: прокрутка дёргает обработчик десятки раз подряд.

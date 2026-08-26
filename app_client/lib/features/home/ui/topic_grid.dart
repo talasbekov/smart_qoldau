@@ -6,11 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:shared/shared.dart';
 
 class TopicGrid extends StatelessWidget {
-  const TopicGrid({
-    super.key,
-    required this.topics,
-    required this.onTopicTap,
-  });
+  const TopicGrid({super.key, required this.topics, required this.onTopicTap});
 
   final List<Topic> topics;
   final ValueChanged<Topic> onTopicTap;

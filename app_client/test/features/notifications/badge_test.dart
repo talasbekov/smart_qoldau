@@ -60,7 +60,8 @@ Future<Widget> _wrap(SqApi api, SqSocket socket) async {
       ),
       GoRoute(
         path: RoutePaths.topic,
-        builder: (context, state) => const Scaffold(body: Text('sq-stub-topic')),
+        builder: (context, state) =>
+            const Scaffold(body: Text('sq-stub-topic')),
       ),
       GoRoute(
         path: RoutePaths.sessionPattern,
@@ -111,8 +112,13 @@ void main() {
 
   testWidgets('бейдж показывает число непрочитанных', (tester) async {
     when(
-      () => api.notifications(take: any(named: 'take'), skip: any(named: 'skip')),
-    ).thenAnswer((_) async => const NotificationsPage(items: [], unreadCount: 3));
+      () => api.notifications(
+        take: any(named: 'take'),
+        skip: any(named: 'skip'),
+      ),
+    ).thenAnswer(
+      (_) async => const NotificationsPage(items: [], unreadCount: 3),
+    );
 
     await tester.pumpWidget(await _wrap(api, socket));
     await tester.pumpAndSettle();
@@ -122,8 +128,13 @@ void main() {
 
   testWidgets('при нуле непрочитанных бейджа нет', (tester) async {
     when(
-      () => api.notifications(take: any(named: 'take'), skip: any(named: 'skip')),
-    ).thenAnswer((_) async => const NotificationsPage(items: [], unreadCount: 0));
+      () => api.notifications(
+        take: any(named: 'take'),
+        skip: any(named: 'skip'),
+      ),
+    ).thenAnswer(
+      (_) async => const NotificationsPage(items: [], unreadCount: 0),
+    );
 
     await tester.pumpWidget(await _wrap(api, socket));
     await tester.pumpAndSettle();
@@ -133,8 +144,13 @@ void main() {
 
   testWidgets('значок уведомлений открывает центр уведомлений', (tester) async {
     when(
-      () => api.notifications(take: any(named: 'take'), skip: any(named: 'skip')),
-    ).thenAnswer((_) async => const NotificationsPage(items: [], unreadCount: 0));
+      () => api.notifications(
+        take: any(named: 'take'),
+        skip: any(named: 'skip'),
+      ),
+    ).thenAnswer(
+      (_) async => const NotificationsPage(items: [], unreadCount: 0),
+    );
 
     await tester.pumpWidget(await _wrap(api, socket));
     await tester.pumpAndSettle();
@@ -151,9 +167,13 @@ void main() {
     // Бейдж — дополнение, а не содержимое главной: недоступный центр
     // уведомлений не должен превращать главный экран в экран ошибки.
     when(
-      () => api.notifications(take: any(named: 'take'), skip: any(named: 'skip')),
+      () => api.notifications(
+        take: any(named: 'take'),
+        skip: any(named: 'skip'),
+      ),
     ).thenAnswer(
-      (_) async => throw const ApiException(ApiErrorCode.network, 'нет сети', 0),
+      (_) async =>
+          throw const ApiException(ApiErrorCode.network, 'нет сети', 0),
     );
 
     await tester.pumpWidget(await _wrap(api, socket));

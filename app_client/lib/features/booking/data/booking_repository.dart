@@ -4,7 +4,6 @@ library;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared/shared.dart';
 
-
 class BookingRepository {
   const BookingRepository(this._api);
 
@@ -30,8 +29,10 @@ class BookingRepository {
     paymentMethodId: paymentMethodId,
   );
 
-  Future<BookingResult> reschedule(String consultationId, DateTime slotStartAt) =>
-      _api.reschedule(consultationId, slotStartAt);
+  Future<BookingResult> reschedule(
+    String consultationId,
+    DateTime slotStartAt,
+  ) => _api.reschedule(consultationId, slotStartAt);
 }
 
 final bookingRepositoryProvider = Provider<BookingRepository>(

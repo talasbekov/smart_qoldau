@@ -34,7 +34,10 @@ void main() {
   setUp(() {
     api = MockSqApi();
     when(
-      () => api.tickets(take: any(named: 'take'), skip: any(named: 'skip')),
+      () => api.tickets(
+        take: any(named: 'take'),
+        skip: any(named: 'skip'),
+      ),
     ).thenAnswer((_) async => [_ticket('t1')]);
     when(
       () => api.createTicket(
@@ -93,7 +96,10 @@ void main() {
       ),
     ).called(1);
     verify(
-      () => api.tickets(take: any(named: 'take'), skip: any(named: 'skip')),
+      () => api.tickets(
+        take: any(named: 'take'),
+        skip: any(named: 'skip'),
+      ),
     ).called(2);
   });
 
@@ -128,80 +134,88 @@ void main() {
     ).called(1);
   });
 
-  test('TICKET_CATEGORY_NOT_ALLOWED пробрасывается наружу как ApiException', () async {
-    when(
-      () => api.createTicket(
-        category: any(named: 'category'),
-        subject: any(named: 'subject'),
-        body: any(named: 'body'),
-        contactEmail: any(named: 'contactEmail'),
-        contactPhone: any(named: 'contactPhone'),
-        relatedConsultationId: any(named: 'relatedConsultationId'),
-        relatedPayoutId: any(named: 'relatedPayoutId'),
-      ),
-    ).thenAnswer(
-      (_) async => throw const ApiException(
-        ApiErrorCode.ticketCategoryNotAllowed,
-        'not allowed',
-        409,
-      ),
-    );
-
-    final container = _container(api);
-    container.listen(
-      ticketsControllerProvider,
-      (previous, next) {},
-      fireImmediately: true,
-    );
-    await container.read(ticketsControllerProvider.future);
-
-    await expectLater(
-      container.read(ticketsControllerProvider.notifier).create(
-        category: TicketCategory.payment,
-        subject: 'Тема',
-        body: 'Текст',
-      ),
-      throwsA(
-        isA<ApiException>().having(
-          (e) => e.code,
-          'code',
-          ApiErrorCode.ticketCategoryNotAllowed,
+  test(
+    'TICKET_CATEGORY_NOT_ALLOWED пробрасывается наружу как ApiException',
+    () async {
+      when(
+        () => api.createTicket(
+          category: any(named: 'category'),
+          subject: any(named: 'subject'),
+          body: any(named: 'body'),
+          contactEmail: any(named: 'contactEmail'),
+          contactPhone: any(named: 'contactPhone'),
+          relatedConsultationId: any(named: 'relatedConsultationId'),
+          relatedPayoutId: any(named: 'relatedPayoutId'),
         ),
-      ),
-    );
-  });
+      ).thenAnswer(
+        (_) async => throw const ApiException(
+          ApiErrorCode.ticketCategoryNotAllowed,
+          'not allowed',
+          409,
+        ),
+      );
 
-  test('удаление аккаунта создаёт обращение ACCOUNT_DATA с нужной темой', () async {
-    // Прямого эндпоинта удаления аккаунта у бэкенда нет (решение 9) —
-    // запрос идёт обращением в поддержку.
-    final container = _container(api);
-    container.listen(
-      ticketsControllerProvider,
-      (previous, next) {},
-      fireImmediately: true,
-    );
-    await container.read(ticketsControllerProvider.future);
+      final container = _container(api);
+      container.listen(
+        ticketsControllerProvider,
+        (previous, next) {},
+        fireImmediately: true,
+      );
+      await container.read(ticketsControllerProvider.future);
 
-    await container
-        .read(ticketsControllerProvider.notifier)
-        .create(
-          category: TicketCategory.accountData,
+      await expectLater(
+        container
+            .read(ticketsControllerProvider.notifier)
+            .create(
+              category: TicketCategory.payment,
+              subject: 'Тема',
+              body: 'Текст',
+            ),
+        throwsA(
+          isA<ApiException>().having(
+            (e) => e.code,
+            'code',
+            ApiErrorCode.ticketCategoryNotAllowed,
+          ),
+        ),
+      );
+    },
+  );
+
+  test(
+    'удаление аккаунта создаёт обращение ACCOUNT_DATA с нужной темой',
+    () async {
+      // Прямого эндпоинта удаления аккаунта у бэкенда нет (решение 9) —
+      // запрос идёт обращением в поддержку.
+      final container = _container(api);
+      container.listen(
+        ticketsControllerProvider,
+        (previous, next) {},
+        fireImmediately: true,
+      );
+      await container.read(ticketsControllerProvider.future);
+
+      await container
+          .read(ticketsControllerProvider.notifier)
+          .create(
+            category: TicketCategory.accountData,
+            subject: 'Удаление аккаунта и данных',
+            body: 'Прошу удалить мой аккаунт и связанные с ним данные',
+          );
+
+      verify(
+        () => api.createTicket(
+          category: 'ACCOUNT_DATA',
           subject: 'Удаление аккаунта и данных',
           body: 'Прошу удалить мой аккаунт и связанные с ним данные',
-        );
-
-    verify(
-      () => api.createTicket(
-        category: 'ACCOUNT_DATA',
-        subject: 'Удаление аккаунта и данных',
-        body: 'Прошу удалить мой аккаунт и связанные с ним данные',
-        contactEmail: null,
-        contactPhone: null,
-        relatedConsultationId: null,
-        relatedPayoutId: null,
-      ),
-    ).called(1);
-  });
+          contactEmail: null,
+          contactPhone: null,
+          relatedConsultationId: null,
+          relatedPayoutId: null,
+        ),
+      ).called(1);
+    },
+  );
 
   test('обращение с перепиской читается по идентификатору', () async {
     when(() => api.ticketById('t1')).thenAnswer(

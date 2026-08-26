@@ -62,8 +62,9 @@ class SupportScreen extends ConsumerWidget {
                       text: error is ApiException
                           ? errorText(context, error)
                           : l10n.errorGeneric,
-                      onRetry: () =>
-                          ref.read(ticketsControllerProvider.notifier).refresh(),
+                      onRetry: () => ref
+                          .read(ticketsControllerProvider.notifier)
+                          .refresh(),
                       retryLabel: l10n.actionRetry,
                     ),
                   ),
@@ -88,9 +89,7 @@ class SupportScreen extends ConsumerWidget {
                                 onTap: () => context.push(
                                   RoutePaths.supportTicket(ticket.id),
                                 ),
-                                borderRadius: BorderRadius.circular(
-                                  SqRadius.m,
-                                ),
+                                borderRadius: BorderRadius.circular(SqRadius.m),
                                 child: SqCard(
                                   child: Column(
                                     crossAxisAlignment:

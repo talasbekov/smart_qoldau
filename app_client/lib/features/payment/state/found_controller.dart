@@ -63,9 +63,5 @@ class FoundController
   }
 }
 
-final foundControllerProvider =
-    AsyncNotifierProvider.autoDispose.family<
-      FoundController,
-      FoundState,
-      String
-    >(FoundController.new);
+final foundControllerProvider = AsyncNotifierProvider.autoDispose
+    .family<FoundController, FoundState, String>(FoundController.new);

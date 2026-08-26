@@ -114,9 +114,8 @@ void main() {
   testWidgets('успешная конверсия делает гостя зарегистрированным', (
     tester,
   ) async {
-    when(
-      () => api.convertGuest(any(), any()),
-    ).thenAnswer((_) async => _registeredTokens());
+    when(() => api.convertGuest(any(), any()))
+        .thenAnswer((_) async => _registeredTokens());
 
     final (widget, container) = await _wrap(api);
     await tester.pumpWidget(widget);
@@ -152,7 +151,8 @@ void main() {
     expect(
       find.textContaining('не перенесутся'),
       findsOneWidget,
-      reason: 'клиент должен понимать, что данные гостя в чужой аккаунт не '
+      reason:
+          'клиент должен понимать, что данные гостя в чужой аккаунт не '
           'переедут',
     );
     expect(container.read(authControllerProvider).value, isA<AuthGuest>());
@@ -162,11 +162,8 @@ void main() {
     tester,
   ) async {
     when(() => api.convertGuest(any(), any())).thenAnswer(
-      (_) async => throw const ApiException(
-        ApiErrorCode.smsCodeInvalid,
-        'invalid',
-        400,
-      ),
+      (_) async =>
+          throw const ApiException(ApiErrorCode.smsCodeInvalid, 'invalid', 400),
     );
 
     final (widget, container) = await _wrap(api);

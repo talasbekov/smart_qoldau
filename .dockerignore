@@ -1,0 +1,21 @@
+# Для сборок с корнем репозитория в качестве контекста (веб-кабинет
+# эксперта: ему нужны и app_expert, и packages/shared).
+**/node_modules
+**/build
+**/.dart_tool
+**/dist
+**/.next
+**/android
+**/ios
+**/linux
+**/macos
+**/windows
+**/test
+**/integration_test
+.git
+brain
+docs
+_bmad
+.claude
+**/.env
+**/*.log

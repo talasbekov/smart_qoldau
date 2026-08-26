@@ -51,8 +51,7 @@ class _ArticleScreenState extends ConsumerState<ArticleScreen> {
     final permille = max <= 0
         ? 1000
         : ((_scroll.offset / max) * 1000).clamp(0, 1000).round();
-    if (permille - _sentPermille < _progressStepPermille &&
-        permille != 1000) {
+    if (permille - _sentPermille < _progressStepPermille && permille != 1000) {
       return;
     }
     if (permille <= _sentPermille) return;
@@ -65,10 +64,9 @@ class _ArticleScreenState extends ConsumerState<ArticleScreen> {
     ref
         .read(contentRepositoryProvider)
         .saveProgress(widget.id, permille)
-        .catchError((_) => const ContentProgress(
-              positionPermille: 0,
-              completed: false,
-            ));
+        .catchError(
+          (_) => const ContentProgress(positionPermille: 0, completed: false),
+        );
   }
 
   Future<void> _vote(bool useful) async {
@@ -97,8 +95,7 @@ class _ArticleScreenState extends ConsumerState<ArticleScreen> {
                 text: error is ApiException
                     ? errorText(context, error)
                     : l10n.errorGeneric,
-                onRetry: () =>
-                    ref.invalidate(contentItemProvider(widget.id)),
+                onRetry: () => ref.invalidate(contentItemProvider(widget.id)),
                 retryLabel: l10n.actionRetry,
               ),
             ),

@@ -134,8 +134,7 @@ class _ActiveCall extends StatelessWidget {
       children: [
         if (state.phase == CallPhase.reconnecting)
           ConnectionBanner(text: l10n.callReconnecting),
-        if (state.cameraBlocked)
-          ConnectionBanner(text: l10n.callCameraBlocked),
+        if (state.cameraBlocked) ConnectionBanner(text: l10n.callCameraBlocked),
         Expanded(
           child: Center(
             child: Column(
@@ -149,14 +148,11 @@ class _ActiveCall extends StatelessWidget {
                   color: SqColors.primary,
                 ),
                 const SizedBox(height: SqSpacing.l),
-                Text(
-                  switch (state.phase) {
-                    CallPhase.connected => l10n.callConnected,
-                    CallPhase.disconnected => l10n.callEnd,
-                    _ => l10n.callConnecting,
-                  },
-                  style: SqTypography.title,
-                ),
+                Text(switch (state.phase) {
+                  CallPhase.connected => l10n.callConnected,
+                  CallPhase.disconnected => l10n.callEnd,
+                  _ => l10n.callConnecting,
+                }, style: SqTypography.title),
               ],
             ),
           ),

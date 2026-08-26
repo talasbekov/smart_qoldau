@@ -114,9 +114,8 @@ void main() {
 
   setUp(() {
     api = MockSqApi();
-    when(
-      () => api.consultationById('c1'),
-    ).thenAnswer((_) async => _consultation());
+    when(() => api.consultationById('c1'))
+        .thenAnswer((_) async => _consultation());
     when(
       () => api.createReview(
         any(),
@@ -222,9 +221,7 @@ void main() {
         privateText: any(named: 'privateText'),
         tags: any(named: 'tags'),
       ),
-    ).thenThrow(
-      const ApiException(ApiErrorCode.reviewExists, 'already', 409),
-    );
+    ).thenThrow(const ApiException(ApiErrorCode.reviewExists, 'already', 409));
 
     await tester.pumpWidget(await _wrap(api));
     await tester.pumpAndSettle();

@@ -78,7 +78,8 @@ class _ExpertScreenState extends ConsumerState<ExpertScreen> {
     // (клиент только что искал именно по ней), из единственной
     // специализации специалиста, иначе спрашиваем. Заявка без темы
     // бэкендом не принимается.
-    String? topicSlug = ref.read(catalogFiltersProvider).topicSlug ??
+    String? topicSlug =
+        ref.read(catalogFiltersProvider).topicSlug ??
         (expert.topicSlugs.length == 1 ? expert.topicSlugs.single : null);
     if (topicSlug == null) {
       final topic = await showTopicPickerSheet(context);
@@ -155,11 +156,7 @@ class _ExpertScreenState extends ConsumerState<ExpertScreen> {
     );
     if (accepted != true || !mounted) return;
 
-    await _createRequest(
-      topicSlug: topicSlug,
-      format: format,
-      expertId: null,
-    );
+    await _createRequest(topicSlug: topicSlug, format: format, expertId: null);
   }
 
   @override
@@ -242,8 +239,7 @@ class _ExpertScreenState extends ConsumerState<ExpertScreen> {
                     key: const Key('sq-expert-load-more'),
                     onPressed: state.loadingMore
                         ? null
-                        : () =>
-                              ref.read(provider.notifier).loadMoreReviews(),
+                        : () => ref.read(provider.notifier).loadMoreReviews(),
                     child: Text(l10n.expertLoadMoreReviews),
                   ),
                 ),
@@ -271,8 +267,7 @@ class _ExpertScreenState extends ConsumerState<ExpertScreen> {
                 label: l10n.bookingActionNow,
                 loading: _booking,
                 onPressed:
-                    _booking ||
-                        state.expert.workStatus != WorkStatus.accepting
+                    _booking || state.expert.workStatus != WorkStatus.accepting
                     ? null
                     : () => _book(state.expert),
               ),
@@ -323,16 +318,12 @@ class _Head extends StatelessWidget {
             l10n.expertLanguages(
               expert.languages.map((e) => e.toUpperCase()).join(' · '),
             ),
-            style: SqTypography.caption.copyWith(
-              color: SqColors.textSecondary,
-            ),
+            style: SqTypography.caption.copyWith(color: SqColors.textSecondary),
           ),
           const SizedBox(height: SqSpacing.m),
           Text(
             l10n.expertPriceLabel,
-            style: SqTypography.caption.copyWith(
-              color: SqColors.textSecondary,
-            ),
+            style: SqTypography.caption.copyWith(color: SqColors.textSecondary),
           ),
           Text(formatTenge(expert.priceTiyn), style: SqTypography.h2),
           // Блок «о себе» рисуется только когда текст есть: пустой

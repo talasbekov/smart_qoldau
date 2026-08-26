@@ -69,10 +69,8 @@ void main() {
     await tester.pumpAndSettle();
 
     verify(
-      () => api.subscribePremium(
-        plan: PremiumPlan.year,
-        paymentMethodId: 'pm-1',
-      ),
+      () =>
+          api.subscribePremium(plan: PremiumPlan.year, paymentMethodId: 'pm-1'),
     ).called(1);
   });
 
@@ -105,9 +103,8 @@ void main() {
     tester,
   ) async {
     when(() => api.premiumStatus()).thenAnswer((_) async => _active());
-    when(
-      () => api.cancelPremium(),
-    ).thenAnswer((_) async => _active(cancelled: true));
+    when(() => api.cancelPremium())
+        .thenAnswer((_) async => _active(cancelled: true));
 
     await tester.pumpWidget(_wrap(api));
     await tester.pumpAndSettle();

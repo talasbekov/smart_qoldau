@@ -47,9 +47,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
       _error = null;
     });
     try {
-      await ref
-          .read(searchControllerProvider(widget.args).notifier)
-          .cancel();
+      await ref.read(searchControllerProvider(widget.args).notifier).cancel();
       // Переход на главную делает слушатель статуса: заявка отменена
       // тогда, когда это подтвердил бэкенд, а не когда нажата кнопка.
     } on ApiException catch (error) {
