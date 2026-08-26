@@ -31,6 +31,11 @@ export default function AppLayout() {
             Модерация отзывов
           </NavLink>
         </RoleGate>
+        <RoleGate roles={['CONTENT_EDITOR']}>
+          <NavLink to="/content" className={linkClass}>
+            Материалы
+          </NavLink>
+        </RoleGate>
         <RoleGate roles={['FINANCE_CONTROL']}>
           <NavLink to="/payouts" className={linkClass}>
             Выплаты
