@@ -5,7 +5,7 @@ TypeScript), `react-router-dom`, Tailwind CSS, Vitest + React Testing
 Library.
 
 Независим от других пакетов монорепо (`backend/`, `app_client/`,
-`app_expert/`, `packages/shared/`, `landing/`) — обычное Vite-приложение
+`app_expert/`, `packages/shared/`, `web/`) — обычное Vite-приложение
 со своим `package-lock.json`.
 
 ## Запуск

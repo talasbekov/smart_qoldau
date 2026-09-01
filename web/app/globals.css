@@ -1,0 +1,19 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* Высота липкой шапки: py-4 плюс строка text-base. */
+  --header-height: 60px;
+}
+
+html {
+  /* WCAG 2.2 AA «Focus Not Obscured»: переход по якорю (в том числе по
+     ссылке «к основному содержимому») иначе уводит цель под липкую
+     шапку, и фокус оказывается перекрыт. */
+  scroll-padding-top: var(--header-height);
+}
+
+body {
+  @apply font-sans text-ink bg-white;
+}
