@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import type { ExpertPublic } from '@/lib/api/public';
 import type { Selected } from './CatalogFilters';
+import ExpertAvatar from '@/components/expert/ExpertAvatar';
 
 const EXPERIENCE_LABELS: Record<string, string> = {
   LESS_THAN_YEAR: 'менее года',
@@ -56,7 +57,7 @@ export default function CatalogList({
         {experts.map((expert) => (
           <article key={expert.id} className="rounded-[20px] border border-border bg-white p-[22px]">
             <div className="mb-3.5 flex items-center gap-3">
-              <div className="h-14 w-14 shrink-0 rounded-full bg-chip" aria-hidden="true" />
+              <ExpertAvatar photoUrl={expert.photoUrl} size={56} />
               <div className="min-w-0">
                 <h2 className="text-[15px] font-extrabold text-ink">
                   <Link href={`/${locale}/experts/${expert.id}`} className="hover:underline">
@@ -86,12 +87,12 @@ export default function CatalogList({
       {(page > 1 || mayHaveMore) && (
         <nav aria-label="Страницы каталога" className="mt-8 flex justify-center gap-4">
           {page > 1 && (
-            <Link href={pageHref(locale, query, page - 1)} className="font-bold text-primary">
+            <Link href={pageHref(locale, query, page - 1)} className="rounded-lg px-3 py-2 font-bold text-primary focus:outline-none focus:ring-2 focus:ring-primary">
               ← Назад
             </Link>
           )}
           {mayHaveMore && (
-            <Link href={pageHref(locale, query, page + 1)} className="font-bold text-primary">
+            <Link href={pageHref(locale, query, page + 1)} className="rounded-lg px-3 py-2 font-bold text-primary focus:outline-none focus:ring-2 focus:ring-primary">
               Дальше →
             </Link>
           )}

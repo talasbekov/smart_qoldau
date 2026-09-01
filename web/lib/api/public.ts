@@ -4,6 +4,8 @@ export const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://loca
 
 export type ExpertPublic = components['schemas']['ExpertPublicDto'];
 export type Topic = components['schemas']['TopicDto'];
+export type ExpertReviews = components['schemas']['ExpertReviewsDto'];
+export type ReviewItem = components['schemas']['ReviewItemDto'];
 
 export type ListExpertsParams = {
   topic?: string;
@@ -45,6 +47,18 @@ export async function getExpert(id: string): Promise<ExpertPublic | null> {
     });
     if (!response.ok) return null;
     return (await response.json()) as ExpertPublic;
+  } catch {
+    return null;
+  }
+}
+
+export async function getExpertReviews(id: string, take = 5): Promise<ExpertReviews | null> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/experts/${id}/reviews?take=${take}`, {
+      next: { revalidate: 300, tags: ['experts', `expert:${id}`] },
+    });
+    if (!response.ok) return null;
+    return (await response.json()) as ExpertReviews;
   } catch {
     return null;
   }

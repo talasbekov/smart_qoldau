@@ -1,5 +1,6 @@
 import { getTranslations } from 'next-intl/server';
 import { Link } from '@/lib/i18n/navigation';
+import NavLink from './NavLink';
 
 export default async function Header() {
   const t = await getTranslations('nav');
@@ -10,18 +11,24 @@ export default async function Header() {
           <span className="font-extrabold text-ink text-base">SmartQoldau</span>
         </Link>
         <nav className="flex items-center gap-4">
-          <Link href="/" className="text-xs font-semibold text-ink-soft">
+          <NavLink href="/" className="rounded px-1 py-2 text-xs font-semibold text-ink-soft aria-[current=page]:text-primary aria-[current=page]:underline aria-[current=page]:underline-offset-4">
             {t('home')}
-          </Link>
-          <Link href="/become-expert" className="text-xs font-semibold text-ink-soft">
+          </NavLink>
+          <NavLink href="/become-expert" className="rounded px-1 py-2 text-xs font-semibold text-ink-soft aria-[current=page]:text-primary aria-[current=page]:underline aria-[current=page]:underline-offset-4">
             {t('becomeExpert')}
-          </Link>
-          <Link href="/about" className="text-xs font-semibold text-ink-soft">
+          </NavLink>
+          <NavLink
+            href="/catalog"
+            className="rounded px-1 py-2 text-xs font-semibold text-ink-soft aria-[current=page]:text-primary aria-[current=page]:underline aria-[current=page]:underline-offset-4"
+          >
+            {t('catalog')}
+          </NavLink>
+          <NavLink href="/about" className="rounded px-1 py-2 text-xs font-semibold text-ink-soft aria-[current=page]:text-primary aria-[current=page]:underline aria-[current=page]:underline-offset-4">
             {t('about')}
-          </Link>
-          <Link href="/premium" className="text-xs font-semibold text-ink-soft">
+          </NavLink>
+          <NavLink href="/premium" className="rounded px-1 py-2 text-xs font-semibold text-ink-soft aria-[current=page]:text-primary aria-[current=page]:underline aria-[current=page]:underline-offset-4">
             {t('premium')}
-          </Link>
+          </NavLink>
         </nav>
         <Link
           href="/support"
