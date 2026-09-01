@@ -20,6 +20,7 @@ import {
 import { CreateReviewDto } from './dto/create-review.dto';
 import { ListExpertReviewsDto } from './dto/list-expert-reviews.dto';
 import { ExpertReviewsDto } from './dto/expert-reviews.dto';
+import { MyExpertReviewsDto } from './dto/my-expert-reviews.dto';
 import { ReviewCreatedDto } from './dto/review-created.dto';
 import { ReplyReviewDto } from './dto/reply-review.dto';
 import { ComplaintReviewDto } from './dto/complaint-review.dto';
@@ -318,6 +319,54 @@ export class ReviewsService {
         take,
         skip,
         select: {
+          rating: true,
+          publicText: true,
+          expertReply: true,
+          tags: true,
+          createdAt: true,
+        },
+      }),
+      this.prisma.review.groupBy({
+        by: ['rating'],
+        where: { expertId, status: ReviewStatus.PUBLISHED },
+        _count: true,
+      }),
+      this.prisma.expert.findUniqueOrThrow({ where: { id: expertId } }),
+    ]);
+
+    const distribution = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+    for (const g of grouped) {
+      if (g.rating >= 1 && g.rating <= 5)
+        distribution[g.rating as 1 | 2 | 3 | 4 | 5] = g._count;
+    }
+
+    return {
+      items: reviews,
+      distribution,
+      ratingAvg: expert.ratingAvg,
+      ratingCount: expert.ratingCount,
+    };
+  }
+
+  // Свои отзывы аутентифицированного эксперта (GET /experts/me/reviews,
+  // долг из Plane после E7): тот же контент и фильтр PUBLISHED, что
+  // listForExpert, но select включает id — reply/complaint эндпоинтам он
+  // нужен, а публичная выдача его намеренно не отдаёт (см. listForExpert).
+  async listForOwnExpert(
+    expertId: string,
+    filters: ListExpertReviewsDto,
+  ): Promise<MyExpertReviewsDto> {
+    const take = Math.min(filters.take ?? DEFAULT_TAKE, MAX_TAKE);
+    const skip = filters.skip ?? 0;
+
+    const [reviews, grouped, expert] = await Promise.all([
+      this.prisma.review.findMany({
+        where: { expertId, status: ReviewStatus.PUBLISHED },
+        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+        take,
+        skip,
+        select: {
+          id: true,
           rating: true,
           publicText: true,
           expertReply: true,

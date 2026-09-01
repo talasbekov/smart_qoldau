@@ -304,25 +304,22 @@ void main() {
       expect(retried, 1);
     });
 
-    testWidgets(
-      'uses a custom retryLabel when the caller needs localization '
-      '(shared cannot depend on an app l10n, so retryLabel is the way an '
-      'app-specific translation reaches this button)',
-      (tester) async {
-        await tester.pumpWidget(
-          _wrap(
-            SqErrorView(
-              text: 'Қате шықты',
-              onRetry: () {},
-              retryLabel: 'Қайталау',
-            ),
+    testWidgets('uses a custom retryLabel when the caller needs localization '
+        '(shared cannot depend on an app l10n, so retryLabel is the way an '
+        'app-specific translation reaches this button)', (tester) async {
+      await tester.pumpWidget(
+        _wrap(
+          SqErrorView(
+            text: 'Қате шықты',
+            onRetry: () {},
+            retryLabel: 'Қайталау',
           ),
-        );
+        ),
+      );
 
-        expect(find.text('Қайталау'), findsOneWidget);
-        expect(find.text('Повторить'), findsNothing);
-      },
-    );
+      expect(find.text('Қайталау'), findsOneWidget);
+      expect(find.text('Повторить'), findsNothing);
+    });
 
     testWidgets('hides the retry action when onRetry is null', (tester) async {
       await tester.pumpWidget(_wrap(const SqErrorView(text: 'Ошибка')));

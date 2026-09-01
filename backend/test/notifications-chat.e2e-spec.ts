@@ -24,7 +24,7 @@ let lastCode = '';
 
 class FakeSmsProvider implements SmsProvider {
   async send(_phone: string, text: string): Promise<void> {
-    const match = text.match(/(\d{4})/);
+    const match = text.match(/(\d{6})/);
     lastCode = match ? match[1] : '';
   }
 }
@@ -287,7 +287,7 @@ describe('Чат-пуш офлайн-получателю, без текста �
 
     // Только клиент онлайн — эксперт НЕ подключён к WS ни одним сокетом.
     const clientSocket = connect(cli.accessToken);
-    await waitForEvent(clientSocket, 'connect');
+    await waitForEvent(clientSocket, 'ready');
 
     const clientEchoPromise = waitForEvent(clientSocket, 'chat.message');
     clientSocket.emit('chat.send', {
@@ -333,8 +333,8 @@ describe('Чат-пуш офлайн-получателю, без текста �
 
     const clientSocket = connect(cli.accessToken);
     const expertSocket = connect(exp.accessToken);
-    await waitForEvent(clientSocket, 'connect');
-    await waitForEvent(expertSocket, 'connect');
+    await waitForEvent(clientSocket, 'ready');
+    await waitForEvent(expertSocket, 'ready');
 
     const expertMsgPromise = waitForEvent(expertSocket, 'chat.message');
     clientSocket.emit('chat.send', {
@@ -369,9 +369,9 @@ describe('Чат-пуш офлайн-получателю, без текста �
     const clientSocket = connect(cli.accessToken);
     const expertSocketA = connect(exp.accessToken);
     const expertSocketB = connect(exp.accessToken);
-    await waitForEvent(clientSocket, 'connect');
-    await waitForEvent(expertSocketA, 'connect');
-    await waitForEvent(expertSocketB, 'connect');
+    await waitForEvent(clientSocket, 'ready');
+    await waitForEvent(expertSocketA, 'ready');
+    await waitForEvent(expertSocketB, 'ready');
 
     // Первая вкладка эксперта закрывается, вторая остаётся живой.
     expertSocketA.disconnect();

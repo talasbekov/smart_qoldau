@@ -14,8 +14,12 @@ import { RedisService } from '../redis/redis.service';
 import { MatchingService } from '../matching/matching.service';
 import { ExpertsService } from '../experts/experts.service';
 import { EventsService } from '../ws/events.service';
-import { ConsultationsService } from '../consultations/consultations.service';
+import {
+  ConsultationsService,
+  ConsultationSlotTakenError,
+} from '../consultations/consultations.service';
 import { NotificationsService } from '../notifications/notifications.service';
+import { PremiumService } from '../premium/premium.service';
 import { apiError } from '../common/filters/app-exception.filter';
 import { CreateRequestDto } from './dto/create-request.dto';
 import { RequestDto } from './dto/request.dto';
@@ -52,6 +56,7 @@ export class RequestsService {
     private notifications: NotificationsService,
     @Inject(forwardRef(() => OFFER_TIMER_REGISTRY))
     private offerTimer: OfferTimerRegistry,
+    private premium: PremiumService,
   ) {}
 
   // Создание заявки. Одна активная (SEARCHING) заявка на клиента — проверка
@@ -214,11 +219,26 @@ export class RequestsService {
       // только среди acceptsUrgent-экспертов; после broadcastAt — полный
       // круг (расширение круга уже сделано EscalationService.broadcast(),
       // здесь urgentOnly=false просто не сужает дальнейшую ротацию).
+      // Р-08 «приоритетный подбор»: Premium-заявка идёт строго к лучшему из
+      // кандидатов, без разведения равных. Разведение (#29) существует ради
+      // пропускной способности базового потока — Premium за то и платит,
+      // чтобы попасть к сильнейшему из свободных, а не к случайному из
+      // равных. Заведомо НЕ делаем: перехват уже отправленного оффера,
+      // вытеснение чужой заявки, укорочение таймеров — это ухудшает опыт
+      // базовых клиентов, чего Р-08 не обещал.
+      const isPremium = await this.premium.isPremiumAt(
+        request.clientUserId,
+        this.clock.now(),
+      );
       const ranked = await this.matching.findCandidates({
         topicSlug: request.topic.slug,
         format: request.format,
         excludeExpertIds,
         urgentOnly: request.isEmergency && !request.broadcastAt,
+        // Равные по скору кандидаты раскладываются по-своему для каждой
+        // заявки: иначе поток заявок бьётся в одного и того же
+        // специалиста, а остальные свободные простаивают.
+        tieBreakSeed: isPremium ? undefined : request.id,
       });
       nextExpertId = ranked[0];
     }
@@ -356,6 +376,32 @@ export class RequestsService {
         )
           apiError('OFFER_EXPIRED', 'Срок действия оффера истёк', 410);
         apiError('OFFER_ALREADY_TAKEN', 'Оффер уже принят', 409);
+      }
+      if (e instanceof ConsultationSlotTakenError) {
+        // Эксперт уже ведёт консультацию: BUSY выставляется после коммита
+        // первого accept, поэтому второй оффер он получить успевает.
+        // Отказ штатный, но оставлять оффер висеть PENDING до 45-секундного
+        // таймаута нельзя: под пиковой нагрузкой десятки заявок ждали бы
+        // впустую (видно в нагрузочном прогоне E11). Поступаем как с
+        // отказом эксперта — снимаем оффер и сразу предлагаем следующему.
+        await this.offerTimer.cancel(offerId);
+        await this.prisma.requestCandidate.updateMany({
+          where: { id: offerId, response: CandidateResponse.PENDING },
+          data: { response: CandidateResponse.REVOKED, respondedAt: now },
+        });
+        await this.audit.log({
+          actorType: 'system',
+          entity: 'offer',
+          entityId: offerId,
+          transition: 'offer.revoked',
+          payload: { reason: 'expert_busy' },
+        });
+        await this.offerToNext(offer!.requestId);
+        apiError(
+          'EXPERT_BUSY',
+          'У вас уже идёт консультация — этот запрос уйдёт другому специалисту',
+          409,
+        );
       }
       if (e instanceof RequestNotSearchingError) {
         // Заявка уже закрыта (отменена/сматчена иначе). Транзакция

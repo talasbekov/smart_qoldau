@@ -74,10 +74,9 @@ abstract final class DeepLinks {
 /// Куда уводит разобранная ссылка. Переопределяется в `main()` навигацией
 /// роутера.
 final deepLinkNavigatorProvider = Provider<void Function(String route)>(
-  (ref) => (route) => developer.log(
-    'некому обработать диплинк: $route',
-    name: 'DeepLinks',
-  ),
+  (ref) =>
+      (route) =>
+          developer.log('некому обработать диплинк: $route', name: 'DeepLinks'),
 );
 
 /// Применяет входящие ссылки — с учётом того, что сессия могла ещё не

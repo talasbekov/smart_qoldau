@@ -182,9 +182,7 @@ class _ExpertCard extends StatelessWidget {
             l10n.expertLanguages(
               expert.languages.map((e) => e.toUpperCase()).join(' · '),
             ),
-            style: SqTypography.caption.copyWith(
-              color: SqColors.textSecondary,
-            ),
+            style: SqTypography.caption.copyWith(color: SqColors.textSecondary),
           ),
           const SizedBox(height: SqSpacing.m),
           Row(

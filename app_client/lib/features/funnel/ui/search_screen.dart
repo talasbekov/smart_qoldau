@@ -47,9 +47,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
       _error = null;
     });
     try {
-      await ref
-          .read(searchControllerProvider(widget.args).notifier)
-          .cancel();
+      await ref.read(searchControllerProvider(widget.args).notifier).cancel();
       // Переход на главную делает слушатель статуса: заявка отменена
       // тогда, когда это подтвердил бэкенд, а не когда нажата кнопка.
     } on ApiException catch (error) {
@@ -200,9 +198,16 @@ class _SearchingContent extends ConsumerWidget {
     final onlineCount = state.onlineCount;
     final accent = isEmergency ? SqColors.danger : SqColors.primary;
 
+    // Прототип `Web - Поиск специалиста` держит блок по центру: экран
+    // ожидания, растянутый на монитор, выглядит как пустая страница с
+    // текстом по краям.
     return Column(
       children: [
-        Expanded(child: _list(context, l10n, onlineCount, accent)),
+        Expanded(
+          child: SqReadableWidth(
+            child: _list(context, l10n, onlineCount, accent),
+          ),
+        ),
         if (isEmergency)
           Padding(
             padding: const EdgeInsets.fromLTRB(

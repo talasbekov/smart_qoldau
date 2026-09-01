@@ -90,8 +90,9 @@ Future<Widget> _wrap(
       ),
       GoRoute(
         path: RoutePaths.consultationDetailsPattern,
-        builder: (context, state) =>
-            ConsultationDetailsScreen(consultationId: state.pathParameters['id']!),
+        builder: (context, state) => ConsultationDetailsScreen(
+          consultationId: state.pathParameters['id']!,
+        ),
       ),
       GoRoute(
         path: RoutePaths.sessionPattern,
@@ -223,9 +224,9 @@ void main() {
         skip: any(named: 'skip'),
       ),
     ).thenAnswer((_) async => [_consultation()]);
-    when(
-      () => api.cancelConsultation('c1'),
-    ).thenAnswer((_) async => _consultation(status: ConsultationStatus.cancelled));
+    when(() => api.cancelConsultation('c1')).thenAnswer(
+      (_) async => _consultation(status: ConsultationStatus.cancelled),
+    );
 
     await tester.pumpWidget(await _wrap(api, socket: socket));
     await tester.pumpAndSettle();
@@ -273,13 +274,13 @@ void main() {
 
   group('детали консультации', () {
     setUp(() {
-      when(
-        () => api.consultationById('c1'),
-      ).thenAnswer((_) async => _consultation(
-        status: ConsultationStatus.completed,
-        payment: ConsultationPaymentStatus.captured,
-        outcome: ConsultationOutcome.completed,
-      ));
+      when(() => api.consultationById('c1')).thenAnswer(
+        (_) async => _consultation(
+          status: ConsultationStatus.completed,
+          payment: ConsultationPaymentStatus.captured,
+          outcome: ConsultationOutcome.completed,
+        ),
+      );
     });
 
     testWidgets('показывает карту, которой оплачено', (tester) async {
@@ -350,10 +351,7 @@ void main() {
       await tester.tap(find.text('Удалить отзыв'));
       await tester.pumpAndSettle();
 
-      expect(
-        find.text('Рейтинг специалиста будет пересчитан'),
-        findsOneWidget,
-      );
+      expect(find.text('Рейтинг специалиста будет пересчитан'), findsOneWidget);
 
       await tester.tap(find.text('Удалить отзыв').last);
       await tester.pumpAndSettle();

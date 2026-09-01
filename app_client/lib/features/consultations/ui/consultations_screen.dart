@@ -103,11 +103,8 @@ class _ConsultationsList extends ConsumerWidget {
   ) async {
     // Плановую отменяют по-разному в зависимости от того, сколько
     // осталось: клиент должен узнать про счётчик отмен до нажатия.
-    final minutesLeft =
-        consultation.status == ConsultationStatus.scheduled
-        ? consultation.startedAt
-              .difference(ref.read(nowProvider)())
-              .inMinutes
+    final minutesLeft = consultation.status == ConsultationStatus.scheduled
+        ? consultation.startedAt.difference(ref.read(nowProvider)()).inMinutes
         : null;
     if (!await confirmCancelConsultation(
       context,
@@ -217,8 +214,8 @@ class _ConsultationsList extends ConsumerWidget {
                               extra: consultation,
                             )
                           : null,
-                      onContinue: consultation.status ==
-                              ConsultationStatus.active
+                      onContinue:
+                          consultation.status == ConsultationStatus.active
                           ? () => context.push(
                               RoutePaths.session(consultation.id),
                             )
@@ -229,7 +226,8 @@ class _ConsultationsList extends ConsumerWidget {
                                   ConsultationStatus.scheduled
                           ? () => _cancel(context, ref, consultation)
                           : null,
-                      onPay: consultation.paymentStatus ==
+                      onPay:
+                          consultation.paymentStatus ==
                                   ConsultationPaymentStatus.unpaid &&
                               consultation.status == ConsultationStatus.active
                           ? () => _pay(context, ref, consultation)

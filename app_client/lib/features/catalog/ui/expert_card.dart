@@ -75,9 +75,7 @@ class ExpertCard extends StatelessWidget {
                 key: Key('sq-expert-card-favorite-${expert.id}'),
                 icon: Icon(
                   isFavorite ? Icons.favorite : Icons.favorite_border,
-                  color: isFavorite
-                      ? SqColors.danger
-                      : SqColors.textSecondary,
+                  color: isFavorite ? SqColors.danger : SqColors.textSecondary,
                 ),
                 onPressed: onToggleFavorite,
               ),

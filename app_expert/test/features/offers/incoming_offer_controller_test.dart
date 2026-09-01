@@ -14,7 +14,8 @@ import 'package:shared/shared.dart';
 import 'package:app_expert/core/incoming_offer_alert_port.dart';
 import 'package:app_expert/features/offers/state/incoming_offer_controller.dart';
 
-class MockIncomingOfferAlertPort extends Mock implements IncomingOfferAlertPort {}
+class MockIncomingOfferAlertPort extends Mock
+    implements IncomingOfferAlertPort {}
 
 class _FakeSqSocket implements SqSocket {
   final _events = StreamController<(String, dynamic)>.broadcast();
@@ -62,7 +63,11 @@ ProviderContainer _container({
     ],
   );
   addTearDown(container.dispose);
-  container.listen(incomingOfferControllerProvider, (previous, next) {}, fireImmediately: true);
+  container.listen(
+    incomingOfferControllerProvider,
+    (previous, next) {},
+    fireImmediately: true,
+  );
   return container;
 }
 
@@ -91,23 +96,27 @@ void main() {
     port = MockIncomingOfferAlertPort();
   });
 
-  testWidgets('offer.new кладёт оффер в состояние и показывает алерт один раз', (
-    tester,
-  ) async {
-    final container = _container(socket: socket, port: port);
-    await tester.pump();
+  testWidgets(
+    'offer.new кладёт оффер в состояние и показывает алерт один раз',
+    (tester) async {
+      final container = _container(socket: socket, port: port);
+      await tester.pump();
 
-    final deadline = DateTime.now().add(const Duration(seconds: 45));
-    socket.push('offer.new', _rawOffer(deadlineAt: deadline.toIso8601String()));
-    await tester.pump();
+      final deadline = DateTime.now().add(const Duration(seconds: 45));
+      socket.push(
+        'offer.new',
+        _rawOffer(deadlineAt: deadline.toIso8601String()),
+      );
+      await tester.pump();
 
-    final state = container.read(incomingOfferControllerProvider);
-    expect(state, isA<OfferNew>());
-    expect(state!.offerId, 'offer-1');
-    verify(() => port.show(any(that: isA<OfferNew>()))).called(1);
+      final state = container.read(incomingOfferControllerProvider);
+      expect(state, isA<OfferNew>());
+      expect(state!.offerId, 'offer-1');
+      verify(() => port.show(any(that: isA<OfferNew>()))).called(1);
 
-    _disposeNow(container);
-  });
+      _disposeNow(container);
+    },
+  );
 
   testWidgets('offer.revoked с ДРУГИМ offerId не чистит текущий оффер', (
     tester,
@@ -116,7 +125,10 @@ void main() {
     await tester.pump();
 
     final deadline = DateTime.now().add(const Duration(seconds: 45));
-    socket.push('offer.new', _rawOffer(offerId: 'offer-1', deadlineAt: deadline.toIso8601String()));
+    socket.push(
+      'offer.new',
+      _rawOffer(offerId: 'offer-1', deadlineAt: deadline.toIso8601String()),
+    );
     await tester.pump();
     expect(container.read(incomingOfferControllerProvider)?.offerId, 'offer-1');
 
@@ -129,43 +141,51 @@ void main() {
     _disposeNow(container);
   });
 
-  testWidgets('offer.revoked с ТЕМ ЖЕ offerId чистит состояние и закрывает алерт', (
-    tester,
-  ) async {
-    final container = _container(socket: socket, port: port);
-    await tester.pump();
+  testWidgets(
+    'offer.revoked с ТЕМ ЖЕ offerId чистит состояние и закрывает алерт',
+    (tester) async {
+      final container = _container(socket: socket, port: port);
+      await tester.pump();
 
-    final deadline = DateTime.now().add(const Duration(seconds: 45));
-    socket.push('offer.new', _rawOffer(offerId: 'offer-1', deadlineAt: deadline.toIso8601String()));
-    await tester.pump();
+      final deadline = DateTime.now().add(const Duration(seconds: 45));
+      socket.push(
+        'offer.new',
+        _rawOffer(offerId: 'offer-1', deadlineAt: deadline.toIso8601String()),
+      );
+      await tester.pump();
 
-    socket.push('offer.revoked', {'offerId': 'offer-1'});
-    await tester.pump();
+      socket.push('offer.revoked', {'offerId': 'offer-1'});
+      await tester.pump();
 
-    expect(container.read(incomingOfferControllerProvider), isNull);
-    verify(() => port.dismiss('offer-1')).called(1);
+      expect(container.read(incomingOfferControllerProvider), isNull);
+      verify(() => port.dismiss('offer-1')).called(1);
 
-    _disposeNow(container);
-  });
+      _disposeNow(container);
+    },
+  );
 
-  testWidgets('дедлайн истекает — состояние чистится само, без второго события', (
-    tester,
-  ) async {
-    final container = _container(socket: socket, port: port);
-    await tester.pump();
+  testWidgets(
+    'дедлайн истекает — состояние чистится само, без второго события',
+    (tester) async {
+      final container = _container(socket: socket, port: port);
+      await tester.pump();
 
-    final deadline = DateTime.now().add(const Duration(seconds: 10));
-    socket.push('offer.new', _rawOffer(deadlineAt: deadline.toIso8601String()));
-    await tester.pump();
-    expect(container.read(incomingOfferControllerProvider), isNotNull);
+      final deadline = DateTime.now().add(const Duration(seconds: 10));
+      socket.push(
+        'offer.new',
+        _rawOffer(deadlineAt: deadline.toIso8601String()),
+      );
+      await tester.pump();
+      expect(container.read(incomingOfferControllerProvider), isNotNull);
 
-    await tester.pump(const Duration(seconds: 9));
-    expect(container.read(incomingOfferControllerProvider), isNotNull);
+      await tester.pump(const Duration(seconds: 9));
+      expect(container.read(incomingOfferControllerProvider), isNotNull);
 
-    await tester.pump(const Duration(seconds: 1));
-    expect(container.read(incomingOfferControllerProvider), isNull);
-    verify(() => port.dismiss('offer-1')).called(1);
+      await tester.pump(const Duration(seconds: 1));
+      expect(container.read(incomingOfferControllerProvider), isNull);
+      verify(() => port.dismiss('offer-1')).called(1);
 
-    _disposeNow(container);
-  });
+      _disposeNow(container);
+    },
+  );
 }

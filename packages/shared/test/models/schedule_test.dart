@@ -25,10 +25,7 @@ void main() {
     });
 
     test('fromJson разбирает отключённый день без времени', () {
-      final json = {
-        'weekday': 1,
-        'enabled': false,
-      };
+      final json = {'weekday': 1, 'enabled': false};
 
       final day = ScheduleDay.fromJson(json);
 
@@ -79,10 +76,7 @@ void main() {
 
   group('ScheduleException serialization', () {
     test('fromJson разбирает исключение выходного дня', () {
-      final json = {
-        'date': '2026-08-25',
-        'isDayOff': true,
-      };
+      final json = {'date': '2026-08-25', 'isDayOff': true};
 
       final exception = ScheduleException.fromJson(json);
 
@@ -109,10 +103,7 @@ void main() {
     });
 
     test('toJson преобразует ScheduleException в JSON', () {
-      final exception = ScheduleException(
-        date: '2026-08-27',
-        isDayOff: true,
-      );
+      final exception = ScheduleException(date: '2026-08-27', isDayOff: true);
 
       final json = exception.toJson();
 
@@ -139,10 +130,7 @@ void main() {
     });
 
     test('round-trip: fromJson -> toJson воспроизводит исходный JSON для выходного дня', () {
-      final original = {
-        'date': '2026-08-29',
-        'isDayOff': true,
-      };
+      final original = {'date': '2026-08-29', 'isDayOff': true};
 
       final exception = ScheduleException.fromJson(original);
       final reconstructed = exception.toJson();

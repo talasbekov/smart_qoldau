@@ -33,12 +33,10 @@ Future<ConsultationExpertDto?> showOutcomeSheet(
   BuildContext context, {
   required String consultationId,
 }) {
-  return showModalBottomSheet<ConsultationExpertDto?>(
+  return showSqSheetOrDialog<ConsultationExpertDto?>(
     context: context,
     isScrollControlled: true,
-    builder: (context) => _OutcomeSheetContent(
-      consultationId: consultationId,
-    ),
+    builder: (context) => _OutcomeSheetContent(consultationId: consultationId),
   );
 }
 
@@ -48,7 +46,8 @@ class _OutcomeSheetContent extends ConsumerStatefulWidget {
   final String consultationId;
 
   @override
-  ConsumerState<_OutcomeSheetContent> createState() => _OutcomeSheetContentState();
+  ConsumerState<_OutcomeSheetContent> createState() =>
+      _OutcomeSheetContentState();
 }
 
 class _OutcomeSheetContentState extends ConsumerState<_OutcomeSheetContent> {
@@ -87,7 +86,10 @@ class _OutcomeSheetContentState extends ConsumerState<_OutcomeSheetContent> {
             if (_error != null)
               Padding(
                 padding: const EdgeInsets.only(bottom: 12),
-                child: Text(_error!, style: SqTypography.body.copyWith(color: SqColors.danger)),
+                child: Text(
+                  _error!,
+                  style: SqTypography.body.copyWith(color: SqColors.danger),
+                ),
               ),
             for (final (outcome, label) in _outcomes(l10n))
               ListTile(

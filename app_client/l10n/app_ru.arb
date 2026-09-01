@@ -961,10 +961,6 @@
   "@expertReplyPrefix": {
     "description": "Подпись ответа специалиста на отзыв"
   },
-  "expertPriceLabel": "Консультация",
-  "@expertPriceLabel": {
-    "description": "Подпись цены в профиле специалиста"
-  },
   "expertUnavailableTitle": "Специалист сейчас недоступен",
   "@expertUnavailableTitle": {
     "description": "Заголовок диалога при EXPERT_UNAVAILABLE"
@@ -1153,7 +1149,7 @@
   },
   "profileDeleteAccount": "Удалить аккаунт",
   "@profileDeleteAccount": {
-    "description": "Пункт профиля: удаление аккаунта через обращение"
+    "description": "Пункт профиля: удаление аккаунта"
   },
   "profileLogout": "Выйти",
   "@profileLogout": {
@@ -1175,17 +1171,17 @@
   "@profileDeleteAccountTitle": {
     "description": "Заголовок подтверждения удаления аккаунта"
   },
-  "profileDeleteAccountBody": "Мы создадим обращение в поддержку — команда свяжется с вами и подтвердит удаление",
+  "profileDeleteAccountBody": "Переписка, заметки специалистов, карты и уведомления будут удалены безвозвратно. Записи о консультациях и платежах останутся в бухгалтерии — их закон хранить обязывает. Войти снова по этому номеру можно будет, но это будет новый пустой аккаунт",
   "@profileDeleteAccountBody": {
-    "description": "Текст подтверждения удаления аккаунта: прямого эндпоинта удаления нет"
+    "description": "Текст подтверждения удаления аккаунта: что исчезает, а что остаётся"
   },
-  "profileDeleteAccountSubject": "Удаление аккаунта и данных",
-  "@profileDeleteAccountSubject": {
-    "description": "Тема автоматически созданного обращения на удаление аккаунта"
+  "profileDeleteAccountBlockedConsultation": "Сначала завершите или отмените консультацию — удалить аккаунт посреди неё нельзя",
+  "@profileDeleteAccountBlockedConsultation": {
+    "description": "Отказ CONSULTATION_IN_PROGRESS при удалении аккаунта"
   },
-  "profileDeleteAccountTicketBody": "Прошу удалить мой аккаунт и связанные с ним данные",
-  "@profileDeleteAccountTicketBody": {
-    "description": "Тело автоматически созданного обращения на удаление аккаунта"
+  "profileDeleteAccountBlockedPayment": "Дождитесь завершения расчёта по последней консультации",
+  "@profileDeleteAccountBlockedPayment": {
+    "description": "Отказ PAYMENT_IN_PROGRESS при удалении аккаунта"
   },
   "convertGuestTitle": "Создание аккаунта",
   "@convertGuestTitle": {
@@ -1403,5 +1399,206 @@
   "outcomeExpertCancelled": "Отменена специалистом",
   "@outcomeExpertCancelled": {
     "description": "Исход: отмена специалистом (E6b)"
+  },
+  "premiumTitle": "Premium",
+  "@premiumTitle": {
+    "description": "Заголовок экрана Premium"
+  },
+  "premiumPitch": "Скидка 10 % на консультации и приоритетный подбор специалиста",
+  "@premiumPitch": {
+    "description": "Подзаголовок экрана Premium — состав подписки (Р-08)"
+  },
+  "premiumPlanMonth": "На месяц",
+  "@premiumPlanMonth": {
+    "description": "Название месячного тарифа"
+  },
+  "premiumPlanYear": "На год",
+  "@premiumPlanYear": {
+    "description": "Название годового тарифа"
+  },
+  "premiumPlanYearHint": "Выгоднее месячного",
+  "@premiumPlanYearHint": {
+    "description": "Пояснение к годовому тарифу"
+  },
+  "premiumSubscribe": "Оформить подписку",
+  "@premiumSubscribe": {
+    "description": "Кнопка оформления подписки"
+  },
+  "premiumCancel": "Отменить подписку",
+  "@premiumCancel": {
+    "description": "Кнопка отмены подписки"
+  },
+  "premiumAddCard": "Привязать карту",
+  "@premiumAddCard": {
+    "description": "Кнопка перехода к добавлению карты, когда карт нет"
+  },
+  "premiumNoCard": "Подписка списывается с привязанной карты — её пока нет",
+  "@premiumNoCard": {
+    "description": "Объяснение, почему нельзя оформить подписку"
+  },
+  "premiumStatusInactive": "Базовый тариф",
+  "@premiumStatusInactive": {
+    "description": "Статус: подписки нет"
+  },
+  "premiumStatusGrace": "Не удалось списать оплату — проверьте карту",
+  "@premiumStatusGrace": {
+    "description": "Статус: идут ретраи автопродления (Р-09)"
+  },
+  "errorSubscriptionExists": "Подписка уже оформлена",
+  "@errorSubscriptionExists": {
+    "description": "SUBSCRIPTION_EXISTS"
+  },
+  "errorSubscriptionNotFound": "Активной подписки нет",
+  "@errorSubscriptionNotFound": {
+    "description": "SUBSCRIPTION_NOT_FOUND"
+  },
+  "premiumActiveUntil": "Активна до {date}",
+  "@premiumActiveUntil": {
+    "description": "Статус активной подписки с датой окончания",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "premiumCancelledUntil": "Отменена, доступ до {date}",
+  "@premiumCancelledUntil": {
+    "description": "Статус отменённой подписки (Р-09)",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "premiumPlanPrice": "{price} / {period}",
+  "@premiumPlanPrice": {
+    "description": "Цена тарифа и период",
+    "placeholders": {
+      "price": {
+        "type": "String"
+      },
+      "period": {
+        "type": "String"
+      }
+    }
+  },
+  "premiumUpsell": "Premium: −10 % на консультации",
+  "@premiumUpsell": {
+    "description": "Апселл в шторке оплаты для базового клиента"
+  },
+  "premiumDiscountApplied": "Скидка Premium уже применена",
+  "@premiumDiscountApplied": {
+    "description": "Строка в шторке оплаты для клиента с подпиской"
+  },
+  "navMaterials": "Материалы",
+  "@navMaterials": {
+    "description": "Вкладка библиотеки самопомощи"
+  },
+  "materialsTitle": "Материалы",
+  "@materialsTitle": {
+    "description": "Заголовок вкладки материалов"
+  },
+  "materialsEmpty": "Здесь пока пусто — материалы скоро появятся",
+  "@materialsEmpty": {
+    "description": "Пустое состояние библиотеки"
+  },
+  "materialsFilterAll": "Все",
+  "@materialsFilterAll": {
+    "description": "Фильтр: все виды материалов"
+  },
+  "materialsFilterMeditation": "Медитации",
+  "@materialsFilterMeditation": {
+    "description": "Фильтр по виду"
+  },
+  "materialsFilterMusic": "Музыка",
+  "@materialsFilterMusic": {
+    "description": "Фильтр по виду"
+  },
+  "materialsFilterArticle": "Статьи",
+  "@materialsFilterArticle": {
+    "description": "Фильтр по виду"
+  },
+  "materialsFilterBreathing": "Дыхание",
+  "@materialsFilterBreathing": {
+    "description": "Фильтр по виду"
+  },
+  "materialsPremiumOnly": "Доступно по подписке Premium",
+  "@materialsPremiumOnly": {
+    "description": "Подпись под замком"
+  },
+  "materialsUseful": "Было полезно?",
+  "@materialsUseful": {
+    "description": "Вопрос под статьёй"
+  },
+  "materialsUsefulYes": "Да",
+  "@materialsUsefulYes": {
+    "description": "Ответ на вопрос о пользе"
+  },
+  "materialsUsefulNo": "Нет",
+  "@materialsUsefulNo": {
+    "description": "Ответ на вопрос о пользе"
+  },
+  "breathingStart": "Начать",
+  "@breathingStart": {
+    "description": "Кнопка старта дыхательной практики"
+  },
+  "breathingStop": "Остановить",
+  "@breathingStop": {
+    "description": "Кнопка остановки практики"
+  },
+  "playerPlay": "Слушать",
+  "@playerPlay": {
+    "description": "Кнопка воспроизведения"
+  },
+  "playerPause": "Пауза",
+  "@playerPause": {
+    "description": "Кнопка паузы"
+  },
+  "materialsStreak": "{days} дней подряд",
+  "@materialsStreak": {
+    "description": "Стрик практик",
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "materialsCompleted": "Пройдено материалов: {count}",
+  "@materialsCompleted": {
+    "description": "Счётчик пройденного",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "materialsDuration": "{minutes} мин",
+  "@materialsDuration": {
+    "description": "Длительность материала",
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "breathingCycle": "Цикл {current} из {total}",
+  "@breathingCycle": {
+    "description": "Прогресс дыхательной практики",
+    "placeholders": {
+      "current": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "premiumPlanFree": "Бесплатно",
+  "@premiumPlanFree": {
+    "description": "Цена базового тарифа в сравнении (прототип Web - Premium)"
+  },
+  "expertPricePerSession": "за консультацию",
+  "@expertPricePerSession": {
+    "description": "Подпись под ценой в карточке записи (прототип Web - Профиль психолога)"
   }
 }

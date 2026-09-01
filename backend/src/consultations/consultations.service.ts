@@ -32,6 +32,11 @@ const MAX_TAKE = 100;
 
 export type ParticipantRole = 'client' | 'expert';
 
+/// Консультацию создать не удалось: уникальный индекс уже держит
+/// активную консультацию этого эксперта на это же время. Бросается ТОЛЬКО
+/// изнутри транзакции вызывающего — там любая диагностика запрещена.
+export class ConsultationSlotTakenError extends Error {}
+
 @Injectable()
 export class ConsultationsService {
   private readonly logger = new Logger(ConsultationsService.name);
@@ -85,6 +90,13 @@ export class ConsultationsService {
       });
     } catch (e) {
       if (e instanceof PrismaClientKnownRequestError && e.code === 'P2002') {
+        // Внутри чужой транзакции разбираться уже нельзя: после ошибки
+        // Postgres она аборчена, и следующий же запрос падает с 25P02
+        // «current transaction is aborted» — наружу это уходило как 500
+        // (найдено нагрузочным прогоном E11: эксперт, которому под
+        // нагрузкой прилетели два оффера, получал INTERNAL вместо
+        // отказа). Решение принимает вызывающий, уже после отката.
+        if (tx) throw new ConsultationSlotTakenError();
         const existing = await db.consultation.findUnique({
           where: { requestId: request.id },
         });
@@ -497,6 +509,17 @@ export class ConsultationsService {
       consultationId,
       userSub,
     );
+    // ТЗ §11.7: доступ к метаданным консультации журналируется, не только
+    // переходы её состояний. logAccess схлопывает повторные обращения
+    // одного актора в окне (экран переспрашивает карточку при каждом
+    // возврате) — см. комментарий в AuditService.
+    await this.audit.logAccess({
+      actorType: role === 'client' ? 'user' : 'expert',
+      actorId: userSub,
+      entity: 'consultation',
+      entityId: consultation.id,
+      transition: 'consultation.metadata_read',
+    });
     return role === 'client'
       ? this.toClientDto(consultation)
       : this.toExpertDto(consultation);
@@ -522,6 +545,12 @@ export class ConsultationsService {
         take,
         skip,
       });
+      await this.logListAccess(
+        userSub,
+        'expert',
+        filters,
+        consultations.length,
+      );
       return Promise.all(consultations.map((c) => this.toExpertDto(c)));
     }
 
@@ -534,7 +563,28 @@ export class ConsultationsService {
       take,
       skip,
     });
+    await this.logListAccess(userSub, 'client', filters, consultations.length);
     return Promise.all(consultations.map((c) => this.toClientDto(c)));
+  }
+
+  // Список — тоже доступ к метаданным консультаций (ТЗ §11.7), но объект
+  // здесь не одна консультация, поэтому отдельная сущность
+  // 'consultation_list' с entityId = актор: иначе выборки audit_log по
+  // конкретной консультации засорялись бы записями «смотрел список».
+  private logListAccess(
+    userSub: string,
+    role: ParticipantRole,
+    filters: ListConsultationsDto,
+    count: number,
+  ): Promise<void> {
+    return this.audit.logAccess({
+      actorType: role === 'client' ? 'user' : 'expert',
+      actorId: userSub,
+      entity: 'consultation_list',
+      entityId: userSub,
+      transition: 'consultation.list_read',
+      payload: { as: role, status: filters.status ?? null, count },
+    });
   }
 
   // Явная сборка — PII-инвариант: клиенту эксперт только через
@@ -609,6 +659,16 @@ export class ConsultationsService {
     if (role !== 'expert') {
       apiError('CONSULTATION_NOT_FOUND', 'Консультация не найдена', 404);
     }
+
+    // Заметка эксперта — самая чувствительная часть карточки консультации,
+    // её чтение журналируем отдельным видом доступа (ТЗ §11.7).
+    await this.audit.logAccess({
+      actorType: 'expert',
+      actorId: userSub,
+      entity: 'consultation',
+      entityId: consultation.id,
+      transition: 'consultation.note_read',
+    });
 
     const note = await this.prisma.expertNote.findUnique({
       where: { consultationId: consultation.id },

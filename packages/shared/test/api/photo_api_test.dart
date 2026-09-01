@@ -6,11 +6,11 @@ import 'package:http_mock_adapter/http_mock_adapter.dart';
 import 'package:shared/shared.dart';
 
 SqApi _buildApi() => SqApi(
-      baseUrl: 'https://api.test.local/v1',
-      readTokens: () async => null,
-      writeTokens: (_) async {},
-      onLogout: () async {},
-    );
+  baseUrl: 'https://api.test.local/v1',
+  readTokens: () async => null,
+  writeTokens: (_) async {},
+  onLogout: () async {},
+);
 
 void main() {
   late SqApi api;
@@ -32,36 +32,43 @@ void main() {
   });
 
   group('SqApiExpertProfile.uploadPhoto', () {
-    test('отправляет multipart POST с полем file и разбирает PhotoUploadedDto', () async {
-      final bytes = [0, 1, 2, 3];
-      dioAdapter.onPost(
-        '/experts/me/photo',
-        (server) => server.reply(202, {'status': 'PENDING'}),
-        data: FormData.fromMap({
-          'file': MultipartFile.fromBytes(bytes, filename: 'photo.jpg'),
-        }),
-      );
+    test(
+      'отправляет multipart POST с полем file и разбирает PhotoUploadedDto',
+      () async {
+        final bytes = [0, 1, 2, 3];
+        dioAdapter.onPost(
+          '/experts/me/photo',
+          (server) => server.reply(202, {'status': 'PENDING'}),
+          data: FormData.fromMap({
+            'file': MultipartFile.fromBytes(bytes, filename: 'photo.jpg'),
+          }),
+        );
 
-      final result = await api.uploadPhoto(bytes: bytes, filename: 'photo.jpg');
+        final result = await api.uploadPhoto(
+          bytes: bytes,
+          filename: 'photo.jpg',
+        );
 
-      expect(result.status, ProfileFieldStatus.pending);
-    });
+        expect(result.status, ProfileFieldStatus.pending);
+      },
+    );
 
     test('при PHOTO_INVALID пробрасывает ApiException', () async {
       dioAdapter.onPost(
         '/experts/me/photo',
         (server) => server.reply(400, {
-          'error': {
-            'code': 'PHOTO_INVALID',
-            'message': 'Файл больше 5 МБ',
-          }
+          'error': {'code': 'PHOTO_INVALID', 'message': 'Файл больше 5 МБ'},
         }),
         // `FormData` не переопределяет `toString`/`==`, поэтому
         // `http_mock_adapter` сопоставляет запрос с моком по generic
         // `Instance of 'FormData'` — любой другой экземпляр `FormData`
         // подходит как значение `data:` здесь.
         data: FormData.fromMap({
-          'file': MultipartFile.fromBytes(const [1, 2, 3], filename: 'photo.jpg'),
+          'file': MultipartFile.fromBytes(const [
+            1,
+            2,
+            3,
+          ], filename: 'photo.jpg'),
         }),
       );
 

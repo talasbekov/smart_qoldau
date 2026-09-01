@@ -102,12 +102,10 @@ Future<ProviderContainer> _fixedContainer({
   });
   final prefs = await SharedPreferences.getInstance();
   final api = MockSqApi();
-  when(
-    () => api.topics(locale: any(named: 'locale')),
-  ).thenAnswer((_) async => _fakeTopics());
-  when(
-    () => api.consultations(status: any(named: 'status')),
-  ).thenAnswer((_) async => <ClientConsultation>[]);
+  when(() => api.topics(locale: any(named: 'locale')))
+      .thenAnswer((_) async => _fakeTopics());
+  when(() => api.consultations(status: any(named: 'status')))
+      .thenAnswer((_) async => <ClientConsultation>[]);
 
   final container = ProviderContainer(
     overrides: [
@@ -169,9 +167,7 @@ void main() {
     });
 
     testWidgets('AuthAnonymous -> /welcome', (tester) async {
-      final container = await _fixedContainer(
-        authState: const AuthAnonymous(),
-      );
+      final container = await _fixedContainer(authState: const AuthAnonymous());
       addTearDown(container.dispose);
 
       expect(await _resolvedPath(tester, container), RoutePaths.welcome);
@@ -198,10 +194,7 @@ void main() {
         );
         addTearDown(container.dispose);
 
-        expect(
-          await _resolvedPath(tester, container),
-          RoutePaths.permissions,
-        );
+        expect(await _resolvedPath(tester, container), RoutePaths.permissions);
       },
     );
 
@@ -271,9 +264,8 @@ void main() {
         SharedPreferences.setMockInitialValues({});
         final prefs = await SharedPreferences.getInstance();
         final api = MockSqApi();
-        when(
-          () => api.guestLogin(any()),
-        ).thenAnswer((_) async => _guestTokens());
+        when(() => api.guestLogin(any()))
+            .thenAnswer((_) async => _guestTokens());
 
         final container = ProviderContainer(
           overrides: [
@@ -296,8 +288,10 @@ void main() {
           ),
         );
         await tester.pumpAndSettle();
-        expect(router.routeInformationProvider.value.uri.path,
-            RoutePaths.welcome);
+        expect(
+          router.routeInformationProvider.value.uri.path,
+          RoutePaths.welcome,
+        );
 
         await tester.tap(find.byKey(const Key('sq-welcome-guest-button')));
         await tester.pumpAndSettle();
@@ -319,9 +313,8 @@ void main() {
         final prefs = await SharedPreferences.getInstance();
         final api = MockSqApi();
         when(() => api.requestCode(any())).thenAnswer((_) async {});
-        when(
-          () => api.verifyCode(any(), any()),
-        ).thenAnswer((_) async => _registeredTokens());
+        when(() => api.verifyCode(any(), any()))
+            .thenAnswer((_) async => _registeredTokens());
 
         final container = ProviderContainer(
           overrides: [
@@ -344,8 +337,10 @@ void main() {
           ),
         );
         await tester.pumpAndSettle();
-        expect(router.routeInformationProvider.value.uri.path,
-            RoutePaths.welcome);
+        expect(
+          router.routeInformationProvider.value.uri.path,
+          RoutePaths.welcome,
+        );
 
         await tester.tap(find.byKey(const Key('sq-welcome-phone-button')));
         await tester.pumpAndSettle();
@@ -363,7 +358,7 @@ void main() {
         await tester.pumpAndSettle();
 
         final codeFields = find.byType(TextField);
-        for (var i = 0; i < 4; i++) {
+        for (var i = 0; i < 6; i++) {
           await tester.enterText(codeFields.at(i), '${i + 1}');
         }
         await tester.pumpAndSettle();
@@ -379,56 +374,57 @@ void main() {
   });
 
   group('золотой путь: цепочка онбординга реально ведёт на /home', () {
-    testWidgets(
-      '/onboarding «Пропустить» -> /permissions «Позже» -> /home',
-      (tester) async {
-        final container = await _fixedContainer(
-          authState: AuthGuest(_guestUser()),
-          seenSlides: false,
-          askedPermissions: false,
-        );
-        addTearDown(container.dispose);
+    testWidgets('/onboarding «Пропустить» -> /permissions «Позже» -> /home', (
+      tester,
+    ) async {
+      final container = await _fixedContainer(
+        authState: AuthGuest(_guestUser()),
+        seenSlides: false,
+        askedPermissions: false,
+      );
+      addTearDown(container.dispose);
 
-        final router = container.read(routerProvider);
-        await tester.pumpWidget(
-          UncontrolledProviderScope(
-            container: container,
-            child: MaterialApp.router(
-              routerConfig: router,
-              localizationsDelegates: AppLocalizations.localizationsDelegates,
-              supportedLocales: AppLocalizations.supportedLocales,
-            ),
+      final router = container.read(routerProvider);
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: MaterialApp.router(
+            routerConfig: router,
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
           ),
-        );
-        await tester.pumpAndSettle();
-        expect(
-          router.routeInformationProvider.value.uri.path,
-          RoutePaths.onboarding,
-        );
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(
+        router.routeInformationProvider.value.uri.path,
+        RoutePaths.onboarding,
+      );
 
-        final l10nSlides = AppLocalizations.of(
-          tester.element(find.byType(SlidesScreen)),
-        )!;
-        await tester.tap(find.text(l10nSlides.slidesSkip));
-        await tester.pumpAndSettle();
+      final l10nSlides = AppLocalizations.of(
+        tester.element(find.byType(SlidesScreen)),
+      )!;
+      await tester.tap(find.text(l10nSlides.slidesSkip));
+      await tester.pumpAndSettle();
 
-        expect(
-          router.routeInformationProvider.value.uri.path,
-          RoutePaths.permissions,
-          reason:
-              'seenSlides стал true, но askedPermissions всё ещё false — '
-              'редирект обязан остановить на /permissions, а не пустить на /home',
-        );
-        expect(OnboardingFlags(container.read(sharedPreferencesProvider))
-            .seenSlides, isTrue);
+      expect(
+        router.routeInformationProvider.value.uri.path,
+        RoutePaths.permissions,
+        reason:
+            'seenSlides стал true, но askedPermissions всё ещё false — '
+            'редирект обязан остановить на /permissions, а не пустить на /home',
+      );
+      expect(
+        OnboardingFlags(container.read(sharedPreferencesProvider)).seenSlides,
+        isTrue,
+      );
 
-        await tester.tap(find.byKey(const Key('sq-permissions-later-button')));
-        await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('sq-permissions-later-button')));
+      await tester.pumpAndSettle();
 
-        expect(router.routeInformationProvider.value.uri.path, RoutePaths.home);
-        expect(find.byType(HomeScreen), findsOneWidget);
-      },
-    );
+      expect(router.routeInformationProvider.value.uri.path, RoutePaths.home);
+      expect(find.byType(HomeScreen), findsOneWidget);
+    });
   });
 
   group('заглушки /topic и /session — возврат назад (ревью раунда 1)', () {

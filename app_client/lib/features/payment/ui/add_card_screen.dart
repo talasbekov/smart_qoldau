@@ -123,7 +123,9 @@ class _AddCardScreenState extends ConsumerState<AddCardScreen> {
     setState(() {
       _apiError = null;
       _panError = isValidPan(digits) ? null : l10n.cardNumberInvalid;
-      _expiryError = isValidExpiry(_expiry.text) ? null : l10n.cardExpiryInvalid;
+      _expiryError = isValidExpiry(_expiry.text)
+          ? null
+          : l10n.cardExpiryInvalid;
       _holderError = holder.length >= 2 && holder.length <= 100
           ? null
           : l10n.cardHolderInvalid;
@@ -136,11 +138,7 @@ class _AddCardScreenState extends ConsumerState<AddCardScreen> {
     try {
       await ref
           .read(paymentsRepositoryProvider)
-          .addCard(
-            pan: digits,
-            expiry: _expiry.text,
-            holderName: holder,
-          );
+          .addCard(pan: digits, expiry: _expiry.text, holderName: holder);
       // Список карт мог быть уже загружен шторкой оплаты — он устарел.
       ref.invalidate(cardsControllerProvider);
       if (!mounted) return;

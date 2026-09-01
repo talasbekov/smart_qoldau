@@ -264,89 +264,95 @@ void main() {
     ]);
   });
 
-  test('событие о смене оплаты правит карточку на месте, без перезапроса', () async {
-    when(
-      () => api.consultations(
-        status: ConsultationStatus.active,
-        take: any(named: 'take'),
-        skip: any(named: 'skip'),
-      ),
-    ).thenAnswer(
-      (_) async => [
-        _consultation(
-          'c1',
+  test(
+    'событие о смене оплаты правит карточку на месте, без перезапроса',
+    () async {
+      when(
+        () => api.consultations(
           status: ConsultationStatus.active,
-          startedAt: DateTime(2026, 8, 22, 10),
-          payment: ConsultationPaymentStatus.held,
+          take: any(named: 'take'),
+          skip: any(named: 'skip'),
         ),
-      ],
-    );
+      ).thenAnswer(
+        (_) async => [
+          _consultation(
+            'c1',
+            status: ConsultationStatus.active,
+            startedAt: DateTime(2026, 8, 22, 10),
+            payment: ConsultationPaymentStatus.held,
+          ),
+        ],
+      );
 
-    final container = await _container(api: api, socket: socket);
-    final provider = consultationsControllerProvider(ConsultationsTab.active);
-    container.listen(provider, (previous, next) {}, fireImmediately: true);
-    await container.read(provider.future);
+      final container = await _container(api: api, socket: socket);
+      final provider = consultationsControllerProvider(ConsultationsTab.active);
+      container.listen(provider, (previous, next) {}, fireImmediately: true);
+      await container.read(provider.future);
 
-    socket.push('consultation.updated', {
-      'id': 'c1',
-      'paymentStatus': 'CAPTURED',
-    });
-    await Future<void>.delayed(Duration.zero);
+      socket.push('consultation.updated', {
+        'id': 'c1',
+        'paymentStatus': 'CAPTURED',
+      });
+      await Future<void>.delayed(Duration.zero);
 
-    expect(
-      container.read(provider).requireValue.single.paymentStatus,
-      ConsultationPaymentStatus.captured,
-    );
-    // Ровно один круг сети на статус вкладки и ни одного лишнего после
-    // события: два вызова — это SCHEDULED и ACTIVE первой загрузки.
-    verify(
-      () => api.consultations(
-        status: any(named: 'status'),
-        take: any(named: 'take'),
-        skip: any(named: 'skip'),
-      ),
-    ).called(2);
-  });
+      expect(
+        container.read(provider).requireValue.single.paymentStatus,
+        ConsultationPaymentStatus.captured,
+      );
+      // Ровно один круг сети на статус вкладки и ни одного лишнего после
+      // события: два вызова — это SCHEDULED и ACTIVE первой загрузки.
+      verify(
+        () => api.consultations(
+          status: any(named: 'status'),
+          take: any(named: 'take'),
+          skip: any(named: 'skip'),
+        ),
+      ).called(2);
+    },
+  );
 
-  test('отмена в гонке (409 CONSULTATION_NOT_ACTIVE) не роняет экран', () async {
-    var calls = 0;
-    when(
-      () => api.consultations(
-        status: ConsultationStatus.active,
-        take: any(named: 'take'),
-        skip: any(named: 'skip'),
-      ),
-    ).thenAnswer((_) async {
-      calls++;
-      return calls == 1
-          ? [
-              _consultation(
-                'c1',
-                status: ConsultationStatus.active,
-                startedAt: DateTime(2026, 8, 22, 10),
-              ),
-            ]
-          : <ClientConsultation>[];
-    });
-    when(() => api.cancelConsultation('c1')).thenAnswer(
-      (_) async => throw const ApiException(
-        ApiErrorCode.consultationNotActive,
-        'not active',
-        409,
-      ),
-    );
+  test(
+    'отмена в гонке (409 CONSULTATION_NOT_ACTIVE) не роняет экран',
+    () async {
+      var calls = 0;
+      when(
+        () => api.consultations(
+          status: ConsultationStatus.active,
+          take: any(named: 'take'),
+          skip: any(named: 'skip'),
+        ),
+      ).thenAnswer((_) async {
+        calls++;
+        return calls == 1
+            ? [
+                _consultation(
+                  'c1',
+                  status: ConsultationStatus.active,
+                  startedAt: DateTime(2026, 8, 22, 10),
+                ),
+              ]
+            : <ClientConsultation>[];
+      });
+      when(() => api.cancelConsultation('c1')).thenAnswer(
+        (_) async => throw const ApiException(
+          ApiErrorCode.consultationNotActive,
+          'not active',
+          409,
+        ),
+      );
 
-    final container = await _container(api: api, socket: socket);
-    final provider = consultationsControllerProvider(ConsultationsTab.active);
-    container.listen(provider, (previous, next) {}, fireImmediately: true);
-    await container.read(provider.future);
+      final container = await _container(api: api, socket: socket);
+      final provider = consultationsControllerProvider(ConsultationsTab.active);
+      container.listen(provider, (previous, next) {}, fireImmediately: true);
+      await container.read(provider.future);
 
-    await container.read(provider.notifier).cancel('c1');
+      await container.read(provider.notifier).cancel('c1');
 
-    expect(container.read(provider).hasError, isFalse);
-    expect(container.read(provider).requireValue, isEmpty);
-    expect(calls, 2, reason: 'список должен быть перечитан');
-  });
+      expect(container.read(provider).hasError, isFalse);
+      expect(container.read(provider).requireValue, isEmpty);
+      expect(calls, 2, reason: 'список должен быть перечитан');
+    },
+  );
 
   test('reviewId берётся из DTO, а не из локальной памяти', () async {
     // После переустановки приложения локальной записи нет, а отзыв есть —
@@ -418,15 +424,13 @@ void main() {
 
     final prefs = container.read(sharedPreferencesProvider);
     expect(prefs.getBool(reviewedFlagKey('c1')), isNull);
-    expect(
-      container.read(myReviewControllerProvider('c1')).errorCode,
-      isNull,
-    );
+    expect(container.read(myReviewControllerProvider('c1')).errorCode, isNull);
   });
 
   test('сбой сети при удалении отзыва флаг НЕ снимает', () async {
     when(() => api.deleteReview('rev-1')).thenAnswer(
-      (_) async => throw const ApiException(ApiErrorCode.network, 'нет сети', 0),
+      (_) async =>
+          throw const ApiException(ApiErrorCode.network, 'нет сети', 0),
     );
 
     final container = await _container(

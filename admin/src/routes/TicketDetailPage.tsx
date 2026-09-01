@@ -41,15 +41,15 @@ export default function TicketDetailPage() {
   return (
     <div className="max-w-2xl">
       <h1 className="text-xl font-bold mb-1">{ticket.subject}</h1>
-      <p className="text-gray-500 text-sm mb-4">
+      <p className="text-sq-text-secondary text-sm mb-4">
         {ticket.status} · {ticket.team} · {ticket.contactEmail ?? ticket.contactPhone}
       </p>
       <p className="mb-4">{ticket.body}</p>
 
       <div className="flex flex-col gap-2 mb-4">
         {ticket.messages.map((m) => (
-          <div key={m.id} className={`p-2 rounded ${m.authorKind === 'staff' ? 'bg-teal-50' : 'bg-gray-100'}`}>
-            <div className="text-xs text-gray-500">{m.authorKind === 'staff' ? 'Сотрудник' : 'Автор'}</div>
+          <div key={m.id} className={`p-2 rounded ${m.authorKind === 'staff' ? 'bg-sq-surface-muted' : 'bg-sq-surface-muted'}`}>
+            <div className="text-xs text-sq-text-secondary">{m.authorKind === 'staff' ? 'Сотрудник' : 'Автор'}</div>
             {m.body}
           </div>
         ))}
@@ -64,17 +64,17 @@ export default function TicketDetailPage() {
           rows={3}
           required
         />
-        <button type="submit" className="bg-teal-700 text-white rounded px-4 py-2 self-start">
+        <button type="submit" className="bg-sq-primary-dark text-white rounded px-4 py-2 self-start">
           Отправить ответ
         </button>
       </form>
 
       <div className="flex gap-4">
-        <button onClick={handleAssignToMe} className="text-teal-700">
+        <button onClick={handleAssignToMe} className="text-sq-primary">
           Взять себе
         </button>
         {ticket.status !== 'RESOLVED' && (
-          <button onClick={handleResolve} className="text-red-600">
+          <button onClick={handleResolve} className="text-sq-danger">
             Закрыть тикет
           </button>
         )}

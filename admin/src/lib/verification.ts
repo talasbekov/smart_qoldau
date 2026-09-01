@@ -11,6 +11,9 @@ export interface QueueEntry {
   id: string;
   displayName: string;
   verificationStatus: string;
+  /** ISO-момент отправки анкеты на проверку — точка отсчёта SLA 24ч
+   *  (ТЗ §11.4). null у записей, отправленных до появления поля. */
+  submittedAt: string | null;
   documents: QueueDocument[];
 }
 

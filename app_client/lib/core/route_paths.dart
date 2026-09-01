@@ -97,6 +97,13 @@ abstract final class RoutePaths {
   static String found(String requestId) => '/found/$requestId';
 
   /// Привязанные карты клиента и добавление новой (задача 12).
+  /// Библиотека самопомощи (E13): вкладка и карточка материала.
+  static const materials = '/materials';
+  static String materialItem(String id) => '/materials/$id';
+
+  /// Premium (E12): тарифы, оформление и отмена подписки.
+  static const premium = '/premium';
+
   static const cards = '/cards';
   static const cardsAdd = '/cards/add';
 

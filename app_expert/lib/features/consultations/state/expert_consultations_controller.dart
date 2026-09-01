@@ -48,7 +48,9 @@ class ExpertConsultationsState {
 }
 
 /// Склеивает несколько статусов в один список: новые сверху.
-List<ConsultationExpertDto> _merge(Iterable<List<ConsultationExpertDto>> pages) {
+List<ConsultationExpertDto> _merge(
+  Iterable<List<ConsultationExpertDto>> pages,
+) {
   final list = pages.expand((page) => page).toList()
     ..sort((a, b) => b.startedAt.compareTo(a.startedAt));
   return list;
@@ -77,14 +79,14 @@ class ExpertConsultationsController extends Notifier<ExpertConsultationsState> {
   }
 
   Future<void> refreshActive() => _refreshSection(
-        statuses: activeConsultationStatuses,
-        apply: (value) => state = state.copyWith(active: value),
-      );
+    statuses: activeConsultationStatuses,
+    apply: (value) => state = state.copyWith(active: value),
+  );
 
   Future<void> refreshHistory() => _refreshSection(
-        statuses: historyConsultationStatuses,
-        apply: (value) => state = state.copyWith(history: value),
-      );
+    statuses: historyConsultationStatuses,
+    apply: (value) => state = state.copyWith(history: value),
+  );
 
   Future<void> _refreshSection({
     required List<ConsultationStatus> statuses,
@@ -93,7 +95,9 @@ class ExpertConsultationsController extends Notifier<ExpertConsultationsState> {
     apply(const AsyncLoading<List<ConsultationExpertDto>>());
     try {
       final repo = ref.read(expertConsultationsRepositoryProvider);
-      final pages = await Future.wait(statuses.map((s) => repo.list(status: s)));
+      final pages = await Future.wait(
+        statuses.map((s) => repo.list(status: s)),
+      );
       apply(AsyncData(_merge(pages)));
     } catch (e, st) {
       apply(AsyncError(e, st));
@@ -101,7 +105,7 @@ class ExpertConsultationsController extends Notifier<ExpertConsultationsState> {
   }
 }
 
-final expertConsultationsControllerProvider = NotifierProvider<
-    ExpertConsultationsController, ExpertConsultationsState>(
-  ExpertConsultationsController.new,
-);
+final expertConsultationsControllerProvider =
+    NotifierProvider<ExpertConsultationsController, ExpertConsultationsState>(
+      ExpertConsultationsController.new,
+    );

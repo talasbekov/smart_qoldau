@@ -19,16 +19,20 @@ import {
   ApiOperation,
   ApiTags,
 } from '@nestjs/swagger';
+import { Expert } from '@prisma/client';
 import { ReviewsService } from './reviews.service';
 import { CreateReviewDto } from './dto/create-review.dto';
 import { ListExpertReviewsDto } from './dto/list-expert-reviews.dto';
 import { ExpertReviewsDto } from './dto/expert-reviews.dto';
+import { MyExpertReviewsDto } from './dto/my-expert-reviews.dto';
 import { ReviewCreatedDto } from './dto/review-created.dto';
 import { ReplyReviewDto } from './dto/reply-review.dto';
 import { ComplaintReviewDto } from './dto/complaint-review.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CurrentUser } from '../auth/current-user.decorator';
 import { JwtPayload } from '../auth/jwt.strategy';
+import { ExpertGuard } from '../experts/expert.guard';
+import { CurrentExpert } from '../experts/current-expert.decorator';
 
 @ApiTags('reviews')
 @ApiBearerAuth()
@@ -108,6 +112,32 @@ export class ReviewsController {
     @Body() dto: ComplaintReviewDto,
   ): Promise<void> {
     await this.reviews.complaint(id, user.sub, dto);
+  }
+}
+
+// Свои отзывы аутентифицированного эксперта — с id (нужен для reply/
+// complaint выше, которые публичный ReviewItemDto намеренно не отдаёт).
+// Порядок регистрации в ReviewsModule важен: ДО ExpertReviewsController,
+// иначе ':id/reviews' перехватит 'me' как :id (тот же приём, что
+// ExpertsController/ExpertsPublicController в experts.module.ts).
+@ApiTags('reviews')
+@ApiBearerAuth()
+@Controller('experts')
+@UseGuards(JwtAuthGuard, ExpertGuard)
+export class MyExpertReviewsController {
+  constructor(private reviews: ReviewsService) {}
+
+  @Get('me/reviews')
+  @ApiOperation({
+    summary:
+      'Свои отзывы (PUBLISHED) с id — для ответа/жалобы эксперта на отзыв',
+  })
+  @ApiOkResponse({ type: MyExpertReviewsDto })
+  async myReviews(
+    @CurrentExpert() expert: Expert,
+    @Query() filters: ListExpertReviewsDto,
+  ): Promise<MyExpertReviewsDto> {
+    return this.reviews.listForOwnExpert(expert.id, filters);
   }
 }
 

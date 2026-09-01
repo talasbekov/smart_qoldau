@@ -47,7 +47,9 @@ class ConsultationDetailsScreen extends ConsumerWidget {
       ),
     );
     if (confirmed != true) return;
-    await ref.read(myReviewControllerProvider(consultationId).notifier).delete();
+    await ref
+        .read(myReviewControllerProvider(consultationId).notifier)
+        .delete();
   }
 
   @override

@@ -136,7 +136,11 @@ void main() {
   });
 
   test('при выключенном флаге Firebase не трогается вовсе', () async {
-    final container = _container(port: port, configured: false, recorder: recorder);
+    final container = _container(
+      port: port,
+      configured: false,
+      recorder: recorder,
+    );
 
     await container.read(pushBootstrapProvider).init();
 
@@ -145,15 +149,22 @@ void main() {
     expect(recorder.registeredTokens, isEmpty);
   });
 
-  test('при включённом флаге спрашивает разрешение и регистрирует токен', () async {
-    final container = _container(port: port, configured: true, recorder: recorder);
+  test(
+    'при включённом флаге спрашивает разрешение и регистрирует токен',
+    () async {
+      final container = _container(
+        port: port,
+        configured: true,
+        recorder: recorder,
+      );
 
-    await container.read(pushBootstrapProvider).init();
+      await container.read(pushBootstrapProvider).init();
 
-    expect(port.initCalls, 1);
-    expect(port.permissionRequests, 1);
-    expect(recorder.registeredTokens, ['token-1']);
-  });
+      expect(port.initCalls, 1);
+      expect(port.permissionRequests, 1);
+      expect(recorder.registeredTokens, ['token-1']);
+    },
+  );
 
   test('пустой токен не отправляется на бэкенд', () async {
     // Токена может не быть (устройство без Google Play Services,
@@ -161,26 +172,41 @@ void main() {
     port = _FakeMessagingPort(initialToken: null);
     addTearDown(port.dispose);
 
-    final container = _container(port: port, configured: true, recorder: recorder);
+    final container = _container(
+      port: port,
+      configured: true,
+      recorder: recorder,
+    );
 
     await container.read(pushBootstrapProvider).init();
 
     expect(recorder.registeredTokens, isEmpty);
   });
 
-  test('отказ в разрешении не мешает работе приложения и токен не шлётся', () async {
-    port = _FakeMessagingPort(granted: false);
-    addTearDown(port.dispose);
+  test(
+    'отказ в разрешении не мешает работе приложения и токен не шлётся',
+    () async {
+      port = _FakeMessagingPort(granted: false);
+      addTearDown(port.dispose);
 
-    final container = _container(port: port, configured: true, recorder: recorder);
+      final container = _container(
+        port: port,
+        configured: true,
+        recorder: recorder,
+      );
 
-    await container.read(pushBootstrapProvider).init();
+      await container.read(pushBootstrapProvider).init();
 
-    expect(recorder.registeredTokens, isEmpty);
-  });
+      expect(recorder.registeredTokens, isEmpty);
+    },
+  );
 
   test('смена токена перерегистрирует устройство новым значением', () async {
-    final container = _container(port: port, configured: true, recorder: recorder);
+    final container = _container(
+      port: port,
+      configured: true,
+      recorder: recorder,
+    );
     await container.read(pushBootstrapProvider).init();
     recorder.registeredTokens.clear();
 
@@ -190,53 +216,78 @@ void main() {
     expect(recorder.registeredTokens, ['token-2']);
   });
 
-  test('пуш, открытый из фона, ведёт по тому же дип-линку, что и тайл', () async {
-    final container = _container(port: port, configured: true, recorder: recorder);
-    await container.read(pushBootstrapProvider).init();
+  test(
+    'пуш, открытый из фона, ведёт по тому же дип-линку, что и тайл',
+    () async {
+      final container = _container(
+        port: port,
+        configured: true,
+        recorder: recorder,
+      );
+      await container.read(pushBootstrapProvider).init();
 
-    port.openMessage(_chatMessage());
-    await Future<void>.delayed(Duration.zero);
+      port.openMessage(_chatMessage());
+      await Future<void>.delayed(Duration.zero);
 
-    expect(recorder.routes, ['/session/c1']);
-  });
+      expect(recorder.routes, ['/session/c1']);
+    },
+  );
 
   test('холодный старт из пуша тоже даёт переход', () async {
     port.initialMessage = _chatMessage();
 
-    final container = _container(port: port, configured: true, recorder: recorder);
+    final container = _container(
+      port: port,
+      configured: true,
+      recorder: recorder,
+    );
     await container.read(pushBootstrapProvider).init();
 
     expect(recorder.routes, ['/session/c1']);
   });
 
-  test('пуш в форграунде НЕ навигирует, а показывает локальное уведомление', () async {
-    // Уводить человека с открытого экрана (например, из чата или звонка)
-    // из-за входящего пуша нельзя — это и есть разница между «пришло» и
-    // «пользователь нажал».
-    final container = _container(port: port, configured: true, recorder: recorder);
-    await container.read(pushBootstrapProvider).init();
+  test(
+    'пуш в форграунде НЕ навигирует, а показывает локальное уведомление',
+    () async {
+      // Уводить человека с открытого экрана (например, из чата или звонка)
+      // из-за входящего пуша нельзя — это и есть разница между «пришло» и
+      // «пользователь нажал».
+      final container = _container(
+        port: port,
+        configured: true,
+        recorder: recorder,
+      );
+      await container.read(pushBootstrapProvider).init();
 
-    port.pushForeground(_chatMessage());
-    await Future<void>.delayed(Duration.zero);
+      port.pushForeground(_chatMessage());
+      await Future<void>.delayed(Duration.zero);
 
-    expect(recorder.routes, isEmpty);
-    expect(recorder.localNotifications.length, 1);
-    expect(recorder.localNotifications.single.title, 'Психолог ответил');
-  });
+      expect(recorder.routes, isEmpty);
+      expect(recorder.localNotifications.length, 1);
+      expect(recorder.localNotifications.single.title, 'Психолог ответил');
+    },
+  );
 
-  test('пуш без известного типа не роняет обработку и никуда не ведёт', () async {
-    final container = _container(port: port, configured: true, recorder: recorder);
-    await container.read(pushBootstrapProvider).init();
+  test(
+    'пуш без известного типа не роняет обработку и никуда не ведёт',
+    () async {
+      final container = _container(
+        port: port,
+        configured: true,
+        recorder: recorder,
+      );
+      await container.read(pushBootstrapProvider).init();
 
-    port.openMessage(
-      const PushMessage(
-        title: 'Что-то новое',
-        body: 'Текст',
-        data: {'type': 'payout.updated'},
-      ),
-    );
-    await Future<void>.delayed(Duration.zero);
+      port.openMessage(
+        const PushMessage(
+          title: 'Что-то новое',
+          body: 'Текст',
+          data: {'type': 'payout.updated'},
+        ),
+      );
+      await Future<void>.delayed(Duration.zero);
 
-    expect(recorder.routes, isEmpty);
-  });
+      expect(recorder.routes, isEmpty);
+    },
+  );
 }

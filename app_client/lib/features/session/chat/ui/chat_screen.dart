@@ -20,7 +20,16 @@ import 'session_header.dart';
 import 'session_menu.dart';
 
 class ChatScreen extends ConsumerStatefulWidget {
-  const ChatScreen({super.key, required this.consultationId});
+  const ChatScreen({
+    super.key,
+    required this.consultationId,
+    this.embedded = false,
+  });
+
+  /// Встроен в раскладку сессии рядом с видео (веб). Тогда своя шапка не
+  /// нужна: заголовок консультации уже показан над видео, а вторая
+  /// панель с тем же именем — просто шум.
+  final bool embedded;
 
   final String consultationId;
 
@@ -43,9 +52,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   void _send() {
     final text = _input.text.trim();
     if (text.isEmpty) return;
-    ref
-        .read(chatControllerProvider(widget.consultationId).notifier)
-        .send(text);
+    ref.read(chatControllerProvider(widget.consultationId).notifier).send(text);
     _input.clear();
   }
 
@@ -91,7 +98,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     if (status == ConsultationStatus.active) return;
 
     if (status == ConsultationStatus.completed) {
-      final reviewed = ref
+      final reviewed =
+          ref
               .read(sharedPreferencesProvider)
               .getBool(reviewedFlagKey(widget.consultationId)) ??
           false;
@@ -123,21 +131,26 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
 
     return Scaffold(
       backgroundColor: SqColors.background,
-      appBar: asyncState.valueOrNull == null
+      // Встроенный чат (панель рядом с видео) своей шапки не имеет:
+      // заголовок консультации уже над видео, вторая панель с тем же
+      // именем — шум.
+      appBar: widget.embedded
+          ? null
+          : asyncState.valueOrNull == null
           ? AppBar()
           : SessionHeader(
-              expertName: asyncState.requireValue.consultation.expert.displayName,
+              expertName:
+                  asyncState.requireValue.consultation.expert.displayName,
               remaining: asyncState.requireValue.remaining,
               menu: SessionMenu(
                 onCancel: _confirmCancel,
-                onEscalate: (format) =>
-                    context.push(RoutePaths.call(widget.consultationId, format)),
+                onEscalate: (format) => context.push(
+                  RoutePaths.call(widget.consultationId, format),
+                ),
                 onReportProblem: () => context.push(
                   Uri(
                     path: RoutePaths.supportNew,
-                    queryParameters: {
-                      'consultationId': widget.consultationId,
-                    },
+                    queryParameters: {'consultationId': widget.consultationId},
                   ).toString(),
                 ),
               ),
@@ -204,7 +217,11 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.lock_outline, size: 14, color: SqColors.textTertiary),
+            const Icon(
+              Icons.lock_outline,
+              size: 14,
+              color: SqColors.textTertiary,
+            ),
             const SizedBox(width: SqSpacing.s),
             Flexible(
               child: Text(
@@ -249,9 +266,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                   ? null
                   : () => ref
                         .read(
-                          chatControllerProvider(
-                            widget.consultationId,
-                          ).notifier,
+                          chatControllerProvider(widget.consultationId)
+                              .notifier,
                         )
                         .loadMore(),
               child: Text(l10n.actionContinue),

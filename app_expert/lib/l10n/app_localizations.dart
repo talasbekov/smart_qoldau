@@ -980,6 +980,66 @@ abstract class AppLocalizations {
   /// **'Ваш ответ'**
   String get reviewYourReply;
 
+  /// No description provided for @reviewActionReply.
+  ///
+  /// In ru, this message translates to:
+  /// **'Ответить'**
+  String get reviewActionReply;
+
+  /// No description provided for @reviewActionEditReply.
+  ///
+  /// In ru, this message translates to:
+  /// **'Изменить ответ'**
+  String get reviewActionEditReply;
+
+  /// No description provided for @reviewActionComplaint.
+  ///
+  /// In ru, this message translates to:
+  /// **'Пожаловаться'**
+  String get reviewActionComplaint;
+
+  /// No description provided for @reviewReplyDialogTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Ответ на отзыв'**
+  String get reviewReplyDialogTitle;
+
+  /// No description provided for @reviewReplyHint.
+  ///
+  /// In ru, this message translates to:
+  /// **'Ответ увидят все — не упоминайте детали консультации. До 1000 символов.'**
+  String get reviewReplyHint;
+
+  /// No description provided for @reviewReplySaved.
+  ///
+  /// In ru, this message translates to:
+  /// **'Ответ сохранён'**
+  String get reviewReplySaved;
+
+  /// No description provided for @reviewComplaintDialogTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Жалоба на отзыв'**
+  String get reviewComplaintDialogTitle;
+
+  /// No description provided for @reviewComplaintHint.
+  ///
+  /// In ru, this message translates to:
+  /// **'Опишите, почему отзыв нарушает правила. Отзыв скроют и исключат из рейтинга до решения модератора.'**
+  String get reviewComplaintHint;
+
+  /// No description provided for @reviewComplaintSent.
+  ///
+  /// In ru, this message translates to:
+  /// **'Жалоба отправлена, отзыв скрыт до решения модератора'**
+  String get reviewComplaintSent;
+
+  /// No description provided for @actionCancel.
+  ///
+  /// In ru, this message translates to:
+  /// **'Отмена'**
+  String get actionCancel;
+
   /// No description provided for @notificationsScreenTitle.
   ///
   /// In ru, this message translates to:
@@ -1015,6 +1075,258 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Выйти'**
   String get actionLogout;
+
+  /// Предупреждение о присутствии в веб-кабинете (Р-26)
+  ///
+  /// In ru, this message translates to:
+  /// **'Заявки приходят, пока открыта эта вкладка. Закроете — приём выключится, и клиент вас не увидит.'**
+  String get webPresenceNotice;
+
+  /// Заголовок раздела заявок (веб-кабинет)
+  ///
+  /// In ru, this message translates to:
+  /// **'Заявки'**
+  String get offersScreenTitle;
+
+  /// Выбор медиаустройств (E14)
+  ///
+  /// In ru, this message translates to:
+  /// **'Проверьте камеру и микрофон'**
+  String get devicesTitle;
+
+  /// Выбор медиаустройств (E14)
+  ///
+  /// In ru, this message translates to:
+  /// **'Камера'**
+  String get devicesCamera;
+
+  /// Выбор медиаустройств (E14)
+  ///
+  /// In ru, this message translates to:
+  /// **'Микрофон'**
+  String get devicesMicrophone;
+
+  /// Выбор медиаустройств (E14)
+  ///
+  /// In ru, this message translates to:
+  /// **'Войти в консультацию'**
+  String get devicesJoin;
+
+  /// Выбор медиаустройств (E14)
+  ///
+  /// In ru, this message translates to:
+  /// **'Камера и микрофон не найдены. Разрешите доступ в браузере и попробуйте снова.'**
+  String get devicesNotFound;
+
+  /// Дашборд кабинета эксперта (прототип Expert Web - Главная)
+  ///
+  /// In ru, this message translates to:
+  /// **'Сегодня'**
+  String get dashboardStatToday;
+
+  /// Дашборд кабинета эксперта (прототип Expert Web - Главная)
+  ///
+  /// In ru, this message translates to:
+  /// **'Завершено'**
+  String get dashboardStatCompleted;
+
+  /// Дашборд кабинета эксперта (прототип Expert Web - Главная)
+  ///
+  /// In ru, this message translates to:
+  /// **'Доход сегодня'**
+  String get dashboardStatEarned;
+
+  /// Дашборд кабинета эксперта (прототип Expert Web - Главная)
+  ///
+  /// In ru, this message translates to:
+  /// **'Рейтинг'**
+  String get dashboardStatRating;
+
+  /// Дашборд кабинета эксперта (прототип Expert Web - Главная)
+  ///
+  /// In ru, this message translates to:
+  /// **'Ближайшая консультация'**
+  String get dashboardNextTitle;
+
+  /// Дашборд кабинета эксперта (прототип Expert Web - Главная)
+  ///
+  /// In ru, this message translates to:
+  /// **'Открыть консультацию'**
+  String get dashboardOpenConsultation;
+
+  /// Дашборд кабинета эксперта
+  ///
+  /// In ru, this message translates to:
+  /// **'Здравствуйте, {name} 👋'**
+  String dashboardGreeting(String name);
+
+  /// Дашборд кабинета эксперта
+  ///
+  /// In ru, this message translates to:
+  /// **'Сегодня у вас {count} консультаций'**
+  String dashboardTodayCount(int count);
+
+  /// Плитки дохода (прототип Expert Web - Доход)
+  ///
+  /// In ru, this message translates to:
+  /// **'Доход за период'**
+  String get earningsStatTotal;
+
+  /// Плитки дохода (прототип Expert Web - Доход)
+  ///
+  /// In ru, this message translates to:
+  /// **'Консультаций'**
+  String get earningsStatCount;
+
+  /// Плитки дохода (прототип Expert Web - Доход)
+  ///
+  /// In ru, this message translates to:
+  /// **'Средний чек'**
+  String get earningsStatAverage;
+
+  /// Плитки дохода (прототип Expert Web - Доход)
+  ///
+  /// In ru, this message translates to:
+  /// **'Комиссия платформы'**
+  String get earningsStatCommission;
+
+  /// Кнопка отправки формы (обращение в поддержку)
+  ///
+  /// In ru, this message translates to:
+  /// **'Отправить'**
+  String get actionSend;
+
+  /// Локализованный текст SqEmergencyDisclaimer.disclaimerText (ТЗ §4.3) — виджет из packages/shared не может зависеть от l10n приложения, значение передаётся явно
+  ///
+  /// In ru, this message translates to:
+  /// **'Платформа не заменяет экстренные службы. Если жизни или здоровью угрожает опасность, звоните напрямую:'**
+  String get emergencyDisclaimerText;
+
+  /// Текст-заглушка для непредвиденной ошибки без более точного объяснения
+  ///
+  /// In ru, this message translates to:
+  /// **'Что-то пошло не так'**
+  String get errorGeneric;
+
+  /// Пустой список обращений
+  ///
+  /// In ru, this message translates to:
+  /// **'Обращений пока нет'**
+  String get supportEmpty;
+
+  /// Кнопка создания обращения
+  ///
+  /// In ru, this message translates to:
+  /// **'Новое обращение'**
+  String get supportNewTicket;
+
+  /// Пояснение в карточке обращения: бэкенд не даёт автору отвечать в тред
+  ///
+  /// In ru, this message translates to:
+  /// **'Дописать в это обращение нельзя — если нужно добавить детали, создайте новое'**
+  String get supportNoReplyNotice;
+
+  /// Заголовок экрана обращений
+  ///
+  /// In ru, this message translates to:
+  /// **'Поддержка'**
+  String get supportTitle;
+
+  /// Автор сообщения обращения: сотрудник
+  ///
+  /// In ru, this message translates to:
+  /// **'Поддержка'**
+  String get ticketAuthorStaff;
+
+  /// Автор сообщения обращения: клиент
+  ///
+  /// In ru, this message translates to:
+  /// **'Вы'**
+  String get ticketAuthorYou;
+
+  /// Ошибка валидации текста
+  ///
+  /// In ru, this message translates to:
+  /// **'Опишите ситуацию подробнее'**
+  String get ticketBodyInvalid;
+
+  /// Поле текста обращения
+  ///
+  /// In ru, this message translates to:
+  /// **'Опишите ситуацию'**
+  String get ticketBodyLabel;
+
+  /// Категория обращения ACCOUNT_DATA
+  ///
+  /// In ru, this message translates to:
+  /// **'Аккаунт и данные'**
+  String get ticketCategoryAccountData;
+
+  /// Категория обращения CONSULTATIONS
+  ///
+  /// In ru, this message translates to:
+  /// **'Консультации'**
+  String get ticketCategoryConsultations;
+
+  /// Выбор категории обращения
+  ///
+  /// In ru, this message translates to:
+  /// **'Категория'**
+  String get ticketCategoryLabel;
+
+  /// Категория обращения OTHER
+  ///
+  /// In ru, this message translates to:
+  /// **'Другое'**
+  String get ticketCategoryOther;
+
+  /// Категория обращения PAYMENT
+  ///
+  /// In ru, this message translates to:
+  /// **'Оплата'**
+  String get ticketCategoryPayment;
+
+  /// Категория обращения SECURITY
+  ///
+  /// In ru, this message translates to:
+  /// **'Безопасность'**
+  String get ticketCategorySecurity;
+
+  /// Категория обращения TECHNICAL
+  ///
+  /// In ru, this message translates to:
+  /// **'Технические проблемы'**
+  String get ticketCategoryTechnical;
+
+  /// Статус обращения IN_PROGRESS
+  ///
+  /// In ru, this message translates to:
+  /// **'В работе'**
+  String get ticketStatusInProgress;
+
+  /// Статус обращения NEW
+  ///
+  /// In ru, this message translates to:
+  /// **'Новое'**
+  String get ticketStatusNew;
+
+  /// Статус обращения RESOLVED
+  ///
+  /// In ru, this message translates to:
+  /// **'Решено'**
+  String get ticketStatusResolved;
+
+  /// Ошибка валидации темы
+  ///
+  /// In ru, this message translates to:
+  /// **'Укажите тему обращения'**
+  String get ticketSubjectInvalid;
+
+  /// Поле темы обращения
+  ///
+  /// In ru, this message translates to:
+  /// **'Тема'**
+  String get ticketSubjectLabel;
 }
 
 class _AppLocalizationsDelegate

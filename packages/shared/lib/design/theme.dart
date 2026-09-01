@@ -3,6 +3,7 @@
 library;
 
 import 'package:flutter/material.dart';
+
 import 'fonts.dart';
 import 'tokens.dart';
 
@@ -39,12 +40,14 @@ ThemeData _buildTheme() {
     // `apply` вместо `GoogleFonts.interTextTheme`: тот подменял каждый
     // стиль темы загруженным начертанием, здесь достаточно проставить
     // забандленное семейство всем стилям сразу.
-    textTheme: base.textTheme.apply(fontFamily: sqFontFamily).copyWith(
-      headlineMedium: SqTypography.h1,
-      headlineSmall: SqTypography.h2,
-      titleLarge: SqTypography.title,
-      bodyLarge: SqTypography.body,
-      bodySmall: SqTypography.caption,
-    ),
+    textTheme: base.textTheme
+        .apply(fontFamily: sqFontFamily)
+        .copyWith(
+          headlineMedium: SqTypography.h1,
+          headlineSmall: SqTypography.h2,
+          titleLarge: SqTypography.title,
+          bodyLarge: SqTypography.body,
+          bodySmall: SqTypography.caption,
+        ),
   );
 }

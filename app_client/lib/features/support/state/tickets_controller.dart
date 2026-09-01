@@ -23,10 +23,6 @@ const clientTicketCategories = <TicketCategory>[
   TicketCategory.other,
 ];
 
-/// Тема и текст обращения на удаление аккаунта: прямого эндпоинта удаления
-/// у бэкенда нет (решение 9), запрос идёт через поддержку.
-const deleteAccountTicketCategory = TicketCategory.accountData;
-
 class TicketsController extends AsyncNotifier<List<TicketSummary>> {
   @override
   FutureOr<List<TicketSummary>> build() =>

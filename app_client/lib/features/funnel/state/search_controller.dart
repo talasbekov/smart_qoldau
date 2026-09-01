@@ -105,7 +105,8 @@ const _onlineCountInterval = Duration(seconds: 10);
 /// навсегда, хотя специалист уже найден.
 const _pollInterval = Duration(seconds: 15);
 
-class SearchController extends AutoDisposeFamilyAsyncNotifier<SearchState, SearchArgs> {
+class SearchController
+    extends AutoDisposeFamilyAsyncNotifier<SearchState, SearchArgs> {
   Timer? _tick;
   Timer? _countTimer;
   Timer? _pollTimer;
@@ -203,12 +204,14 @@ class SearchController extends AutoDisposeFamilyAsyncNotifier<SearchState, Searc
       // Время до соединения — тот самый показатель обещания «1–2 минуты»
       // (ТЗ §11.1); считаем его от открытия экрана поиска, то есть от
       // создания заявки.
-      ref.read(analyticsProvider).track(
-        ExpertMatched(
-          requestId: arg.requestId,
-          secondsToMatch: next.elapsedSec,
-        ),
-      );
+      ref
+          .read(analyticsProvider)
+          .track(
+            ExpertMatched(
+              requestId: arg.requestId,
+              secondsToMatch: next.elapsedSec,
+            ),
+          );
     }
     _publish();
   }
@@ -258,9 +261,9 @@ class SearchController extends AutoDisposeFamilyAsyncNotifier<SearchState, Searc
     if (_pollInFlight) return;
     _pollInFlight = true;
     try {
-      final request = await ref.read(requestsRepositoryProvider).get(
-        arg.requestId,
-      );
+      final request = await ref
+          .read(requestsRepositoryProvider)
+          .get(arg.requestId);
       _apply(
         status: request.status,
         matched: request.matchedExpert,
@@ -285,11 +288,13 @@ class SearchController extends AutoDisposeFamilyAsyncNotifier<SearchState, Searc
   Future<int?> _fetchOnlineCount() async {
     if (!arg.hasCountFilter) return null;
     try {
-      return await ref.read(requestsRepositoryProvider).onlineCount(
-        topicSlug: arg.topicSlug!,
-        format: arg.format!,
-        urgentOnly: arg.isEmergency ? true : null,
-      );
+      return await ref
+          .read(requestsRepositoryProvider)
+          .onlineCount(
+            topicSlug: arg.topicSlug!,
+            format: arg.format!,
+            urgentOnly: arg.isEmergency ? true : null,
+          );
     } catch (error) {
       developer.log(
         'счётчик доступных экспертов недоступен: ${error.runtimeType}',
@@ -302,9 +307,9 @@ class SearchController extends AutoDisposeFamilyAsyncNotifier<SearchState, Searc
   /// «Отменить поиск». Ошибку не глотает — экран показывает её пользователю
   /// (кнопка остаётся доступной для повторной попытки).
   Future<void> cancel() async {
-    final request = await ref.read(requestsRepositoryProvider).cancel(
-      arg.requestId,
-    );
+    final request = await ref
+        .read(requestsRepositoryProvider)
+        .cancel(arg.requestId);
     _apply(
       status: request.status,
       matched: request.matchedExpert,
@@ -314,7 +319,5 @@ class SearchController extends AutoDisposeFamilyAsyncNotifier<SearchState, Searc
   }
 }
 
-final searchControllerProvider =
-    AsyncNotifierProvider.autoDispose.family<SearchController, SearchState, SearchArgs>(
-      SearchController.new,
-    );
+final searchControllerProvider = AsyncNotifierProvider.autoDispose
+    .family<SearchController, SearchState, SearchArgs>(SearchController.new);

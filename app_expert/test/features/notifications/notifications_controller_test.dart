@@ -74,7 +74,8 @@ Future<ProviderContainer> _container({
       sqEventsProvider.overrideWithValue(SqEvents(socket)),
       sharedPreferencesProvider.overrideWithValue(prefs),
       systemLocaleProvider.overrideWithValue(const Locale('ru')),
-      if (pushTokens != null) pushTokenSourceProvider.overrideWithValue(pushTokens),
+      if (pushTokens != null)
+        pushTokenSourceProvider.overrideWithValue(pushTokens),
       hasSessionProvider.overrideWith((ref) => ref.watch(_testHasSession)),
     ],
   );
@@ -90,20 +91,33 @@ void main() {
     api = MockSqApi();
     socket = _FakeSqSocket();
     addTearDown(socket.dispose);
-    when(() => api.notifications(take: any(named: 'take'), skip: any(named: 'skip')))
-        .thenAnswer(
-      (_) async => NotificationsPage(items: [_notification('n1'), _notification('n2')], unreadCount: 2),
+    when(
+      () => api.notifications(
+        take: any(named: 'take'),
+        skip: any(named: 'skip'),
+      ),
+    ).thenAnswer(
+      (_) async => NotificationsPage(
+        items: [_notification('n1'), _notification('n2')],
+        unreadCount: 2,
+      ),
     );
-    when(() => api.registerDevice(
-          platform: any(named: 'platform'),
-          token: any(named: 'token'),
-          locale: any(named: 'locale'),
-        )).thenAnswer((_) async {});
+    when(
+      () => api.registerDevice(
+        platform: any(named: 'platform'),
+        token: any(named: 'token'),
+        locale: any(named: 'locale'),
+      ),
+    ).thenAnswer((_) async {});
   });
 
   testWidgets('первая страница кладёт счётчик непрочитанных', (tester) async {
     final container = await _container(api: api, socket: socket);
-    container.listen(notificationsControllerProvider, (previous, next) {}, fireImmediately: true);
+    container.listen(
+      notificationsControllerProvider,
+      (previous, next) {},
+      fireImmediately: true,
+    );
     await tester.pump();
 
     expect(container.read(unreadCountProvider), 2);
@@ -120,16 +134,20 @@ void main() {
 
       await container.read(deviceRegistrarProvider).register();
 
-      verifyNever(() => api.registerDevice(
-            platform: any(named: 'platform'),
-            token: any(named: 'token'),
-            locale: any(named: 'locale'),
-          ));
+      verifyNever(
+        () => api.registerDevice(
+          platform: any(named: 'platform'),
+          token: any(named: 'token'),
+          locale: any(named: 'locale'),
+        ),
+      );
 
       container.dispose();
     });
 
-    testWidgets('с токеном регистрируется один раз с платформой и локалью', (tester) async {
+    testWidgets('с токеном регистрируется один раз с платформой и локалью', (
+      tester,
+    ) async {
       final container = await _container(
         api: api,
         socket: socket,
@@ -138,11 +156,13 @@ void main() {
 
       await container.read(deviceRegistrarProvider).register();
 
-      verify(() => api.registerDevice(
-            platform: any(named: 'platform', that: isIn(['android', 'ios'])),
-            token: 'abc',
-            locale: 'ru',
-          )).called(1);
+      verify(
+        () => api.registerDevice(
+          platform: any(named: 'platform', that: isIn(['android', 'ios'])),
+          token: 'abc',
+          locale: 'ru',
+        ),
+      ).called(1);
 
       container.dispose();
     });
@@ -156,25 +176,35 @@ void main() {
       await container.read(deviceRegistrarProvider).register();
       clearInteractions(api);
 
-      await container.read(localeControllerProvider.notifier).setLocale(const Locale('kk'));
+      await container
+          .read(localeControllerProvider.notifier)
+          .setLocale(const Locale('kk'));
       await tester.pump();
 
-      verify(() => api.registerDevice(
-            platform: any(named: 'platform'),
-            token: 'abc',
-            locale: 'kz',
-          )).called(1);
+      verify(
+        () => api.registerDevice(
+          platform: any(named: 'platform'),
+          token: 'abc',
+          locale: 'kz',
+        ),
+      ).called(1);
 
       container.dispose();
     });
 
-    testWidgets('появление сессии запускает регистрацию ровно один раз', (tester) async {
+    testWidgets('появление сессии запускает регистрацию ровно один раз', (
+      tester,
+    ) async {
       final container = await _container(
         api: api,
         socket: socket,
         pushTokens: _FakePushTokenSource('abc'),
       );
-      container.listen(deviceRegistrationProvider, (previous, next) {}, fireImmediately: true);
+      container.listen(
+        deviceRegistrationProvider,
+        (previous, next) {},
+        fireImmediately: true,
+      );
 
       container.read(_testHasSession.notifier).state = true;
       await tester.pumpAndSettle();
@@ -182,21 +212,28 @@ void main() {
       container.read(_testHasSession.notifier).state = true;
       await tester.pumpAndSettle();
 
-      verify(() => api.registerDevice(
-            platform: any(named: 'platform'),
-            token: 'abc',
-            locale: 'ru',
-          )).called(1);
+      verify(
+        () => api.registerDevice(
+          platform: any(named: 'platform'),
+          token: 'abc',
+          locale: 'ru',
+        ),
+      ).called(1);
 
       container.dispose();
     });
 
     testWidgets('сбой регистрации не бросает наружу', (tester) async {
-      when(() => api.registerDevice(
-            platform: any(named: 'platform'),
-            token: any(named: 'token'),
-            locale: any(named: 'locale'),
-          )).thenAnswer((_) async => throw const ApiException(ApiErrorCode.network, 'нет сети', 0));
+      when(
+        () => api.registerDevice(
+          platform: any(named: 'platform'),
+          token: any(named: 'token'),
+          locale: any(named: 'locale'),
+        ),
+      ).thenAnswer(
+        (_) async =>
+            throw const ApiException(ApiErrorCode.network, 'нет сети', 0),
+      );
 
       final container = await _container(
         api: api,
@@ -204,7 +241,10 @@ void main() {
         pushTokens: _FakePushTokenSource('abc'),
       );
 
-      await expectLater(container.read(deviceRegistrarProvider).register(), completes);
+      await expectLater(
+        container.read(deviceRegistrarProvider).register(),
+        completes,
+      );
 
       container.dispose();
     });

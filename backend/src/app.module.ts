@@ -29,8 +29,11 @@ import { MediaModule } from './media/media.module';
 import { ReviewsModule } from './reviews/reviews.module';
 import { LedgerModule } from './ledger/ledger.module';
 import { PaymentsModule } from './payments/payments.module';
+import { PremiumModule } from './premium/premium.module';
+import { ContentModule } from './content/content.module';
 import { PayoutsModule } from './payouts/payouts.module';
 import { DevicesModule } from './devices/devices.module';
+import { AccountModule } from './account/account.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { AdminModule } from './admin/admin.module';
 import { TicketsModule } from './tickets/tickets.module';
@@ -65,11 +68,14 @@ import { MaintenanceModule } from './maintenance/maintenance.module';
     ReviewsModule,
     LedgerModule,
     PaymentsModule,
+    PremiumModule,
+    ContentModule,
     // После PaymentsModule/ConsultationsModule: BookingModule опирается
     // на их провайдеры (E6b).
     BookingModule,
     PayoutsModule,
     DevicesModule,
+    AccountModule,
     NotificationsModule,
     AdminModule,
     TicketsModule,

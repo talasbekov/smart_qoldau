@@ -17,7 +17,7 @@ let lastCode = '';
 
 class FakeSmsProvider implements SmsProvider {
   async send(_phone: string, text: string): Promise<void> {
-    const match = text.match(/(\d{4})/);
+    const match = text.match(/(\d{6})/);
     lastCode = match ? match[1] : '';
   }
 }
@@ -105,7 +105,7 @@ describe('Auth verify-code / refresh (e2e)', () => {
       .expect(204);
     const res = await request(app.getHttpServer())
       .post('/v1/auth/verify-code')
-      .send({ phone: PHONE, code: '0000' })
+      .send({ phone: PHONE, code: '000000' })
       .expect(400);
     expect(res.body.error.code).toBe('SMS_CODE_INVALID');
   });

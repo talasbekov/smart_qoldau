@@ -22,10 +22,11 @@ enum ConsultationsTab { active, history }
 const consultationsPageSize = 20;
 
 class ConsultationsController
-    extends AutoDisposeFamilyAsyncNotifier<
-      List<ClientConsultation>,
-      ConsultationsTab
-    > {
+    extends
+        AutoDisposeFamilyAsyncNotifier<
+          List<ClientConsultation>,
+          ConsultationsTab
+        > {
   StreamSubscription<SqEvent>? _events;
 
   /// Сколько уже загружено по каждому статусу — для `skip` следующей
@@ -106,8 +107,7 @@ class ConsultationsController
         ),
       );
       for (var i = 0; i < _statuses.length; i++) {
-        _loaded[_statuses[i]] =
-            (_loaded[_statuses[i]] ?? 0) + pages[i].length;
+        _loaded[_statuses[i]] = (_loaded[_statuses[i]] ?? 0) + pages[i].length;
       }
       state = AsyncData(_merge([...current, ...pages.expand((page) => page)]));
     } catch (error) {
@@ -170,8 +170,8 @@ class ConsultationsController
   }
 }
 
-final consultationsControllerProvider =
-    AsyncNotifierProvider.autoDispose.family<
+final consultationsControllerProvider = AsyncNotifierProvider.autoDispose
+    .family<
       ConsultationsController,
       List<ClientConsultation>,
       ConsultationsTab
@@ -193,7 +193,8 @@ class MyReviewState {
   final String? errorCode;
 }
 
-class MyReviewController extends AutoDisposeFamilyNotifier<MyReviewState, String> {
+class MyReviewController
+    extends AutoDisposeFamilyNotifier<MyReviewState, String> {
   @override
   MyReviewState build(String arg) => MyReviewState(
     // Источник истины — DTO консультации; локальная запись подставляется,
@@ -236,9 +237,5 @@ class MyReviewController extends AutoDisposeFamilyNotifier<MyReviewState, String
   }
 }
 
-final myReviewControllerProvider =
-    NotifierProvider.autoDispose.family<
-      MyReviewController,
-      MyReviewState,
-      String
-    >(MyReviewController.new);
+final myReviewControllerProvider = NotifierProvider.autoDispose
+    .family<MyReviewController, MyReviewState, String>(MyReviewController.new);

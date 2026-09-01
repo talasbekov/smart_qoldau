@@ -4,14 +4,17 @@ import 'auth_interceptor.dart';
 import 'sq_api_auth.dart';
 import 'sq_api_base.dart';
 import 'sq_api_consultations.dart';
+import 'sq_api_content.dart';
 import 'sq_api_documents.dart';
 import 'sq_api_earnings.dart';
 import 'sq_api_expert_profile.dart';
+import 'sq_api_expert_reviews.dart';
 import 'sq_api_experts.dart';
 import 'sq_api_notes.dart';
 import 'sq_api_notifications.dart';
 import 'sq_api_offers.dart';
 import 'sq_api_payments.dart';
+import 'sq_api_premium.dart';
 import 'sq_api_requests.dart';
 import 'sq_api_schedule.dart';
 import 'sq_api_tickets.dart';
@@ -31,6 +34,7 @@ class SqApi extends SqApiBase
         SqApiAuth,
         SqApiExperts,
         SqApiExpertProfile,
+        SqApiExpertReviews,
         SqApiDocuments,
         SqApiSchedule,
         SqApiOffers,
@@ -38,7 +42,9 @@ class SqApi extends SqApiBase
         SqApiEarnings,
         SqApiRequests,
         SqApiConsultations,
+        SqApiContent,
         SqApiPayments,
+        SqApiPremium,
         SqApiNotifications,
         SqApiTickets {
   SqApi({

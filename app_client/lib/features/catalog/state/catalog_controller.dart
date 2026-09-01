@@ -22,12 +22,7 @@ extension CatalogSortWire on CatalogSort {
 
 /// Набор фильтров каталога. `null` в поле — «без ограничения».
 class CatalogFilters {
-  const CatalogFilters({
-    this.topicSlug,
-    this.language,
-    this.format,
-    this.sort,
-  });
+  const CatalogFilters({this.topicSlug, this.language, this.format, this.sort});
 
   final String? topicSlug;
   final String? language;

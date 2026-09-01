@@ -70,7 +70,7 @@ String _typedDigits() {
 /// (`SmsDevProvider`: `SMS -> {phone}: SmartQoldau: код входа {code}`).
 /// Опрашивает файл — процесс бэкенда пишет лог асинхронно.
 Future<String> _readSmsCode(String phone) async {
-  final pattern = RegExp('SMS -> ${RegExp.escape(phone)}: .*код входа (\\d{4})');
+  final pattern = RegExp('SMS -> ${RegExp.escape(phone)}: .*код входа (\\d{6})');
   for (var attempt = 0; attempt < 20; attempt++) {
     final file = File(_backendLog);
     if (file.existsSync()) {

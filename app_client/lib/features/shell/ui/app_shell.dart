@@ -5,8 +5,11 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shared/shared.dart';
 
+import '../../../core/route_paths.dart';
 import '../../../l10n/app_localizations.dart';
+import 'web_header.dart';
 
 /// Общий каркас четырёх вкладок `StatefulShellRoute.indexedStack`.
 ///
@@ -50,37 +53,63 @@ class AppShell extends StatelessWidget {
         navigationShell.goBranch(0);
       },
       child: Scaffold(
-        body: navigationShell,
-        bottomNavigationBar: NavigationBar(
-          selectedIndex: navigationShell.currentIndex,
-          onDestinationSelected: _onDestinationSelected,
-          destinations: [
-            NavigationDestination(
-              key: const Key('sq-nav-home'),
-              icon: const Icon(Icons.home_outlined),
-              selectedIcon: const Icon(Icons.home),
-              label: l10n.navHome,
-            ),
-            NavigationDestination(
-              key: const Key('sq-nav-catalog'),
-              icon: const Icon(Icons.grid_view_outlined),
-              selectedIcon: const Icon(Icons.grid_view),
-              label: l10n.navCatalog,
-            ),
-            NavigationDestination(
-              key: const Key('sq-nav-consultations'),
-              icon: const Icon(Icons.forum_outlined),
-              selectedIcon: const Icon(Icons.forum),
-              label: l10n.navConsultations,
-            ),
-            NavigationDestination(
-              key: const Key('sq-nav-profile'),
-              icon: const Icon(Icons.person_outline),
-              selectedIcon: const Icon(Icons.person),
-              label: l10n.navProfile,
-            ),
-          ],
-        ),
+        // На широком экране разделы живут в веб-шапке (прототипы
+        // `SmartQoldau Web - *`), а нижняя навигация исчезает: полоса с
+        // четырьмя иконками внизу монитора выглядит как растянутый
+        // телефон и ничего не даёт.
+        body: SqLayoutScope.of(context).isWide
+            ? WebHeader(
+                onHelp: () => context.push(RoutePaths.emergency),
+                onSection: (section) => switch (section) {
+                  WebSection.catalog => context.go(RoutePaths.catalog),
+                  WebSection.materials => context.go(RoutePaths.materials),
+                  WebSection.premium => context.push(RoutePaths.premium),
+                  WebSection.consultations => context.go(
+                    RoutePaths.consultations,
+                  ),
+                  WebSection.profile => context.go(RoutePaths.profile),
+                },
+                child: navigationShell,
+              )
+            : navigationShell,
+        bottomNavigationBar: SqLayoutScope.of(context).isWide
+            ? null
+            : NavigationBar(
+                selectedIndex: navigationShell.currentIndex,
+                onDestinationSelected: _onDestinationSelected,
+                destinations: [
+                  NavigationDestination(
+                    key: const Key('sq-nav-home'),
+                    icon: const Icon(Icons.home_outlined),
+                    selectedIcon: const Icon(Icons.home),
+                    label: l10n.navHome,
+                  ),
+                  NavigationDestination(
+                    key: const Key('sq-nav-catalog'),
+                    icon: const Icon(Icons.grid_view_outlined),
+                    selectedIcon: const Icon(Icons.grid_view),
+                    label: l10n.navCatalog,
+                  ),
+                  NavigationDestination(
+                    key: const Key('sq-nav-materials'),
+                    icon: const Icon(Icons.library_books_outlined),
+                    selectedIcon: const Icon(Icons.library_books),
+                    label: l10n.navMaterials,
+                  ),
+                  NavigationDestination(
+                    key: const Key('sq-nav-consultations'),
+                    icon: const Icon(Icons.forum_outlined),
+                    selectedIcon: const Icon(Icons.forum),
+                    label: l10n.navConsultations,
+                  ),
+                  NavigationDestination(
+                    key: const Key('sq-nav-profile'),
+                    icon: const Icon(Icons.person_outline),
+                    selectedIcon: const Icon(Icons.person),
+                    label: l10n.navProfile,
+                  ),
+                ],
+              ),
       ),
     );
   }

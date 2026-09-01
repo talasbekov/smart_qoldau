@@ -36,6 +36,9 @@ import 'features/session/call/ui/call_screen.dart';
 import 'features/session/chat/ui/chat_screen.dart';
 import 'features/payment/ui/add_card_screen.dart';
 import 'features/payment/ui/cards_screen.dart';
+import 'features/content/ui/content_router_screen.dart';
+import 'features/content/ui/materials_screen.dart';
+import 'features/premium/ui/premium_screen.dart';
 import 'features/payment/ui/found_screen.dart';
 import 'features/review/ui/review_screen.dart';
 import 'features/shell/ui/app_shell.dart';
@@ -207,6 +210,10 @@ GoRouter sqRouter(Ref ref) {
             FoundScreen(requestId: state.pathParameters['requestId']!),
       ),
       GoRoute(
+        path: RoutePaths.premium,
+        builder: (context, state) => const PremiumScreen(),
+      ),
+      GoRoute(
         path: RoutePaths.cards,
         builder: (context, state) => const CardsScreen(),
       ),
@@ -308,6 +315,23 @@ GoRouter sqRouter(Ref ref) {
                   GoRoute(
                     path: 'favorites',
                     builder: (context, state) => const FavoritesScreen(),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: RoutePaths.materials,
+                builder: (context, state) => const MaterialsScreen(),
+                // Вложенные маршруты ветви: «назад» из материала возвращает
+                // в библиотеку, а не выбрасывает из приложения.
+                routes: [
+                  GoRoute(
+                    path: ':id',
+                    builder: (context, state) =>
+                        ContentRouterScreen(id: state.pathParameters['id']!),
                   ),
                 ],
               ),

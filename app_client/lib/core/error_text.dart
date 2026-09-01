@@ -62,7 +62,14 @@ String errorText(BuildContext context, ApiException exception) {
     case ApiErrorCode.paymentNotFound:
       return l10n.errorPaymentNotFound;
     case ApiErrorCode.providerDeclined:
+    // PAYMENT_DECLINED подписки — тот же случай для человека, что отказ
+    // банка по консультации: карта не сработала.
+    case ApiErrorCode.paymentDeclined:
       return l10n.errorProviderDeclined;
+    case ApiErrorCode.subscriptionExists:
+      return l10n.errorSubscriptionExists;
+    case ApiErrorCode.subscriptionNotFound:
+      return l10n.errorSubscriptionNotFound;
     case ApiErrorCode.alreadyPaid:
       return l10n.errorAlreadyPaid;
     case ApiErrorCode.reviewExists:

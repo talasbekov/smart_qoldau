@@ -19,11 +19,16 @@ export class StorageService implements OnModuleInit {
   // зашифрованы и закрыты (ТЗ §6), фото раздаётся всем. Общий бакет — это
   // либо ослабленная защита документов, либо сломанная раздача фото.
   private readonly avatarsBucket: string;
+  // Материалы самопомощи (E13): свой бакет и, в отличие от аватаров,
+  // закрытый — часть контента за Premium-пейволлом, а публично читаемый
+  // бакет сделал бы пейволл декоративным.
+  private readonly contentBucket: string;
   private readonly publicBaseUrl: string;
 
   constructor(config: ConfigService) {
     this.bucket = config.getOrThrow('S3_BUCKET_DOCUMENTS');
     this.avatarsBucket = config.getOrThrow('S3_BUCKET_AVATARS');
+    this.contentBucket = config.getOrThrow('S3_BUCKET_CONTENT');
     // В проде клиент ходит на публичный домен (CDN), а бэкенд пишет во
     // внутренний адрес хранилища — по умолчанию это одно и то же.
     this.publicBaseUrl = String(
@@ -43,6 +48,7 @@ export class StorageService implements OnModuleInit {
   async onModuleInit(): Promise<void> {
     await this.ensureBucket();
     await this.ensureAvatarsBucket();
+    await this.ensureContentBucket();
   }
 
   async ensureBucket(): Promise<void> {
@@ -117,6 +123,44 @@ export class StorageService implements OnModuleInit {
 
   avatarUrl(key: string): string {
     return `${this.publicBaseUrl}/${this.avatarsBucket}/${key}`;
+  }
+
+  /// Бакет материалов — без политики публичного чтения: читать его можно
+  /// только по подписанной ссылке из contentUrl().
+  async ensureContentBucket(): Promise<void> {
+    await this.ensureBucketExists(this.contentBucket);
+  }
+
+  async putContentObject(
+    key: string,
+    body: Buffer,
+    contentType: string,
+  ): Promise<void> {
+    await this.s3.send(
+      new PutObjectCommand({
+        Bucket: this.contentBucket,
+        Key: key,
+        Body: body,
+        ContentType: contentType,
+      }),
+    );
+  }
+
+  async deleteContentObject(key: string): Promise<void> {
+    await this.s3.send(
+      new DeleteObjectCommand({ Bucket: this.contentBucket, Key: key }),
+    );
+  }
+
+  /// Подписанная ссылка на материал. Файл отдаёт S3 напрямую: гонять
+  /// мегабайты аудио через Node — верный способ положить бэкенд на первой
+  /// сотне слушателей. TTL короткий, потому что ссылка И ЕСТЬ доступ.
+  contentUrl(key: string, ttlSec = 900): Promise<string> {
+    return getSignedUrl(
+      this.s3,
+      new GetObjectCommand({ Bucket: this.contentBucket, Key: key }),
+      { expiresIn: ttlSec },
+    );
   }
 
   getSignedDownloadUrl(key: string, ttlSec = 300): Promise<string> {

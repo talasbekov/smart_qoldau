@@ -181,40 +181,46 @@ class _PermissionsScreenState extends ConsumerState<PermissionsScreen> {
     return Scaffold(
       backgroundColor: SqColors.background,
       appBar: AppBar(title: Text(l10n.permissionsTitle)),
-      body: Padding(
-        padding: const EdgeInsets.all(SqSpacing.l),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(
-              l10n.permissionsSubtitle,
-              style: SqTypography.body.copyWith(color: SqColors.textSecondary),
-            ),
-            const SizedBox(height: SqSpacing.l),
-            Expanded(
-              child: ListView.separated(
-                itemCount: rows.length,
-                separatorBuilder: (_, _) => const SizedBox(height: SqSpacing.m),
-                itemBuilder: (context, index) =>
-                    _PermissionTile(row: rows[index]),
+      body: SqReadableWidth(
+        maxWidth: 520,
+        child: Padding(
+          padding: const EdgeInsets.all(SqSpacing.l),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                l10n.permissionsSubtitle,
+                style: SqTypography.body.copyWith(
+                  color: SqColors.textSecondary,
+                ),
               ),
-            ),
-            const SizedBox(height: SqSpacing.l),
-            SqButton(
-              key: const Key('sq-permissions-allow-button'),
-              label: l10n.actionAllow,
-              loading: _requesting,
-              onPressed: _busy ? null : _allow,
-            ),
-            const SizedBox(height: SqSpacing.s),
-            SqButton(
-              key: const Key('sq-permissions-later-button'),
-              kind: SqButtonKind.secondary,
-              label: l10n.actionLater,
-              loading: _skipping,
-              onPressed: _busy ? null : _later,
-            ),
-          ],
+              const SizedBox(height: SqSpacing.l),
+              Expanded(
+                child: ListView.separated(
+                  itemCount: rows.length,
+                  separatorBuilder: (_, _) =>
+                      const SizedBox(height: SqSpacing.m),
+                  itemBuilder: (context, index) =>
+                      _PermissionTile(row: rows[index]),
+                ),
+              ),
+              const SizedBox(height: SqSpacing.l),
+              SqButton(
+                key: const Key('sq-permissions-allow-button'),
+                label: l10n.actionAllow,
+                loading: _requesting,
+                onPressed: _busy ? null : _allow,
+              ),
+              const SizedBox(height: SqSpacing.s),
+              SqButton(
+                key: const Key('sq-permissions-later-button'),
+                kind: SqButtonKind.secondary,
+                label: l10n.actionLater,
+                loading: _skipping,
+                onPressed: _busy ? null : _later,
+              ),
+            ],
+          ),
         ),
       ),
     );

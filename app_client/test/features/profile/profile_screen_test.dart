@@ -71,7 +71,13 @@ Future<Widget> _wrap(SqApi api, {required bool isGuest}) async {
       ),
       GoRoute(
         path: RoutePaths.cards,
-        builder: (context, state) => const Scaffold(body: Text('sq-stub-cards')),
+        builder: (context, state) =>
+            const Scaffold(body: Text('sq-stub-cards')),
+      ),
+      GoRoute(
+        path: RoutePaths.premium,
+        builder: (context, state) =>
+            const Scaffold(body: Text('sq-stub-premium')),
       ),
       GoRoute(
         path: RoutePaths.favorites,
@@ -141,8 +147,46 @@ void main() {
       ),
     ).thenAnswer((_) async {});
     when(
-      () => api.tickets(take: any(named: 'take'), skip: any(named: 'skip')),
+      () => api.tickets(
+        take: any(named: 'take'),
+        skip: any(named: 'skip'),
+      ),
     ).thenAnswer((_) async => []);
+    when(() => api.premiumStatus()).thenAnswer((_) async => PremiumStatus.none);
+  });
+
+  testWidgets('профиль показывает статус Premium и ведёт на экран', (
+    tester,
+  ) async {
+    when(() => api.premiumStatus()).thenAnswer(
+      (_) async => PremiumStatus(
+        active: true,
+        cancelled: false,
+        inGrace: false,
+        plan: PremiumPlan.month,
+        currentPeriodEnd: DateTime.utc(2026, 9, 26),
+      ),
+    );
+
+    await tester.pumpWidget(await _wrap(api, isGuest: false));
+    await tester.pumpAndSettle();
+    await _restoreSession(tester);
+
+    // Статус виден прямо в списке: ради ответа «подписан я или нет»
+    // открывать отдельный экран человек не должен.
+    expect(find.textContaining('26.09.2026'), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('sq-profile-item-premium')));
+    await tester.pumpAndSettle();
+    expect(find.text('sq-stub-premium'), findsOneWidget);
+  });
+
+  testWidgets('без подписки в профиле написан базовый тариф', (tester) async {
+    await tester.pumpWidget(await _wrap(api, isGuest: false));
+    await tester.pumpAndSettle();
+    await _restoreSession(tester);
+
+    expect(find.text('Базовый тариф'), findsOneWidget);
   });
 
   testWidgets('гость видит блок создания аккаунта', (tester) async {
@@ -226,9 +270,10 @@ void main() {
     verify(() => api.updateLocale('kz')).called(1);
   });
 
-  testWidgets('удаление аккаунта создаёт обращение ACCOUNT_DATA', (
+  testWidgets('удаление аккаунта: подтверждение -> DELETE /me -> экран входа', (
     tester,
   ) async {
+    when(() => api.deleteAccount()).thenAnswer((_) async {});
     await tester.pumpWidget(await _wrap(api, isGuest: false));
     await tester.pumpAndSettle();
     await _restoreSession(tester);
@@ -245,23 +290,50 @@ void main() {
     await tester.tap(find.text('Удалить аккаунт'));
     await tester.pumpAndSettle();
 
-    expect(find.textContaining('команда свяжется с вами'), findsOneWidget);
+    // Диалог обязан сказать, что именно исчезнет, а что останется.
+    expect(find.textContaining('удалены безвозвратно'), findsOneWidget);
+    expect(find.textContaining('останутся в бухгалтерии'), findsOneWidget);
 
     await tester.tap(find.text('Удалить аккаунт').last);
     await tester.pumpAndSettle();
 
-    verify(
-      () => api.createTicket(
-        category: 'ACCOUNT_DATA',
-        subject: 'Удаление аккаунта и данных',
-        body: 'Прошу удалить мой аккаунт и связанные с ним данные',
-        contactEmail: null,
-        contactPhone: null,
-        relatedConsultationId: null,
-        relatedPayoutId: null,
+    verify(() => api.deleteAccount()).called(1);
+    expect(find.text('sq-stub-welcome'), findsOneWidget);
+  });
+
+  testWidgets('отказ CONSULTATION_IN_PROGRESS: аккаунт цел, показана причина', (
+    tester,
+  ) async {
+    when(() => api.deleteAccount()).thenThrow(
+      const ApiException(
+        ApiErrorCode.consultationInProgress,
+        'Сначала завершите или отмените консультацию',
+        409,
       ),
-    ).called(1);
-    expect(find.text('sq-stub-support'), findsOneWidget);
+    );
+    await tester.pumpWidget(await _wrap(api, isGuest: false));
+    await tester.pumpAndSettle();
+    await _restoreSession(tester);
+
+    await tester.scrollUntilVisible(
+      find.text('Удалить аккаунт'),
+      300,
+      maxScrolls: 30,
+    );
+    await tester.ensureVisible(find.text('Удалить аккаунт'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Удалить аккаунт'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Удалить аккаунт').last);
+    await tester.pumpAndSettle();
+
+    // Остались в профиле, причина объяснена словами приложения, а не
+    // сообщением бэкенда.
+    expect(find.text('sq-stub-welcome'), findsNothing);
+    expect(
+      find.textContaining('удалить аккаунт посреди неё нельзя'),
+      findsOneWidget,
+    );
   });
 
   testWidgets('пункты профиля ведут по своим маршрутам', (tester) async {

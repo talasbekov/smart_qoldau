@@ -1,5 +1,6 @@
 import { Module, forwardRef } from '@nestjs/common';
 import { PrismaModule } from '../prisma/prisma.module';
+import { PremiumModule } from '../premium/premium.module';
 import { RedisModule } from '../redis/redis.module';
 import { AuditModule } from '../audit/audit.module';
 import { ClockModule } from '../common/clock/clock.module';
@@ -32,6 +33,9 @@ import { PaymentsWebhookController } from './payments-webhook.controller';
     forwardRef(() => ConsultationsModule),
     ExpertsModule,
     NotificationsModule,
+    // Цикл: PremiumModule берёт отсюда PaymentProviderPort, а PaymentsService
+    // спрашивает у PremiumService, есть ли подписка на момент оплаты.
+    forwardRef(() => PremiumModule),
   ],
   controllers: [
     PaymentMethodsController,

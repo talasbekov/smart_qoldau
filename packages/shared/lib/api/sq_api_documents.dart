@@ -56,14 +56,14 @@ mixin SqApiDocuments on SqApiBase {
   /// каждый [DocumentType]; `status`/`updatedAt` — `null` для ещё не
   /// загруженного типа).
   Future<List<ExpertDocumentDto>> documents() => guard(() async {
-        final response = await dio.get<List<dynamic>>(
-          SqEndpoints.expertsMeDocuments,
-        );
-        return response.data!
-            .cast<Map<String, dynamic>>()
-            .map(ExpertDocumentDto.fromJson)
-            .toList();
-      });
+    final response = await dio.get<List<dynamic>>(
+      SqEndpoints.expertsMeDocuments,
+    );
+    return response.data!
+        .cast<Map<String, dynamic>>()
+        .map(ExpertDocumentDto.fromJson)
+        .toList();
+  });
 
   /// `POST /experts/me/documents/submit` — отправить анкету на проверку.
   /// `400 DOCUMENTS_INCOMPLETE`, если загружены не все 4 типа — бэкенд
@@ -71,9 +71,9 @@ mixin SqApiDocuments on SqApiBase {
   /// локальный результат [documents] с полным набором [DocumentType]
   /// сам (см. `DocumentsController` в `app_expert`).
   Future<SubmitVerificationDto> submitForVerification() => guard(() async {
-        final response = await dio.post<Map<String, dynamic>>(
-          SqEndpoints.expertsMeDocumentsSubmit,
-        );
-        return SubmitVerificationDto.fromJson(response.data!);
-      });
+    final response = await dio.post<Map<String, dynamic>>(
+      SqEndpoints.expertsMeDocumentsSubmit,
+    );
+    return SubmitVerificationDto.fromJson(response.data!);
+  });
 }

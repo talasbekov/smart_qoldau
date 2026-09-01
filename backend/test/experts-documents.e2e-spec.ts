@@ -17,7 +17,7 @@ let lastCode = '';
 
 class FakeSmsProvider implements SmsProvider {
   async send(_phone: string, text: string): Promise<void> {
-    const match = text.match(/(\d{4})/);
+    const match = text.match(/(\d{6})/);
     lastCode = match ? match[1] : '';
   }
 }
@@ -191,15 +191,18 @@ describe('Experts documents (e2e)', () => {
     expect(again.body.error.code).toBe('INVALID_STATE_TRANSITION');
   });
 
-  it('файл 11 МБ -> 400 VALIDATION_FAILED', async () => {
+  // Поток обрывается multer'ом на границе 10 МБ (FileInterceptor.limits),
+  // до того как файл целиком осядет в памяти процесса, поэтому ответ —
+  // 413 FILE_TOO_LARGE, а не 400 от MaxFileSizeValidator.
+  it('файл 11 МБ -> 413 FILE_TOO_LARGE', async () => {
     const { accessToken } = await registeredExpertUser(PHONE_D4);
     const bigBuffer = Buffer.alloc(11 * 1024 * 1024, 'a');
     const res = await request(app.getHttpServer())
       .post('/v1/experts/me/documents/IDENTITY')
       .set('Authorization', `Bearer ${accessToken}`)
       .attach('file', bigBuffer, 'big.pdf')
-      .expect(400);
-    expect(res.body.error).toBeDefined();
+      .expect(413);
+    expect(res.body.error.code).toBe('FILE_TOO_LARGE');
   });
 
   it('неверный mime (.exe) -> 400 VALIDATION_FAILED', async () => {

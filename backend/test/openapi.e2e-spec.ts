@@ -95,4 +95,40 @@ describe('OpenAPI (e2e)', () => {
     ])
       expect(paths).toContain(p);
   });
+
+  // Карта API, включая административные маршруты, не должна отдаваться
+  // кому попало на публичном хосте: в production документация не
+  // поднимается вовсе, если её не включили явно.
+  describe('гейт документации', () => {
+    const original = {
+      env: process.env.NODE_ENV,
+      flag: process.env.SWAGGER_ENABLED,
+    };
+    let prodApp: INestApplication;
+
+    afterEach(async () => {
+      process.env.NODE_ENV = original.env;
+      if (original.flag === undefined) delete process.env.SWAGGER_ENABLED;
+      else process.env.SWAGGER_ENABLED = original.flag;
+      await prodApp?.close();
+    });
+
+    it('NODE_ENV=production без флага -> /v1/docs-json 404', async () => {
+      process.env.NODE_ENV = 'production';
+      delete process.env.SWAGGER_ENABLED;
+      prodApp = await createApp(
+        Test.createTestingModule({ imports: [AppModule] }),
+      );
+      await request(prodApp.getHttpServer()).get('/v1/docs-json').expect(404);
+    });
+
+    it('SWAGGER_ENABLED=true в production -> документация открыта', async () => {
+      process.env.NODE_ENV = 'production';
+      process.env.SWAGGER_ENABLED = 'true';
+      prodApp = await createApp(
+        Test.createTestingModule({ imports: [AppModule] }),
+      );
+      await request(prodApp.getHttpServer()).get('/v1/docs-json').expect(200);
+    });
+  });
 });

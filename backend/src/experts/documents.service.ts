@@ -8,6 +8,7 @@ import {
 } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
+import { ClockService } from '../common/clock/clock.service';
 import { StorageService } from '../storage/storage.service';
 import { apiError } from '../common/filters/app-exception.filter';
 import { ExpertDocumentDto, SubmitVerificationDto } from './dto/document.dto';
@@ -36,6 +37,7 @@ export class DocumentsService {
     private prisma: PrismaService,
     private audit: AuditService,
     private storage: StorageService,
+    private clock: ClockService,
   ) {}
 
   async upload(
@@ -108,7 +110,14 @@ export class DocumentsService {
 
     const updated = await this.prisma.expert.update({
       where: { id: expert.id },
-      data: { verificationStatus: VerificationStatus.PENDING },
+      data: {
+        verificationStatus: VerificationStatus.PENDING,
+        // Точка отсчёта SLA 24ч очереди верификации (ТЗ §11.4).
+        // Проставляется именно здесь, а не на регистрации: после
+        // REUPLOAD_REQUIRED эксперт возвращается в DRAFT и submit'ит
+        // заново — отсчёт обязан начаться заново вместе с ним.
+        verificationSubmittedAt: this.clock.now(),
+      },
     });
 
     await this.audit.log({

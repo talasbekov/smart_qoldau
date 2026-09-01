@@ -12,6 +12,7 @@ import '../../../l10n/app_localizations.dart';
 import '../state/catalog_controller.dart';
 import '../state/favorites_controller.dart';
 import 'expert_card.dart';
+import 'expert_grid.dart';
 import 'filters_sheet.dart';
 
 class CatalogScreen extends ConsumerWidget {
@@ -82,31 +83,34 @@ class CatalogScreen extends ConsumerWidget {
                     ),
                   ),
                 )
-              : ListView(
-                  padding: const EdgeInsets.all(SqSpacing.l),
-                  children: [
-                    for (final expert in experts)
-                      ExpertCard(
-                        expert: expert,
-                        isFavorite: ref.watch(isFavoriteProvider(expert.id)),
-                        onToggleFavorite: () => ref
-                            .read(favoritesControllerProvider.notifier)
-                            .toggle(expert),
-                        onTap: () =>
-                            context.push(RoutePaths.expert(expert.id)),
-                      ),
-                    // Каталог приходит страницами по 20 (E11a, задача 7).
-                    if (ref.read(catalogControllerProvider.notifier).hasMore)
-                      Center(
-                        child: TextButton(
-                          key: const Key('sq-catalog-load-more'),
-                          onPressed: () => ref
-                              .read(catalogControllerProvider.notifier)
-                              .loadMore(),
-                          child: Text(l10n.consultationLoadMore),
-                        ),
-                      ),
-                  ],
+              // Сетка по прототипу `Web - Каталог`: сколько карточек по
+              // 270 px влезло, столько колонок. На телефоне это одна
+              // колонка, то есть прежний список.
+              : ExpertGrid(
+                  itemCount: experts.length,
+                  itemBuilder: (context, index) {
+                    final expert = experts[index];
+                    return ExpertCard(
+                      expert: expert,
+                      isFavorite: ref.watch(isFavoriteProvider(expert.id)),
+                      onToggleFavorite: () => ref
+                          .read(favoritesControllerProvider.notifier)
+                          .toggle(expert),
+                      onTap: () => context.push(RoutePaths.expert(expert.id)),
+                    );
+                  },
+                  // Каталог приходит страницами по 20 (E11a, задача 7).
+                  footer: ref.read(catalogControllerProvider.notifier).hasMore
+                      ? Center(
+                          child: TextButton(
+                            key: const Key('sq-catalog-load-more'),
+                            onPressed: () => ref
+                                .read(catalogControllerProvider.notifier)
+                                .loadMore(),
+                            child: Text(l10n.consultationLoadMore),
+                          ),
+                        )
+                      : null,
                 ),
         ),
       ),

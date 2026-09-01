@@ -43,7 +43,7 @@ let lastCode = '';
 
 class FakeSmsProvider implements SmsProvider {
   async send(_phone: string, text: string): Promise<void> {
-    const match = text.match(/(\d{4})/);
+    const match = text.match(/(\d{6})/);
     lastCode = match ? match[1] : '';
   }
 }
@@ -227,6 +227,42 @@ describe('Admin verification (e2e)', () => {
     expect(entry.documents[0].downloadUrl).toContain('X-Amz-Signature');
     expect(entry.phone).toBeUndefined();
     expect(entry.userId).toBeUndefined();
+  });
+
+  it('очередь несёт submittedAt — точку отсчёта SLA 24ч (ТЗ §11.4)', async () => {
+    const before = Date.now();
+    const { expertId } = await submittedExpert(PHONE_V1);
+
+    const res = await asOperator('get', '/v1/admin/verification/queue').expect(
+      200,
+    );
+    const entry = res.body.find((e: any) => e.id === expertId);
+    expect(entry.submittedAt).toBeTruthy();
+    // Отметка ставится на submit, а не на регистрации эксперта.
+    expect(new Date(entry.submittedAt).getTime()).toBeGreaterThanOrEqual(
+      before,
+    );
+  });
+
+  it('очередь отсортирована: дольше всех ждущий — первым', async () => {
+    const older = await submittedExpert(PHONE_V1);
+    const newer = await submittedExpert(PHONE_V2);
+    // Оба submit'а произошли в одну и ту же секунду — состариваем первый
+    // явно, иначе порядок проверял бы не сортировку, а разрешение таймера.
+    await prisma.expert.update({
+      where: { id: older.expertId },
+      data: {
+        verificationSubmittedAt: new Date(Date.now() - 30 * 60 * 60 * 1000),
+      },
+    });
+
+    const res = await asOperator('get', '/v1/admin/verification/queue').expect(
+      200,
+    );
+    const ids = res.body.map((e: any) => e.id);
+    expect(ids.indexOf(older.expertId)).toBeLessThan(
+      ids.indexOf(newer.expertId),
+    );
   });
 
   it('approve всех документов + approve эксперта -> VERIFIED; audit-цепочка записана с actorId сотрудника', async () => {

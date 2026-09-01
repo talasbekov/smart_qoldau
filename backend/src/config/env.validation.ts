@@ -12,12 +12,18 @@ export const envValidationSchema = Joi.object({
     then: Joi.required(),
     otherwise: Joi.optional(),
   }),
+  // Origin'ы, которым разрешён CORS к API (админка). Список через запятую;
+  // по умолчанию — локальный Vite dev-сервер (см. bootstrap.ts).
+  ADMIN_ORIGINS: Joi.string().optional(),
+  // Поднимать ли /v1/docs. Не задан — включено везде, кроме NODE_ENV=production.
+  SWAGGER_ENABLED: Joi.string().valid('true', 'false').optional(),
   S3_ENDPOINT: Joi.string().uri().required(),
   S3_ACCESS_KEY: Joi.string().required(),
   S3_SECRET_KEY: Joi.string().required(),
   S3_BUCKET_DOCUMENTS: Joi.string().default('expert-documents'),
   // Аватары специалистов — отдельный публичный бакет (E2a).
   S3_BUCKET_AVATARS: Joi.string().default('sq-avatars'),
+  S3_BUCKET_CONTENT: Joi.string().default('sq-content'),
   S3_PUBLIC_BASE_URL: Joi.string().uri().optional(),
   // Опциональны: заданы оба — при пустой таблице admin_users сид создаст
   // первого суперадмина (AdminBootstrapService). Не заданы — сид просто

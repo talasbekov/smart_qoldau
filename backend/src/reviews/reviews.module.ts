@@ -7,6 +7,7 @@ import { ReviewsService } from './reviews.service';
 import {
   ConsultationReviewController,
   ExpertReviewsController,
+  MyExpertReviewsController,
   ReviewsController,
 } from './reviews.controller';
 import { ReviewsAdminController } from './reviews-admin.controller';
@@ -26,6 +27,10 @@ import { AdminModule } from '../admin/admin.module';
   controllers: [
     ConsultationReviewController,
     ReviewsController,
+    // Порядок важен: MyExpertReviewsController (GET /v1/experts/me/reviews)
+    // должен регистрироваться раньше ExpertReviewsController (GET
+    // /v1/experts/:id/reviews), иначе тот перехватит 'me' как :id.
+    MyExpertReviewsController,
     ExpertReviewsController,
     ReviewsAdminController,
   ],

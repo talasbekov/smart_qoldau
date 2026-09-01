@@ -12,35 +12,36 @@ import 'package:app_expert/l10n/app_localizations.dart';
 
 class MockSqApi extends Mock implements SqApi {}
 
-ConsultationExpertDto _consultation(ConsultationOutcome outcome) => ConsultationExpertDto(
-  id: 'cons-1',
-  status: ConsultationStatus.completed,
-  outcome: outcome,
-  format: SessionFormat.chat,
-  isEmergency: false,
-  startedAt: DateTime.now().subtract(const Duration(minutes: 30)),
-  endedAt: DateTime.now(),
-  clientCode: 4821,
-  topicSlug: 'anxiety-stress',
-  priceTiyn: 500000,
-  plannedDurationMin: 30,
-  paymentStatus: ConsultationPaymentStatus.captured,
-);
+ConsultationExpertDto _consultation(ConsultationOutcome outcome) =>
+    ConsultationExpertDto(
+      id: 'cons-1',
+      status: ConsultationStatus.completed,
+      outcome: outcome,
+      format: SessionFormat.chat,
+      isEmergency: false,
+      startedAt: DateTime.now().subtract(const Duration(minutes: 30)),
+      endedAt: DateTime.now(),
+      clientCode: 4821,
+      topicSlug: 'anxiety-stress',
+      priceTiyn: 500000,
+      plannedDurationMin: 30,
+      paymentStatus: ConsultationPaymentStatus.captured,
+    );
 
 Widget _wrap(SqApi api) => ProviderScope(
-      overrides: [sqApiProvider.overrideWithValue(api)],
-      child: MaterialApp(
-        locale: const Locale('ru'),
-        localizationsDelegates: AppLocalizations.localizationsDelegates,
-        supportedLocales: AppLocalizations.supportedLocales,
-        home: Builder(
-          builder: (context) => ElevatedButton(
-            onPressed: () => showOutcomeSheet(context, consultationId: 'cons-1'),
-            child: const Text('open'),
-          ),
-        ),
+  overrides: [sqApiProvider.overrideWithValue(api)],
+  child: MaterialApp(
+    locale: const Locale('ru'),
+    localizationsDelegates: AppLocalizations.localizationsDelegates,
+    supportedLocales: AppLocalizations.supportedLocales,
+    home: Builder(
+      builder: (context) => ElevatedButton(
+        onPressed: () => showOutcomeSheet(context, consultationId: 'cons-1'),
+        child: const Text('open'),
       ),
-    );
+    ),
+  ),
+);
 
 void main() {
   setUpAll(() {
@@ -53,9 +54,12 @@ void main() {
     api = MockSqApi();
   });
 
-  testWidgets('выбор исхода вызывает completeConsultation и закрывает шторку', (tester) async {
-    when(() => api.completeConsultation('cons-1', ConsultationOutcome.completed))
-        .thenAnswer((_) async => _consultation(ConsultationOutcome.completed));
+  testWidgets('выбор исхода вызывает completeConsultation и закрывает шторку', (
+    tester,
+  ) async {
+    when(
+      () => api.completeConsultation('cons-1', ConsultationOutcome.completed),
+    ).thenAnswer((_) async => _consultation(ConsultationOutcome.completed));
 
     await tester.pumpWidget(_wrap(api));
     await tester.tap(find.text('open'));
@@ -66,13 +70,24 @@ void main() {
     await tester.tap(find.byKey(const Key('sq-outcome-COMPLETED')));
     await tester.pumpAndSettle();
 
-    verify(() => api.completeConsultation('cons-1', ConsultationOutcome.completed)).called(1);
+    verify(
+      () => api.completeConsultation('cons-1', ConsultationOutcome.completed),
+    ).called(1);
     expect(find.byKey(const Key('sq-outcome-COMPLETED')), findsNothing);
   });
 
-  testWidgets('сбой сети показывает ошибку в шторке, не закрывая её', (tester) async {
-    when(() => api.completeConsultation('cons-1', ConsultationOutcome.clientNoShow)).thenThrow(
-      const ApiException(ApiErrorCode.consultationNotActive, 'Консультация уже завершена', 409),
+  testWidgets('сбой сети показывает ошибку в шторке, не закрывая её', (
+    tester,
+  ) async {
+    when(
+      () =>
+          api.completeConsultation('cons-1', ConsultationOutcome.clientNoShow),
+    ).thenThrow(
+      const ApiException(
+        ApiErrorCode.consultationNotActive,
+        'Консультация уже завершена',
+        409,
+      ),
     );
 
     await tester.pumpWidget(_wrap(api));

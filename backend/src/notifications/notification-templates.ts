@@ -20,6 +20,10 @@ export const NOTIFICATION_TYPES = [
   'verification.rejected',
   'chat.message',
   'ticket.replied',
+  // Premium (E12, Р-09): продление, неудачное списание, даунгрейд.
+  'premium.renewed',
+  'premium.renew_failed',
+  'premium.downgraded',
 ] as const;
 
 export type NotificationType = (typeof NOTIFICATION_TYPES)[number];
@@ -60,6 +64,36 @@ const TEMPLATES: Record<
     kz: {
       title: 'Төлем жіберілді',
       body: '{amountTenge} ₸ төлемі {maskedPan} картасына жіберілді',
+    },
+  },
+  'premium.renewed': {
+    ru: {
+      title: 'Premium продлён',
+      body: 'Списано {amountTenge} ₸, подписка активна',
+    },
+    kz: {
+      title: 'Premium ұзартылды',
+      body: '{amountTenge} ₸ шегерілді, жазылым белсенді',
+    },
+  },
+  'premium.renew_failed': {
+    ru: {
+      title: 'Не удалось продлить Premium',
+      body: 'Проверьте карту — доступ сохраняется ещё 3 дня',
+    },
+    kz: {
+      title: 'Premium ұзартылмады',
+      body: 'Картаңызды тексеріңіз — қолжетімділік тағы 3 күн сақталады',
+    },
+  },
+  'premium.downgraded': {
+    ru: {
+      title: 'Подписка Premium завершена',
+      body: 'Вы переведены на Базовый тариф',
+    },
+    kz: {
+      title: 'Premium жазылымы аяқталды',
+      body: 'Сіз Базалық тарифке ауыстырылдыңыз',
     },
   },
   'payout.rejected': {

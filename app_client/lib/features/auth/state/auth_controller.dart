@@ -143,6 +143,18 @@ class AuthController extends AsyncNotifier<AuthState> {
     state = const AsyncData(AuthAnonymous());
   }
 
+  /// `DELETE /me` — удалить аккаунт и данные (ТЗ §5.1), затем разлогинить.
+  ///
+  /// Локальные токены чистятся только после успешного ответа: если бэкенд
+  /// отказал (идёт консультация, не закрыт расчёт), пользователь остаётся
+  /// в аккаунте и видит причину, а не оказывается на экране входа с
+  /// живым, но недоступным аккаунтом.
+  Future<void> deleteAccount() async {
+    await _repo.deleteAccount();
+    await _repo.logout();
+    state = const AsyncData(AuthAnonymous());
+  }
+
   AuthState _stateFor(Tokens? tokens) {
     if (tokens == null) return const AuthAnonymous();
     // Аналитике сообщаем идентификатор пользователя — тот же, что в JWT

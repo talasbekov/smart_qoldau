@@ -103,9 +103,8 @@ void main() {
 
   setUp(() {
     api = MockSqApi();
-    when(
-      () => api.consultationById('c1'),
-    ).thenAnswer((_) async => _consultation());
+    when(() => api.consultationById('c1'))
+        .thenAnswer((_) async => _consultation());
     when(
       () => api.createReview(
         any(),

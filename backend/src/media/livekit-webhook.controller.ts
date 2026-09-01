@@ -2,6 +2,7 @@ import {
   Controller,
   Headers,
   HttpCode,
+  Logger,
   Post,
   RawBodyRequest,
   Req,
@@ -11,6 +12,7 @@ import { ConfigService } from '@nestjs/config';
 import { Request } from 'express';
 import { WebhookReceiver } from 'livekit-server-sdk';
 import { PrismaService } from '../prisma/prisma.service';
+import { logRejectedWebhook } from '../common/webhooks/rejected-webhook.log';
 import { AuditService } from '../audit/audit.service';
 import { apiError } from '../common/filters/app-exception.filter';
 
@@ -27,6 +29,7 @@ const EXPERT_PREFIX = 'expert-';
 @ApiTags('webhooks')
 @Controller('webhooks')
 export class LivekitWebhookController {
+  private readonly logger = new Logger('LivekitWebhook');
   private readonly receiver: WebhookReceiver;
 
   constructor(
@@ -56,6 +59,12 @@ export class LivekitWebhookController {
     try {
       event = await this.receiver.receive(rawBody, authHeader);
     } catch {
+      logRejectedWebhook(
+        this.logger,
+        req,
+        'livekit',
+        authHeader ? 'signature_invalid' : 'signature_missing',
+      );
       apiError('WEBHOOK_INVALID', 'Invalid webhook signature', 401);
       return;
     }

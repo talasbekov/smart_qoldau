@@ -38,7 +38,9 @@ class DayStrip extends StatelessWidget {
           final isSelected = day == selected;
           final free = hasSlots(day);
           return GestureDetector(
-            key: Key('sq-booking-day-${day.toIso8601String().split('T').first}'),
+            key: Key(
+              'sq-booking-day-${day.toIso8601String().split('T').first}',
+            ),
             onTap: () => onSelect(day),
             child: Container(
               width: 56,
@@ -53,9 +55,7 @@ class DayStrip extends StatelessWidget {
                   Text(
                     _weekdays[day.weekday - 1],
                     style: SqTypography.caption.copyWith(
-                      color: isSelected
-                          ? Colors.white
-                          : SqColors.textSecondary,
+                      color: isSelected ? Colors.white : SqColors.textSecondary,
                     ),
                   ),
                   Text(

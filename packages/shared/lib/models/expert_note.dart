@@ -10,10 +10,8 @@ part 'expert_note.g.dart';
 /// участник», см. `NotesController`/`ConsultationsService.getExpertNote`).
 @freezed
 abstract class ExpertNoteDto with _$ExpertNoteDto {
-  const factory ExpertNoteDto({
-    String? text,
-    DateTime? updatedAt,
-  }) = _ExpertNoteDto;
+  const factory ExpertNoteDto({String? text, DateTime? updatedAt}) =
+      _ExpertNoteDto;
 
   factory ExpertNoteDto.fromJson(Map<String, dynamic> json) =>
       _$ExpertNoteDtoFromJson(json);

@@ -36,7 +36,11 @@ void main() {
       expect(expert.education, 'КазНУ им. Аль-Фараби, психология');
       expect(expert.priceTiyn, 750000);
       expect(expert.languages, ['ru', 'kz', 'en']);
-      expect(expert.formats, [SessionFormat.chat, SessionFormat.audio, SessionFormat.video]);
+      expect(expert.formats, [
+        SessionFormat.chat,
+        SessionFormat.audio,
+        SessionFormat.video,
+      ]);
       expect(expert.topicSlugs, ['anxiety', 'stress', 'depression']);
       expect(expert.verificationStatus, VerificationStatus.verified);
       expect(expert.workStatus, WorkStatus.accepting);
@@ -293,7 +297,11 @@ void main() {
 
       // Verify round-trip
       final parsed = ExpertMe.fromJson(json);
-      expect(parsed.formats, [SessionFormat.chat, SessionFormat.audio, SessionFormat.video]);
+      expect(parsed.formats, [
+        SessionFormat.chat,
+        SessionFormat.audio,
+        SessionFormat.video,
+      ]);
     });
 
     test('nullable поля (photoUrl, about, moderationComment) корректно сохраняются как null', () {

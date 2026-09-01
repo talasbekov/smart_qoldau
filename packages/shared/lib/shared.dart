@@ -11,8 +11,14 @@ export 'analytics/analytics_port.dart';
 export 'analytics/analytics_provider.dart';
 export 'analytics/noop_analytics.dart';
 export 'analytics/posthog_analytics.dart';
+export 'design/breakpoints.dart';
+export 'design/readable_width.dart';
+export 'design/session_layout.dart';
+export 'design/sheet_or_dialog.dart';
+export 'design/split_layout.dart';
 export 'api/api_exception.dart';
 export 'api/auth_interceptor.dart';
+export 'api/backend_base_url.dart';
 export 'api/sq_api.dart';
 export 'api/sq_api_base.dart' show TokenReader, TokenWriter;
 export 'api/sq_api_documents.dart'

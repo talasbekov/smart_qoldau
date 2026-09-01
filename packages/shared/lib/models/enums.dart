@@ -32,11 +32,11 @@ enum ConsultationStatus {
 /// нет модели с собственным `toJson` (например, фильтр `GET /consultations`).
 extension ConsultationStatusWire on ConsultationStatus {
   String get wireValue => switch (this) {
-        ConsultationStatus.scheduled => 'SCHEDULED',
-        ConsultationStatus.active => 'ACTIVE',
-        ConsultationStatus.completed => 'COMPLETED',
-        ConsultationStatus.cancelled => 'CANCELLED',
-      };
+    ConsultationStatus.scheduled => 'SCHEDULED',
+    ConsultationStatus.active => 'ACTIVE',
+    ConsultationStatus.completed => 'COMPLETED',
+    ConsultationStatus.cancelled => 'CANCELLED',
+  };
 }
 
 /// Исход завершённой консультации (`ConsultationClientDto.outcome` бэкенда).
@@ -49,6 +49,7 @@ enum ConsultationOutcome {
   clientCancelled,
   @JsonValue('TECH_ISSUE')
   techIssue,
+
   /// Отмена специалистом (E6b): клиенту полный возврат.
   @JsonValue('EXPERT_CANCELLED')
   expertCancelled,
@@ -59,12 +60,12 @@ enum ConsultationOutcome {
 /// задача 13: `POST /consultations/{id}/complete`).
 extension ConsultationOutcomeWire on ConsultationOutcome {
   String get wireValue => switch (this) {
-        ConsultationOutcome.completed => 'COMPLETED',
-        ConsultationOutcome.clientNoShow => 'CLIENT_NO_SHOW',
-        ConsultationOutcome.clientCancelled => 'CLIENT_CANCELLED',
-        ConsultationOutcome.techIssue => 'TECH_ISSUE',
-        ConsultationOutcome.expertCancelled => 'EXPERT_CANCELLED',
-      };
+    ConsultationOutcome.completed => 'COMPLETED',
+    ConsultationOutcome.clientNoShow => 'CLIENT_NO_SHOW',
+    ConsultationOutcome.clientCancelled => 'CLIENT_CANCELLED',
+    ConsultationOutcome.techIssue => 'TECH_ISSUE',
+    ConsultationOutcome.expertCancelled => 'EXPERT_CANCELLED',
+  };
 }
 
 /// Статус оплаты консультации (`ConsultationClientDto.paymentStatus`).
@@ -141,10 +142,10 @@ enum SessionFormat {
 /// (например, фильтр каталога или `MediaTokenRequestDto.format`).
 extension SessionFormatWire on SessionFormat {
   String get wireValue => switch (this) {
-        SessionFormat.chat => 'chat',
-        SessionFormat.audio => 'audio',
-        SessionFormat.video => 'video',
-      };
+    SessionFormat.chat => 'chat',
+    SessionFormat.audio => 'audio',
+    SessionFormat.video => 'video',
+  };
 }
 
 /// Статус обращения в поддержку (`TicketStatus` Prisma-enum бэкенда, см.
@@ -264,34 +265,34 @@ enum DocumentStatus {
 /// проводе JSON).
 extension DocumentTypeWire on DocumentType {
   String get wireValue => switch (this) {
-        DocumentType.identity => 'IDENTITY',
-        DocumentType.diploma => 'DIPLOMA',
-        DocumentType.certificates => 'CERTIFICATES',
-        DocumentType.qualification => 'QUALIFICATION',
-      };
+    DocumentType.identity => 'IDENTITY',
+    DocumentType.diploma => 'DIPLOMA',
+    DocumentType.certificates => 'CERTIFICATES',
+    DocumentType.qualification => 'QUALIFICATION',
+  };
 }
 
 /// Строковое представление [ExperienceLevel] для мест, где значение уходит не
 /// через модельный `toJson`, а напрямую в тело запроса (для ручной сериализации).
 extension ExperienceLevelWire on ExperienceLevel {
   String get wireValue => switch (this) {
-        ExperienceLevel.lessThanYear => 'LESS_THAN_YEAR',
-        ExperienceLevel.oneToThree => 'ONE_TO_THREE',
-        ExperienceLevel.threeToFive => 'THREE_TO_FIVE',
-        ExperienceLevel.fiveToTen => 'FIVE_TO_TEN',
-        ExperienceLevel.moreThanTen => 'MORE_THAN_TEN',
-      };
+    ExperienceLevel.lessThanYear => 'LESS_THAN_YEAR',
+    ExperienceLevel.oneToThree => 'ONE_TO_THREE',
+    ExperienceLevel.threeToFive => 'THREE_TO_FIVE',
+    ExperienceLevel.fiveToTen => 'FIVE_TO_TEN',
+    ExperienceLevel.moreThanTen => 'MORE_THAN_TEN',
+  };
 }
 
 /// Строковое представление [WorkStatus] для мест, где значение уходит не
 /// через модельный `toJson`, а напрямую в тело запроса (для ручной сериализации).
 extension WorkStatusWire on WorkStatus {
   String get wireValue => switch (this) {
-        WorkStatus.accepting => 'ACCEPTING',
-        WorkStatus.busy => 'BUSY',
-        WorkStatus.notAccepting => 'NOT_ACCEPTING',
-        WorkStatus.unavailable => 'UNAVAILABLE',
-      };
+    WorkStatus.accepting => 'ACCEPTING',
+    WorkStatus.busy => 'BUSY',
+    WorkStatus.notAccepting => 'NOT_ACCEPTING',
+    WorkStatus.unavailable => 'UNAVAILABLE',
+  };
 }
 
 /// Статус заявки на вывод средств эксперта (`PayoutDto.status` бэкенда,
@@ -300,6 +301,7 @@ enum PayoutStatus {
   /// Очередь финконтроля — сумма выше лимита автоодобрения (Р-06).
   @JsonValue('PENDING_REVIEW')
   pendingReview,
+
   /// Одобрен (авто или вручную), отправлен провайдеру.
   @JsonValue('PROCESSING')
   processing,

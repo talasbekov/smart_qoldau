@@ -6,23 +6,33 @@ import 'package:flutter/material.dart';
 import 'package:shared/shared.dart';
 
 class TopicGrid extends StatelessWidget {
-  const TopicGrid({
-    super.key,
-    required this.topics,
-    required this.onTopicTap,
-  });
+  const TopicGrid({super.key, required this.topics, required this.onTopicTap});
 
   final List<Topic> topics;
   final ValueChanged<Topic> onTopicTap;
 
   @override
   Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // Прототип `Web - Выбор темы`: auto-fit minmax(210px, 1fr).
+        // На телефоне 210 px не влезают трижды, поэтому там остаются
+        // прежние три колонки — ровно то, что было до веба.
+        final columns = SqLayoutScope.of(context).isWide
+            ? (constraints.maxWidth / 210).floor().clamp(3, 6)
+            : 3;
+        return _grid(columns);
+      },
+    );
+  }
+
+  Widget _grid(int columns) {
     return GridView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       itemCount: topics.length,
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 3,
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: columns,
         mainAxisSpacing: SqSpacing.s,
         crossAxisSpacing: SqSpacing.s,
         childAspectRatio: 0.95,

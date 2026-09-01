@@ -33,7 +33,9 @@ class _NoteEditorState extends ConsumerState<NoteEditor> {
 
   Future<void> _load() async {
     try {
-      final note = await ref.read(expertNotesRepositoryProvider).note(widget.consultationId);
+      final note = await ref
+          .read(expertNotesRepositoryProvider)
+          .note(widget.consultationId);
       if (!mounted) return;
       _controller.text = note.text ?? '';
     } on ApiException catch (e) {
@@ -51,7 +53,9 @@ class _NoteEditorState extends ConsumerState<NoteEditor> {
       _error = null;
     });
     try {
-      await ref.read(expertNotesRepositoryProvider).saveNote(widget.consultationId, text);
+      await ref
+          .read(expertNotesRepositoryProvider)
+          .saveNote(widget.consultationId, text);
     } on ApiException catch (e) {
       if (mounted) setState(() => _error = e.message);
     } finally {
@@ -92,7 +96,10 @@ class _NoteEditorState extends ConsumerState<NoteEditor> {
           if (_error != null)
             Padding(
               padding: const EdgeInsets.only(bottom: 8),
-              child: Text(_error!, style: SqTypography.body.copyWith(color: SqColors.danger)),
+              child: Text(
+                _error!,
+                style: SqTypography.body.copyWith(color: SqColors.danger),
+              ),
             ),
           ElevatedButton(
             key: const Key('sq-note-save'),

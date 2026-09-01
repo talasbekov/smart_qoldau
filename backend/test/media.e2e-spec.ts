@@ -1,5 +1,5 @@
 import { Test } from '@nestjs/testing';
-import { INestApplication } from '@nestjs/common';
+import { INestApplication, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import request from 'supertest';
 import * as crypto from 'node:crypto';
@@ -21,7 +21,7 @@ let lastCode = '';
 
 class FakeSmsProvider implements SmsProvider {
   async send(_phone: string, text: string): Promise<void> {
-    const match = text.match(/(\d{4})/);
+    const match = text.match(/(\d{6})/);
     lastCode = match ? match[1] : '';
   }
 }
@@ -380,6 +380,13 @@ describe('LiveKit-токены, вебхуки участников, эскал�
       'cons-does-not-matter',
       'client-1',
     );
+    // Отклонённый вебхук обязан оставлять след: иначе жалобу «я оплатил,
+    // а денег нет» при разъехавшемся секрете разбирать нечем, а перебор
+    // открытого миру эндпоинта не виден вовсе.
+    const warn = jest
+      .spyOn(Logger.prototype, 'warn')
+      .mockImplementation(() => undefined);
+
     const res = await request(app.getHttpServer())
       .post('/v1/webhooks/livekit')
       .set('Authorization', 'garbage.not.a.jwt')
@@ -387,6 +394,15 @@ describe('LiveKit-токены, вебхуки участников, эскал�
       .send(body)
       .expect(401);
     expect(res.body.error.code).toBe('WEBHOOK_INVALID');
+
+    const line = warn.mock.calls
+      .map((call) => String(call[0]))
+      .find((text) => text.includes('webhook rejected'));
+    expect(line).toContain('channel=livekit');
+    expect(line).toContain('reason=signature_invalid');
+    // Тело в лог не попадает — только его хэш.
+    expect(line).not.toContain('participant_joined');
+    warn.mockRestore();
   });
 
   it('вебхук: чужая/несуществующая комната -> 200 без эффекта', async () => {

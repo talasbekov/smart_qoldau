@@ -46,9 +46,7 @@ class EmergencyController extends AutoDisposeAsyncNotifier<void> {
           );
       ref.read(analyticsProvider)
         ..track(RequestCreated(requestId: request.id, isEmergency: true))
-        ..track(
-          EmergencyEscalated(requestId: request.id, stage: 'search'),
-        );
+        ..track(EmergencyEscalated(requestId: request.id, stage: 'search'));
       state = const AsyncData(null);
       return request;
     } catch (error, stackTrace) {

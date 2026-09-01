@@ -1,4 +1,5 @@
 export type AdminRole =
+  | 'CONTENT_EDITOR'
   | 'VERIFICATION_OPERATOR'
   | 'SUPPORT_OPERATOR'
   | 'QUALITY_TEAM'

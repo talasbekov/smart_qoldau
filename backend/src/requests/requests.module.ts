@@ -8,6 +8,7 @@ import { RedisModule } from '../redis/redis.module';
 import { WsModule } from '../ws/ws.module';
 import { ConsultationsModule } from '../consultations/consultations.module';
 import { PaymentsModule } from '../payments/payments.module';
+import { PremiumModule } from '../premium/premium.module';
 import { PayoutsModule } from '../payouts/payouts.module';
 import { NotificationsModule } from '../notifications/notifications.module';
 import { RequestsService } from './requests.service';
@@ -30,6 +31,7 @@ import { EscalationService } from './escalation.service';
     PaymentsModule,
     PayoutsModule,
     NotificationsModule,
+    PremiumModule,
   ],
   controllers: [RequestsController, OffersController],
   providers: [

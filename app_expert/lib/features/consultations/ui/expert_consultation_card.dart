@@ -16,11 +16,11 @@ class ExpertConsultationCard extends StatelessWidget {
   final ConsultationExpertDto consultation;
 
   String _statusLabel(AppLocalizations l10n) => switch (consultation.status) {
-        ConsultationStatus.scheduled => l10n.consultationStatusScheduled,
-        ConsultationStatus.active => l10n.consultationStatusActive,
-        ConsultationStatus.completed => l10n.consultationStatusCompleted,
-        ConsultationStatus.cancelled => l10n.consultationStatusCancelled,
-      };
+    ConsultationStatus.scheduled => l10n.consultationStatusScheduled,
+    ConsultationStatus.active => l10n.consultationStatusActive,
+    ConsultationStatus.completed => l10n.consultationStatusCompleted,
+    ConsultationStatus.cancelled => l10n.consultationStatusCancelled,
+  };
 
   @override
   Widget build(BuildContext context) {
@@ -35,31 +35,34 @@ class ExpertConsultationCard extends StatelessWidget {
           : null,
       borderRadius: BorderRadius.circular(SqRadius.m),
       child: Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: SqColors.surface,
-        borderRadius: BorderRadius.circular(SqRadius.m),
-        border: Border.all(color: SqColors.border),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(consultation.topicSlug, style: SqTypography.title),
-              Text(l10n.clientCode(consultation.clientCode), style: SqTypography.caption),
-            ],
-          ),
-          const SizedBox(height: 4),
-          Text(_statusLabel(l10n), style: SqTypography.body.copyWith(color: SqColors.textSecondary)),
-          const SizedBox(height: 4),
-          Text(
-            formatTenge(consultation.priceTiyn),
-            style: SqTypography.body,
-          ),
-        ],
-      ),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: SqColors.surface,
+          borderRadius: BorderRadius.circular(SqRadius.m),
+          border: Border.all(color: SqColors.border),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(consultation.topicSlug, style: SqTypography.title),
+                Text(
+                  l10n.clientCode(consultation.clientCode),
+                  style: SqTypography.caption,
+                ),
+              ],
+            ),
+            const SizedBox(height: 4),
+            Text(
+              _statusLabel(l10n),
+              style: SqTypography.body.copyWith(color: SqColors.textSecondary),
+            ),
+            const SizedBox(height: 4),
+            Text(formatTenge(consultation.priceTiyn), style: SqTypography.body),
+          ],
+        ),
       ),
     );
   }

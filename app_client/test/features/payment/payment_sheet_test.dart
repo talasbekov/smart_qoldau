@@ -39,8 +39,12 @@ ClientConsultation _consultation() => ClientConsultation(
   expert: _expert(),
 );
 
-PaymentMethod _card(String id, String pan) =>
-    PaymentMethod(id: id, maskedPan: pan, brand: 'VISA', holderName: 'I IVANOV');
+PaymentMethod _card(String id, String pan) => PaymentMethod(
+  id: id,
+  maskedPan: pan,
+  brand: 'VISA',
+  holderName: 'I IVANOV',
+);
 
 Widget _wrap(SqApi api) {
   final router = GoRouter(
@@ -48,9 +52,8 @@ Widget _wrap(SqApi api) {
     routes: [
       GoRoute(
         path: '/host',
-        builder: (context, state) => Scaffold(
-          body: PaymentSheet(consultation: _consultation()),
-        ),
+        builder: (context, state) =>
+            Scaffold(body: PaymentSheet(consultation: _consultation())),
       ),
       GoRoute(
         path: RoutePaths.cardsAdd,
@@ -115,16 +118,18 @@ void main() {
     await tester.pumpAndSettle();
 
     verifyNever(
-      () => api.payConsultation(any(), paymentMethodId: any(named: 'paymentMethodId')),
+      () => api.payConsultation(
+        any(),
+        paymentMethodId: any(named: 'paymentMethodId'),
+      ),
     );
   });
 
   testWidgets('оплата холдирует деньги первой картой и закрывает шторку', (
     tester,
   ) async {
-    when(
-      () => api.payConsultation('c1', paymentMethodId: 'pm1'),
-    ).thenAnswer((_) async => const PayResult(status: PaymentStatus.held));
+    when(() => api.payConsultation('c1', paymentMethodId: 'pm1'))
+        .thenAnswer((_) async => const PayResult(status: PaymentStatus.held));
 
     await tester.pumpWidget(_wrap(api));
     await tester.pumpAndSettle();
@@ -138,9 +143,8 @@ void main() {
   testWidgets('вторая карта выбирается тапом и уходит в оплату', (
     tester,
   ) async {
-    when(
-      () => api.payConsultation('c1', paymentMethodId: 'pm2'),
-    ).thenAnswer((_) async => const PayResult(status: PaymentStatus.held));
+    when(() => api.payConsultation('c1', paymentMethodId: 'pm2'))
+        .thenAnswer((_) async => const PayResult(status: PaymentStatus.held));
 
     await tester.pumpWidget(_wrap(api));
     await tester.pumpAndSettle();

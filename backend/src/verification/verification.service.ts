@@ -44,6 +44,11 @@ export class VerificationService {
     const experts = await this.prisma.expert.findMany({
       where: { verificationStatus: VerificationStatus.PENDING },
       include: { documents: true },
+      // Очередь читается сверху вниз, поэтому первым должен идти тот, кто
+      // ждёт дольше всех (SLA 24ч, ТЗ §11.4). nulls last — записи,
+      // отправленные до появления verificationSubmittedAt, отметки не
+      // имеют и в хвосте никому не мешают.
+      orderBy: { verificationSubmittedAt: { sort: 'asc', nulls: 'last' } },
     });
 
     return Promise.all(
@@ -51,6 +56,7 @@ export class VerificationService {
         id: expert.id,
         displayName: expert.displayName,
         verificationStatus: expert.verificationStatus,
+        submittedAt: expert.verificationSubmittedAt,
         documents: await Promise.all(
           expert.documents.map(async (doc) => ({
             id: doc.id,

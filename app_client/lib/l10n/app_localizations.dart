@@ -1472,12 +1472,6 @@ abstract class AppLocalizations {
   /// **'Ответ специалиста'**
   String get expertReplyPrefix;
 
-  /// Подпись цены в профиле специалиста
-  ///
-  /// In ru, this message translates to:
-  /// **'Консультация'**
-  String get expertPriceLabel;
-
   /// Заголовок диалога при EXPERT_UNAVAILABLE
   ///
   /// In ru, this message translates to:
@@ -1742,7 +1736,7 @@ abstract class AppLocalizations {
   /// **'Политика конфиденциальности'**
   String get profilePrivacy;
 
-  /// Пункт профиля: удаление аккаунта через обращение
+  /// Пункт профиля: удаление аккаунта
   ///
   /// In ru, this message translates to:
   /// **'Удалить аккаунт'**
@@ -1778,23 +1772,23 @@ abstract class AppLocalizations {
   /// **'Удалить аккаунт и данные?'**
   String get profileDeleteAccountTitle;
 
-  /// Текст подтверждения удаления аккаунта: прямого эндпоинта удаления нет
+  /// Текст подтверждения удаления аккаунта: что исчезает, а что остаётся
   ///
   /// In ru, this message translates to:
-  /// **'Мы создадим обращение в поддержку — команда свяжется с вами и подтвердит удаление'**
+  /// **'Переписка, заметки специалистов, карты и уведомления будут удалены безвозвратно. Записи о консультациях и платежах останутся в бухгалтерии — их закон хранить обязывает. Войти снова по этому номеру можно будет, но это будет новый пустой аккаунт'**
   String get profileDeleteAccountBody;
 
-  /// Тема автоматически созданного обращения на удаление аккаунта
+  /// Отказ CONSULTATION_IN_PROGRESS при удалении аккаунта
   ///
   /// In ru, this message translates to:
-  /// **'Удаление аккаунта и данных'**
-  String get profileDeleteAccountSubject;
+  /// **'Сначала завершите или отмените консультацию — удалить аккаунт посреди неё нельзя'**
+  String get profileDeleteAccountBlockedConsultation;
 
-  /// Тело автоматически созданного обращения на удаление аккаунта
+  /// Отказ PAYMENT_IN_PROGRESS при удалении аккаунта
   ///
   /// In ru, this message translates to:
-  /// **'Прошу удалить мой аккаунт и связанные с ним данные'**
-  String get profileDeleteAccountTicketBody;
+  /// **'Дождитесь завершения расчёта по последней консультации'**
+  String get profileDeleteAccountBlockedPayment;
 
   /// Заголовок экрана конверсии гостя
   ///
@@ -2113,6 +2107,246 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Отменена специалистом'**
   String get outcomeExpertCancelled;
+
+  /// Заголовок экрана Premium
+  ///
+  /// In ru, this message translates to:
+  /// **'Premium'**
+  String get premiumTitle;
+
+  /// Подзаголовок экрана Premium — состав подписки (Р-08)
+  ///
+  /// In ru, this message translates to:
+  /// **'Скидка 10 % на консультации и приоритетный подбор специалиста'**
+  String get premiumPitch;
+
+  /// Название месячного тарифа
+  ///
+  /// In ru, this message translates to:
+  /// **'На месяц'**
+  String get premiumPlanMonth;
+
+  /// Название годового тарифа
+  ///
+  /// In ru, this message translates to:
+  /// **'На год'**
+  String get premiumPlanYear;
+
+  /// Пояснение к годовому тарифу
+  ///
+  /// In ru, this message translates to:
+  /// **'Выгоднее месячного'**
+  String get premiumPlanYearHint;
+
+  /// Кнопка оформления подписки
+  ///
+  /// In ru, this message translates to:
+  /// **'Оформить подписку'**
+  String get premiumSubscribe;
+
+  /// Кнопка отмены подписки
+  ///
+  /// In ru, this message translates to:
+  /// **'Отменить подписку'**
+  String get premiumCancel;
+
+  /// Кнопка перехода к добавлению карты, когда карт нет
+  ///
+  /// In ru, this message translates to:
+  /// **'Привязать карту'**
+  String get premiumAddCard;
+
+  /// Объяснение, почему нельзя оформить подписку
+  ///
+  /// In ru, this message translates to:
+  /// **'Подписка списывается с привязанной карты — её пока нет'**
+  String get premiumNoCard;
+
+  /// Статус: подписки нет
+  ///
+  /// In ru, this message translates to:
+  /// **'Базовый тариф'**
+  String get premiumStatusInactive;
+
+  /// Статус: идут ретраи автопродления (Р-09)
+  ///
+  /// In ru, this message translates to:
+  /// **'Не удалось списать оплату — проверьте карту'**
+  String get premiumStatusGrace;
+
+  /// SUBSCRIPTION_EXISTS
+  ///
+  /// In ru, this message translates to:
+  /// **'Подписка уже оформлена'**
+  String get errorSubscriptionExists;
+
+  /// SUBSCRIPTION_NOT_FOUND
+  ///
+  /// In ru, this message translates to:
+  /// **'Активной подписки нет'**
+  String get errorSubscriptionNotFound;
+
+  /// Статус активной подписки с датой окончания
+  ///
+  /// In ru, this message translates to:
+  /// **'Активна до {date}'**
+  String premiumActiveUntil(String date);
+
+  /// Статус отменённой подписки (Р-09)
+  ///
+  /// In ru, this message translates to:
+  /// **'Отменена, доступ до {date}'**
+  String premiumCancelledUntil(String date);
+
+  /// Цена тарифа и период
+  ///
+  /// In ru, this message translates to:
+  /// **'{price} / {period}'**
+  String premiumPlanPrice(String price, String period);
+
+  /// Апселл в шторке оплаты для базового клиента
+  ///
+  /// In ru, this message translates to:
+  /// **'Premium: −10 % на консультации'**
+  String get premiumUpsell;
+
+  /// Строка в шторке оплаты для клиента с подпиской
+  ///
+  /// In ru, this message translates to:
+  /// **'Скидка Premium уже применена'**
+  String get premiumDiscountApplied;
+
+  /// Вкладка библиотеки самопомощи
+  ///
+  /// In ru, this message translates to:
+  /// **'Материалы'**
+  String get navMaterials;
+
+  /// Заголовок вкладки материалов
+  ///
+  /// In ru, this message translates to:
+  /// **'Материалы'**
+  String get materialsTitle;
+
+  /// Пустое состояние библиотеки
+  ///
+  /// In ru, this message translates to:
+  /// **'Здесь пока пусто — материалы скоро появятся'**
+  String get materialsEmpty;
+
+  /// Фильтр: все виды материалов
+  ///
+  /// In ru, this message translates to:
+  /// **'Все'**
+  String get materialsFilterAll;
+
+  /// Фильтр по виду
+  ///
+  /// In ru, this message translates to:
+  /// **'Медитации'**
+  String get materialsFilterMeditation;
+
+  /// Фильтр по виду
+  ///
+  /// In ru, this message translates to:
+  /// **'Музыка'**
+  String get materialsFilterMusic;
+
+  /// Фильтр по виду
+  ///
+  /// In ru, this message translates to:
+  /// **'Статьи'**
+  String get materialsFilterArticle;
+
+  /// Фильтр по виду
+  ///
+  /// In ru, this message translates to:
+  /// **'Дыхание'**
+  String get materialsFilterBreathing;
+
+  /// Подпись под замком
+  ///
+  /// In ru, this message translates to:
+  /// **'Доступно по подписке Premium'**
+  String get materialsPremiumOnly;
+
+  /// Вопрос под статьёй
+  ///
+  /// In ru, this message translates to:
+  /// **'Было полезно?'**
+  String get materialsUseful;
+
+  /// Ответ на вопрос о пользе
+  ///
+  /// In ru, this message translates to:
+  /// **'Да'**
+  String get materialsUsefulYes;
+
+  /// Ответ на вопрос о пользе
+  ///
+  /// In ru, this message translates to:
+  /// **'Нет'**
+  String get materialsUsefulNo;
+
+  /// Кнопка старта дыхательной практики
+  ///
+  /// In ru, this message translates to:
+  /// **'Начать'**
+  String get breathingStart;
+
+  /// Кнопка остановки практики
+  ///
+  /// In ru, this message translates to:
+  /// **'Остановить'**
+  String get breathingStop;
+
+  /// Кнопка воспроизведения
+  ///
+  /// In ru, this message translates to:
+  /// **'Слушать'**
+  String get playerPlay;
+
+  /// Кнопка паузы
+  ///
+  /// In ru, this message translates to:
+  /// **'Пауза'**
+  String get playerPause;
+
+  /// Стрик практик
+  ///
+  /// In ru, this message translates to:
+  /// **'{days} дней подряд'**
+  String materialsStreak(int days);
+
+  /// Счётчик пройденного
+  ///
+  /// In ru, this message translates to:
+  /// **'Пройдено материалов: {count}'**
+  String materialsCompleted(int count);
+
+  /// Длительность материала
+  ///
+  /// In ru, this message translates to:
+  /// **'{minutes} мин'**
+  String materialsDuration(int minutes);
+
+  /// Прогресс дыхательной практики
+  ///
+  /// In ru, this message translates to:
+  /// **'Цикл {current} из {total}'**
+  String breathingCycle(int current, int total);
+
+  /// Цена базового тарифа в сравнении (прототип Web - Premium)
+  ///
+  /// In ru, this message translates to:
+  /// **'Бесплатно'**
+  String get premiumPlanFree;
+
+  /// Подпись под ценой в карточке записи (прототип Web - Профиль психолога)
+  ///
+  /// In ru, this message translates to:
+  /// **'за консультацию'**
+  String get expertPricePerSession;
 }
 
 class _AppLocalizationsDelegate

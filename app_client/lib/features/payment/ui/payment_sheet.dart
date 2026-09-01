@@ -9,6 +9,7 @@ import 'package:shared/shared.dart';
 import '../../../core/error_text.dart';
 import '../../../core/route_paths.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../premium/state/premium_controller.dart';
 import '../state/cards_controller.dart';
 import '../state/payment_controller.dart';
 
@@ -17,7 +18,7 @@ import '../state/payment_controller.dart';
 Future<bool?> showPaymentSheet(
   BuildContext context,
   ClientConsultation consultation,
-) => showModalBottomSheet<bool>(
+) => showSqSheetOrDialog<bool>(
   context: context,
   isScrollControlled: true,
   backgroundColor: SqColors.surface,
@@ -97,7 +98,9 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
                 ),
               ],
             ),
-            const SizedBox(height: SqSpacing.l),
+            const SizedBox(height: SqSpacing.m),
+            const _PremiumLine(),
+            const SizedBox(height: SqSpacing.m),
             cards.when(
               loading: () => const Padding(
                 padding: EdgeInsets.all(SqSpacing.l),
@@ -113,8 +116,8 @@ class _PaymentSheetState extends ConsumerState<PaymentSheet> {
               ),
               data: (list) => _CardsList(
                 cards: list,
-                selectedId: _selectedCardId ??
-                    (list.isEmpty ? null : list.first.id),
+                selectedId:
+                    _selectedCardId ?? (list.isEmpty ? null : list.first.id),
                 onSelect: (id) => setState(() => _selectedCardId = id),
               ),
             ),
@@ -251,6 +254,73 @@ class _CardsList extends StatelessWidget {
             onTap: () => onSelect(card.id),
           ),
       ],
+    );
+  }
+}
+
+/// Строка Premium в шторке оплаты: базовому клиенту — предложение, у
+/// подписчика — отметка, что скидка уже в цене.
+///
+/// Статус не загрузился — строки просто нет: оплата консультации не должна
+/// зависеть от того, ответил ли эндпоинт подписки. Формулировку «без
+/// оплаты за каждый сеанс» из веб-прототипа не используем: БП-07 прямо
+/// отмечает её как вводящую в заблуждение — консультации платные и при
+/// Premium.
+class _PremiumLine extends ConsumerWidget {
+  const _PremiumLine();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
+    final status = ref.watch(premiumStatusProvider).valueOrNull;
+    if (status == null) return const SizedBox.shrink();
+
+    if (status.active) {
+      return Row(
+        children: [
+          const Icon(
+            Icons.check_circle_outline,
+            size: 18,
+            color: SqColors.primary,
+          ),
+          const SizedBox(width: SqSpacing.s),
+          Expanded(
+            child: Text(
+              l10n.premiumDiscountApplied,
+              style: SqTypography.caption.copyWith(color: SqColors.primary),
+            ),
+          ),
+        ],
+      );
+    }
+
+    return InkWell(
+      key: const Key('sq-payment-premium-upsell'),
+      onTap: () => context.push(RoutePaths.premium),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: SqSpacing.xs),
+        child: Row(
+          children: [
+            const Icon(
+              Icons.workspace_premium_outlined,
+              size: 18,
+              color: SqColors.primary,
+            ),
+            const SizedBox(width: SqSpacing.s),
+            Expanded(
+              child: Text(
+                l10n.premiumUpsell,
+                style: SqTypography.caption.copyWith(color: SqColors.primary),
+              ),
+            ),
+            const Icon(
+              Icons.chevron_right,
+              size: 18,
+              color: SqColors.textSecondary,
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

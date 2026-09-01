@@ -16,7 +16,10 @@ import '../state/auth_controller.dart';
 /// SMS-кода — тот же интервал, что в `app_client`.
 const codeResendCooldown = Duration(seconds: 45);
 
-const _cellCount = 4;
+// Шесть ячеек, как длина кода на бэкенде (`AuthService.requestCode`):
+// четырёхзначный код давал 13 бит энтропии, что при живых лимитах на
+// проверку кода недостаточно (OWASP ASVS 4.0 V2.7.6).
+const _cellCount = 6;
 
 class CodeScreen extends ConsumerStatefulWidget {
   const CodeScreen({super.key, required this.phone});
@@ -109,9 +112,7 @@ class _CodeScreenState extends ConsumerState<CodeScreen> {
   Future<void> _resend() async {
     if (_secondsLeft > 0) return;
     try {
-      await ref
-          .read(authControllerProvider.notifier)
-          .requestCode(widget.phone);
+      await ref.read(authControllerProvider.notifier).requestCode(widget.phone);
     } on ApiException catch (e) {
       if (!mounted) return;
       // Сознательно не перезапускаем отсчёт здесь — бэкенд не сообщает,
@@ -130,40 +131,45 @@ class _CodeScreenState extends ConsumerState<CodeScreen> {
     return Scaffold(
       backgroundColor: SqColors.background,
       appBar: AppBar(title: Text(l10n.codeScreenTitle)),
-      body: Padding(
-        padding: const EdgeInsets.all(SqSpacing.l),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(
-              l10n.codeScreenSentTo(widget.phone),
-              style: SqTypography.body.copyWith(color: SqColors.textSecondary),
-            ),
-            const SizedBox(height: SqSpacing.xl),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: List.generate(_cellCount, _buildCell),
-            ),
-            if (_errorText != null) ...[
-              const SizedBox(height: SqSpacing.m),
+      body: SqReadableWidth(
+        maxWidth: 520,
+        child: Padding(
+          padding: const EdgeInsets.all(SqSpacing.l),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
               Text(
-                _errorText!,
-                textAlign: TextAlign.center,
-                style: SqTypography.caption.copyWith(color: SqColors.danger),
-              ),
-            ],
-            const SizedBox(height: SqSpacing.xl),
-            Center(
-              child: TextButton(
-                onPressed: _secondsLeft == 0 ? _resend : null,
-                child: Text(
-                  _secondsLeft == 0
-                      ? l10n.actionResendCode
-                      : l10n.resendCodeCountdown(_secondsLeft),
+                l10n.codeScreenSentTo(widget.phone),
+                style: SqTypography.body.copyWith(
+                  color: SqColors.textSecondary,
                 ),
               ),
-            ),
-          ],
+              const SizedBox(height: SqSpacing.xl),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: List.generate(_cellCount, _buildCell),
+              ),
+              if (_errorText != null) ...[
+                const SizedBox(height: SqSpacing.m),
+                Text(
+                  _errorText!,
+                  textAlign: TextAlign.center,
+                  style: SqTypography.caption.copyWith(color: SqColors.danger),
+                ),
+              ],
+              const SizedBox(height: SqSpacing.xl),
+              Center(
+                child: TextButton(
+                  onPressed: _secondsLeft == 0 ? _resend : null,
+                  child: Text(
+                    _secondsLeft == 0
+                        ? l10n.actionResendCode
+                        : l10n.resendCodeCountdown(_secondsLeft),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -171,7 +177,9 @@ class _CodeScreenState extends ConsumerState<CodeScreen> {
 
   Widget _buildCell(int index) {
     return SizedBox(
-      width: 56,
+      // 48, а не 56: шесть ячеек по 56 не помещаются в ряд на 360-точечном
+      // экране вместе с отступами страницы.
+      width: 48,
       height: 64,
       child: TextField(
         controller: _controllers[index],

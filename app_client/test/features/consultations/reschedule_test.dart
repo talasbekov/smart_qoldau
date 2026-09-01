@@ -58,10 +58,12 @@ void main() {
   setUp(() {
     api = MockSqApi();
     when(
-      () => api.slots('e1', from: any(named: 'from'), to: any(named: 'to')),
-    ).thenAnswer(
-      (_) async => [Slot(startAt: DateTime.utc(2026, 8, 24, 5))],
-    );
+      () => api.slots(
+        'e1',
+        from: any(named: 'from'),
+        to: any(named: 'to'),
+      ),
+    ).thenAnswer((_) async => [Slot(startAt: DateTime.utc(2026, 8, 24, 5))]);
     when(() => api.paymentMethods()).thenAnswer((_) async => []);
     when(() => api.reschedule(any(), any())).thenAnswer(
       (_) async => BookingResult(
@@ -84,9 +86,7 @@ void main() {
     await tester.tap(find.text('10:00'));
     await tester.pumpAndSettle();
 
-    verify(
-      () => api.reschedule('c1', DateTime.utc(2026, 8, 24, 5)),
-    ).called(1);
+    verify(() => api.reschedule('c1', DateTime.utc(2026, 8, 24, 5))).called(1);
     // Холд уже стоит — карту не спрашиваем.
     verifyNever(() => api.paymentMethods());
     expect(find.text('sq-stub-consultations'), findsOneWidget);

@@ -6,7 +6,6 @@ library;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared/shared.dart';
 
-
 class RequestsRepository {
   const RequestsRepository(this._api);
 

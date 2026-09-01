@@ -21,9 +21,9 @@ class NotificationsScreen extends ConsumerWidget {
   ) async {
     final route = notificationRoute(notification);
     if (notification.readAt == null) {
-      await ref
-          .read(notificationsControllerProvider.notifier)
-          .markRead([notification.id]);
+      await ref.read(notificationsControllerProvider.notifier).markRead([
+        notification.id,
+      ]);
     }
     if (route == null || !context.mounted) return;
     context.push(route);
@@ -58,8 +58,9 @@ class NotificationsScreen extends ConsumerWidget {
                 text: error is ApiException
                     ? errorText(context, error)
                     : l10n.errorGeneric,
-                onRetry: () =>
-                    ref.read(notificationsControllerProvider.notifier).refresh(),
+                onRetry: () => ref
+                    .read(notificationsControllerProvider.notifier)
+                    .refresh(),
                 retryLabel: l10n.actionRetry,
               ),
             ),

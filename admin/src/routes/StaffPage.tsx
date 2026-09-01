@@ -71,13 +71,13 @@ export default function StaffPage() {
             </label>
           ))}
         </div>
-        <button type="submit" className="bg-teal-700 text-white rounded px-4 py-2 self-start">
+        <button type="submit" className="bg-sq-primary-dark text-white rounded px-4 py-2 self-start">
           Создать
         </button>
       </form>
 
       {items.length === 0 ? (
-        <p className="text-gray-500">Нет сотрудников</p>
+        <p className="text-sq-text-secondary">Нет сотрудников</p>
       ) : (
         <table className="w-full text-sm">
           <thead>
@@ -95,7 +95,7 @@ export default function StaffPage() {
                 <td>{s.roles.join(', ')}</td>
                 <td>{s.isActive ? 'активен' : 'деактивирован'}</td>
                 <td>
-                  <button onClick={() => toggleActive(s)} className="text-teal-700">
+                  <button onClick={() => toggleActive(s)} className="text-sq-primary">
                     {s.isActive ? 'Деактивировать' : 'Активировать'}
                   </button>
                 </td>

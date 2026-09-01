@@ -320,29 +320,30 @@ void main() {
     _disposeNow(container);
   });
 
-  testWidgets('сбой счётчика онлайна не роняет экран и сохраняет прошлое значение', (
-    tester,
-  ) async {
-    final container = _container(api: api, socket: socket);
-    await tester.pump();
-    expect(_state(container).onlineCount, 3);
+  testWidgets(
+    'сбой счётчика онлайна не роняет экран и сохраняет прошлое значение',
+    (tester) async {
+      final container = _container(api: api, socket: socket);
+      await tester.pump();
+      expect(_state(container).onlineCount, 3);
 
-    when(
-      () => api.onlineCount(
-        topicSlug: any(named: 'topicSlug'),
-        format: any(named: 'format'),
-        urgentOnly: any(named: 'urgentOnly'),
-      ),
-    ).thenThrow(const ApiException(ApiErrorCode.network, 'нет сети', 0));
+      when(
+        () => api.onlineCount(
+          topicSlug: any(named: 'topicSlug'),
+          format: any(named: 'format'),
+          urgentOnly: any(named: 'urgentOnly'),
+        ),
+      ).thenThrow(const ApiException(ApiErrorCode.network, 'нет сети', 0));
 
-    await tester.pump(const Duration(seconds: 10));
+      await tester.pump(const Duration(seconds: 10));
 
-    expect(container.read(searchControllerProvider(_args)).hasError, isFalse);
-    expect(_state(container).onlineCount, 3);
-    expect(_state(container).status, RequestStatus.searching);
+      expect(container.read(searchControllerProvider(_args)).hasError, isFalse);
+      expect(_state(container).onlineCount, 3);
+      expect(_state(container).status, RequestStatus.searching);
 
-    _disposeNow(container);
-  });
+      _disposeNow(container);
+    },
+  );
 
   testWidgets('без topicSlug/format счётчик не запрашивается вовсе', (
     tester,

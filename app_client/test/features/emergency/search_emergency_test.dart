@@ -139,12 +139,7 @@ void main() {
     tester,
   ) async {
     await tester.pumpWidget(
-      _wrap(
-        api: api,
-        socket: socket,
-        args: _emergencyArgs,
-        launcher: launcher,
-      ),
+      _wrap(api: api, socket: socket, args: _emergencyArgs, launcher: launcher),
     );
     await tester.pump();
 
@@ -159,12 +154,7 @@ void main() {
     tester,
   ) async {
     await tester.pumpWidget(
-      _wrap(
-        api: api,
-        socket: socket,
-        args: _emergencyArgs,
-        launcher: launcher,
-      ),
+      _wrap(api: api, socket: socket, args: _emergencyArgs, launcher: launcher),
     );
     await tester.pump();
 
@@ -184,12 +174,7 @@ void main() {
 
   testWidgets('кнопка вызова служб звонит на tel:103', (tester) async {
     await tester.pumpWidget(
-      _wrap(
-        api: api,
-        socket: socket,
-        args: _emergencyArgs,
-        launcher: launcher,
-      ),
+      _wrap(api: api, socket: socket, args: _emergencyArgs, launcher: launcher),
     );
     await tester.pump();
 
@@ -211,7 +196,10 @@ void main() {
 
     expect(find.text('Приоритетный поиск'), findsNothing);
     expect(find.text('Позвонить 103 / 112'), findsNothing);
-    expect(find.text('Подбираем для вас подходящего психолога'), findsOneWidget);
+    expect(
+      find.text('Подбираем для вас подходящего психолога'),
+      findsOneWidget,
+    );
 
     await tester.pumpWidget(const SizedBox());
   });
@@ -223,12 +211,7 @@ void main() {
     // urgentOnly=true, иначе он покажет специалистов, которые экстренные
     // заявки не берут.
     await tester.pumpWidget(
-      _wrap(
-        api: api,
-        socket: socket,
-        args: _emergencyArgs,
-        launcher: launcher,
-      ),
+      _wrap(api: api, socket: socket, args: _emergencyArgs, launcher: launcher),
     );
     await tester.pump();
 

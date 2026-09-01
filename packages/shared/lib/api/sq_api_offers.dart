@@ -11,26 +11,24 @@ import 'sq_endpoints.dart';
 mixin SqApiOffers on SqApiBase {
   /// `GET /experts/me/offers` — активные PENDING-офферы (без PII клиента).
   Future<List<OfferDto>> myOffers() => guard(() async {
-        final response = await dio.get<List<dynamic>>(
-          SqEndpoints.expertsMeOffers,
-        );
-        return response.data!
-            .cast<Map<String, dynamic>>()
-            .map(OfferDto.fromJson)
-            .toList();
-      });
+    final response = await dio.get<List<dynamic>>(SqEndpoints.expertsMeOffers);
+    return response.data!
+        .cast<Map<String, dynamic>>()
+        .map(OfferDto.fromJson)
+        .toList();
+  });
 
   /// `POST /offers/{offerId}/accept` — принять оффер (атомарно на бэкенде).
   Future<AcceptOfferDto> acceptOffer(String offerId) => guard(() async {
-        final response = await dio.post<Map<String, dynamic>>(
-          SqEndpoints.offerAccept(offerId),
-        );
-        return AcceptOfferDto.fromJson(response.data!);
-      });
+    final response = await dio.post<Map<String, dynamic>>(
+      SqEndpoints.offerAccept(offerId),
+    );
+    return AcceptOfferDto.fromJson(response.data!);
+  });
 
   /// `POST /offers/{offerId}/decline` — отклонить оффер, заявка уходит
   /// следующему кандидату (204).
   Future<void> declineOffer(String offerId) => guard(() async {
-        await dio.post<void>(SqEndpoints.offerDecline(offerId));
-      });
+    await dio.post<void>(SqEndpoints.offerDecline(offerId));
+  });
 }

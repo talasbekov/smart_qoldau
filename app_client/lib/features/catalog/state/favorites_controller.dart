@@ -77,9 +77,7 @@ class FavoritesController extends AsyncNotifier<List<ExpertPublic>> {
 
   Future<void> remove(ExpertPublic expert) async {
     final previous = state.valueOrNull ?? const <ExpertPublic>[];
-    state = AsyncData(
-      previous.where((item) => item.id != expert.id).toList(),
-    );
+    state = AsyncData(previous.where((item) => item.id != expert.id).toList());
     try {
       await ref.read(catalogRepositoryProvider).removeFavorite(expert.id);
     } catch (error) {

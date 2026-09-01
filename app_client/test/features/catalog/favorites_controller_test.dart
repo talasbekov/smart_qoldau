@@ -42,7 +42,10 @@ void main() {
   setUp(() {
     api = MockSqApi();
     when(
-      () => api.favorites(take: any(named: 'take'), skip: any(named: 'skip')),
+      () => api.favorites(
+        take: any(named: 'take'),
+        skip: any(named: 'skip'),
+      ),
     ).thenAnswer((_) async => [_expert('e1')]);
     when(() => api.addFavorite(any())).thenAnswer((_) async {});
     when(() => api.removeFavorite(any())).thenAnswer((_) async {});
@@ -67,15 +70,16 @@ void main() {
 
   test('ошибка добавления откатывает состояние', () async {
     when(() => api.addFavorite('e2')).thenAnswer(
-      (_) async => throw const ApiException(ApiErrorCode.network, 'нет сети', 0),
+      (_) async =>
+          throw const ApiException(ApiErrorCode.network, 'нет сети', 0),
     );
 
     final container = _container(api);
     await container.read(favoritesControllerProvider.future);
 
-    await container.read(favoritesControllerProvider.notifier).toggle(
-      _expert('e2'),
-    );
+    await container
+        .read(favoritesControllerProvider.notifier)
+        .toggle(_expert('e2'));
 
     expect(
       container.read(favoritesControllerProvider).requireValue.map((e) => e.id),
@@ -90,7 +94,8 @@ void main() {
     // состояние — сетевой сбой так себя не ведёт (урок 5 плана эпика:
     // двойник не должен быть проще оригинала там, где живёт логика).
     when(() => api.removeFavorite('e1')).thenAnswer(
-      (_) async => throw const ApiException(ApiErrorCode.network, 'нет сети', 0),
+      (_) async =>
+          throw const ApiException(ApiErrorCode.network, 'нет сети', 0),
     );
 
     final container = _container(api);
@@ -98,10 +103,7 @@ void main() {
     final notifier = container.read(favoritesControllerProvider.notifier);
 
     final pending = notifier.toggle(_expert('e1'));
-    expect(
-      container.read(favoritesControllerProvider).requireValue,
-      isEmpty,
-    );
+    expect(container.read(favoritesControllerProvider).requireValue, isEmpty);
 
     await pending;
     expect(

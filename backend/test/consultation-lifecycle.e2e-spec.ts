@@ -35,7 +35,7 @@ let lastCode = '';
 
 class FakeSmsProvider implements SmsProvider {
   async send(_phone: string, text: string): Promise<void> {
-    const match = text.match(/(\d{4})/);
+    const match = text.match(/(\d{6})/);
     lastCode = match ? match[1] : '';
   }
 }
@@ -343,8 +343,10 @@ describe('Сквозной e2e жизненного цикла консульт�
       // клиент), как в chat.e2e-spec.ts.
       const clientSocket = connect(cli.accessToken);
       const expertSocket = connect(exp.accessToken);
-      await waitForEvent(clientSocket, 'connect');
-      await waitForEvent(expertSocket, 'connect');
+      // 'ready' — сервер подтверждает, что комнаты назначены (см.
+      // EventsGateway.handleConnection); 'connect' приходит раньше этого.
+      await waitForEvent(clientSocket, 'ready');
+      await waitForEvent(expertSocket, 'ready');
 
       const expertMsgPromise = waitForEvent(expertSocket, 'chat.message');
       clientSocket.emit('chat.send', {

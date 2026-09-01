@@ -50,6 +50,11 @@ abstract final class RoutePaths {
 
   /// Заявки и консультации (задача 12 эпика E7) — три вкладки: «Заявки»
   /// (офферы), «Идёт сейчас»/«Плановые», «История».
+  /// Заявки отдельным разделом — веб-кабинет (E14). В мобильном
+  /// приложении оффер приходит полноэкранным алертом, отдельного экрана
+  /// там нет и не нужно.
+  static const offers = '/offers';
+
   static const consultations = '/consultations';
 
   /// Шаблон маршрута сессии консультации (чат) для регистрации в
@@ -66,7 +71,8 @@ abstract final class RoutePaths {
   /// что `app_client/lib/core/route_paths.dart`: формат едет
   /// query-параметром, потому что это ЗАПРОШЕННЫЙ формат (эскалация), а не
   /// текущее состояние консультации.
-  static String call(String id, SessionFormat format) => '/call/$id?format=${format.wireValue}';
+  static String call(String id, SessionFormat format) =>
+      '/call/$id?format=${format.wireValue}';
 
   /// Доход и вывод средств (задача 14 эпика E7).
   static const earnings = '/earnings';
@@ -78,4 +84,12 @@ abstract final class RoutePaths {
   /// Профиль и центр уведомлений (задача 16 эпика E7).
   static const profile = '/profile';
   static const notifications = '/notifications';
+
+  /// Поддержка эксперта (E14). Прототип мобильного эксперта такой экран
+  /// содержит, в продукте его не было: тикеты (E8a) заводил только
+  /// клиент, а психологу писать было некуда.
+  static const support = '/support';
+  static const supportNew = '/support/new';
+  static const supportTicketPattern = '/support/:id';
+  static String supportTicket(String id) => '/support/$id';
 }

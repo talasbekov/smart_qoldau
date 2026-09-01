@@ -58,12 +58,14 @@ class PaymentController extends AutoDisposeNotifier<PaymentState> {
             paymentMethodId: paymentMethodId,
           );
       if (result.status == PaymentStatus.held) {
-        ref.read(analyticsProvider).track(
-          PaymentSucceeded(
-            consultationId: consultationId,
-            priceTiyn: priceTiyn,
-          ),
-        );
+        ref
+            .read(analyticsProvider)
+            .track(
+              PaymentSucceeded(
+                consultationId: consultationId,
+                priceTiyn: priceTiyn,
+              ),
+            );
       }
       state = switch (result.status) {
         // HELD — единственный успешный исход холда (Р-01). CAPTURED здесь
@@ -77,9 +79,11 @@ class PaymentController extends AutoDisposeNotifier<PaymentState> {
         ),
       };
     } on ApiException catch (error) {
-      ref.read(analyticsProvider).track(
-        PaymentDeclined(consultationId: consultationId, code: error.code),
-      );
+      ref
+          .read(analyticsProvider)
+          .track(
+            PaymentDeclined(consultationId: consultationId, code: error.code),
+          );
       state = switch (error.code) {
         // Ответ первой попытки потерялся, а деньги уже захолдированы:
         // показать ошибку значило бы предложить клиенту заплатить дважды.

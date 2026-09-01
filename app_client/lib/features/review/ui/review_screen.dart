@@ -41,7 +41,9 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
   Future<void> _submit() async {
     await _notifier.submit();
     if (!mounted) return;
-    final phase = ref.read(reviewControllerProvider(widget.consultationId)).phase;
+    final phase = ref
+        .read(reviewControllerProvider(widget.consultationId))
+        .phase;
     if (phase == ReviewPhase.sent) context.go(RoutePaths.home);
   }
 
@@ -226,9 +228,7 @@ class _Form extends StatelessWidget {
           const SizedBox(height: SqSpacing.m),
           Text(
             l10n.reviewTagsHint,
-            style: SqTypography.caption.copyWith(
-              color: SqColors.textSecondary,
-            ),
+            style: SqTypography.caption.copyWith(color: SqColors.textSecondary),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: SqSpacing.xs),

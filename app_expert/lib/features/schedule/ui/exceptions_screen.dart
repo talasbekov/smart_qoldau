@@ -86,7 +86,7 @@ class _ExceptionsScreenState extends ConsumerState<ExceptionsScreen> {
     final date = _formatDate(day);
     final existing = _byDate[date];
 
-    final action = await showModalBottomSheet<_ExceptionAction>(
+    final action = await showSqSheetOrDialog<_ExceptionAction>(
       context: context,
       builder: (context) => _ExceptionSheet(day: day, existing: existing),
     );

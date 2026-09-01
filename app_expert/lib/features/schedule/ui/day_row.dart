@@ -39,7 +39,14 @@ class DayRow extends StatelessWidget {
     required this.onPickBreakStart,
     required this.onPickBreakEnd,
     required this.onClearBreak,
+    this.compact = false,
   });
+
+  /// Колонка недельной сетки (веб) вместо строки. В колонке шириной
+  /// около 170 px два поля времени рядом не помещаются, поэтому они
+  /// встают друг под другом. Правила работы с днём при этом те же — это
+  /// раскладка, а не второй виджет.
+  final bool compact;
 
   final ScheduleDay day;
   final VoidCallback onToggle;
@@ -48,6 +55,11 @@ class DayRow extends StatelessWidget {
   final VoidCallback onPickBreakStart;
   final VoidCallback onPickBreakEnd;
   final VoidCallback onClearBreak;
+
+  /// В вертикальной раскладке Expanded требует ограниченной высоты,
+  /// которой у колонки нет, поэтому там элементы просто занимают своё.
+  Widget _flexible({required Widget child}) =>
+      compact ? child : Expanded(child: child);
 
   @override
   Widget build(BuildContext context) {
@@ -59,7 +71,10 @@ class DayRow extends StatelessWidget {
           Row(
             children: [
               Expanded(
-                child: Text(dayLabel(l10n, day.weekday), style: SqTypography.title),
+                child: Text(
+                  dayLabel(l10n, day.weekday),
+                  style: SqTypography.title,
+                ),
               ),
               Switch(
                 key: Key('day-${day.weekday}-toggle'),
@@ -70,9 +85,10 @@ class DayRow extends StatelessWidget {
           ),
           if (day.enabled) ...[
             const SizedBox(height: SqSpacing.s),
-            Row(
+            Flex(
+              direction: compact ? Axis.vertical : Axis.horizontal,
               children: [
-                Expanded(
+                _flexible(
                   child: _TimeField(
                     fieldKey: Key('day-${day.weekday}-start'),
                     label: l10n.scheduleStart,
@@ -80,8 +96,8 @@ class DayRow extends StatelessWidget {
                     onTap: onPickStart,
                   ),
                 ),
-                const SizedBox(width: SqSpacing.s),
-                Expanded(
+                const SizedBox(width: SqSpacing.s, height: SqSpacing.s),
+                _flexible(
                   child: _TimeField(
                     fieldKey: Key('day-${day.weekday}-end'),
                     label: l10n.scheduleEnd,

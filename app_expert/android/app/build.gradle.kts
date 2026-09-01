@@ -6,10 +6,17 @@ plugins {
 
 android {
     namespace = "kz.smartqoldau.app_expert"
-    compileSdk = flutter.compileSdkVersion
+    // Не flutter.compileSdkVersion (36): плагины flutter_secure_storage и
+    // permission_handler_android компилируются против 37 и используют его
+    // API (ACCESS_LOCAL_NETWORK, VERSION_CODES.CINNAMON_BUN), поэтому
+    // приложение обязано компилироваться против того же уровня.
+    compileSdk = 37
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
+        // flutter_local_notifications требует desugaring: он пользуется
+        // java.time на minSdk, где его ещё нет в системе.
+        isCoreLibraryDesugaringEnabled = true
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
@@ -46,4 +53,8 @@ kotlin {
 
 flutter {
     source = "../.."
+}
+
+dependencies {
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.5")
 }

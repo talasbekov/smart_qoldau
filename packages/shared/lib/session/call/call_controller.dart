@@ -169,10 +169,7 @@ class CallController extends AutoDisposeFamilyNotifier<CallState, String> {
   void _startReconnectDeadline() {
     _reconnectDeadline?.cancel();
     _reconnectDeadline = Timer(reconnectGracePeriod, () {
-      state = state.copyWith(
-        phase: CallPhase.failed,
-        offerChatFallback: true,
-      );
+      state = state.copyWith(phase: CallPhase.failed, offerChatFallback: true);
     });
   }
 
@@ -203,7 +200,5 @@ class CallController extends AutoDisposeFamilyNotifier<CallState, String> {
       ref.read(permissionServiceProvider).openSettings();
 }
 
-final callControllerProvider =
-    NotifierProvider.autoDispose.family<CallController, CallState, String>(
-      CallController.new,
-    );
+final callControllerProvider = NotifierProvider.autoDispose
+    .family<CallController, CallState, String>(CallController.new);

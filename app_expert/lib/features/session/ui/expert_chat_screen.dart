@@ -39,17 +39,22 @@ class _ExpertChatScreenState extends ConsumerState<ExpertChatScreen> {
   void _send() {
     final text = _input.text.trim();
     if (text.isEmpty) return;
-    ref.read(expertSessionControllerProvider(widget.consultationId).notifier).send(text);
+    ref
+        .read(expertSessionControllerProvider(widget.consultationId).notifier)
+        .send(text);
     _input.clear();
   }
 
   Future<void> _openOutcomeSheet() async {
-    final result = await showOutcomeSheet(context, consultationId: widget.consultationId);
+    final result = await showOutcomeSheet(
+      context,
+      consultationId: widget.consultationId,
+    );
     if (result != null && mounted) context.go(RoutePaths.consultations);
   }
 
   void _openNote() {
-    showModalBottomSheet<void>(
+    showSqSheetOrDialog<void>(
       context: context,
       isScrollControlled: true,
       builder: (_) => NoteEditor(consultationId: widget.consultationId),
@@ -59,10 +64,13 @@ class _ExpertChatScreenState extends ConsumerState<ExpertChatScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final async = ref.watch(expertSessionControllerProvider(widget.consultationId));
+    final async = ref.watch(
+      expertSessionControllerProvider(widget.consultationId),
+    );
 
     return async.when(
-      loading: () => const Scaffold(body: Center(child: CircularProgressIndicator())),
+      loading: () =>
+          const Scaffold(body: Center(child: CircularProgressIndicator())),
       error: (error, _) => Scaffold(
         body: Center(
           child: Text(
@@ -105,12 +113,16 @@ class _ExpertChatScreenState extends ConsumerState<ExpertChatScreen> {
                     final message = state.messages[index];
                     final mine = message.senderRole == 'expert';
                     return Align(
-                      alignment: mine ? Alignment.centerRight : Alignment.centerLeft,
+                      alignment: mine
+                          ? Alignment.centerRight
+                          : Alignment.centerLeft,
                       child: Container(
                         margin: const EdgeInsets.symmetric(vertical: 4),
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: mine ? SqColors.primary : SqColors.surfaceMuted,
+                          color: mine
+                              ? SqColors.primary
+                              : SqColors.surfaceMuted,
                           borderRadius: BorderRadius.circular(SqRadius.m),
                         ),
                         child: Text(
@@ -152,7 +164,9 @@ class _ExpertChatScreenState extends ConsumerState<ExpertChatScreen> {
                   padding: const EdgeInsets.all(16),
                   child: Text(
                     l10n.consultationFinished,
-                    style: SqTypography.body.copyWith(color: SqColors.textSecondary),
+                    style: SqTypography.body.copyWith(
+                      color: SqColors.textSecondary,
+                    ),
                   ),
                 ),
             ],

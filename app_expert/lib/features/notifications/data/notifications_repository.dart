@@ -16,7 +16,8 @@ class NotificationsRepository {
       _api.notifications(take: take, skip: skip);
 
   /// `POST /notifications/read`. Без [ids] — все свои.
-  Future<void> markRead({List<String>? ids}) => _api.markNotificationsRead(ids: ids);
+  Future<void> markRead({List<String>? ids}) =>
+      _api.markNotificationsRead(ids: ids);
 
   /// `POST /devices` — upsert push-токена устройства.
   Future<void> registerDevice({

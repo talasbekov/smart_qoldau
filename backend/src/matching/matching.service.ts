@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { createHash } from 'node:crypto';
 import { PrismaService } from '../prisma/prisma.service';
 import { PresenceService } from '../presence/presence.service';
 import { ScheduleService } from '../schedule/schedule.service';
@@ -10,6 +11,26 @@ export interface FindCandidatesParams {
   format: string;
   excludeExpertIds?: string[];
   urgentOnly?: boolean;
+  /// Чем разводить кандидатов с ОДИНАКОВЫМ скором и одинаковым числом
+  /// сегодняшних офферов. Без него порядок при полной ничьей один и тот же
+  /// для всех заявок сразу, и весь поток бьётся в одного и того же
+  /// специалиста: нагрузочный прогон E11 дал 4190 отказов «уже занят» на
+  /// 200 успешных приёмов, пока сотни свободных простаивали.
+  ///
+  /// Передаётся id заявки: порядок остаётся строго детерминированным
+  /// (тот же id — тот же порядок, спеки на ничью воспроизводимы), но у
+  /// разных заявок он разный.
+  tieBreakSeed?: string;
+}
+
+/// Псевдослучайный, но воспроизводимый ранг кандидата в рамках одной
+/// заявки: одинаковый для одной и той же пары (эксперт, заявка) и разный
+/// для разных заявок.
+function tieRank(expertId: string, seed: string): number {
+  return createHash('md5')
+    .update(`${seed}:${expertId}`)
+    .digest()
+    .readUInt32BE(0);
 }
 
 @Injectable()
@@ -56,42 +77,44 @@ export class MatchingService {
     });
 
     const now = this.clock.now();
-    const withinSchedule = await Promise.all(
-      experts.map(async (e) => ({
-        id: e.id,
-        ok: await this.schedule.isWithinSchedule(e.id, now),
-      })),
+    const allowed = await this.schedule.filterWithinSchedule(
+      experts.map((e) => e.id),
+      now,
     );
-    const eligibleIds = withinSchedule.filter((e) => e.ok).map((e) => e.id);
+    const eligibleIds = experts
+      .map((e) => e.id)
+      .filter((id) => allowed.has(id));
     if (eligibleIds.length === 0) return [];
 
     const todayStart = this.startOfAlmatyDay(now);
-    const [scores, todayOffersCounts] = await Promise.all([
-      Promise.all(
-        eligibleIds.map(async (id) => ({
-          id,
-          score: await this.scoring.score(id),
-        })),
-      ),
-      Promise.all(
-        eligibleIds.map(async (id) => ({
-          id,
-          count: await this.prisma.requestCandidate.count({
-            where: { expertId: id, offeredAt: { gte: todayStart } },
-          }),
-        })),
-      ),
+    const [scoreById, todayOffers] = await Promise.all([
+      this.scoring.scoreMany(eligibleIds),
+      this.prisma.requestCandidate.groupBy({
+        by: ['expertId'],
+        where: {
+          expertId: { in: eligibleIds },
+          offeredAt: { gte: todayStart },
+        },
+        _count: { _all: true },
+      }),
     ]);
 
-    const scoreById = new Map(scores.map((s) => [s.id, s.score]));
     const todayCountById = new Map(
-      todayOffersCounts.map((t) => [t.id, t.count]),
+      todayOffers.map((t) => [t.expertId, t._count._all]),
     );
 
+    const seed = params.tieBreakSeed;
     return [...eligibleIds].sort((a, b) => {
       const scoreDiff = (scoreById.get(b) ?? 0) - (scoreById.get(a) ?? 0);
       if (scoreDiff !== 0) return scoreDiff;
-      return (todayCountById.get(a) ?? 0) - (todayCountById.get(b) ?? 0);
+      const offersDiff =
+        (todayCountById.get(a) ?? 0) - (todayCountById.get(b) ?? 0);
+      if (offersDiff !== 0) return offersDiff;
+      // Полная ничья. Без seed порядок остаётся прежним — порядком выборки
+      // (sort стабилен), с seed кандидаты раскладываются по-разному для
+      // разных заявок, оставаясь воспроизводимыми для одной и той же.
+      if (!seed) return 0;
+      return tieRank(a, seed) - tieRank(b, seed);
     });
   }
 
@@ -101,9 +124,11 @@ export class MatchingService {
   // 1 запрос requestCandidate.findMany на кандидата) и БЕЗ подсчёта офферов
   // за сегодня (ещё 1 запрос на кандидата) — обе стадии существуют только
   // ради сортировки итогового списка, а счётчику нужна лишь его длина.
-  // Измерено отдельным e2e (matching-online-count-perf.e2e-spec.ts):
-  // полный конвейер даёт 1+3N запросов к Postgres на N подходящих
-  // кандидатов, этот путь — 1+N. При потолке ТЗ §6 (до 500 онлайн,
+  // Измерено отдельным e2e (matching-online-count-perf.e2e-spec.ts).
+  // После пакетной переделки (E11, карточка #28) оба пути стоят
+  // фиксированного числа запросов независимо от N: полный конвейер — 5
+  // (эксперты, исключения расписания, дни расписания, скоринг, офферы за
+  // сегодня), этот — 3. При потолке ТЗ §6 (до 500 онлайн,
   // экран поиска опрашивает эндпоинт раз в 10с у каждого клиента) разница
   // не разовая, а на каждый такой опрос.
   //
@@ -136,10 +161,11 @@ export class MatchingService {
     if (experts.length === 0) return 0;
 
     const now = this.clock.now();
-    const withinSchedule = await Promise.all(
-      experts.map((e) => this.schedule.isWithinSchedule(e.id, now)),
+    const allowed = await this.schedule.filterWithinSchedule(
+      experts.map((e) => e.id),
+      now,
     );
-    return withinSchedule.filter(Boolean).length;
+    return allowed.size;
   }
 
   private startOfAlmatyDay(date: Date): Date {

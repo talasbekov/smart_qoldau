@@ -86,24 +86,26 @@ export class AdminAuthService {
     refreshToken: string;
     admin: AdminSummary;
   }> {
+    const tokenHash = this.hashToken(refreshToken);
+    // findUnique — только чтобы достать сотрудника; решение об отказе
+    // принимается по count атомарного updateMany, как в пользовательском
+    // AuthService.refresh. Проверка «прочитал -> отозвал» двумя запросами
+    // позволяла двум параллельным refresh с одним токеном пройти обоим и
+    // получить по живой сессии, то есть перехваченный токен молча
+    // размножался.
     const stored = await this.prisma.adminRefreshToken.findUnique({
-      where: { tokenHash: this.hashToken(refreshToken) },
+      where: { tokenHash },
       include: { adminUser: true },
     });
 
-    if (
-      !stored ||
-      stored.revokedAt !== null ||
-      stored.expiresAt <= new Date() ||
-      !stored.adminUser.isActive
-    ) {
-      apiError('ADMIN_INVALID_CREDENTIALS', 'Сессия недействительна', 401);
-    }
-
-    await this.prisma.adminRefreshToken.update({
-      where: { id: stored.id },
+    const { count } = await this.prisma.adminRefreshToken.updateMany({
+      where: { tokenHash, revokedAt: null, expiresAt: { gt: new Date() } },
       data: { revokedAt: new Date() },
     });
+
+    if (count !== 1 || !stored || !stored.adminUser.isActive) {
+      apiError('ADMIN_INVALID_CREDENTIALS', 'Сессия недействительна', 401);
+    }
 
     const session = await this.issueSession(stored.adminUser);
 

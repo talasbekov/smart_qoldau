@@ -132,6 +132,66 @@ export class MockPaymentProvider extends PaymentProviderPort {
     return { providerHoldId, status: 'held' };
   }
 
+  // Разовое списание для подписки: тот же разбор «карты отказа» и тот же
+  // кэш идемпотентности, что у hold(), но результат сразу captured и запись
+  // холда не заводится — отменять или захватывать тут нечего.
+  //
+  // Идемпотентность обязательна и здесь: sweep автопродления перезапускает
+  // попытку, если наша транзакция упала уже ПОСЛЕ ответа провайдера. Без
+  // дедупликации по ключу клиента списали бы дважды за один период.
+  async charge(input: {
+    idempotencyKey: string;
+    token: string;
+    amountTiyn: number;
+  }): Promise<{
+    providerChargeId: string;
+    status: 'captured' | 'declined';
+    declineReason?: string;
+  }> {
+    const { idempotencyKey, token } = input;
+
+    const existing = await this.redis.get(this.idemKey(idempotencyKey));
+    if (existing) {
+      return { providerChargeId: existing, status: 'captured' };
+    }
+
+    // Decline не запоминаем: повтор с тем же ключом, но другой картой
+    // должен пройти обычным путём — ровно так работает hold().
+    if (token.startsWith('mockpay_tok_0002_')) {
+      return {
+        providerChargeId: '',
+        status: 'declined',
+        declineReason: 'Банк отклонил операцию',
+      };
+    }
+
+    const providerChargeId = `mockpay_charge_${randomUUID()}`;
+    const reserved = await this.redis.set(
+      this.idemKey(idempotencyKey),
+      providerChargeId,
+      'EX',
+      HOLD_TTL_SECONDS,
+      'NX',
+    );
+
+    if (reserved !== 'OK') {
+      // Проиграли гонку резервации — вернуть надо списание победителя, а не
+      // сделать своё: иначе с карты уйдут две суммы.
+      for (let attempt = 0; attempt < 20; attempt++) {
+        const winner = await this.redis.get(this.idemKey(idempotencyKey));
+        if (winner) {
+          return { providerChargeId: winner, status: 'captured' };
+        }
+        await new Promise((resolve) => setTimeout(resolve, 5));
+      }
+      throw new ConflictException(
+        'Не удалось определить списание-победителя идемпотентной гонки',
+      );
+    }
+
+    return { providerChargeId, status: 'captured' };
+  }
+
   // Идемпотентность по idempotencyKey (глобальное ограничение плана E5:
   // «повторный вызов с тем же ключом у провайдера — no-op с тем же
   // результатом»): успешный capture записывает mockpay:idem:{key} ->

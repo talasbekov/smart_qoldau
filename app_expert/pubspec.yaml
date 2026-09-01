@@ -50,6 +50,9 @@ dependencies:
   firebase_messaging: ^16.5.0
   flutter_local_notifications: ^22.3.0
   file_picker: ^12.1.0
+  # Прямой импорт в media_devices.dart: перечисление камер и микрофонов
+  # для веб-кабинета (E14). Раньше приходил транзитивно через shared.
+  livekit_client: ^2.11.0
 
 dev_dependencies:
   flutter_test:

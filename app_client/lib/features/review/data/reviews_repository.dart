@@ -4,7 +4,6 @@ library;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared/shared.dart';
 
-
 class ReviewsRepository {
   const ReviewsRepository(this._api);
 

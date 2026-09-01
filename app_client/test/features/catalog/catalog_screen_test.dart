@@ -81,7 +81,10 @@ void main() {
   setUp(() {
     api = MockSqApi();
     when(
-      () => api.favorites(take: any(named: 'take'), skip: any(named: 'skip')),
+      () => api.favorites(
+        take: any(named: 'take'),
+        skip: any(named: 'skip'),
+      ),
     ).thenAnswer((_) async => []);
     when(() => api.addFavorite(any())).thenAnswer((_) async {});
     when(() => api.removeFavorite(any())).thenAnswer((_) async {});

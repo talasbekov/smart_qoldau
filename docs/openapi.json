@@ -9,7 +9,10 @@
           "200": {
             "description": ""
           }
-        }
+        },
+        "tags": [
+          "App"
+        ]
       }
     },
     "/v1/health": {
@@ -20,7 +23,10 @@
           "200": {
             "description": ""
           }
-        }
+        },
+        "tags": [
+          "App"
+        ]
       }
     },
     "/v1/topics": {
@@ -63,7 +69,6 @@
     "/v1/auth/request-code": {
       "post": {
         "operationId": "AuthController_requestCode",
-        "summary": "Запросить SMS-код входа",
         "parameters": [],
         "requestBody": {
           "required": true,
@@ -86,6 +91,7 @@
             "description": "SMS_RATE_LIMITED — повтор раньше 45 секунд"
           }
         },
+        "summary": "Запросить SMS-код входа",
         "tags": [
           "auth"
         ]
@@ -94,7 +100,6 @@
     "/v1/auth/verify-code": {
       "post": {
         "operationId": "AuthController_verifyCode",
-        "summary": "Подтвердить SMS-код и получить токены",
         "parameters": [],
         "requestBody": {
           "required": true,
@@ -121,6 +126,7 @@
             "description": "SMS_CODE_EXPIRED | SMS_CODE_INVALID | VALIDATION_FAILED"
           }
         },
+        "summary": "Подтвердить SMS-код и получить токены",
         "tags": [
           "auth"
         ]
@@ -129,7 +135,6 @@
     "/v1/auth/refresh": {
       "post": {
         "operationId": "AuthController_refresh",
-        "summary": "Обновить пару токенов по refresh-токену",
         "parameters": [],
         "requestBody": {
           "required": true,
@@ -156,6 +161,7 @@
             "description": "UNAUTHORIZED — refresh-токен недействителен, отозван или истёк"
           }
         },
+        "summary": "Обновить пару токенов по refresh-токену",
         "tags": [
           "auth"
         ]
@@ -164,7 +170,6 @@
     "/v1/auth/guest": {
       "post": {
         "operationId": "AuthController_guest",
-        "summary": "Гостевой вход по deviceId",
         "parameters": [],
         "requestBody": {
           "required": true,
@@ -191,6 +196,7 @@
             "description": "VALIDATION_FAILED — deviceId не задан"
           }
         },
+        "summary": "Гостевой вход по deviceId",
         "tags": [
           "auth"
         ]
@@ -199,7 +205,6 @@
     "/v1/auth/guest/convert": {
       "post": {
         "operationId": "AuthController_convertGuest",
-        "summary": "Конверсия гостя в аккаунт по телефону (Р-22)",
         "parameters": [],
         "requestBody": {
           "required": true,
@@ -235,20 +240,20 @@
             "description": "PHONE_ALREADY_REGISTERED — номер уже используется другим аккаунтом"
           }
         },
-        "tags": [
-          "auth"
-        ],
         "security": [
           {
             "bearer": []
           }
+        ],
+        "summary": "Конверсия гостя в аккаунт по телефону (Р-22)",
+        "tags": [
+          "auth"
         ]
       }
     },
     "/v1/experts": {
       "post": {
         "operationId": "ExpertsController_create",
-        "summary": "Создать анкету эксперта (Р-04)",
         "parameters": [],
         "requestBody": {
           "required": true,
@@ -284,18 +289,18 @@
             "description": "EXPERT_EXISTS — анкета уже создана"
           }
         },
-        "tags": [
-          "experts"
-        ],
         "security": [
           {
             "bearer": []
           }
+        ],
+        "summary": "Создать анкету эксперта (Р-04)",
+        "tags": [
+          "experts"
         ]
       },
       "get": {
         "operationId": "ExpertsPublicController_list",
-        "summary": "Публичный список экспертов (VERIFIED, не заблокированные)",
         "parameters": [
           {
             "name": "topic",
@@ -311,12 +316,12 @@
             "required": false,
             "in": "query",
             "schema": {
+              "type": "string",
               "enum": [
                 "ru",
                 "kz",
                 "en"
-              ],
-              "type": "string"
+              ]
             }
           },
           {
@@ -324,12 +329,12 @@
             "required": false,
             "in": "query",
             "schema": {
+              "type": "string",
               "enum": [
                 "chat",
                 "audio",
                 "video"
-              ],
-              "type": "string"
+              ]
             }
           },
           {
@@ -337,12 +342,12 @@
             "required": false,
             "in": "query",
             "schema": {
+              "type": "string",
               "enum": [
                 "price_asc",
                 "price_desc",
                 "rating"
-              ],
-              "type": "string"
+              ]
             }
           },
           {
@@ -380,6 +385,7 @@
             }
           }
         },
+        "summary": "Публичный список экспертов (VERIFIED, не заблокированные)",
         "tags": [
           "experts"
         ]
@@ -388,7 +394,6 @@
     "/v1/experts/me": {
       "get": {
         "operationId": "ExpertsController_me",
-        "summary": "Получить свою анкету эксперта",
         "parameters": [],
         "responses": {
           "200": {
@@ -408,18 +413,18 @@
             "description": "EXPERT_NOT_FOUND"
           }
         },
-        "tags": [
-          "experts"
-        ],
         "security": [
           {
             "bearer": []
           }
+        ],
+        "summary": "Получить свою анкету эксперта",
+        "tags": [
+          "experts"
         ]
       },
       "patch": {
         "operationId": "ExpertsController_update",
-        "summary": "Обновить свою анкету эксперта (Р-18)",
         "parameters": [],
         "requestBody": {
           "required": true,
@@ -452,20 +457,20 @@
             "description": "EXPERT_NOT_FOUND"
           }
         },
-        "tags": [
-          "experts"
-        ],
         "security": [
           {
             "bearer": []
           }
+        ],
+        "summary": "Обновить свою анкету эксперта (Р-18)",
+        "tags": [
+          "experts"
         ]
       }
     },
     "/v1/experts/me/work-status": {
       "patch": {
         "operationId": "ExpertsController_updateWorkStatus",
-        "summary": "Изменить рабочий статус эксперта (presence в Redis)",
         "parameters": [],
         "requestBody": {
           "required": true,
@@ -501,20 +506,20 @@
             "description": "EXPERT_NOT_FOUND"
           }
         },
-        "tags": [
-          "experts"
-        ],
         "security": [
           {
             "bearer": []
           }
+        ],
+        "summary": "Изменить рабочий статус эксперта (presence в Redis)",
+        "tags": [
+          "experts"
         ]
       }
     },
     "/v1/experts/me/heartbeat": {
       "post": {
         "operationId": "ExpertsController_heartbeat",
-        "summary": "Heartbeat эксперта — обновить свежесть presence (E3)",
         "parameters": [],
         "responses": {
           "204": {
@@ -527,20 +532,20 @@
             "description": "EXPERT_NOT_FOUND"
           }
         },
-        "tags": [
-          "experts"
-        ],
         "security": [
           {
             "bearer": []
           }
+        ],
+        "summary": "Heartbeat эксперта — обновить свежесть presence (E3)",
+        "tags": [
+          "experts"
         ]
       }
     },
     "/v1/experts/me/photo": {
       "post": {
         "operationId": "PhotoController_upload",
-        "summary": "Загрузить фотографию профиля (на модерацию)",
         "parameters": [],
         "requestBody": {
           "required": true,
@@ -579,18 +584,18 @@
             "description": "EXPERT_NOT_FOUND"
           }
         },
-        "tags": [
-          "experts"
-        ],
         "security": [
           {
             "bearer": []
           }
+        ],
+        "summary": "Загрузить фотографию профиля (на модерацию)",
+        "tags": [
+          "experts"
         ]
       },
       "delete": {
         "operationId": "PhotoController_remove",
-        "summary": "Удалить фотографию профиля",
         "parameters": [],
         "responses": {
           "204": {
@@ -603,20 +608,20 @@
             "description": "EXPERT_NOT_FOUND"
           }
         },
-        "tags": [
-          "experts"
-        ],
         "security": [
           {
             "bearer": []
           }
+        ],
+        "summary": "Удалить фотографию профиля",
+        "tags": [
+          "experts"
         ]
       }
     },
     "/v1/experts/me/documents/submit": {
       "post": {
         "operationId": "DocumentsController_submit",
-        "summary": "Отправить анкету на проверку (Р-14)",
         "parameters": [],
         "responses": {
           "200": {
@@ -639,20 +644,20 @@
             "description": "EXPERT_NOT_FOUND"
           }
         },
-        "tags": [
-          "experts"
-        ],
         "security": [
           {
             "bearer": []
           }
+        ],
+        "summary": "Отправить анкету на проверку (Р-14)",
+        "tags": [
+          "experts"
         ]
       }
     },
     "/v1/experts/me/documents/{type}": {
       "post": {
         "operationId": "DocumentsController_upload",
-        "summary": "Загрузить документ эксперта (4 типа, MinIO)",
         "parameters": [
           {
             "name": "type",
@@ -706,20 +711,20 @@
             "description": "EXPERT_NOT_FOUND"
           }
         },
-        "tags": [
-          "experts"
-        ],
         "security": [
           {
             "bearer": []
           }
+        ],
+        "summary": "Загрузить документ эксперта (4 типа, MinIO)",
+        "tags": [
+          "experts"
         ]
       }
     },
     "/v1/experts/me/documents": {
       "get": {
         "operationId": "DocumentsController_list",
-        "summary": "Список документов эксперта (4 позиции)",
         "parameters": [],
         "responses": {
           "200": {
@@ -742,20 +747,20 @@
             "description": "EXPERT_NOT_FOUND"
           }
         },
-        "tags": [
-          "experts"
-        ],
         "security": [
           {
             "bearer": []
           }
+        ],
+        "summary": "Список документов эксперта (4 позиции)",
+        "tags": [
+          "experts"
         ]
       }
     },
     "/v1/experts/{id}": {
       "get": {
         "operationId": "ExpertsPublicController_findOne",
-        "summary": "Публичная карточка эксперта",
         "parameters": [
           {
             "name": "id",
@@ -781,6 +786,7 @@
             "description": "EXPERT_NOT_FOUND"
           }
         },
+        "summary": "Публичная карточка эксперта",
         "tags": [
           "experts"
         ]
@@ -789,7 +795,6 @@
     "/v1/admin/verification/queue": {
       "get": {
         "operationId": "VerificationController_queue",
-        "summary": "Очередь экспертов на верификацию (PENDING)",
         "parameters": [],
         "responses": {
           "200": {
@@ -809,20 +814,20 @@
             "description": "UNAUTHORIZED"
           }
         },
-        "tags": [
-          "admin-verification"
-        ],
         "security": [
           {
             "bearer": []
           }
+        ],
+        "summary": "Очередь экспертов на верификацию (PENDING)",
+        "tags": [
+          "admin-verification"
         ]
       }
     },
     "/v1/admin/verification/documents/{documentId}/decision": {
       "post": {
         "operationId": "VerificationController_decideDocument",
-        "summary": "Решение по документу: approve/reject",
         "parameters": [
           {
             "name": "documentId",
@@ -858,20 +863,20 @@
             "description": "NOT_FOUND"
           }
         },
-        "tags": [
-          "admin-verification"
-        ],
         "security": [
           {
             "bearer": []
           }
+        ],
+        "summary": "Решение по документу: approve/reject",
+        "tags": [
+          "admin-verification"
         ]
       }
     },
     "/v1/admin/verification/{expertId}/decision": {
       "post": {
         "operationId": "VerificationController_decideExpert",
-        "summary": "Решение по анкете эксперта: approve/reject",
         "parameters": [
           {
             "name": "expertId",
@@ -914,20 +919,20 @@
             "description": "EXPERT_NOT_FOUND"
           }
         },
-        "tags": [
-          "admin-verification"
-        ],
         "security": [
           {
             "bearer": []
           }
+        ],
+        "summary": "Решение по анкете эксперта: approve/reject",
+        "tags": [
+          "admin-verification"
         ]
       }
     },
     "/v1/admin/experts/{expertId}/block": {
       "post": {
         "operationId": "VerificationController_block",
-        "summary": "Заблокировать эксперта (Р-19)",
         "parameters": [
           {
             "name": "expertId",
@@ -963,20 +968,20 @@
             "description": "EXPERT_NOT_FOUND"
           }
         },
-        "tags": [
-          "admin-verification"
-        ],
         "security": [
           {
             "bearer": []
           }
+        ],
+        "summary": "Заблокировать эксперта (Р-19)",
+        "tags": [
+          "admin-verification"
         ]
       }
     },
     "/v1/admin/experts/{expertId}/unblock": {
       "post": {
         "operationId": "VerificationController_unblock",
-        "summary": "Снять блокировку эксперта",
         "parameters": [
           {
             "name": "expertId",
@@ -999,20 +1004,20 @@
             "description": "EXPERT_NOT_FOUND"
           }
         },
-        "tags": [
-          "admin-verification"
-        ],
         "security": [
           {
             "bearer": []
           }
+        ],
+        "summary": "Снять блокировку эксперта",
+        "tags": [
+          "admin-verification"
         ]
       }
     },
     "/v1/admin/experts/flagged": {
       "get": {
         "operationId": "VerificationController_flaggedExperts",
-        "summary": "Очередь экспертов ниже порога рейтинга (Р-20): ratingCount >= 20 и ratingAvg < 4.0",
         "parameters": [
           {
             "name": "take",
@@ -1052,20 +1057,20 @@
             "description": "UNAUTHORIZED"
           }
         },
-        "tags": [
-          "admin-verification"
-        ],
         "security": [
           {
             "bearer": []
           }
+        ],
+        "summary": "Очередь экспертов ниже порога рейтинга (Р-20): ratingCount >= 20 и ratingAvg < 4.0",
+        "tags": [
+          "admin-verification"
         ]
       }
     },
     "/v1/admin/profile-moderation": {
       "get": {
         "operationId": "ProfileModerationController_queue",
-        "summary": "Очередь фотографий и текстов на модерацию",
         "parameters": [
           {
             "name": "take",
@@ -1105,20 +1110,20 @@
             "description": "FORBIDDEN — недостаточно прав"
           }
         },
-        "tags": [
-          "admin-profile-moderation"
-        ],
         "security": [
           {
             "bearer": []
           }
+        ],
+        "summary": "Очередь фотографий и текстов на модерацию",
+        "tags": [
+          "admin-profile-moderation"
         ]
       }
     },
     "/v1/admin/profile-moderation/{expertId}/photo/decision": {
       "post": {
         "operationId": "ProfileModerationController_photoDecision",
-        "summary": "Решение по фотографии: approve/reject",
         "parameters": [
           {
             "name": "expertId",
@@ -1160,20 +1165,20 @@
             "description": "NOTHING_TO_MODERATE"
           }
         },
-        "tags": [
-          "admin-profile-moderation"
-        ],
         "security": [
           {
             "bearer": []
           }
+        ],
+        "summary": "Решение по фотографии: approve/reject",
+        "tags": [
+          "admin-profile-moderation"
         ]
       }
     },
     "/v1/admin/profile-moderation/{expertId}/about/decision": {
       "post": {
         "operationId": "ProfileModerationController_aboutDecision",
-        "summary": "Решение по тексту «о себе»: approve/reject",
         "parameters": [
           {
             "name": "expertId",
@@ -1215,20 +1220,20 @@
             "description": "NOTHING_TO_MODERATE"
           }
         },
-        "tags": [
-          "admin-profile-moderation"
-        ],
         "security": [
           {
             "bearer": []
           }
+        ],
+        "summary": "Решение по тексту «о себе»: approve/reject",
+        "tags": [
+          "admin-profile-moderation"
         ]
       }
     },
     "/v1/admin/auth/login": {
       "post": {
         "operationId": "AdminAuthController_login",
-        "summary": "Вход сотрудника админки по email и паролю",
         "parameters": [],
         "requestBody": {
           "required": true,
@@ -1255,6 +1260,7 @@
             "description": "ADMIN_INVALID_CREDENTIALS — неверный email, пароль или заблокированный сотрудник (ответ неразличим)"
           }
         },
+        "summary": "Вход сотрудника админки по email и паролю",
         "tags": [
           "admin-auth"
         ]
@@ -1263,7 +1269,6 @@
     "/v1/admin/auth/totp/setup": {
       "post": {
         "operationId": "AdminAuthController_totpSetup",
-        "summary": "Привязка второго фактора: секрет и коды восстановления отдаются РОВНО здесь и больше нигде",
         "parameters": [],
         "responses": {
           "200": {
@@ -1277,20 +1282,20 @@
             }
           }
         },
-        "tags": [
-          "admin-auth"
-        ],
         "security": [
           {
             "bearer": []
           }
+        ],
+        "summary": "Привязка второго фактора: секрет и коды восстановления отдаются РОВНО здесь и больше нигде",
+        "tags": [
+          "admin-auth"
         ]
       }
     },
     "/v1/admin/auth/totp/confirm": {
       "post": {
         "operationId": "AdminAuthController_totpConfirm",
-        "summary": "Подтверждение привязки кодом из приложения — без него 2FA не включается",
         "parameters": [],
         "requestBody": {
           "required": true,
@@ -1307,20 +1312,20 @@
             "description": ""
           }
         },
-        "tags": [
-          "admin-auth"
-        ],
         "security": [
           {
             "bearer": []
           }
+        ],
+        "summary": "Подтверждение привязки кодом из приложения — без него 2FA не включается",
+        "tags": [
+          "admin-auth"
         ]
       }
     },
     "/v1/admin/auth/totp/verify": {
       "post": {
         "operationId": "AdminAuthController_totpVerify",
-        "summary": "Второй шаг входа: код из приложения или одноразовый код восстановления",
         "parameters": [],
         "requestBody": {
           "required": true,
@@ -1344,6 +1349,7 @@
             }
           }
         },
+        "summary": "Второй шаг входа: код из приложения или одноразовый код восстановления",
         "tags": [
           "admin-auth"
         ]
@@ -1352,7 +1358,6 @@
     "/v1/admin/auth/refresh": {
       "post": {
         "operationId": "AdminAuthController_refresh",
-        "summary": "Продление сессии сотрудника. Токен ротируется: старый отзывается сразу",
         "parameters": [],
         "requestBody": {
           "required": true,
@@ -1379,6 +1384,7 @@
             "description": "ADMIN_INVALID_CREDENTIALS — токен неизвестен, отозван, истёк или сотрудник деактивирован"
           }
         },
+        "summary": "Продление сессии сотрудника. Токен ротируется: старый отзывается сразу",
         "tags": [
           "admin-auth"
         ]
@@ -1387,7 +1393,6 @@
     "/v1/admin/staff": {
       "post": {
         "operationId": "AdminStaffController_create",
-        "summary": "Создать сотрудника админки (SUPERADMIN)",
         "parameters": [],
         "requestBody": {
           "required": true,
@@ -1420,18 +1425,18 @@
             "description": "STAFF_EMAIL_EXISTS"
           }
         },
-        "tags": [
-          "admin-staff"
-        ],
         "security": [
           {
             "bearer": []
           }
+        ],
+        "summary": "Создать сотрудника админки (SUPERADMIN)",
+        "tags": [
+          "admin-staff"
         ]
       },
       "get": {
         "operationId": "AdminStaffController_list",
-        "summary": "Список сотрудников админки (SUPERADMIN)",
         "parameters": [
           {
             "name": "take",
@@ -1471,20 +1476,20 @@
             "description": "ADMIN_FORBIDDEN — требуется роль SUPERADMIN"
           }
         },
-        "tags": [
-          "admin-staff"
-        ],
         "security": [
           {
             "bearer": []
           }
+        ],
+        "summary": "Список сотрудников админки (SUPERADMIN)",
+        "tags": [
+          "admin-staff"
         ]
       }
     },
     "/v1/admin/staff/{id}": {
       "patch": {
         "operationId": "AdminStaffController_update",
-        "summary": "Изменить роли и/или активность сотрудника (SUPERADMIN)",
         "parameters": [
           {
             "name": "id",
@@ -1530,20 +1535,20 @@
             "description": "STAFF_NOT_FOUND"
           }
         },
-        "tags": [
-          "admin-staff"
-        ],
         "security": [
           {
             "bearer": []
           }
+        ],
+        "summary": "Изменить роли и/или активность сотрудника (SUPERADMIN)",
+        "tags": [
+          "admin-staff"
         ]
       }
     },
     "/v1/consultations/{id}/messages": {
       "get": {
         "operationId": "ChatController_messages",
-        "summary": "История сообщений чата консультации (участнику), расшифрованная, порядок createdAt asc",
         "parameters": [
           {
             "name": "id",
@@ -1588,20 +1593,20 @@
             "description": "CONSULTATION_NOT_FOUND"
           }
         },
-        "tags": [
-          "consultations"
-        ],
         "security": [
           {
             "bearer": []
           }
+        ],
+        "summary": "История сообщений чата консультации (участнику), расшифрованная, порядок createdAt asc",
+        "tags": [
+          "consultations"
         ]
       }
     },
     "/v1/consultations/{id}": {
       "get": {
         "operationId": "ConsultationsController_findOne",
-        "summary": "Консультация участника — клиент видит ConsultationClientDto, эксперт ConsultationExpertDto",
         "parameters": [
           {
             "name": "id",
@@ -1634,33 +1639,33 @@
             "description": "CONSULTATION_NOT_FOUND"
           }
         },
-        "tags": [
-          "consultations"
-        ],
         "security": [
           {
             "bearer": []
           }
+        ],
+        "summary": "Консультация участника — клиент видит ConsultationClientDto, эксперт ConsultationExpertDto",
+        "tags": [
+          "consultations"
         ]
       }
     },
     "/v1/consultations": {
       "get": {
         "operationId": "ConsultationsController_list",
-        "summary": "Список своих консультаций (as=client|expert, default client), пагинация take/skip",
         "parameters": [
           {
             "name": "status",
             "required": false,
             "in": "query",
             "schema": {
+              "type": "string",
               "enum": [
                 "SCHEDULED",
                 "ACTIVE",
                 "COMPLETED",
                 "CANCELLED"
-              ],
-              "type": "string"
+              ]
             }
           },
           {
@@ -1669,11 +1674,11 @@
             "in": "query",
             "schema": {
               "default": "client",
+              "type": "string",
               "enum": [
                 "client",
                 "expert"
-              ],
-              "type": "string"
+              ]
             }
           },
           {
@@ -1718,20 +1723,20 @@
             }
           }
         },
-        "tags": [
-          "consultations"
-        ],
         "security": [
           {
             "bearer": []
           }
+        ],
+        "summary": "Список своих консультаций (as=client|expert, default client), пагинация take/skip",
+        "tags": [
+          "consultations"
         ]
       }
     },
     "/v1/consultations/{id}/complete": {
       "post": {
         "operationId": "ConsultationsController_complete",
-        "summary": "Завершение консультации экспертом с исходом (COMPLETED|CLIENT_NO_SHOW|CLIENT_CANCELLED|TECH_ISSUE)",
         "parameters": [
           {
             "name": "id",
@@ -1773,20 +1778,20 @@
             "description": "CONSULTATION_NOT_ACTIVE"
           }
         },
-        "tags": [
-          "consultations"
-        ],
         "security": [
           {
             "bearer": []
           }
+        ],
+        "summary": "Завершение консультации экспертом с исходом (COMPLETED|CLIENT_NO_SHOW|CLIENT_CANCELLED|TECH_ISSUE)",
+        "tags": [
+          "consultations"
         ]
       }
     },
     "/v1/consultations/{id}/reschedule": {
       "post": {
         "operationId": "ConsultationsController_reschedule",
-        "summary": "Перенести плановую консультацию на другой слот",
         "parameters": [
           {
             "name": "id",
@@ -1828,20 +1833,20 @@
             "description": "CONSULTATION_NOT_SCHEDULED | SLOT_TAKEN | SLOT_UNAVAILABLE"
           }
         },
-        "tags": [
-          "consultations"
-        ],
         "security": [
           {
             "bearer": []
           }
+        ],
+        "summary": "Перенести плановую консультацию на другой слот",
+        "tags": [
+          "consultations"
         ]
       }
     },
     "/v1/consultations/{id}/cancel-by-expert": {
       "post": {
         "operationId": "ConsultationsController_cancelByExpert",
-        "summary": "Отмена плановой консультации специалистом",
         "parameters": [
           {
             "name": "id",
@@ -1863,20 +1868,20 @@
             "description": "CONSULTATION_NOT_SCHEDULED"
           }
         },
-        "tags": [
-          "consultations"
-        ],
         "security": [
           {
             "bearer": []
           }
+        ],
+        "summary": "Отмена плановой консультации специалистом",
+        "tags": [
+          "consultations"
         ]
       }
     },
     "/v1/consultations/{id}/cancel": {
       "post": {
         "operationId": "ConsultationsController_cancel",
-        "summary": "Отмена консультации клиентом",
         "parameters": [
           {
             "name": "id",
@@ -1908,21 +1913,21 @@
             "description": "CONSULTATION_NOT_ACTIVE"
           }
         },
-        "tags": [
-          "consultations"
-        ],
         "security": [
           {
             "bearer": []
           }
+        ],
+        "summary": "Отмена консультации клиентом",
+        "tags": [
+          "consultations"
         ]
       }
     },
     "/v1/consultations/{id}/note": {
       "get": {
-        "operationId": "NotesController_getNote",
-        "summary": "Приватная заметка эксперта к консультации",
         "description": "Приватные заметки специалиста. Не используйте медицинские диагнозы.",
+        "operationId": "NotesController_getNote",
         "parameters": [
           {
             "name": "id",
@@ -1948,19 +1953,19 @@
             "description": "CONSULTATION_NOT_FOUND — клиент или чужой эксперт (заметка приватна)"
           }
         },
-        "tags": [
-          "consultations"
-        ],
         "security": [
           {
             "bearer": []
           }
+        ],
+        "summary": "Приватная заметка эксперта к консультации",
+        "tags": [
+          "consultations"
         ]
       },
       "put": {
-        "operationId": "NotesController_updateNote",
-        "summary": "Создать или обновить приватную заметку эксперта",
         "description": "Приватные заметки специалиста. Не используйте медицинские диагнозы.",
+        "operationId": "NotesController_updateNote",
         "parameters": [
           {
             "name": "id",
@@ -1999,20 +2004,20 @@
             "description": "CONSULTATION_NOT_FOUND — клиент или чужой эксперт (заметка приватна)"
           }
         },
-        "tags": [
-          "consultations"
-        ],
         "security": [
           {
             "bearer": []
           }
+        ],
+        "summary": "Создать или обновить приватную заметку эксперта",
+        "tags": [
+          "consultations"
         ]
       }
     },
     "/v1/bookings": {
       "post": {
         "operationId": "BookingController_create",
-        "summary": "Записаться к специалисту на слот",
         "parameters": [],
         "requestBody": {
           "required": true,
@@ -2058,13 +2063,14 @@
             "description": "SLOT_TAKEN | SLOT_UNAVAILABLE"
           }
         },
-        "tags": [
-          "booking"
-        ],
         "security": [
           {
             "bearer": []
           }
+        ],
+        "summary": "Записаться к специалисту на слот",
+        "tags": [
+          "booking"
         ]
       }
     },
@@ -2094,13 +2100,13 @@
             }
           }
         },
-        "tags": [
-          "payment-methods"
-        ],
         "security": [
           {
             "bearer": []
           }
+        ],
+        "tags": [
+          "payment-methods"
         ]
       },
       "get": {
@@ -2121,13 +2127,13 @@
             }
           }
         },
-        "tags": [
-          "payment-methods"
-        ],
         "security": [
           {
             "bearer": []
           }
+        ],
+        "tags": [
+          "payment-methods"
         ]
       }
     },
@@ -2152,20 +2158,19 @@
             "description": "PAYMENT_METHOD_NOT_FOUND"
           }
         },
-        "tags": [
-          "payment-methods"
-        ],
         "security": [
           {
             "bearer": []
           }
+        ],
+        "tags": [
+          "payment-methods"
         ]
       }
     },
     "/v1/consultations/{id}/pay": {
       "post": {
         "operationId": "PaymentsController_pay",
-        "summary": "Оплата консультации (холд) — только клиент-участник",
         "parameters": [
           {
             "name": "id",
@@ -2204,20 +2209,20 @@
             "description": "CONSULTATION_NOT_ACTIVE | ALREADY_PAID"
           }
         },
-        "tags": [
-          "payments"
-        ],
         "security": [
           {
             "bearer": []
           }
+        ],
+        "summary": "Оплата консультации (холд) — только клиент-участник",
+        "tags": [
+          "payments"
         ]
       }
     },
     "/v1/consultations/{id}/payment": {
       "get": {
         "operationId": "PaymentsController_getStatus",
-        "summary": "Статус платежа консультации — только клиент-участник",
         "parameters": [
           {
             "name": "id",
@@ -2243,20 +2248,20 @@
             "description": "CONSULTATION_NOT_FOUND"
           }
         },
-        "tags": [
-          "payments"
-        ],
         "security": [
           {
             "bearer": []
           }
+        ],
+        "summary": "Статус платежа консультации — только клиент-участник",
+        "tags": [
+          "payments"
         ]
       }
     },
     "/v1/experts/me/earnings": {
       "get": {
         "operationId": "EarningsController_list",
-        "summary": "Начисления эксперта (Р-02) — список capture-платежей + текущий баланс",
         "parameters": [
           {
             "name": "take",
@@ -2293,20 +2298,20 @@
             "description": "UNAUTHORIZED"
           }
         },
-        "tags": [
-          "payments"
-        ],
         "security": [
           {
             "bearer": []
           }
+        ],
+        "summary": "Начисления эксперта (Р-02) — список capture-платежей + текущий баланс",
+        "tags": [
+          "payments"
         ]
       }
     },
     "/v1/webhooks/payments": {
       "post": {
         "operationId": "PaymentsWebhookController_handle",
-        "summary": "Вебхук платёжного провайдера (без auth-guard — подпись проверяется HMAC)",
         "parameters": [
           {
             "name": "x-payment-signature",
@@ -2322,6 +2327,7 @@
             "description": ""
           }
         },
+        "summary": "Вебхук платёжного провайдера (без auth-guard — подпись проверяется HMAC)",
         "tags": [
           "webhooks"
         ]
@@ -2330,7 +2336,6 @@
     "/v1/notifications": {
       "get": {
         "operationId": "NotificationsController_list",
-        "summary": "Центр уведомлений — свои, новые сверху + бейдж",
         "parameters": [
           {
             "name": "take",
@@ -2364,20 +2369,20 @@
             }
           }
         },
-        "tags": [
-          "notifications"
-        ],
         "security": [
           {
             "bearer": []
           }
+        ],
+        "summary": "Центр уведомлений — свои, новые сверху + бейдж",
+        "tags": [
+          "notifications"
         ]
       }
     },
     "/v1/notifications/read": {
       "post": {
         "operationId": "NotificationsController_markRead",
-        "summary": "Прочитать уведомления (без ids — все свои)",
         "parameters": [],
         "requestBody": {
           "required": true,
@@ -2394,20 +2399,20 @@
             "description": ""
           }
         },
-        "tags": [
-          "notifications"
-        ],
         "security": [
           {
             "bearer": []
           }
+        ],
+        "summary": "Прочитать уведомления (без ids — все свои)",
+        "tags": [
+          "notifications"
         ]
       }
     },
     "/v1/notifications/{id}/ack": {
       "post": {
         "operationId": "NotificationsController_ack",
-        "summary": "Подтверждение доставки пуша устройством (метрика §11.6)",
         "parameters": [
           {
             "name": "id",
@@ -2427,20 +2432,20 @@
             "description": "NOTIFICATION_NOT_FOUND"
           }
         },
-        "tags": [
-          "notifications"
-        ],
         "security": [
           {
             "bearer": []
           }
+        ],
+        "summary": "Подтверждение доставки пуша устройством (метрика §11.6)",
+        "tags": [
+          "notifications"
         ]
       }
     },
     "/v1/experts/{id}/slots": {
       "get": {
         "operationId": "SlotsController_list",
-        "summary": "Свободные слоты специалиста (горизонт 14 дней)",
         "parameters": [
           {
             "name": "id",
@@ -2491,20 +2496,117 @@
             "description": "EXPERT_NOT_FOUND"
           }
         },
-        "tags": [
-          "booking"
-        ],
         "security": [
           {
             "bearer": []
           }
+        ],
+        "summary": "Свободные слоты специалиста (горизонт 14 дней)",
+        "tags": [
+          "booking"
+        ]
+      }
+    },
+    "/v1/premium": {
+      "get": {
+        "operationId": "PremiumController_status",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Статус подписки",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PremiumStatusDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "premium"
+        ]
+      }
+    },
+    "/v1/premium/subscribe": {
+      "post": {
+        "operationId": "PremiumController_subscribe",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubscribeDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Подписка оформлена",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PremiumStatusDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Карта не найдена"
+          },
+          "409": {
+            "description": "Подписка уже оформлена"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "premium"
+        ]
+      }
+    },
+    "/v1/premium/cancel": {
+      "post": {
+        "operationId": "PremiumController_cancel",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Подписка отменена",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PremiumStatusDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Активной подписки нет"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "premium"
         ]
       }
     },
     "/v1/experts/me/schedule/exceptions": {
       "get": {
         "operationId": "ScheduleExceptionsController_list",
-        "summary": "Исключения расписания за период",
         "parameters": [
           {
             "name": "from",
@@ -2546,20 +2648,20 @@
             "description": "EXPERT_NOT_FOUND"
           }
         },
-        "tags": [
-          "experts"
-        ],
         "security": [
           {
             "bearer": []
           }
+        ],
+        "summary": "Исключения расписания за период",
+        "tags": [
+          "experts"
         ]
       }
     },
     "/v1/experts/me/schedule/exceptions/{date}": {
       "put": {
         "operationId": "ScheduleExceptionsController_upsert",
-        "summary": "Задать выходной или иные часы на дату",
         "parameters": [
           {
             "name": "date",
@@ -2602,18 +2704,18 @@
             "description": "EXPERT_NOT_FOUND"
           }
         },
-        "tags": [
-          "experts"
-        ],
         "security": [
           {
             "bearer": []
           }
+        ],
+        "summary": "Задать выходной или иные часы на дату",
+        "tags": [
+          "experts"
         ]
       },
       "delete": {
         "operationId": "ScheduleExceptionsController_remove",
-        "summary": "Снять исключение (идемпотентно)",
         "parameters": [
           {
             "name": "date",
@@ -2636,20 +2738,20 @@
             "description": "EXPERT_NOT_FOUND"
           }
         },
-        "tags": [
-          "experts"
-        ],
         "security": [
           {
             "bearer": []
           }
+        ],
+        "summary": "Снять исключение (идемпотентно)",
+        "tags": [
+          "experts"
         ]
       }
     },
     "/v1/experts/me/schedule": {
       "get": {
         "operationId": "ScheduleController_getSchedule",
-        "summary": "Получить расписание эксперта (7 дней)",
         "parameters": [],
         "responses": {
           "200": {
@@ -2669,18 +2771,18 @@
             "description": "EXPERT_NOT_FOUND"
           }
         },
-        "tags": [
-          "experts"
-        ],
         "security": [
           {
             "bearer": []
           }
+        ],
+        "summary": "Получить расписание эксперта (7 дней)",
+        "tags": [
+          "experts"
         ]
       },
       "put": {
         "operationId": "ScheduleController_putSchedule",
-        "summary": "Задать расписание эксперта (полная замена)",
         "parameters": [],
         "requestBody": {
           "required": true,
@@ -2713,20 +2815,20 @@
             "description": "EXPERT_NOT_FOUND"
           }
         },
-        "tags": [
-          "experts"
-        ],
         "security": [
           {
             "bearer": []
           }
+        ],
+        "summary": "Задать расписание эксперта (полная замена)",
+        "tags": [
+          "experts"
         ]
       }
     },
     "/v1/experts/me/availability": {
       "patch": {
         "operationId": "ScheduleController_updateAvailability",
-        "summary": "Переключить готовность принимать срочные заявки",
         "parameters": [],
         "requestBody": {
           "required": true,
@@ -2749,20 +2851,20 @@
             "description": "EXPERT_NOT_FOUND"
           }
         },
-        "tags": [
-          "experts"
-        ],
         "security": [
           {
             "bearer": []
           }
+        ],
+        "summary": "Переключить готовность принимать срочные заявки",
+        "tags": [
+          "experts"
         ]
       }
     },
     "/v1/matching/online-count": {
       "get": {
         "operationId": "MatchingController_onlineCount",
-        "summary": "Счётчик доступных сейчас экспертов для экрана поиска (ТЗ §5.3, БП-01)",
         "parameters": [
           {
             "name": "topicSlug",
@@ -2779,12 +2881,12 @@
             "required": true,
             "in": "query",
             "schema": {
+              "type": "string",
               "enum": [
                 "chat",
                 "audio",
                 "video"
-              ],
-              "type": "string"
+              ]
             }
           },
           {
@@ -2812,20 +2914,20 @@
             "description": "UNAUTHORIZED"
           }
         },
-        "tags": [
-          "matching"
-        ],
         "security": [
           {
             "bearer": []
           }
+        ],
+        "summary": "Счётчик доступных сейчас экспертов для экрана поиска (ТЗ §5.3, БП-01)",
+        "tags": [
+          "matching"
         ]
       }
     },
     "/v1/requests": {
       "post": {
         "operationId": "RequestsController_create",
-        "summary": "Создать заявку на консультацию (БП-01)",
         "parameters": [],
         "requestBody": {
           "required": true,
@@ -2855,20 +2957,20 @@
             "description": "ACTIVE_REQUEST_EXISTS — у клиента уже есть активная заявка | EXPERT_UNAVAILABLE — выбранный эксперт недоступен"
           }
         },
-        "tags": [
-          "requests"
-        ],
         "security": [
           {
             "bearer": []
           }
+        ],
+        "summary": "Создать заявку на консультацию (БП-01)",
+        "tags": [
+          "requests"
         ]
       }
     },
     "/v1/requests/{id}": {
       "get": {
         "operationId": "RequestsController_findOne",
-        "summary": "Статус своей заявки",
         "parameters": [
           {
             "name": "id",
@@ -2897,20 +2999,20 @@
             "description": "REQUEST_NOT_FOUND"
           }
         },
-        "tags": [
-          "requests"
-        ],
         "security": [
           {
             "bearer": []
           }
+        ],
+        "summary": "Статус своей заявки",
+        "tags": [
+          "requests"
         ]
       }
     },
     "/v1/requests/{id}/cancel": {
       "post": {
         "operationId": "RequestsController_cancel",
-        "summary": "Отменить свою заявку",
         "parameters": [
           {
             "name": "id",
@@ -2942,20 +3044,20 @@
             "description": "REQUEST_ALREADY_CLOSED"
           }
         },
-        "tags": [
-          "requests"
-        ],
         "security": [
           {
             "bearer": []
           }
+        ],
+        "summary": "Отменить свою заявку",
+        "tags": [
+          "requests"
         ]
       }
     },
     "/v1/experts/me/offers": {
       "get": {
         "operationId": "OffersController_myOffers",
-        "summary": "Активные PENDING-офферы эксперта (без PII клиента)",
         "parameters": [],
         "responses": {
           "200": {
@@ -2978,20 +3080,20 @@
             "description": "EXPERT_NOT_FOUND"
           }
         },
-        "tags": [
-          "offers"
-        ],
         "security": [
           {
             "bearer": []
           }
+        ],
+        "summary": "Активные PENDING-офферы эксперта (без PII клиента)",
+        "tags": [
+          "offers"
         ]
       }
     },
     "/v1/offers/{offerId}/accept": {
       "post": {
         "operationId": "OffersController_accept",
-        "summary": "Принять оффер (атомарно)",
         "parameters": [
           {
             "name": "offerId",
@@ -3026,20 +3128,20 @@
             "description": "OFFER_EXPIRED — истёк дедлайн"
           }
         },
-        "tags": [
-          "offers"
-        ],
         "security": [
           {
             "bearer": []
           }
+        ],
+        "summary": "Принять оффер (атомарно)",
+        "tags": [
+          "offers"
         ]
       }
     },
     "/v1/offers/{offerId}/decline": {
       "post": {
         "operationId": "OffersController_decline",
-        "summary": "Отклонить оффер — заявка уходит следующему кандидату",
         "parameters": [
           {
             "name": "offerId",
@@ -3067,20 +3169,20 @@
             "description": "OFFER_EXPIRED — истёк дедлайн"
           }
         },
-        "tags": [
-          "offers"
-        ],
         "security": [
           {
             "bearer": []
           }
+        ],
+        "summary": "Отклонить оффер — заявка уходит следующему кандидату",
+        "tags": [
+          "offers"
         ]
       }
     },
     "/v1/experts/me/balance": {
       "get": {
         "operationId": "PayoutsController_balance",
-        "summary": "Баланс эксперта (доступно к выводу, Р-06)",
         "parameters": [],
         "responses": {
           "200": {
@@ -3097,20 +3199,20 @@
             "description": "UNAUTHORIZED"
           }
         },
-        "tags": [
-          "payouts"
-        ],
         "security": [
           {
             "bearer": []
           }
+        ],
+        "summary": "Баланс эксперта (доступно к выводу, Р-06)",
+        "tags": [
+          "payouts"
         ]
       }
     },
     "/v1/payouts": {
       "post": {
         "operationId": "PayoutsController_request",
-        "summary": "Заявка на вывод — минимум 10 000 ₸, автоодобрение до 300 000 ₸/мес (Р-06)",
         "parameters": [],
         "requestBody": {
           "required": true,
@@ -3137,18 +3239,18 @@
             "description": "UNAUTHORIZED"
           }
         },
-        "tags": [
-          "payouts"
-        ],
         "security": [
           {
             "bearer": []
           }
+        ],
+        "summary": "Заявка на вывод — минимум 10 000 ₸, автоодобрение до 300 000 ₸/мес (Р-06)",
+        "tags": [
+          "payouts"
         ]
       },
       "get": {
         "operationId": "PayoutsController_list",
-        "summary": "Свои выводы (новые сверху)",
         "parameters": [
           {
             "name": "take",
@@ -3185,20 +3287,20 @@
             "description": "UNAUTHORIZED"
           }
         },
-        "tags": [
-          "payouts"
-        ],
         "security": [
           {
             "bearer": []
           }
+        ],
+        "summary": "Свои выводы (новые сверху)",
+        "tags": [
+          "payouts"
         ]
       }
     },
     "/v1/admin/payouts": {
       "get": {
         "operationId": "PayoutsAdminController_list",
-        "summary": "Очередь финконтроля выводов (по умолчанию PENDING_REVIEW, Р-06)",
         "parameters": [
           {
             "name": "status",
@@ -3206,13 +3308,13 @@
             "in": "query",
             "schema": {
               "default": "PENDING_REVIEW",
+              "type": "string",
               "enum": [
                 "PENDING_REVIEW",
                 "PROCESSING",
                 "PAID",
                 "REJECTED"
-              ],
-              "type": "string"
+              ]
             }
           },
           {
@@ -3250,20 +3352,20 @@
             "description": "UNAUTHORIZED"
           }
         },
-        "tags": [
-          "admin-payouts"
-        ],
         "security": [
           {
             "bearer": []
           }
+        ],
+        "summary": "Очередь финконтроля выводов (по умолчанию PENDING_REVIEW, Р-06)",
+        "tags": [
+          "admin-payouts"
         ]
       }
     },
     "/v1/admin/payouts/{id}/approve": {
       "post": {
         "operationId": "PayoutsAdminController_approve",
-        "summary": "Одобрить вывод из очереди -> PROCESSING + отправка провайдеру",
         "parameters": [
           {
             "name": "id",
@@ -3286,20 +3388,20 @@
             "description": "PAYOUT_NOT_PENDING"
           }
         },
-        "tags": [
-          "admin-payouts"
-        ],
         "security": [
           {
             "bearer": []
           }
+        ],
+        "summary": "Одобрить вывод из очереди -> PROCESSING + отправка провайдеру",
+        "tags": [
+          "admin-payouts"
         ]
       }
     },
     "/v1/admin/payouts/{id}/reject": {
       "post": {
         "operationId": "PayoutsAdminController_reject",
-        "summary": "Отклонить вывод с причиной -> REJECTED + возврат резерва на баланс",
         "parameters": [
           {
             "name": "id",
@@ -3332,20 +3434,20 @@
             "description": "PAYOUT_NOT_PENDING"
           }
         },
-        "tags": [
-          "admin-payouts"
-        ],
         "security": [
           {
             "bearer": []
           }
+        ],
+        "summary": "Отклонить вывод с причиной -> REJECTED + возврат резерва на баланс",
+        "tags": [
+          "admin-payouts"
         ]
       }
     },
     "/v1/webhooks/payouts": {
       "post": {
         "operationId": "PayoutsWebhookController_handle",
-        "summary": "Вебхук payout-провайдера (без auth-guard — подпись проверяется HMAC)",
         "parameters": [
           {
             "name": "x-payout-signature",
@@ -3361,6 +3463,7 @@
             "description": ""
           }
         },
+        "summary": "Вебхук payout-провайдера (без auth-guard — подпись проверяется HMAC)",
         "tags": [
           "webhooks"
         ]
@@ -3384,13 +3487,13 @@
             "description": "Эксперт добавлен в избранное (идемпотентно)"
           }
         },
-        "tags": [
-          "favorites"
-        ],
         "security": [
           {
             "bearer": []
           }
+        ],
+        "tags": [
+          "favorites"
         ]
       },
       "delete": {
@@ -3410,13 +3513,13 @@
             "description": "Эксперт удалён из избранного (идемпотентно)"
           }
         },
-        "tags": [
-          "favorites"
-        ],
         "security": [
           {
             "bearer": []
           }
+        ],
+        "tags": [
+          "favorites"
         ]
       }
     },
@@ -3459,20 +3562,19 @@
             }
           }
         },
-        "tags": [
-          "favorites"
-        ],
         "security": [
           {
             "bearer": []
           }
+        ],
+        "tags": [
+          "favorites"
         ]
       }
     },
     "/v1/consultations/{id}/media-token": {
       "post": {
         "operationId": "MediaController_mediaToken",
-        "summary": "LiveKit-токен для участника ACTIVE-консультации; эскалация формата chat->audio->video (понижение запрещено)",
         "parameters": [
           {
             "name": "id",
@@ -3508,20 +3610,20 @@
             "description": "CONSULTATION_NOT_FOUND"
           }
         },
-        "tags": [
-          "consultations"
-        ],
         "security": [
           {
             "bearer": []
           }
+        ],
+        "summary": "LiveKit-токен для участника ACTIVE-консультации; эскалация формата chat->audio->video (понижение запрещено)",
+        "tags": [
+          "consultations"
         ]
       }
     },
     "/v1/webhooks/livekit": {
       "post": {
         "operationId": "LivekitWebhookController_handle",
-        "summary": "Вебхук LiveKit (без auth-guard — подпись проверяется WebhookReceiver)",
         "parameters": [
           {
             "name": "authorization",
@@ -3537,6 +3639,7 @@
             "description": ""
           }
         },
+        "summary": "Вебхук LiveKit (без auth-guard — подпись проверяется WebhookReceiver)",
         "tags": [
           "webhooks"
         ]
@@ -3545,7 +3648,6 @@
     "/v1/consultations/{id}/review": {
       "post": {
         "operationId": "ConsultationReviewController_create",
-        "summary": "Клиент оставляет отзыв на завершённую консультацию (COMPLETED, outcome COMPLETED)",
         "parameters": [
           {
             "name": "id",
@@ -3587,20 +3689,20 @@
             "description": "CONSULTATION_NOT_COMPLETED | REVIEW_EXISTS"
           }
         },
-        "tags": [
-          "reviews"
-        ],
         "security": [
           {
             "bearer": []
           }
+        ],
+        "summary": "Клиент оставляет отзыв на завершённую консультацию (COMPLETED, outcome COMPLETED)",
+        "tags": [
+          "reviews"
         ]
       }
     },
     "/v1/reviews/{id}": {
       "delete": {
         "operationId": "ReviewsController_remove",
-        "summary": "Удаление своего отзыва автором-клиентом",
         "parameters": [
           {
             "name": "id",
@@ -3619,20 +3721,20 @@
             "description": "REVIEW_NOT_FOUND"
           }
         },
-        "tags": [
-          "reviews"
-        ],
         "security": [
           {
             "bearer": []
           }
+        ],
+        "summary": "Удаление своего отзыва автором-клиентом",
+        "tags": [
+          "reviews"
         ]
       }
     },
     "/v1/reviews/{id}/reply": {
       "post": {
         "operationId": "ReviewsController_reply",
-        "summary": "Ответ эксперта на отзыв о себе (только PUBLISHED, повтор перезаписывает)",
         "parameters": [
           {
             "name": "id",
@@ -3664,20 +3766,20 @@
             "description": "INVALID_STATE_TRANSITION"
           }
         },
-        "tags": [
-          "reviews"
-        ],
         "security": [
           {
             "bearer": []
           }
+        ],
+        "summary": "Ответ эксперта на отзыв о себе (только PUBLISHED, повтор перезаписывает)",
+        "tags": [
+          "reviews"
         ]
       }
     },
     "/v1/reviews/{id}/complaint": {
       "post": {
         "operationId": "ReviewsController_complaint",
-        "summary": "Жалоба эксперта на отзыв о себе: PUBLISHED -> FLAGGED, скрывается из публичной выдачи до решения админа",
         "parameters": [
           {
             "name": "id",
@@ -3709,20 +3811,67 @@
             "description": "INVALID_STATE_TRANSITION"
           }
         },
-        "tags": [
-          "reviews"
-        ],
         "security": [
           {
             "bearer": []
           }
+        ],
+        "summary": "Жалоба эксперта на отзыв о себе: PUBLISHED -> FLAGGED, скрывается из публичной выдачи до решения админа",
+        "tags": [
+          "reviews"
+        ]
+      }
+    },
+    "/v1/experts/me/reviews": {
+      "get": {
+        "operationId": "MyExpertReviewsController_myReviews",
+        "parameters": [
+          {
+            "name": "take",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "maximum": 100,
+              "default": 20,
+              "type": "number"
+            }
+          },
+          {
+            "name": "skip",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": 0,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MyExpertReviewsDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Свои отзывы (PUBLISHED) с id — для ответа/жалобы эксперта на отзыв",
+        "tags": [
+          "reviews"
         ]
       }
     },
     "/v1/experts/{id}/reviews": {
       "get": {
         "operationId": "ExpertReviewsController_list",
-        "summary": "Публичные отзывы эксперта (PUBLISHED), автор анонимен, распределение 1..5",
         "parameters": [
           {
             "name": "id",
@@ -3764,6 +3913,7 @@
             }
           }
         },
+        "summary": "Публичные отзывы эксперта (PUBLISHED), автор анонимен, распределение 1..5",
         "tags": [
           "reviews"
         ]
@@ -3772,7 +3922,6 @@
     "/v1/admin/reviews/flagged": {
       "get": {
         "operationId": "ReviewsAdminController_flagged",
-        "summary": "Очередь FLAGGED-отзывов на модерацию (админ видит всё, включая privateText)",
         "parameters": [],
         "responses": {
           "200": {
@@ -3792,20 +3941,20 @@
             "description": "UNAUTHORIZED"
           }
         },
-        "tags": [
-          "admin-reviews"
-        ],
         "security": [
           {
             "bearer": []
           }
+        ],
+        "summary": "Очередь FLAGGED-отзывов на модерацию (админ видит всё, включая privateText)",
+        "tags": [
+          "admin-reviews"
         ]
       }
     },
     "/v1/admin/reviews/{id}/resolve": {
       "post": {
         "operationId": "ReviewsAdminController_resolve",
-        "summary": "Решение по FLAGGED-отзыву: hide -> HIDDEN | restore -> PUBLISHED, пересчёт агрегатов",
         "parameters": [
           {
             "name": "id",
@@ -3841,20 +3990,378 @@
             "description": "INVALID_STATE_TRANSITION"
           }
         },
-        "tags": [
-          "admin-reviews"
-        ],
         "security": [
           {
             "bearer": []
           }
+        ],
+        "summary": "Решение по FLAGGED-отзыву: hide -> HIDDEN | restore -> PUBLISHED, пересчёт агрегатов",
+        "tags": [
+          "admin-reviews"
+        ]
+      }
+    },
+    "/v1/content/streak": {
+      "get": {
+        "operationId": "ContentController_streakOf",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Стрик практик и счётчик завершённых"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "content"
+        ]
+      }
+    },
+    "/v1/content": {
+      "get": {
+        "operationId": "ContentController_list",
+        "parameters": [
+          {
+            "name": "kind",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "MEDITATION",
+                "MUSIC",
+                "ARTICLE",
+                "BREATHING"
+              ]
+            }
+          },
+          {
+            "name": "category",
+            "required": false,
+            "in": "query",
+            "description": "Категория-чипс: sleep | anxiety | ...",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "take",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "maximum": 100,
+              "default": 20,
+              "type": "number"
+            }
+          },
+          {
+            "name": "skip",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": 0,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Материалы",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ContentItemDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "content"
+        ]
+      }
+    },
+    "/v1/content/{id}/progress": {
+      "post": {
+        "operationId": "ContentController_saveProgress",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveProgressDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Прогресс сохранён"
+          },
+          "404": {
+            "description": "CONTENT_NOT_FOUND"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "content"
+        ]
+      }
+    },
+    "/v1/content/{id}/vote": {
+      "post": {
+        "operationId": "ContentController_vote",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VoteDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Голос учтён"
+          },
+          "404": {
+            "description": "CONTENT_NOT_FOUND"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "content"
+        ]
+      }
+    },
+    "/v1/content/{id}/media": {
+      "get": {
+        "operationId": "ContentController_media",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Подписанная ссылка на файл материала"
+          },
+          "403": {
+            "description": "PREMIUM_REQUIRED"
+          },
+          "404": {
+            "description": "CONTENT_NOT_FOUND"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "content"
+        ]
+      }
+    },
+    "/v1/content/{id}": {
+      "get": {
+        "operationId": "ContentController_byId",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Материал с телом",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ContentItemDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "CONTENT_NOT_FOUND"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "content"
+        ]
+      }
+    },
+    "/v1/admin/content": {
+      "get": {
+        "operationId": "ContentAdminController_list",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Материалы, включая черновики"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "admin-content"
+        ]
+      },
+      "post": {
+        "operationId": "ContentAdminController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpsertContentDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Материал заведён"
+          },
+          "409": {
+            "description": "CONTENT_SLUG_TAKEN"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "admin-content"
+        ]
+      }
+    },
+    "/v1/admin/content/{id}": {
+      "patch": {
+        "operationId": "ContentAdminController_patch",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PatchContentDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Материал обновлён"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "admin-content"
+        ]
+      },
+      "delete": {
+        "operationId": "ContentAdminController_remove",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Материал удалён"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "admin-content"
         ]
       }
     },
     "/v1/devices": {
       "post": {
         "operationId": "DevicesController_register",
-        "summary": "Регистрация push-токена устройства (upsert)",
         "parameters": [],
         "requestBody": {
           "required": true,
@@ -3878,18 +4385,18 @@
             }
           }
         },
-        "tags": [
-          "devices"
-        ],
         "security": [
           {
             "bearer": []
           }
+        ],
+        "summary": "Регистрация push-токена устройства (upsert)",
+        "tags": [
+          "devices"
         ]
       },
       "delete": {
         "operationId": "DevicesController_remove",
-        "summary": "Удаление push-токена (logout устройства)",
         "parameters": [],
         "requestBody": {
           "required": true,
@@ -3909,20 +4416,20 @@
             "description": "DEVICE_NOT_FOUND"
           }
         },
-        "tags": [
-          "devices"
-        ],
         "security": [
           {
             "bearer": []
           }
+        ],
+        "summary": "Удаление push-токена (logout устройства)",
+        "tags": [
+          "devices"
         ]
       }
     },
     "/v1/me/locale": {
       "patch": {
         "operationId": "DevicesController_updateLocale",
-        "summary": "Локаль пользователя (ru|kz) — язык уведомлений",
         "parameters": [],
         "requestBody": {
           "required": true,
@@ -3939,20 +4446,49 @@
             "description": ""
           }
         },
-        "tags": [
-          "devices"
-        ],
         "security": [
           {
             "bearer": []
           }
+        ],
+        "summary": "Локаль пользователя (ru|kz) — язык уведомлений",
+        "tags": [
+          "devices"
+        ]
+      }
+    },
+    "/v1/me": {
+      "delete": {
+        "operationId": "AccountController_remove",
+        "parameters": [],
+        "responses": {
+          "204": {
+            "description": "Аккаунт удалён"
+          },
+          "401": {
+            "description": "UNAUTHORIZED"
+          },
+          "404": {
+            "description": "NOT_FOUND — аккаунт уже удалён"
+          },
+          "409": {
+            "description": "EXPERT_DELETE_VIA_SUPPORT | CONSULTATION_IN_PROGRESS | PAYMENT_IN_PROGRESS"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Удалить свой аккаунт и данные (ТЗ §5.1). Консультации, платежи и проводки остаются как учётные записи, PII из аккаунта вычищается.",
+        "tags": [
+          "account"
         ]
       }
     },
     "/v1/tickets": {
       "post": {
         "operationId": "TicketsController_create",
-        "summary": "Создать обращение в поддержку. JWT необязателен: с токеном автор определяется сервером (эксперт/клиент), без токена — гость (обязателен contactEmail или contactPhone)",
         "parameters": [],
         "requestBody": {
           "required": true,
@@ -3979,18 +4515,18 @@
             "description": "TICKET_CONTACT_REQUIRED | TICKET_CATEGORY_NOT_ALLOWED"
           }
         },
-        "tags": [
-          "tickets"
-        ],
         "security": [
           {
             "bearer": []
           }
+        ],
+        "summary": "Создать обращение в поддержку. JWT необязателен: с токеном автор определяется сервером (эксперт/клиент), без токена — гость (обязателен contactEmail или contactPhone)",
+        "tags": [
+          "tickets"
         ]
       },
       "get": {
         "operationId": "TicketsController_list",
-        "summary": "Мои обращения в поддержку",
         "parameters": [
           {
             "name": "take",
@@ -4027,20 +4563,20 @@
             }
           }
         },
-        "tags": [
-          "tickets"
-        ],
         "security": [
           {
             "bearer": []
           }
+        ],
+        "summary": "Мои обращения в поддержку",
+        "tags": [
+          "tickets"
         ]
       }
     },
     "/v1/tickets/{id}": {
       "get": {
         "operationId": "TicketsController_getOne",
-        "summary": "Своё обращение с перепиской",
         "parameters": [
           {
             "name": "id",
@@ -4066,20 +4602,20 @@
             "description": "TICKET_NOT_FOUND"
           }
         },
-        "tags": [
-          "tickets"
-        ],
         "security": [
           {
             "bearer": []
           }
+        ],
+        "summary": "Своё обращение с перепиской",
+        "tags": [
+          "tickets"
         ]
       }
     },
     "/v1/tickets/{id}/reply": {
       "post": {
         "operationId": "TicketsController_replyByAuthor",
-        "summary": "Ответ автора в своё обращение. Решённое -> 409: переоткрытия нет, создаётся новое",
         "parameters": [
           {
             "name": "id",
@@ -4105,32 +4641,32 @@
             "description": ""
           }
         },
-        "tags": [
-          "tickets"
-        ],
         "security": [
           {
             "bearer": []
           }
+        ],
+        "summary": "Ответ автора в своё обращение. Решённое -> 409: переоткрытия нет, создаётся новое",
+        "tags": [
+          "tickets"
         ]
       }
     },
     "/v1/admin/tickets": {
       "get": {
         "operationId": "TicketsAdminController_list",
-        "summary": "Очередь тикетов своих команд (SUPERADMIN — все команды без ограничения)",
         "parameters": [
           {
             "name": "status",
             "required": false,
             "in": "query",
             "schema": {
+              "type": "string",
               "enum": [
                 "NEW",
                 "IN_PROGRESS",
                 "RESOLVED"
-              ],
-              "type": "string"
+              ]
             }
           },
           {
@@ -4138,13 +4674,13 @@
             "required": false,
             "in": "query",
             "schema": {
+              "type": "string",
               "enum": [
                 "SUPPORT_OPERATOR",
                 "VERIFICATION_OPERATOR",
                 "FINANCE_CONTROL",
                 "QUALITY_TEAM"
-              ],
-              "type": "string"
+              ]
             }
           },
           {
@@ -4152,12 +4688,12 @@
             "required": false,
             "in": "query",
             "schema": {
+              "type": "string",
               "enum": [
                 "me",
                 "none",
                 "any"
-              ],
-              "type": "string"
+              ]
             }
           },
           {
@@ -4195,20 +4731,20 @@
             "description": "UNAUTHORIZED"
           }
         },
-        "tags": [
-          "admin-tickets"
-        ],
         "security": [
           {
             "bearer": []
           }
+        ],
+        "summary": "Очередь тикетов своих команд (SUPERADMIN — все команды без ограничения)",
+        "tags": [
+          "admin-tickets"
         ]
       }
     },
     "/v1/admin/tickets/{id}": {
       "get": {
         "operationId": "TicketsAdminController_getOne",
-        "summary": "Карточка тикета с перепиской и данными автора",
         "parameters": [
           {
             "name": "id",
@@ -4238,20 +4774,20 @@
             "description": "TICKET_NOT_FOUND"
           }
         },
-        "tags": [
-          "admin-tickets"
-        ],
         "security": [
           {
             "bearer": []
           }
+        ],
+        "summary": "Карточка тикета с перепиской и данными автора",
+        "tags": [
+          "admin-tickets"
         ]
       }
     },
     "/v1/admin/tickets/{id}/reply": {
       "post": {
         "operationId": "TicketsAdminController_reply",
-        "summary": "Ответ сотрудника: первый ответ проставляет firstReplyAt и переводит NEW -> IN_PROGRESS (идемпотентно)",
         "parameters": [
           {
             "name": "id",
@@ -4287,20 +4823,20 @@
             "description": "TICKET_ALREADY_RESOLVED"
           }
         },
-        "tags": [
-          "admin-tickets"
-        ],
         "security": [
           {
             "bearer": []
           }
+        ],
+        "summary": "Ответ сотрудника: первый ответ проставляет firstReplyAt и переводит NEW -> IN_PROGRESS (идемпотентно)",
+        "tags": [
+          "admin-tickets"
         ]
       }
     },
     "/v1/admin/tickets/{id}/resolve": {
       "post": {
         "operationId": "TicketsAdminController_resolve",
-        "summary": "Решить тикет -> RESOLVED",
         "parameters": [
           {
             "name": "id",
@@ -4326,20 +4862,20 @@
             "description": "TICKET_ALREADY_RESOLVED"
           }
         },
-        "tags": [
-          "admin-tickets"
-        ],
         "security": [
           {
             "bearer": []
           }
+        ],
+        "summary": "Решить тикет -> RESOLVED",
+        "tags": [
+          "admin-tickets"
         ]
       }
     },
     "/v1/admin/tickets/{id}/assign": {
       "post": {
         "operationId": "TicketsAdminController_assign",
-        "summary": "Назначить обращение сотруднику. Без adminUserId — себе, null — снять назначение",
         "parameters": [
           {
             "name": "id",
@@ -4368,13 +4904,14 @@
             "description": "UNAUTHORIZED"
           }
         },
-        "tags": [
-          "admin-tickets"
-        ],
         "security": [
           {
             "bearer": []
           }
+        ],
+        "summary": "Назначить обращение сотруднику. Без adminUserId — себе, null — снять назначение",
+        "tags": [
+          "admin-tickets"
         ]
       }
     }
@@ -4443,8 +4980,8 @@
           },
           "code": {
             "type": "string",
-            "example": "1234",
-            "description": "Одноразовый SMS-код (4 цифры)"
+            "example": "123456",
+            "description": "Одноразовый SMS-код (6 цифр)"
           }
         },
         "required": [
@@ -4527,8 +5064,8 @@
           },
           "code": {
             "type": "string",
-            "example": "1234",
-            "description": "Одноразовый SMS-код (4 цифры)"
+            "example": "123456",
+            "description": "Одноразовый SMS-код (6 цифр)"
           }
         },
         "required": [
@@ -5079,6 +5616,12 @@
               "VERIFIED"
             ]
           },
+          "submittedAt": {
+            "format": "date-time",
+            "type": "string",
+            "nullable": true,
+            "description": "Момент отправки анкеты на проверку — точка отсчёта SLA 24ч (ТЗ §11.4). null только у записей, отправленных до появления поля."
+          },
           "documents": {
             "type": "array",
             "items": {
@@ -5090,6 +5633,7 @@
           "id",
           "displayName",
           "verificationStatus",
+          "submittedAt",
           "documents"
         ]
       },
@@ -5248,6 +5792,7 @@
               "type": "string",
               "enum": [
                 "VERIFICATION_OPERATOR",
+                "CONTENT_EDITOR",
                 "SUPPORT_OPERATOR",
                 "QUALITY_TEAM",
                 "FINANCE_CONTROL",
@@ -5366,6 +5911,7 @@
               "type": "string",
               "enum": [
                 "VERIFICATION_OPERATOR",
+                "CONTENT_EDITOR",
                 "SUPPORT_OPERATOR",
                 "QUALITY_TEAM",
                 "FINANCE_CONTROL",
@@ -5395,6 +5941,7 @@
               "type": "string",
               "enum": [
                 "VERIFICATION_OPERATOR",
+                "CONTENT_EDITOR",
                 "SUPPORT_OPERATOR",
                 "QUALITY_TEAM",
                 "FINANCE_CONTROL",
@@ -5428,6 +5975,7 @@
               "type": "string",
               "enum": [
                 "VERIFICATION_OPERATOR",
+                "CONTENT_EDITOR",
                 "SUPPORT_OPERATOR",
                 "QUALITY_TEAM",
                 "FINANCE_CONTROL",
@@ -5485,6 +6033,7 @@
               "type": "string",
               "enum": [
                 "VERIFICATION_OPERATOR",
+                "CONTENT_EDITOR",
                 "SUPPORT_OPERATOR",
                 "QUALITY_TEAM",
                 "FINANCE_CONTROL",
@@ -6080,6 +6629,64 @@
           "items"
         ]
       },
+      "PremiumStatusDto": {
+        "type": "object",
+        "properties": {
+          "active": {
+            "type": "boolean",
+            "description": "Есть ли доступ к Premium прямо сейчас. Остаётся true после отмены до конца оплаченного периода и во время ретраев автопродления (Р-09)."
+          },
+          "plan": {
+            "type": "string",
+            "enum": [
+              "MONTH",
+              "YEAR"
+            ],
+            "nullable": true
+          },
+          "currentPeriodEnd": {
+            "type": "string",
+            "nullable": true,
+            "description": "Конец оплаченного периода"
+          },
+          "cancelled": {
+            "type": "boolean",
+            "description": "Отменена клиентом, не продлится"
+          },
+          "inGrace": {
+            "type": "boolean",
+            "description": "Оплата не прошла, идут ретраи — доступ пока сохраняется"
+          }
+        },
+        "required": [
+          "active",
+          "plan",
+          "currentPeriodEnd",
+          "cancelled",
+          "inGrace"
+        ]
+      },
+      "SubscribeDto": {
+        "type": "object",
+        "properties": {
+          "plan": {
+            "type": "string",
+            "enum": [
+              "MONTH",
+              "YEAR"
+            ],
+            "description": "Тариф Premium"
+          },
+          "paymentMethodId": {
+            "type": "string",
+            "description": "Привязанная карта, с которой списать"
+          }
+        },
+        "required": [
+          "plan",
+          "paymentMethodId"
+        ]
+      },
       "ScheduleExceptionDto": {
         "type": "object",
         "properties": {
@@ -6673,6 +7280,99 @@
           "text"
         ]
       },
+      "OwnReviewItemDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "rating": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 5
+          },
+          "publicText": {
+            "type": "string",
+            "nullable": true
+          },
+          "expertReply": {
+            "type": "string",
+            "nullable": true
+          },
+          "tags": {
+            "example": [
+              "attentive"
+            ],
+            "type": "array",
+            "items": {
+              "type": "array"
+            }
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "rating",
+          "tags",
+          "createdAt"
+        ]
+      },
+      "RatingDistributionDto": {
+        "type": "object",
+        "properties": {
+          "1": {
+            "type": "number"
+          },
+          "2": {
+            "type": "number"
+          },
+          "3": {
+            "type": "number"
+          },
+          "4": {
+            "type": "number"
+          },
+          "5": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "1",
+          "2",
+          "3",
+          "4",
+          "5"
+        ]
+      },
+      "MyExpertReviewsDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OwnReviewItemDto"
+            }
+          },
+          "distribution": {
+            "$ref": "#/components/schemas/RatingDistributionDto"
+          },
+          "ratingAvg": {
+            "type": "number"
+          },
+          "ratingCount": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "items",
+          "distribution",
+          "ratingAvg",
+          "ratingCount"
+        ]
+      },
       "ReviewItemDto": {
         "type": "object",
         "properties": {
@@ -6707,33 +7407,6 @@
           "rating",
           "tags",
           "createdAt"
-        ]
-      },
-      "RatingDistributionDto": {
-        "type": "object",
-        "properties": {
-          "1": {
-            "type": "number"
-          },
-          "2": {
-            "type": "number"
-          },
-          "3": {
-            "type": "number"
-          },
-          "4": {
-            "type": "number"
-          },
-          "5": {
-            "type": "number"
-          }
-        },
-        "required": [
-          "1",
-          "2",
-          "3",
-          "4",
-          "5"
         ]
       },
       "ExpertReviewsDto": {
@@ -6818,6 +7491,226 @@
         "required": [
           "action"
         ]
+      },
+      "ContentBodyDto": {
+        "type": "object",
+        "properties": {
+          "markdown": {
+            "type": "string",
+            "description": "ARTICLE: текст на языке пользователя"
+          },
+          "phases": {
+            "description": "BREATHING: фазы цикла",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "cycles": {
+            "type": "number",
+            "description": "BREATHING: сколько циклов"
+          }
+        }
+      },
+      "ContentItemDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "MEDITATION",
+              "MUSIC",
+              "ARTICLE",
+              "BREATHING"
+            ]
+          },
+          "access": {
+            "type": "string",
+            "enum": [
+              "FREE",
+              "PREMIUM"
+            ]
+          },
+          "slug": {
+            "type": "string"
+          },
+          "category": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string",
+            "description": "Заголовок на языке пользователя"
+          },
+          "summary": {
+            "type": "string",
+            "description": "Краткое описание на языке пользователя"
+          },
+          "durationSec": {
+            "type": "number",
+            "nullable": true
+          },
+          "coverUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "locked": {
+            "type": "boolean",
+            "description": "Материал за подпиской, а подписки нет. Карточку всё равно показываем: человек должен понимать, что именно за пейволлом. Решение о доступе принимает сервер при выдаче ссылки, а не приложение по этому флагу."
+          },
+          "positionPermille": {
+            "type": "number",
+            "description": "Прогресс 0–1000, если он есть"
+          },
+          "body": {
+            "$ref": "#/components/schemas/ContentBodyDto"
+          },
+          "usefulYes": {
+            "type": "number",
+            "description": "Сколько человек сочли материал полезным"
+          },
+          "usefulNo": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "access",
+          "slug",
+          "category",
+          "title",
+          "summary",
+          "locked"
+        ]
+      },
+      "SaveProgressDto": {
+        "type": "object",
+        "properties": {
+          "positionPermille": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1000,
+            "description": "Доля прослушанного или прочитанного в промилле. Одно поле на оба вида: длительность известна из карточки."
+          }
+        },
+        "required": [
+          "positionPermille"
+        ]
+      },
+      "VoteDto": {
+        "type": "object",
+        "properties": {
+          "useful": {
+            "type": "boolean",
+            "description": "Был ли материал полезен"
+          }
+        },
+        "required": [
+          "useful"
+        ]
+      },
+      "UpsertContentDto": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "MEDITATION",
+              "MUSIC",
+              "ARTICLE",
+              "BREATHING"
+            ]
+          },
+          "access": {
+            "type": "string",
+            "enum": [
+              "FREE",
+              "PREMIUM"
+            ]
+          },
+          "slug": {
+            "type": "string",
+            "description": "Латиница, цифры и дефис"
+          },
+          "category": {
+            "type": "string"
+          },
+          "titleRu": {
+            "type": "string"
+          },
+          "titleKk": {
+            "type": "string"
+          },
+          "summaryRu": {
+            "type": "string"
+          },
+          "summaryKk": {
+            "type": "string"
+          },
+          "payload": {
+            "type": "object",
+            "description": "Форма зависит от kind"
+          },
+          "durationSec": {
+            "type": "number"
+          },
+          "coverKey": {
+            "type": "string"
+          },
+          "sortOrder": {
+            "type": "number"
+          },
+          "published": {
+            "type": "boolean",
+            "description": "Публиковать сразу"
+          }
+        },
+        "required": [
+          "kind",
+          "slug",
+          "category",
+          "titleRu",
+          "titleKk",
+          "summaryRu",
+          "summaryKk",
+          "payload"
+        ]
+      },
+      "PatchContentDto": {
+        "type": "object",
+        "properties": {
+          "published": {
+            "type": "boolean"
+          },
+          "access": {
+            "type": "string",
+            "enum": [
+              "FREE",
+              "PREMIUM"
+            ]
+          },
+          "titleRu": {
+            "type": "string"
+          },
+          "titleKk": {
+            "type": "string"
+          },
+          "summaryRu": {
+            "type": "string"
+          },
+          "summaryKk": {
+            "type": "string"
+          },
+          "payload": {
+            "type": "object"
+          },
+          "sortOrder": {
+            "type": "number"
+          }
+        }
       },
       "RegisterDeviceDto": {
         "type": "object",

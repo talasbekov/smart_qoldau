@@ -50,9 +50,7 @@ class _TopicScreenState extends ConsumerState<TopicScreen> {
     final format = await showFormatSheet(context);
     // Закрытие шторки без выбора — нормальный исход: ничего не меняем.
     if (format == null || !mounted) return;
-    ref.read(analyticsProvider).track(
-      FormatSelected(format: format.wireValue),
-    );
+    ref.read(analyticsProvider).track(FormatSelected(format: format.wireValue));
     setState(() {
       _format = format;
       _error = null;

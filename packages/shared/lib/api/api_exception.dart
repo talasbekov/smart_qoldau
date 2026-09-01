@@ -48,9 +48,35 @@ abstract final class ApiErrorCode {
   static const offerExpired = 'OFFER_EXPIRED';
   static const offerAlreadyTaken = 'OFFER_ALREADY_TAKEN';
 
+  /// Эксперт уже ведёт консультацию: BUSY выставляется после коммита
+  /// первого accept, поэтому до этого момента второй оффер он получить
+  /// успевает. Для интерфейса это тот же случай, что «оффер уже
+  /// недоступен» — вторая попытка бессмысленна.
+  static const expertBusy = 'EXPERT_BUSY';
+
+  /// Удаление аккаунта (ТЗ §5.1): отказы, при которых удалять рано или
+  /// нельзя вовсе.
+  static const consultationInProgress = 'CONSULTATION_IN_PROGRESS';
+  static const paymentInProgress = 'PAYMENT_IN_PROGRESS';
+  static const expertDeleteViaSupport = 'EXPERT_DELETE_VIA_SUPPORT';
+
   /// Завершение консультации и заметки эксперта (E7 задача 13).
   static const invalidOutcome = 'INVALID_OUTCOME';
   static const invalidNoteText = 'INVALID_NOTE_TEXT';
+
+  /// Ответ/жалоба эксперта на отзыв (E7 задача 15): отзыв не в статусе
+  /// PUBLISHED — например, жалоба уже подана (FLAGGED) или отзыв скрыт
+  /// модератором.
+  static const invalidStateTransition = 'INVALID_STATE_TRANSITION';
+
+  /// Контент и самопомощь (E13): материал за подпиской.
+  static const premiumRequired = 'PREMIUM_REQUIRED';
+  static const contentNotFound = 'CONTENT_NOT_FOUND';
+
+  /// Подписка Premium (E12).
+  static const subscriptionExists = 'SUBSCRIPTION_EXISTS';
+  static const subscriptionNotFound = 'SUBSCRIPTION_NOT_FOUND';
+  static const paymentDeclined = 'PAYMENT_DECLINED';
 
   /// Код, которым [ApiException.fromDioError] помечает сетевые сбои без
   /// ответа сервера (таймаут, обрыв соединения, DNS) — бэкенд его не знает,

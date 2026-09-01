@@ -36,9 +36,18 @@ class ExpertConsultationsScreen extends ConsumerWidget {
         ),
         body: TabBarView(
           children: [
-            OffersListScreen(offers: state.offers, onRefresh: controller.refreshOffers),
-            _ConsultationsList(value: state.active, onRefresh: controller.refreshActive),
-            _ConsultationsList(value: state.history, onRefresh: controller.refreshHistory),
+            OffersListScreen(
+              offers: state.offers,
+              onRefresh: controller.refreshOffers,
+            ),
+            _ConsultationsList(
+              value: state.active,
+              onRefresh: controller.refreshActive,
+            ),
+            _ConsultationsList(
+              value: state.history,
+              onRefresh: controller.refreshHistory,
+            ),
           ],
         ),
       ),

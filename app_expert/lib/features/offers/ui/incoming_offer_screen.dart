@@ -21,7 +21,8 @@ class IncomingOfferScreen extends ConsumerStatefulWidget {
   final OfferNew offer;
 
   @override
-  ConsumerState<IncomingOfferScreen> createState() => _IncomingOfferScreenState();
+  ConsumerState<IncomingOfferScreen> createState() =>
+      _IncomingOfferScreenState();
 }
 
 class _IncomingOfferScreenState extends ConsumerState<IncomingOfferScreen> {
@@ -39,7 +40,9 @@ class _IncomingOfferScreenState extends ConsumerState<IncomingOfferScreen> {
 
   void _tick() {
     final remaining = widget.offer.deadlineAt.difference(DateTime.now());
-    setState(() => _remaining = remaining.isNegative ? Duration.zero : remaining);
+    setState(
+      () => _remaining = remaining.isNegative ? Duration.zero : remaining,
+    );
   }
 
   @override
@@ -60,22 +63,28 @@ class _IncomingOfferScreenState extends ConsumerState<IncomingOfferScreen> {
     try {
       final result = await action();
       if (!mounted) return;
-      ref.read(incomingOfferControllerProvider.notifier).handledByUser(widget.offer.offerId);
+      ref
+          .read(incomingOfferControllerProvider.notifier)
+          .handledByUser(widget.offer.offerId);
       // Навигация ДО закрытия диалога — `context` этого виджета валиден
       // ровно до `pop()`; после него он в процессе размонтирования.
       onSuccess?.call(result);
       Navigator.of(context, rootNavigator: true).pop();
     } on ApiException catch (e) {
-      // OFFER_EXPIRED/OFFER_ALREADY_TAKEN/OFFER_NOT_FOUND — оффер уже
-      // недоступен (перехвачен другим экспертом или истёк); закрываем
+      // OFFER_EXPIRED/OFFER_ALREADY_TAKEN/OFFER_NOT_FOUND/EXPERT_BUSY —
+      // оффер уже недоступен (перехвачен другим, истёк, или эксперт
+      // только что принял другую заявку); закрываем
       // алерт тем же путём, что и обычный успех — второй попытки тут
       // всё равно быть не может.
       if (!mounted) return;
-      ref.read(incomingOfferControllerProvider.notifier).handledByUser(widget.offer.offerId);
+      ref
+          .read(incomingOfferControllerProvider.notifier)
+          .handledByUser(widget.offer.offerId);
       Navigator.of(context, rootNavigator: true).pop();
       if (e.code != ApiErrorCode.offerExpired &&
           e.code != ApiErrorCode.offerAlreadyTaken &&
-          e.code != ApiErrorCode.offerNotFound) {
+          e.code != ApiErrorCode.offerNotFound &&
+          e.code != ApiErrorCode.expertBusy) {
         setState(() => _error = e.message);
       }
     } finally {
@@ -101,12 +110,18 @@ class _IncomingOfferScreenState extends ConsumerState<IncomingOfferScreen> {
               children: [
                 if (offer.isEmergency)
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
                       color: SqColors.danger,
                       borderRadius: BorderRadius.circular(999),
                     ),
-                    child: Text(l10n.offerEmergencyBadge, style: const TextStyle(color: Colors.white)),
+                    child: Text(
+                      l10n.offerEmergencyBadge,
+                      style: const TextStyle(color: Colors.white),
+                    ),
                   ),
                 const SizedBox(height: 16),
                 Text(l10n.offerNewTitle, style: SqTypography.h2),
@@ -122,7 +137,10 @@ class _IncomingOfferScreenState extends ConsumerState<IncomingOfferScreen> {
                 if (_error != null)
                   Padding(
                     padding: const EdgeInsets.only(bottom: 16),
-                    child: Text(_error!, style: SqTypography.body.copyWith(color: SqColors.danger)),
+                    child: Text(
+                      _error!,
+                      style: SqTypography.body.copyWith(color: SqColors.danger),
+                    ),
                   ),
                 Row(
                   children: [
@@ -132,8 +150,10 @@ class _IncomingOfferScreenState extends ConsumerState<IncomingOfferScreen> {
                         onPressed: _busy
                             ? null
                             : () => _respond(
-                                  () => ref.read(offersRepositoryProvider).decline(offer.offerId),
-                                ),
+                                () => ref
+                                    .read(offersRepositoryProvider)
+                                    .decline(offer.offerId),
+                              ),
                         child: Text(l10n.actionDecline),
                       ),
                     ),
@@ -144,10 +164,13 @@ class _IncomingOfferScreenState extends ConsumerState<IncomingOfferScreen> {
                         onPressed: _busy
                             ? null
                             : () => _respond(
-                                  () => ref.read(offersRepositoryProvider).accept(offer.offerId),
-                                  onSuccess: (result) =>
-                                      context.push(RoutePaths.session(result.consultationId)),
+                                () => ref
+                                    .read(offersRepositoryProvider)
+                                    .accept(offer.offerId),
+                                onSuccess: (result) => context.push(
+                                  RoutePaths.session(result.consultationId),
                                 ),
+                              ),
                         child: Text(l10n.actionAccept),
                       ),
                     ),

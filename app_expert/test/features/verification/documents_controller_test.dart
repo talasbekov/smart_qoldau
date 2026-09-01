@@ -153,8 +153,9 @@ void main() {
             .toList(),
       );
       when(() => api.submitForVerification()).thenAnswer(
-        (_) async =>
-            const SubmitVerificationDto(verificationStatus: VerificationStatus.pending),
+        (_) async => const SubmitVerificationDto(
+          verificationStatus: VerificationStatus.pending,
+        ),
       );
       final container = _makeContainer(api);
       final controller = container.read(documentsControllerProvider.notifier);

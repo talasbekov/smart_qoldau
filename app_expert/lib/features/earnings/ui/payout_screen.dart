@@ -33,8 +33,11 @@ class _PayoutScreenState extends ConsumerState<PayoutScreen> {
   }
 
   void _submit() {
-    final amountTiyn = (double.tryParse(_amount.text.replaceAll(',', '.')) ?? 0) * 100;
-    ref.read(payoutControllerProvider.notifier).submit(
+    final amountTiyn =
+        (double.tryParse(_amount.text.replaceAll(',', '.')) ?? 0) * 100;
+    ref
+        .read(payoutControllerProvider.notifier)
+        .submit(
           amountTiyn: amountTiyn.round(),
           pan: _pan.text,
           expiry: _expiry.text,
@@ -62,16 +65,14 @@ class _PayoutScreenState extends ConsumerState<PayoutScreen> {
                   color: SqColors.surfaceMuted,
                   borderRadius: BorderRadius.circular(SqRadius.m),
                 ),
-                child: Text(
-                  switch (state.result!.status) {
-                    PayoutStatus.pendingReview => l10n.payoutPendingReview,
-                    PayoutStatus.processing => l10n.payoutProcessing,
-                    PayoutStatus.paid => l10n.payoutPaid,
-                    PayoutStatus.rejected =>
-                      l10n.payoutRejected(state.result!.rejectReason ?? ''),
-                  },
-                  style: SqTypography.body,
-                ),
+                child: Text(switch (state.result!.status) {
+                  PayoutStatus.pendingReview => l10n.payoutPendingReview,
+                  PayoutStatus.processing => l10n.payoutProcessing,
+                  PayoutStatus.paid => l10n.payoutPaid,
+                  PayoutStatus.rejected => l10n.payoutRejected(
+                    state.result!.rejectReason ?? '',
+                  ),
+                }, style: SqTypography.body),
               ),
             TextField(
               key: const Key('sq-payout-amount'),
@@ -101,14 +102,14 @@ class _PayoutScreenState extends ConsumerState<PayoutScreen> {
             if (state.validationError != null)
               Padding(
                 padding: const EdgeInsets.only(top: 12),
-                child: Text(
-                  switch (state.validationError!) {
-                    PayoutValidationError.amountTooLow => l10n.payoutErrorAmountTooLow,
-                    PayoutValidationError.invalidPan => l10n.payoutErrorInvalidPan,
-                    PayoutValidationError.invalidExpiry => l10n.payoutErrorInvalidExpiry,
-                  },
-                  style: SqTypography.body.copyWith(color: SqColors.danger),
-                ),
+                child: Text(switch (state.validationError!) {
+                  PayoutValidationError.amountTooLow =>
+                    l10n.payoutErrorAmountTooLow,
+                  PayoutValidationError.invalidPan =>
+                    l10n.payoutErrorInvalidPan,
+                  PayoutValidationError.invalidExpiry =>
+                    l10n.payoutErrorInvalidExpiry,
+                }, style: SqTypography.body.copyWith(color: SqColors.danger)),
               ),
             if (state.errorMessage != null)
               Padding(

@@ -43,11 +43,8 @@ ExpertReviews _reviews({required List<ReviewItem> items}) => ExpertReviews(
   ratingCount: 312,
 );
 
-ReviewItem _review(String text) => ReviewItem(
-  rating: 5,
-  publicText: text,
-  createdAt: DateTime(2026, 8, 20),
-);
+ReviewItem _review(String text) =>
+    ReviewItem(rating: 5, publicText: text, createdAt: DateTime(2026, 8, 20));
 
 Future<Widget> _wrap(SqApi api) async {
   SharedPreferences.setMockInitialValues({});
@@ -123,10 +120,17 @@ void main() {
     api = MockSqApi();
     when(() => api.expertById('e1')).thenAnswer((_) async => _expert());
     when(
-      () => api.expertReviews('e1', take: any(named: 'take'), skip: any(named: 'skip')),
+      () => api.expertReviews(
+        'e1',
+        take: any(named: 'take'),
+        skip: any(named: 'skip'),
+      ),
     ).thenAnswer((_) async => _reviews(items: [_review('очень помогла')]));
     when(
-      () => api.favorites(take: any(named: 'take'), skip: any(named: 'skip')),
+      () => api.favorites(
+        take: any(named: 'take'),
+        skip: any(named: 'skip'),
+      ),
     ).thenAnswer((_) async => []);
     when(() => api.addFavorite(any())).thenAnswer((_) async {});
     when(() => api.removeFavorite(any())).thenAnswer((_) async {});
@@ -250,11 +254,7 @@ void main() {
     ).thenAnswer((invocation) async {
       calls++;
       if (invocation.namedArguments[#expertId] != null) {
-        throw const ApiException(
-          ApiErrorCode.expertUnavailable,
-          'busy',
-          409,
-        );
+        throw const ApiException(ApiErrorCode.expertUnavailable, 'busy', 409);
       }
       return const MatchRequest(
         id: 'r-auto',

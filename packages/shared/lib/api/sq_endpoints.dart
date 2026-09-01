@@ -31,6 +31,13 @@ abstract final class SqEndpoints {
   static String expertById(String id) => '/experts/$id';
   static String expertReviews(String id) => '/experts/$id/reviews';
 
+  /// Свои отзывы эксперта с `id` каждого отзыва (E7 задача 15): публичный
+  /// [expertReviews] анонимен и идентификатор не отдаёт, а [reviewReply]/
+  /// [reviewComplaint] без него не вызвать.
+  static const expertsMeReviews = '/experts/me/reviews';
+  static String reviewReply(String id) => '/reviews/$id/reply';
+  static String reviewComplaint(String id) => '/reviews/$id/complaint';
+
   /// Слоты для записи (E6b).
   static String expertSlots(String id) => '/experts/$id/slots';
 
@@ -83,7 +90,8 @@ abstract final class SqEndpoints {
 
   /// Завершение консультации экспертом и его приватные заметки (E7 задача
   /// 13).
-  static String consultationComplete(String id) => '/consultations/$id/complete';
+  static String consultationComplete(String id) =>
+      '/consultations/$id/complete';
   static String consultationNote(String id) => '/consultations/$id/note';
 
   // --- отзывы ---
@@ -94,6 +102,19 @@ abstract final class SqEndpoints {
 
   // --- способы оплаты ---
   static const paymentMethods = '/payment-methods';
+
+  // --- контент и самопомощь (E13) ---
+  static const content = '/content';
+  static const contentStreak = '/content/streak';
+  static String contentById(String id) => '/content/$id';
+  static String contentMedia(String id) => '/content/$id/media';
+  static String contentProgress(String id) => '/content/$id/progress';
+  static String contentVote(String id) => '/content/$id/vote';
+
+  // --- Premium (E12) ---
+  static const premium = '/premium';
+  static const premiumSubscribe = '/premium/subscribe';
+  static const premiumCancel = '/premium/cancel';
   static String paymentMethodById(String id) => '/payment-methods/$id';
 
   // --- уведомления, устройства, локаль ---
@@ -101,6 +122,10 @@ abstract final class SqEndpoints {
   static const notificationsRead = '/notifications/read';
   static const devices = '/devices';
   static const meLocale = '/me/locale';
+
+  // --- аккаунт ---
+  /// `DELETE` — удаление своего аккаунта и данных (ТЗ §5.1).
+  static const me = '/me';
 
   // --- обращения в поддержку ---
   static const tickets = '/tickets';
@@ -147,14 +172,27 @@ abstract final class SqEndpoints {
     ('GET', '/consultations/{id}/payment'),
     ('POST', '/consultations/{id}/review'),
     ('DELETE', '/reviews/{id}'),
+    ('GET', expertsMeReviews),
+    ('POST', '/reviews/{id}/reply'),
+    ('POST', '/reviews/{id}/complaint'),
     ('GET', paymentMethods),
     ('POST', paymentMethods),
     ('DELETE', '/payment-methods/{id}'),
+    ('GET', content),
+    ('GET', contentStreak),
+    ('GET', '/content/{id}'),
+    ('GET', '/content/{id}/media'),
+    ('POST', '/content/{id}/progress'),
+    ('POST', '/content/{id}/vote'),
+    ('GET', premium),
+    ('POST', premiumSubscribe),
+    ('POST', premiumCancel),
     ('GET', notifications),
     ('POST', notificationsRead),
     ('POST', devices),
     ('DELETE', devices),
     ('PATCH', meLocale),
+    ('DELETE', me),
     ('POST', tickets),
     ('GET', tickets),
     ('GET', '/tickets/{id}'),
@@ -180,6 +218,5 @@ abstract final class SqEndpoints {
   /// Исключены из проверки контрактным тестом, потому что бэкенд ещё не
   /// реализует соответствующий путь. Задача 9 эпика E6 реализовала
   /// `/matching/online-count` — исключений больше нет.
-  static const Set<(String method, String path)> excludedFromContractTest =
-      {};
+  static const Set<(String method, String path)> excludedFromContractTest = {};
 }

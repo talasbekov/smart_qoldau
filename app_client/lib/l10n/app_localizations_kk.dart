@@ -763,9 +763,6 @@ class AppLocalizationsKk extends AppLocalizations {
   String get expertReplyPrefix => 'Маманның жауабы';
 
   @override
-  String get expertPriceLabel => 'Кеңес';
-
-  @override
   String get expertUnavailableTitle => 'Маман қазір қолжетімсіз';
 
   @override
@@ -925,14 +922,15 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get profileDeleteAccountBody =>
-      'Біз қолдау қызметіне өтінім жасаймыз — команда сізбен байланысып, жоюды растайды';
+      'Хат-хабар, маман жазбалары, карталар мен хабарламалар қайтарымсыз жойылады. Консультациялар мен төлемдер туралы жазбалар бухгалтерияда қалады — оларды сақтауды заң міндеттейді. Осы нөмірмен қайта кіруге болады, бірақ бұл жаңа бос аккаунт болады';
 
   @override
-  String get profileDeleteAccountSubject => 'Аккаунт пен деректерді жою';
+  String get profileDeleteAccountBlockedConsultation =>
+      'Алдымен консультацияны аяқтаңыз немесе бас тартыңыз — оның ортасында аккаунтты жою мүмкін емес';
 
   @override
-  String get profileDeleteAccountTicketBody =>
-      'Аккаунтымды және онымен байланысты деректерді жоюды сұраймын';
+  String get profileDeleteAccountBlockedPayment =>
+      'Соңғы консультация бойынша есеп айырысу аяқталуын күтіңіз';
 
   @override
   String get convertGuestTitle => 'Аккаунт жасау';
@@ -1097,4 +1095,141 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get outcomeExpertCancelled => 'Маман бас тартты';
+
+  @override
+  String get premiumTitle => 'Premium';
+
+  @override
+  String get premiumPitch =>
+      'Консультацияларға 10 % жеңілдік және маманды басым таңдау';
+
+  @override
+  String get premiumPlanMonth => 'Айға';
+
+  @override
+  String get premiumPlanYear => 'Жылға';
+
+  @override
+  String get premiumPlanYearHint => 'Айлықтан тиімді';
+
+  @override
+  String get premiumSubscribe => 'Жазылымды рәсімдеу';
+
+  @override
+  String get premiumCancel => 'Жазылымды тоқтату';
+
+  @override
+  String get premiumAddCard => 'Картаны байланыстыру';
+
+  @override
+  String get premiumNoCard =>
+      'Жазылым байланысқан картадан шегеріледі — ол әзірге жоқ';
+
+  @override
+  String get premiumStatusInactive => 'Базалық тариф';
+
+  @override
+  String get premiumStatusGrace =>
+      'Төлемді шегеру мүмкін болмады — картаңызды тексеріңіз';
+
+  @override
+  String get errorSubscriptionExists => 'Жазылым бұрыннан рәсімделген';
+
+  @override
+  String get errorSubscriptionNotFound => 'Белсенді жазылым жоқ';
+
+  @override
+  String premiumActiveUntil(String date) {
+    return '$date дейін белсенді';
+  }
+
+  @override
+  String premiumCancelledUntil(String date) {
+    return 'Тоқтатылды, $date дейін қолжетімді';
+  }
+
+  @override
+  String premiumPlanPrice(String price, String period) {
+    return '$price / $period';
+  }
+
+  @override
+  String get premiumUpsell => 'Premium: консультацияларға −10 %';
+
+  @override
+  String get premiumDiscountApplied => 'Premium жеңілдігі қолданылды';
+
+  @override
+  String get navMaterials => 'Материалдар';
+
+  @override
+  String get materialsTitle => 'Материалдар';
+
+  @override
+  String get materialsEmpty => 'Әзірге бос — материалдар жақында пайда болады';
+
+  @override
+  String get materialsFilterAll => 'Барлығы';
+
+  @override
+  String get materialsFilterMeditation => 'Медитациялар';
+
+  @override
+  String get materialsFilterMusic => 'Музыка';
+
+  @override
+  String get materialsFilterArticle => 'Мақалалар';
+
+  @override
+  String get materialsFilterBreathing => 'Тыныс алу';
+
+  @override
+  String get materialsPremiumOnly => 'Premium жазылымымен қолжетімді';
+
+  @override
+  String get materialsUseful => 'Пайдалы болды ма?';
+
+  @override
+  String get materialsUsefulYes => 'Иә';
+
+  @override
+  String get materialsUsefulNo => 'Жоқ';
+
+  @override
+  String get breathingStart => 'Бастау';
+
+  @override
+  String get breathingStop => 'Тоқтату';
+
+  @override
+  String get playerPlay => 'Тыңдау';
+
+  @override
+  String get playerPause => 'Кідірту';
+
+  @override
+  String materialsStreak(int days) {
+    return '$days күн қатарынан';
+  }
+
+  @override
+  String materialsCompleted(int count) {
+    return 'Өтілген материалдар: $count';
+  }
+
+  @override
+  String materialsDuration(int minutes) {
+    return '$minutes мин';
+  }
+
+  @override
+  String breathingCycle(int current, int total) {
+    return '$total циклдің $current-і';
+  }
+
+  @override
+  String get premiumPlanFree => 'Тегін';
+
+  @override
+  String get expertPricePerSession => 'консультация үшін';
 }

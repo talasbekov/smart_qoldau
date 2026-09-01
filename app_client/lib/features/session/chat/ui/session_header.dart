@@ -59,11 +59,7 @@ class SessionHeader extends StatelessWidget implements PreferredSizeWidget {
                     ),
                     if (showOnline) ...[
                       const SizedBox(width: SqSpacing.s),
-                      const Icon(
-                        Icons.circle,
-                        size: 8,
-                        color: SqColors.accent,
-                      ),
+                      const Icon(Icons.circle, size: 8, color: SqColors.accent),
                       const SizedBox(width: SqSpacing.xs),
                       Text(
                         l10n.sessionOnline,

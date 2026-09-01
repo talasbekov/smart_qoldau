@@ -24,6 +24,7 @@ describe('StorageService: бакет аватаров', () => {
       S3_SECRET_KEY: 'sq-minio-secret',
       S3_BUCKET_DOCUMENTS: DOCUMENTS_BUCKET,
       S3_BUCKET_AVATARS: AVATARS_BUCKET,
+      S3_BUCKET_CONTENT: 'sq-content-test',
     });
     service = new StorageService(config);
     jest.spyOn((service as any).s3, 'send').mockResolvedValue({} as never);
@@ -57,6 +58,7 @@ describe('StorageService: бакет аватаров', () => {
       S3_SECRET_KEY: 's',
       S3_BUCKET_DOCUMENTS: DOCUMENTS_BUCKET,
       S3_BUCKET_AVATARS: AVATARS_BUCKET,
+      S3_BUCKET_CONTENT: 'sq-content-test',
       // В проде клиент ходит на CDN/публичный домен, а бэкенд пишет во
       // внутренний адрес — это разные вещи.
       S3_PUBLIC_BASE_URL: 'https://cdn.smartqoldau.kz/',
@@ -80,6 +82,7 @@ describe('StorageService: аватар читается без подписи (M
         S3_SECRET_KEY: 'sq-minio-secret',
         S3_BUCKET_DOCUMENTS: DOCUMENTS_BUCKET,
         S3_BUCKET_AVATARS: AVATARS_BUCKET,
+        S3_BUCKET_CONTENT: 'sq-content-test',
       }),
     );
     await service.ensureAvatarsBucket();

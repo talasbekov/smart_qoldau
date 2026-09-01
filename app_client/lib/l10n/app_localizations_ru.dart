@@ -770,9 +770,6 @@ class AppLocalizationsRu extends AppLocalizations {
   String get expertReplyPrefix => 'Ответ специалиста';
 
   @override
-  String get expertPriceLabel => 'Консультация';
-
-  @override
   String get expertUnavailableTitle => 'Специалист сейчас недоступен';
 
   @override
@@ -931,14 +928,15 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get profileDeleteAccountBody =>
-      'Мы создадим обращение в поддержку — команда свяжется с вами и подтвердит удаление';
+      'Переписка, заметки специалистов, карты и уведомления будут удалены безвозвратно. Записи о консультациях и платежах останутся в бухгалтерии — их закон хранить обязывает. Войти снова по этому номеру можно будет, но это будет новый пустой аккаунт';
 
   @override
-  String get profileDeleteAccountSubject => 'Удаление аккаунта и данных';
+  String get profileDeleteAccountBlockedConsultation =>
+      'Сначала завершите или отмените консультацию — удалить аккаунт посреди неё нельзя';
 
   @override
-  String get profileDeleteAccountTicketBody =>
-      'Прошу удалить мой аккаунт и связанные с ним данные';
+  String get profileDeleteAccountBlockedPayment =>
+      'Дождитесь завершения расчёта по последней консультации';
 
   @override
   String get convertGuestTitle => 'Создание аккаунта';
@@ -1103,4 +1101,141 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get outcomeExpertCancelled => 'Отменена специалистом';
+
+  @override
+  String get premiumTitle => 'Premium';
+
+  @override
+  String get premiumPitch =>
+      'Скидка 10 % на консультации и приоритетный подбор специалиста';
+
+  @override
+  String get premiumPlanMonth => 'На месяц';
+
+  @override
+  String get premiumPlanYear => 'На год';
+
+  @override
+  String get premiumPlanYearHint => 'Выгоднее месячного';
+
+  @override
+  String get premiumSubscribe => 'Оформить подписку';
+
+  @override
+  String get premiumCancel => 'Отменить подписку';
+
+  @override
+  String get premiumAddCard => 'Привязать карту';
+
+  @override
+  String get premiumNoCard =>
+      'Подписка списывается с привязанной карты — её пока нет';
+
+  @override
+  String get premiumStatusInactive => 'Базовый тариф';
+
+  @override
+  String get premiumStatusGrace =>
+      'Не удалось списать оплату — проверьте карту';
+
+  @override
+  String get errorSubscriptionExists => 'Подписка уже оформлена';
+
+  @override
+  String get errorSubscriptionNotFound => 'Активной подписки нет';
+
+  @override
+  String premiumActiveUntil(String date) {
+    return 'Активна до $date';
+  }
+
+  @override
+  String premiumCancelledUntil(String date) {
+    return 'Отменена, доступ до $date';
+  }
+
+  @override
+  String premiumPlanPrice(String price, String period) {
+    return '$price / $period';
+  }
+
+  @override
+  String get premiumUpsell => 'Premium: −10 % на консультации';
+
+  @override
+  String get premiumDiscountApplied => 'Скидка Premium уже применена';
+
+  @override
+  String get navMaterials => 'Материалы';
+
+  @override
+  String get materialsTitle => 'Материалы';
+
+  @override
+  String get materialsEmpty => 'Здесь пока пусто — материалы скоро появятся';
+
+  @override
+  String get materialsFilterAll => 'Все';
+
+  @override
+  String get materialsFilterMeditation => 'Медитации';
+
+  @override
+  String get materialsFilterMusic => 'Музыка';
+
+  @override
+  String get materialsFilterArticle => 'Статьи';
+
+  @override
+  String get materialsFilterBreathing => 'Дыхание';
+
+  @override
+  String get materialsPremiumOnly => 'Доступно по подписке Premium';
+
+  @override
+  String get materialsUseful => 'Было полезно?';
+
+  @override
+  String get materialsUsefulYes => 'Да';
+
+  @override
+  String get materialsUsefulNo => 'Нет';
+
+  @override
+  String get breathingStart => 'Начать';
+
+  @override
+  String get breathingStop => 'Остановить';
+
+  @override
+  String get playerPlay => 'Слушать';
+
+  @override
+  String get playerPause => 'Пауза';
+
+  @override
+  String materialsStreak(int days) {
+    return '$days дней подряд';
+  }
+
+  @override
+  String materialsCompleted(int count) {
+    return 'Пройдено материалов: $count';
+  }
+
+  @override
+  String materialsDuration(int minutes) {
+    return '$minutes мин';
+  }
+
+  @override
+  String breathingCycle(int current, int total) {
+    return 'Цикл $current из $total';
+  }
+
+  @override
+  String get premiumPlanFree => 'Бесплатно';
+
+  @override
+  String get expertPricePerSession => 'за консультацию';
 }

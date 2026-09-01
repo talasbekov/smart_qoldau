@@ -57,7 +57,8 @@ Widget _wrap(SqApi api) {
       ),
       GoRoute(
         path: RoutePaths.verificationPhoto,
-        builder: (context, state) => const Scaffold(body: Text('sq-stub-photo')),
+        builder: (context, state) =>
+            const Scaffold(body: Text('sq-stub-photo')),
       ),
     ],
   );
@@ -88,8 +89,9 @@ void main() {
   });
 
   testWidgets('DRAFT: показывает "анкета не отправлена"', (tester) async {
-    when(() => api.me())
-        .thenAnswer((_) async => _me(verificationStatus: VerificationStatus.draft));
+    when(() => api.me()).thenAnswer(
+      (_) async => _me(verificationStatus: VerificationStatus.draft),
+    );
 
     await tester.pumpWidget(_wrap(api));
     await tester.pump();
@@ -99,9 +101,12 @@ void main() {
     await _teardownTree(tester);
   });
 
-  testWidgets('PENDING: показывает статус "на проверке" с SLA 24ч', (tester) async {
-    when(() => api.me())
-        .thenAnswer((_) async => _me(verificationStatus: VerificationStatus.pending));
+  testWidgets('PENDING: показывает статус "на проверке" с SLA 24ч', (
+    tester,
+  ) async {
+    when(() => api.me()).thenAnswer(
+      (_) async => _me(verificationStatus: VerificationStatus.pending),
+    );
 
     await tester.pumpWidget(_wrap(api));
     await tester.pump();
@@ -112,9 +117,12 @@ void main() {
     await _teardownTree(tester);
   });
 
-  testWidgets('VERIFIED сразу: уводит на главный экран без опроса', (tester) async {
-    when(() => api.me())
-        .thenAnswer((_) async => _me(verificationStatus: VerificationStatus.verified));
+  testWidgets('VERIFIED сразу: уводит на главный экран без опроса', (
+    tester,
+  ) async {
+    when(() => api.me()).thenAnswer(
+      (_) async => _me(verificationStatus: VerificationStatus.verified),
+    );
 
     await tester.pumpWidget(_wrap(api));
     await tester.pumpAndSettle();
@@ -126,27 +134,28 @@ void main() {
     verifyNever(() => api.me());
   });
 
-  testWidgets('REJECTED фото: показывает moderationComment и кнопку «Загрузить заново»', (
-    tester,
-  ) async {
-    when(() => api.me()).thenAnswer(
-      (_) async => _me(
-        verificationStatus: VerificationStatus.pending,
-        photoStatus: ProfileFieldStatus.rejected,
-        moderationComment: 'Плохое качество фото',
-      ),
-    );
+  testWidgets(
+    'REJECTED фото: показывает moderationComment и кнопку «Загрузить заново»',
+    (tester) async {
+      when(() => api.me()).thenAnswer(
+        (_) async => _me(
+          verificationStatus: VerificationStatus.pending,
+          photoStatus: ProfileFieldStatus.rejected,
+          moderationComment: 'Плохое качество фото',
+        ),
+      );
 
-    await tester.pumpWidget(_wrap(api));
-    await tester.pump();
+      await tester.pumpWidget(_wrap(api));
+      await tester.pump();
 
-    expect(find.text('Плохое качество фото'), findsOneWidget);
-    expect(find.text('Загрузить заново'), findsOneWidget);
+      expect(find.text('Плохое качество фото'), findsOneWidget);
+      expect(find.text('Загрузить заново'), findsOneWidget);
 
-    await tester.tap(find.text('Загрузить заново'));
-    await tester.pumpAndSettle();
-    expect(find.text('sq-stub-photo'), findsOneWidget);
-  });
+      await tester.tap(find.text('Загрузить заново'));
+      await tester.pumpAndSettle();
+      expect(find.text('sq-stub-photo'), findsOneWidget);
+    },
+  );
 
   testWidgets(
     'REJECTED только about (фото в порядке): показывает moderationComment, БЕЗ кнопки '
@@ -170,32 +179,31 @@ void main() {
     },
   );
 
-  testWidgets(
-    'REJECTED и фото, и about: кнопка «Загрузить заново» есть (фото — единственное реально '
-    'исправимое действие)',
-    (tester) async {
-      when(() => api.me()).thenAnswer(
-        (_) async => _me(
-          verificationStatus: VerificationStatus.pending,
-          photoStatus: ProfileFieldStatus.rejected,
-          aboutStatus: ProfileFieldStatus.rejected,
-          moderationComment: 'Фото и описание не приняты',
-        ),
-      );
+  testWidgets('REJECTED и фото, и about: кнопка «Загрузить заново» есть (фото — единственное реально '
+      'исправимое действие)', (tester) async {
+    when(() => api.me()).thenAnswer(
+      (_) async => _me(
+        verificationStatus: VerificationStatus.pending,
+        photoStatus: ProfileFieldStatus.rejected,
+        aboutStatus: ProfileFieldStatus.rejected,
+        moderationComment: 'Фото и описание не приняты',
+      ),
+    );
 
-      await tester.pumpWidget(_wrap(api));
-      await tester.pump();
+    await tester.pumpWidget(_wrap(api));
+    await tester.pump();
 
-      expect(find.text('Фото и описание не приняты'), findsOneWidget);
-      expect(find.text('Загрузить заново'), findsOneWidget);
+    expect(find.text('Фото и описание не приняты'), findsOneWidget);
+    expect(find.text('Загрузить заново'), findsOneWidget);
 
-      await tester.tap(find.text('Загрузить заново'));
-      await tester.pumpAndSettle();
-      expect(find.text('sq-stub-photo'), findsOneWidget);
-    },
-  );
+    await tester.tap(find.text('Загрузить заново'));
+    await tester.pumpAndSettle();
+    expect(find.text('sq-stub-photo'), findsOneWidget);
+  });
 
-  testWidgets('опрос обновляет статус раз в 30 секунд, не раньше', (tester) async {
+  testWidgets('опрос обновляет статус раз в 30 секунд, не раньше', (
+    tester,
+  ) async {
     var calls = 0;
     when(() => api.me()).thenAnswer((_) async {
       calls++;
@@ -226,8 +234,9 @@ void main() {
     when(() => api.me()).thenAnswer((_) async {
       calls++;
       return _me(
-        verificationStatus:
-            calls < 3 ? VerificationStatus.pending : VerificationStatus.verified,
+        verificationStatus: calls < 3
+            ? VerificationStatus.pending
+            : VerificationStatus.verified,
       );
     });
 

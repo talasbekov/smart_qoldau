@@ -12,7 +12,8 @@ class ExpertNotesRepository {
 
   /// `GET /consultations/{id}/note` — заметка (`text: null`, если её ещё
   /// нет — это не ошибка).
-  Future<ExpertNoteDto> note(String consultationId) => _api.note(consultationId);
+  Future<ExpertNoteDto> note(String consultationId) =>
+      _api.note(consultationId);
 
   /// `PUT /consultations/{id}/note` — создать/обновить заметку.
   Future<ExpertNoteDto> saveNote(String consultationId, String text) =>

@@ -17,7 +17,9 @@ String? notificationRoute(AppNotification notification) {
       return RoutePaths.consultations;
     case 'chat.message':
       final consultationId = notification.data['consultationId'];
-      return consultationId is String ? RoutePaths.session(consultationId) : null;
+      return consultationId is String
+          ? RoutePaths.session(consultationId)
+          : null;
     case 'consultation.cancelled':
     case 'consultation.booked':
     case 'consultation.rescheduled':
@@ -36,7 +38,11 @@ String? notificationRoute(AppNotification notification) {
 }
 
 class NotificationTile extends StatelessWidget {
-  const NotificationTile({super.key, required this.notification, required this.onTap});
+  const NotificationTile({
+    super.key,
+    required this.notification,
+    required this.onTap,
+  });
 
   final AppNotification notification;
   final VoidCallback onTap;
@@ -48,7 +54,11 @@ class NotificationTile extends StatelessWidget {
       key: Key('sq-notification-${notification.id}'),
       onTap: onTap,
       tileColor: unread ? SqColors.chipBg : null,
-      leading: Icon(unread ? Icons.circle : Icons.circle_outlined, size: 10, color: SqColors.primary),
+      leading: Icon(
+        unread ? Icons.circle : Icons.circle_outlined,
+        size: 10,
+        color: SqColors.primary,
+      ),
       title: Text(notification.title, style: SqTypography.title),
       subtitle: Text(notification.body, style: SqTypography.body),
     );

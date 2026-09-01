@@ -4,26 +4,34 @@ library;
 
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared/shared.dart';
 
 import 'token_store.dart';
 
-/// Адрес бэкенда. Задаётся при сборке через `--dart-define=API_BASE_URL`
-/// (см. `app_client/README.md`); значение по умолчанию — адрес хоста из
-/// Android-эмулятора.
-const String apiBaseUrl = String.fromEnvironment(
-  'API_BASE_URL',
-  defaultValue: 'http://10.0.2.2:3000/v1',
+/// Адрес бэкенда. Приоритет — сборочный `--dart-define=API_BASE_URL` (см.
+/// `app_client/README.md`); без него на web берётся origin открытой
+/// страницы, а вне web — адрес хоста из Android-эмулятора. Почему не одна
+/// только константа сборки — см. [resolveBackendBaseUrl].
+final String apiBaseUrl = resolveBackendBaseUrl(
+  fromDefine: const String.fromEnvironment('API_BASE_URL'),
+  isWeb: kIsWeb,
+  pageUri: Uri.base,
+  mobileFallback: 'http://10.0.2.2:3000/v1',
+  path: '/v1',
 );
 
 /// Адрес бэкенда для реалтайм-шины (`SocketIoSqSocket`) — БЕЗ префикса
 /// `/v1` и без пути неймспейса: `/ws` дописывает сам `SocketIoSqSocket`.
 /// Отдельный dart-define (не переиспользует [apiBaseUrl]) — так же, как это
 /// зафиксировано в плане эпика E6 (`--dart-define=WS_BASE_URL`).
-const String wsBaseUrl = String.fromEnvironment(
-  'WS_BASE_URL',
-  defaultValue: 'http://10.0.2.2:3000',
+final String wsBaseUrl = resolveBackendBaseUrl(
+  fromDefine: const String.fromEnvironment('WS_BASE_URL'),
+  isWeb: kIsWeb,
+  pageUri: Uri.base,
+  mobileFallback: 'http://10.0.2.2:3000',
+  path: '',
 );
 
 /// Секьюрное хранилище ключ-значение — платформенный плагин, провайдер

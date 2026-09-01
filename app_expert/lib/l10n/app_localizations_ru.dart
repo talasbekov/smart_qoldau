@@ -482,6 +482,39 @@ class AppLocalizationsRu extends AppLocalizations {
   String get reviewYourReply => 'Ваш ответ';
 
   @override
+  String get reviewActionReply => 'Ответить';
+
+  @override
+  String get reviewActionEditReply => 'Изменить ответ';
+
+  @override
+  String get reviewActionComplaint => 'Пожаловаться';
+
+  @override
+  String get reviewReplyDialogTitle => 'Ответ на отзыв';
+
+  @override
+  String get reviewReplyHint =>
+      'Ответ увидят все — не упоминайте детали консультации. До 1000 символов.';
+
+  @override
+  String get reviewReplySaved => 'Ответ сохранён';
+
+  @override
+  String get reviewComplaintDialogTitle => 'Жалоба на отзыв';
+
+  @override
+  String get reviewComplaintHint =>
+      'Опишите, почему отзыв нарушает правила. Отзыв скроют и исключат из рейтинга до решения модератора.';
+
+  @override
+  String get reviewComplaintSent =>
+      'Жалоба отправлена, отзыв скрыт до решения модератора';
+
+  @override
+  String get actionCancel => 'Отмена';
+
+  @override
   String get notificationsScreenTitle => 'Уведомления';
 
   @override
@@ -498,4 +531,138 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get actionLogout => 'Выйти';
+
+  @override
+  String get webPresenceNotice =>
+      'Заявки приходят, пока открыта эта вкладка. Закроете — приём выключится, и клиент вас не увидит.';
+
+  @override
+  String get offersScreenTitle => 'Заявки';
+
+  @override
+  String get devicesTitle => 'Проверьте камеру и микрофон';
+
+  @override
+  String get devicesCamera => 'Камера';
+
+  @override
+  String get devicesMicrophone => 'Микрофон';
+
+  @override
+  String get devicesJoin => 'Войти в консультацию';
+
+  @override
+  String get devicesNotFound =>
+      'Камера и микрофон не найдены. Разрешите доступ в браузере и попробуйте снова.';
+
+  @override
+  String get dashboardStatToday => 'Сегодня';
+
+  @override
+  String get dashboardStatCompleted => 'Завершено';
+
+  @override
+  String get dashboardStatEarned => 'Доход сегодня';
+
+  @override
+  String get dashboardStatRating => 'Рейтинг';
+
+  @override
+  String get dashboardNextTitle => 'Ближайшая консультация';
+
+  @override
+  String get dashboardOpenConsultation => 'Открыть консультацию';
+
+  @override
+  String dashboardGreeting(String name) {
+    return 'Здравствуйте, $name 👋';
+  }
+
+  @override
+  String dashboardTodayCount(int count) {
+    return 'Сегодня у вас $count консультаций';
+  }
+
+  @override
+  String get earningsStatTotal => 'Доход за период';
+
+  @override
+  String get earningsStatCount => 'Консультаций';
+
+  @override
+  String get earningsStatAverage => 'Средний чек';
+
+  @override
+  String get earningsStatCommission => 'Комиссия платформы';
+
+  @override
+  String get actionSend => 'Отправить';
+
+  @override
+  String get emergencyDisclaimerText =>
+      'Платформа не заменяет экстренные службы. Если жизни или здоровью угрожает опасность, звоните напрямую:';
+
+  @override
+  String get errorGeneric => 'Что-то пошло не так';
+
+  @override
+  String get supportEmpty => 'Обращений пока нет';
+
+  @override
+  String get supportNewTicket => 'Новое обращение';
+
+  @override
+  String get supportNoReplyNotice =>
+      'Дописать в это обращение нельзя — если нужно добавить детали, создайте новое';
+
+  @override
+  String get supportTitle => 'Поддержка';
+
+  @override
+  String get ticketAuthorStaff => 'Поддержка';
+
+  @override
+  String get ticketAuthorYou => 'Вы';
+
+  @override
+  String get ticketBodyInvalid => 'Опишите ситуацию подробнее';
+
+  @override
+  String get ticketBodyLabel => 'Опишите ситуацию';
+
+  @override
+  String get ticketCategoryAccountData => 'Аккаунт и данные';
+
+  @override
+  String get ticketCategoryConsultations => 'Консультации';
+
+  @override
+  String get ticketCategoryLabel => 'Категория';
+
+  @override
+  String get ticketCategoryOther => 'Другое';
+
+  @override
+  String get ticketCategoryPayment => 'Оплата';
+
+  @override
+  String get ticketCategorySecurity => 'Безопасность';
+
+  @override
+  String get ticketCategoryTechnical => 'Технические проблемы';
+
+  @override
+  String get ticketStatusInProgress => 'В работе';
+
+  @override
+  String get ticketStatusNew => 'Новое';
+
+  @override
+  String get ticketStatusResolved => 'Решено';
+
+  @override
+  String get ticketSubjectInvalid => 'Укажите тему обращения';
+
+  @override
+  String get ticketSubjectLabel => 'Тема';
 }

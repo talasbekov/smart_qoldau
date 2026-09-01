@@ -21,7 +21,7 @@ let lastCode = '';
 
 class FakeSmsProvider implements SmsProvider {
   async send(_phone: string, text: string): Promise<void> {
-    const match = text.match(/(\d{4})/);
+    const match = text.match(/(\d{6})/);
     lastCode = match ? match[1] : '';
   }
 }
@@ -37,10 +37,15 @@ function get(token: string, url: string) {
     .set('Authorization', `Bearer ${token}`);
 }
 
+// 15 секунд, а не 3: событие приходит за миллисекунды, но в полном
+// прогоне (89 спеков подряд на одной машине) 3 секунд не хватало на
+// планировщик — тест падал по своему же таймауту, проходя изолированно.
+// Ожидание всё равно ограничено: если сервер событие не пришлёт, тест
+// упадёт, просто не по случайности.
 function waitForEvent(
   socket: Socket,
   event: string,
-  timeoutMs = 3000,
+  timeoutMs = 15_000,
 ): Promise<any> {
   return new Promise((resolve, reject) => {
     const timer = setTimeout(() => {
@@ -210,8 +215,11 @@ describe('Шифрованный чат консультаций (e2e)', () => {
 
     const clientSocket = connect(cli.accessToken);
     const expertSocket = connect(exp.accessToken);
-    await waitForEvent(clientSocket, 'connect');
-    await waitForEvent(expertSocket, 'connect');
+    // 'ready', а не 'connect': комнаты назначаются сервером асинхронно
+    // уже после рукопожатия (см. EventsGateway.handleConnection), и
+    // событие, отправленное между этими моментами, уходит в пустоту.
+    await waitForEvent(clientSocket, 'ready');
+    await waitForEvent(expertSocket, 'ready');
 
     const clientMsgPromise = waitForEvent(clientSocket, 'chat.message');
     const expertMsgPromise = waitForEvent(expertSocket, 'chat.message');
@@ -276,8 +284,11 @@ describe('Шифрованный чат консультаций (e2e)', () => {
 
     const clientSocket = connect(cli.accessToken);
     const expertSocket = connect(exp.accessToken);
-    await waitForEvent(clientSocket, 'connect');
-    await waitForEvent(expertSocket, 'connect');
+    // 'ready', а не 'connect': комнаты назначаются сервером асинхронно
+    // уже после рукопожатия (см. EventsGateway.handleConnection), и
+    // событие, отправленное между этими моментами, уходит в пустоту.
+    await waitForEvent(clientSocket, 'ready');
+    await waitForEvent(expertSocket, 'ready');
 
     const expertTypingPromise = waitForEvent(expertSocket, 'chat.typing', 8000);
     let clientReceivedOwnTyping = false;
@@ -293,7 +304,12 @@ describe('Шифрованный чат консультаций (e2e)', () => {
     // Отправитель НЕ должен получить своё же событие typing.
     await new Promise((resolve) => setTimeout(resolve, 300));
     expect(clientReceivedOwnTyping).toBe(false);
-  });
+    // Дефолтные 5 секунд Jest этому тесту малы: он поднимает двух
+    // пользователей через полный SMS-логин, матчит их и держит два
+    // WebSocket-соединения. На загруженной машине (полный прогон, 89
+    // спеков подряд) он падал по таймауту, хотя изолированно проходит за
+    // секунду — не даём ему быть источником ложных красных прогонов.
+  }, 30_000);
 
   it('история REST: пагинация 2 страницами при 3 сообщениях и limit=2', async () => {
     const exp = await acceptingExpert(PH_E1);
@@ -301,7 +317,7 @@ describe('Шифрованный чат консультаций (e2e)', () => {
     const { consultationId } = await matchClientToExpert(cli, exp);
 
     const clientSocket = connect(cli.accessToken);
-    await waitForEvent(clientSocket, 'connect');
+    await waitForEvent(clientSocket, 'ready');
 
     for (const text of ['первое', 'второе', 'третье']) {
       const promise = waitForEvent(clientSocket, 'chat.message');
@@ -343,7 +359,7 @@ describe('Шифрованный чат консультаций (e2e)', () => {
     expect(strangerHistory.body.error.code).toBe('CONSULTATION_NOT_FOUND');
 
     const strangerSocket = connect(stranger.accessToken);
-    await waitForEvent(strangerSocket, 'connect');
+    await waitForEvent(strangerSocket, 'ready');
 
     const errorPromise = waitForEvent(strangerSocket, 'chat.error');
     strangerSocket.emit('chat.send', {
@@ -365,7 +381,7 @@ describe('Шифрованный чат консультаций (e2e)', () => {
     });
 
     const clientSocket = connect(cli.accessToken);
-    await waitForEvent(clientSocket, 'connect');
+    await waitForEvent(clientSocket, 'ready');
 
     const errorPromise = waitForEvent(clientSocket, 'chat.error');
     clientSocket.emit('chat.send', {

@@ -33,10 +33,10 @@ export default function ReviewsModerationPage() {
             header: '',
             render: (r) => (
               <span className="flex gap-2">
-                <button onClick={() => handle(r.id, 'hide')} className="text-red-600">
+                <button onClick={() => handle(r.id, 'hide')} className="text-sq-danger">
                   Скрыть
                 </button>
-                <button onClick={() => handle(r.id, 'restore')} className="text-teal-700">
+                <button onClick={() => handle(r.id, 'restore')} className="text-sq-primary">
                   Восстановить
                 </button>
               </span>

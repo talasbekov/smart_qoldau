@@ -66,7 +66,11 @@ void main() {
   setUp(() {
     api = MockSqApi();
     when(
-      () => api.slots('e1', from: any(named: 'from'), to: any(named: 'to')),
+      () => api.slots(
+        'e1',
+        from: any(named: 'from'),
+        to: any(named: 'to'),
+      ),
     ).thenAnswer(
       (_) async => [
         Slot(startAt: DateTime.utc(2026, 8, 24, 5)), // 10:00 Алматы
@@ -117,15 +121,17 @@ void main() {
     await tester.tap(find.byKey(const Key('sq-booking-confirm')));
     await tester.pumpAndSettle();
 
-    final captured = verify(
-      () => api.createBooking(
-        expertId: 'e1',
-        topicSlug: 'anxiety-stress',
-        format: SessionFormat.chat,
-        slotStartAt: captureAny(named: 'slotStartAt'),
-        paymentMethodId: 'card-1',
-      ),
-    ).captured.single as DateTime;
+    final captured =
+        verify(
+              () => api.createBooking(
+                expertId: 'e1',
+                topicSlug: 'anxiety-stress',
+                format: SessionFormat.chat,
+                slotStartAt: captureAny(named: 'slotStartAt'),
+                paymentMethodId: 'card-1',
+              ),
+            ).captured.single
+            as DateTime;
     expect(captured.toUtc(), DateTime.utc(2026, 8, 24, 5));
 
     expect(find.text('sq-stub-consultations'), findsOneWidget);
@@ -157,7 +163,11 @@ void main() {
     expect(find.text('Это время только что заняли'), findsOneWidget);
     // Слоты перезапрошены — выдача устарела.
     verify(
-      () => api.slots('e1', from: any(named: 'from'), to: any(named: 'to')),
+      () => api.slots(
+        'e1',
+        from: any(named: 'from'),
+        to: any(named: 'to'),
+      ),
     ).called(2);
     // Пользователь остался на экране выбора.
     expect(find.text('sq-stub-consultations'), findsNothing);

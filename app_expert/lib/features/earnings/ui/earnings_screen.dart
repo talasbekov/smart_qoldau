@@ -9,6 +9,7 @@ import 'package:shared/shared.dart';
 
 import '../../../core/route_paths.dart';
 import '../../../l10n/app_localizations.dart';
+import 'earnings_stats.dart';
 import '../state/earnings_controller.dart';
 
 class EarningsScreen extends ConsumerWidget {
@@ -31,7 +32,8 @@ class EarningsScreen extends ConsumerWidget {
           ),
         ),
         data: (earnings) => RefreshIndicator(
-          onRefresh: () => ref.read(earningsControllerProvider.notifier).refresh(),
+          onRefresh: () =>
+              ref.read(earningsControllerProvider.notifier).refresh(),
           child: ListView(
             padding: const EdgeInsets.all(16),
             children: [
@@ -44,7 +46,12 @@ class EarningsScreen extends ConsumerWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(l10n.earningsBalance, style: SqTypography.caption.copyWith(color: Colors.white70)),
+                    Text(
+                      l10n.earningsBalance,
+                      style: SqTypography.caption.copyWith(
+                        color: Colors.white70,
+                      ),
+                    ),
                     Text(
                       formatTenge(earnings.balanceTiyn),
                       style: SqTypography.h1.copyWith(color: Colors.white),
@@ -59,10 +66,17 @@ class EarningsScreen extends ConsumerWidget {
                 ),
               ),
               const SizedBox(height: 16),
+              // Плитки прототипа `Expert Web - Доход`. На телефоне они в
+              // две колонки и стоят под балансом, на широком экране — в
+              // ряд, как нарисовано.
+              EarningsStats(items: earnings.items),
+              const SizedBox(height: 16),
               if (earnings.items.isEmpty)
                 Padding(
                   padding: const EdgeInsets.only(top: 24),
-                  child: Center(child: Text(l10n.earningsEmpty, style: SqTypography.body)),
+                  child: Center(
+                    child: Text(l10n.earningsEmpty, style: SqTypography.body),
+                  ),
                 )
               else
                 for (final item in earnings.items)
@@ -80,16 +94,25 @@ class EarningsScreen extends ConsumerWidget {
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(formatTenge(item.priceTiyn), style: SqTypography.body),
                             Text(
-                              l10n.earningsCommission(formatTenge(item.commissionTiyn)),
-                              style: SqTypography.caption.copyWith(color: SqColors.textSecondary),
+                              formatTenge(item.priceTiyn),
+                              style: SqTypography.body,
+                            ),
+                            Text(
+                              l10n.earningsCommission(
+                                formatTenge(item.commissionTiyn),
+                              ),
+                              style: SqTypography.caption.copyWith(
+                                color: SqColors.textSecondary,
+                              ),
                             ),
                           ],
                         ),
                         Text(
                           '+${formatTenge(item.netTiyn)}',
-                          style: SqTypography.title.copyWith(color: SqColors.primary),
+                          style: SqTypography.title.copyWith(
+                            color: SqColors.primary,
+                          ),
                         ),
                       ],
                     ),

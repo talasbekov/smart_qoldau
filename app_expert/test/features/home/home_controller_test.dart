@@ -40,7 +40,11 @@ ProviderContainer _container(SqApi api) {
     overrides: [sqApiProvider.overrideWithValue(api)],
   );
   addTearDown(container.dispose);
-  container.listen(homeControllerProvider, (previous, next) {}, fireImmediately: true);
+  container.listen(
+    homeControllerProvider,
+    (previous, next) {},
+    fireImmediately: true,
+  );
   return container;
 }
 
@@ -60,7 +64,8 @@ void main() {
   testWidgets('workStatus ACCEPTING: heartbeat вызывается раз в 20 с', (
     tester,
   ) async {
-    when(() => api.me()).thenAnswer((_) async => _me(workStatus: WorkStatus.accepting));
+    when(() => api.me())
+        .thenAnswer((_) async => _me(workStatus: WorkStatus.accepting));
     var heartbeats = 0;
     when(() => api.heartbeat()).thenAnswer((_) async => heartbeats++);
 
@@ -100,7 +105,8 @@ void main() {
   testWidgets(
     'переключение на NOT_ACCEPTING останавливает heartbeat навсегда',
     (tester) async {
-      when(() => api.me()).thenAnswer((_) async => _me(workStatus: WorkStatus.accepting));
+      when(() => api.me())
+          .thenAnswer((_) async => _me(workStatus: WorkStatus.accepting));
       var heartbeats = 0;
       when(() => api.heartbeat()).thenAnswer((_) async => heartbeats++);
       when(() => api.setWorkStatus(WorkStatus.notAccepting))
@@ -112,11 +118,17 @@ void main() {
       await tester.pump(const Duration(seconds: 20));
       expect(heartbeats, 1);
 
-      await container.read(homeControllerProvider.notifier).setStatus(WorkStatus.notAccepting);
+      await container
+          .read(homeControllerProvider.notifier)
+          .setStatus(WorkStatus.notAccepting);
       await tester.pump();
 
       await tester.pump(const Duration(seconds: 60));
-      expect(heartbeats, 1, reason: 'таймер должен быть отменён, а не просто игнорировать статус');
+      expect(
+        heartbeats,
+        1,
+        reason: 'таймер должен быть отменён, а не просто игнорировать статус',
+      );
 
       _disposeNow(container);
     },
@@ -136,9 +148,15 @@ void main() {
       await tester.pump();
 
       await expectLater(
-        container.read(homeControllerProvider.notifier).setStatus(WorkStatus.accepting),
+        container
+            .read(homeControllerProvider.notifier)
+            .setStatus(WorkStatus.accepting),
         throwsA(
-          isA<ApiException>().having((e) => e.code, 'code', ApiErrorCode.notVerified),
+          isA<ApiException>().having(
+            (e) => e.code,
+            'code',
+            ApiErrorCode.notVerified,
+          ),
         ),
       );
 
@@ -165,7 +183,9 @@ void main() {
       final container = _container(api);
       await tester.pump();
 
-      await container.read(homeControllerProvider.notifier).setStatus(WorkStatus.accepting);
+      await container
+          .read(homeControllerProvider.notifier)
+          .setStatus(WorkStatus.accepting);
       await tester.pump();
 
       await tester.pump(const Duration(seconds: 20));

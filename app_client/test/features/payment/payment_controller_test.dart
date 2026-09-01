@@ -32,9 +32,8 @@ void main() {
   });
 
   test('HELD переводит в paid', () async {
-    when(
-      () => api.payConsultation('c1', paymentMethodId: 'pm1'),
-    ).thenAnswer((_) async => const PayResult(status: PaymentStatus.held));
+    when(() => api.payConsultation('c1', paymentMethodId: 'pm1'))
+        .thenAnswer((_) async => const PayResult(status: PaymentStatus.held));
 
     final container = _container(api);
     await container
@@ -82,13 +81,12 @@ void main() {
   test('повторное нажатие во время запроса не шлёт второй холд', () async {
     final gate = Completer<void>();
     var calls = 0;
-    when(() => api.payConsultation('c1', paymentMethodId: 'pm1')).thenAnswer((
-      _,
-    ) async {
-      calls++;
-      await gate.future;
-      return const PayResult(status: PaymentStatus.held);
-    });
+    when(() => api.payConsultation('c1', paymentMethodId: 'pm1'))
+        .thenAnswer((_) async {
+          calls++;
+          await gate.future;
+          return const PayResult(status: PaymentStatus.held);
+        });
 
     final container = _container(api);
     final notifier = container.read(paymentControllerProvider.notifier);
@@ -104,11 +102,7 @@ void main() {
 
   test('PAYMENT_METHOD_NOT_FOUND просит обновить карты', () async {
     when(() => api.payConsultation('c1', paymentMethodId: 'pm-gone')).thenThrow(
-      const ApiException(
-        ApiErrorCode.paymentMethodNotFound,
-        'not found',
-        404,
-      ),
+      const ApiException(ApiErrorCode.paymentMethodNotFound, 'not found', 404),
     );
 
     final container = _container(api);
@@ -127,9 +121,8 @@ void main() {
   });
 
   test('прочая ошибка не выдаётся за успешную оплату', () async {
-    when(() => api.payConsultation('c1', paymentMethodId: 'pm1')).thenThrow(
-      const ApiException(ApiErrorCode.network, 'нет сети', 0),
-    );
+    when(() => api.payConsultation('c1', paymentMethodId: 'pm1'))
+        .thenThrow(const ApiException(ApiErrorCode.network, 'нет сети', 0));
 
     final container = _container(api);
     await container
@@ -144,19 +137,18 @@ void main() {
 
   test('после отказа можно повторить — состояние не залипает', () async {
     var attempt = 0;
-    when(() => api.payConsultation('c1', paymentMethodId: 'pm1')).thenAnswer((
-      _,
-    ) async {
-      attempt++;
-      if (attempt == 1) {
-        throw const ApiException(
-          ApiErrorCode.providerDeclined,
-          'Недостаточно средств',
-          402,
-        );
-      }
-      return const PayResult(status: PaymentStatus.held);
-    });
+    when(() => api.payConsultation('c1', paymentMethodId: 'pm1'))
+        .thenAnswer((_) async {
+          attempt++;
+          if (attempt == 1) {
+            throw const ApiException(
+              ApiErrorCode.providerDeclined,
+              'Недостаточно средств',
+              402,
+            );
+          }
+          return const PayResult(status: PaymentStatus.held);
+        });
 
     final container = _container(api);
     final notifier = container.read(paymentControllerProvider.notifier);

@@ -141,9 +141,7 @@ void main() {
         publicText: any(named: 'publicText'),
         privateText: any(named: 'privateText'),
       ),
-    ).thenThrow(
-      const ApiException(ApiErrorCode.reviewExists, 'already', 409),
-    );
+    ).thenThrow(const ApiException(ApiErrorCode.reviewExists, 'already', 409));
 
     final container = await _container(api);
     final notifier = container.read(reviewControllerProvider('c1').notifier);
@@ -212,42 +210,45 @@ void main() {
     );
   });
 
-  test('повторная запись создаёт адресную заявку к тому же специалисту', () async {
-    when(
-      () => api.createRequest(
-        topicSlug: any(named: 'topicSlug'),
-        format: any(named: 'format'),
-        isEmergency: any(named: 'isEmergency'),
-        expertId: any(named: 'expertId'),
-      ),
-    ).thenAnswer(
-      (_) async => const MatchRequest(
-        id: 'r-directed',
-        status: RequestStatus.searching,
-        isEmergency: false,
-        clientCode: 1234,
-      ),
-    );
+  test(
+    'повторная запись создаёт адресную заявку к тому же специалисту',
+    () async {
+      when(
+        () => api.createRequest(
+          topicSlug: any(named: 'topicSlug'),
+          format: any(named: 'format'),
+          isEmergency: any(named: 'isEmergency'),
+          expertId: any(named: 'expertId'),
+        ),
+      ).thenAnswer(
+        (_) async => const MatchRequest(
+          id: 'r-directed',
+          status: RequestStatus.searching,
+          isEmergency: false,
+          clientCode: 1234,
+        ),
+      );
 
-    final container = await _container(api);
-    final request = await container
-        .read(reviewControllerProvider('c1').notifier)
-        .continueWithExpert(
-          expertId: 'e1',
+      final container = await _container(api);
+      final request = await container
+          .read(reviewControllerProvider('c1').notifier)
+          .continueWithExpert(
+            expertId: 'e1',
+            topicSlug: 'anxiety-stress',
+            format: SessionFormat.chat,
+          );
+
+      verify(
+        () => api.createRequest(
           topicSlug: 'anxiety-stress',
           format: SessionFormat.chat,
-        );
-
-    verify(
-      () => api.createRequest(
-        topicSlug: 'anxiety-stress',
-        format: SessionFormat.chat,
-        isEmergency: false,
-        expertId: 'e1',
-      ),
-    ).called(1);
-    expect(request?.id, 'r-directed');
-  });
+          isEmergency: false,
+          expertId: 'e1',
+        ),
+      ).called(1);
+      expect(request?.id, 'r-directed');
+    },
+  );
 
   test('двойной тап по «Завершить» не создаёт два отзыва', () async {
     final container = await _container(api);

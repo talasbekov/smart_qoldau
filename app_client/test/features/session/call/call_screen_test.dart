@@ -124,9 +124,8 @@ Widget _wrap({
       ),
       GoRoute(
         path: RoutePaths.sessionPattern,
-        builder: (context, state) => Scaffold(
-          body: Text('sq-stub-chat:${state.pathParameters['id']}'),
-        ),
+        builder: (context, state) =>
+            Scaffold(body: Text('sq-stub-chat:${state.pathParameters['id']}')),
       ),
     ],
   );
@@ -171,9 +170,8 @@ void main() {
         room: 'consultation-c1',
       ),
     );
-    when(
-      () => api.consultationById('c1'),
-    ).thenAnswer((_) async => _consultation());
+    when(() => api.consultationById('c1'))
+        .thenAnswer((_) async => _consultation());
     when(
       () => api.consultationMessages(
         'c1',
@@ -264,12 +262,7 @@ void main() {
   ) async {
     final permissions = _FakePermissionService(granted: false);
     await tester.pumpWidget(
-      _wrap(
-        api: api,
-        engine: engine,
-        permissions: permissions,
-        socket: socket,
-      ),
+      _wrap(api: api, engine: engine, permissions: permissions, socket: socket),
     );
     await tester.pumpAndSettle();
 

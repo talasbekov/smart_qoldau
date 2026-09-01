@@ -18,12 +18,13 @@ String _typeLabel(AppLocalizations l10n, DocumentType type) => switch (type) {
   DocumentType.qualification => l10n.documentTypeQualification,
 };
 
-String _statusLabel(AppLocalizations l10n, DocumentStatus? status) => switch (status) {
-  null => l10n.documentStatusNotUploaded,
-  DocumentStatus.uploaded => l10n.documentStatusUploaded,
-  DocumentStatus.approved => l10n.documentStatusApproved,
-  DocumentStatus.reuploadRequired => l10n.documentStatusReuploadRequired,
-};
+String _statusLabel(AppLocalizations l10n, DocumentStatus? status) =>
+    switch (status) {
+      null => l10n.documentStatusNotUploaded,
+      DocumentStatus.uploaded => l10n.documentStatusUploaded,
+      DocumentStatus.approved => l10n.documentStatusApproved,
+      DocumentStatus.reuploadRequired => l10n.documentStatusReuploadRequired,
+    };
 
 Color _statusColor(DocumentStatus? status) => switch (status) {
   null => SqColors.textTertiary,
@@ -55,9 +56,8 @@ class DocumentsScreen extends ConsumerWidget {
       );
     } on ApiException catch (e) {
       if (!context.mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(e.message)));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(e.message)));
     }
   }
 

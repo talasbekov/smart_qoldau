@@ -20,7 +20,7 @@ let lastCode = '';
 
 class FakeSmsProvider implements SmsProvider {
   async send(_phone: string, text: string): Promise<void> {
-    const match = text.match(/(\d{4})/);
+    const match = text.match(/(\d{6})/);
     lastCode = match ? match[1] : '';
   }
 }
@@ -166,7 +166,7 @@ describe('WebSocket-события заявок (e2e)', () => {
     const cli = await clientUser(PH_C1);
 
     const expertSocket = connect(exp.accessToken);
-    await waitForEvent(expertSocket, 'connect');
+    await waitForEvent(expertSocket, 'ready');
 
     const offerNewPromise = waitForEvent(expertSocket, 'offer.new');
 
@@ -194,7 +194,7 @@ describe('WebSocket-события заявок (e2e)', () => {
     const cli = await clientUser(PH_C1);
 
     const clientSocket = connect(cli.accessToken);
-    await waitForEvent(clientSocket, 'connect');
+    await waitForEvent(clientSocket, 'ready');
 
     const r = await post(cli.accessToken, '/v1/requests')
       .send({ topicSlug: 'anxiety-stress', format: 'video' })

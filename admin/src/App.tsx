@@ -8,6 +8,7 @@ import SettingsPage from './routes/SettingsPage';
 import StaffPage from './routes/StaffPage';
 import VerificationQueuePage from './routes/VerificationQueuePage';
 import ProfileModerationPage from './routes/ProfileModerationPage';
+import ContentPage from './routes/ContentPage';
 import FlaggedExpertsPage from './routes/FlaggedExpertsPage';
 import ReviewsModerationPage from './routes/ReviewsModerationPage';
 import PayoutsPage from './routes/PayoutsPage';
@@ -58,6 +59,7 @@ export default function App() {
             <Route path="/verification" element={<VerificationQueuePage />} />
             <Route path="/profile-moderation" element={<ProfileModerationPage />} />
             <Route path="/flagged-experts" element={<FlaggedExpertsPage />} />
+            <Route path="/content" element={<ContentPage />} />
             <Route path="/reviews" element={<ReviewsModerationPage />} />
             <Route path="/payouts" element={<PayoutsPage />} />
             <Route path="/tickets" element={<TicketsPage />} />
