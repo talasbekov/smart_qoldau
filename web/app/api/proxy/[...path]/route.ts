@@ -10,6 +10,7 @@ import { readAccessToken } from '@/lib/auth/cookies';
 const ALLOWED = new Set([
   'consultations',
   'requests',
+  'offers',
   'favorites',
   'notifications',
   'premium',

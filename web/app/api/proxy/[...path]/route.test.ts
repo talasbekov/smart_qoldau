@@ -83,6 +83,16 @@ describe('прокси кабинета', () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
+  it('пропускает офферы: без них эксперт не может принять заявку', async () => {
+    cookie.value = 'access-value';
+    const fetchMock = upstream();
+
+    const response = await POST(req('offers/o1/accept', 'POST'), ctx('offers/o1/accept'));
+
+    expect(response.status).toBe(200);
+    expect(fetchMock).toHaveBeenCalled();
+  });
+
   it('изменяющий запрос с чужого происхождения отвергается', async () => {
     cookie.value = 'access-value';
     const fetchMock = upstream();
