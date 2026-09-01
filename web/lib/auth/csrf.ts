@@ -2,7 +2,9 @@
 // наш адрес — включая тот, что инициировал чужой сайт. Совпадение Origin
 // отсекает это дёшево и без состояния. SameSite=Lax на самих cookie
 // закрывает то же с другой стороны; вместе они переживают промах в одном.
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000';
+import { resolveSiteUrl } from './site-url';
+
+const SITE_URL = resolveSiteUrl(process.env);
 
 export class CsrfError extends Error {
   constructor() {

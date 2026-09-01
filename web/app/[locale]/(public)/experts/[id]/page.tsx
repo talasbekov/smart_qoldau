@@ -4,7 +4,9 @@ import { getExpert, getExpertReviews } from '@/lib/api/public';
 import ExpertProfile from '@/components/expert/ExpertProfile';
 import ExpertJsonLd from '@/components/expert/ExpertJsonLd';
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://smartqoldau.kz';
+import { resolveSiteUrl } from '@/lib/auth/site-url';
+
+const SITE_URL = resolveSiteUrl({ ...process.env, NEXT_PUBLIC_SITE_URL: process.env.NEXT_PUBLIC_SITE_URL ?? 'https://smartqoldau.kz' });
 
 export async function generateMetadata({
   params,

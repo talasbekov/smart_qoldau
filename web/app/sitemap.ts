@@ -2,7 +2,9 @@ import type { MetadataRoute } from 'next';
 import { routing } from '@/lib/i18n/routing';
 import { listExperts, listTopics } from '@/lib/api/public';
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://smartqoldau.kz';
+import { resolveSiteUrl } from '@/lib/auth/site-url';
+
+const SITE_URL = resolveSiteUrl({ ...process.env, NEXT_PUBLIC_SITE_URL: process.env.NEXT_PUBLIC_SITE_URL ?? 'https://smartqoldau.kz' });
 const PAGES = ['', '/catalog', '/become-expert', '/premium', '/terms', '/privacy', '/support'];
 
 // Верхняя граница на выгрузку: карта сайта не должна превращаться в

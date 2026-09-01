@@ -117,7 +117,7 @@ services:
       context: ../web
     environment:
       API_BASE_URL: http://backend:3000/v1
-      NEXT_PUBLIC_SITE_URL: ${SITE_URL:-https://smartqoldau.kz}
+      SITE_URL: ${SITE_URL:-https://smartqoldau.kz}
     restart: unless-stopped
     networks: [edge]
 

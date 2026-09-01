@@ -40,4 +40,8 @@ services:
   web:
     environment:
       API_BASE_URL: http://backend:3000/v1
+      # Публичный адрес стенда: по нему проверяется Origin при входе.
+      # Со значением по умолчанию (:3000) вход отвечал бы 403 — поймано
+      # живой проверкой, а не тестами.
+      SITE_URL: ${STAND_URL:-http://localhost:8080}
 
