@@ -10,6 +10,8 @@ COPY . .
 # staging и прода это РАЗНЫЕ образы, а не один с разными переменными.
 ARG VITE_API_BASE_URL
 ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
+ARG VITE_BASE
+ENV VITE_BASE=$VITE_BASE
 RUN npm run build
 
 FROM nginx:1.27-alpine AS runtime

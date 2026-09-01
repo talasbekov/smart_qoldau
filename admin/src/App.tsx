@@ -28,8 +28,10 @@ export default function App() {
     setChallengeToken(null);
   }
 
+  // basename — тот же префикс, что у сборки (vite base): без него
+  // маршруты SPA разъезжаются с адресом, под которым её отдаёт прокси.
   return (
-    <BrowserRouter>
+    <BrowserRouter basename={import.meta.env.BASE_URL}>
       <Routes>
         <Route
           path="/login"

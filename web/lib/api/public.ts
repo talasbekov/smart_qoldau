@@ -1,6 +1,7 @@
 import type { components } from './generated';
+import { resolveApiBaseUrl } from './base-url';
 
-export const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:3000/v1';
+export const API_BASE_URL = resolveApiBaseUrl(process.env);
 
 export type ExpertPublic = components['schemas']['ExpertPublicDto'];
 export type Topic = components['schemas']['TopicDto'];

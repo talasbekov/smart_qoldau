@@ -21,7 +21,7 @@ services:
       - ./nginx.stand.conf:/etc/nginx/conf.d/default.conf:ro
     ports:
       - '8080:80'
-    depends_on: [backend, admin, expert-web, client-web]
+    depends_on: [backend, admin, web]
     networks: [edge]
 
   # Админка собирается с относительным адресом API: за прокси она и бэкенд
@@ -31,4 +31,13 @@ services:
     build:
       args:
         VITE_API_BASE_URL: /v1
+        VITE_BASE: /admin/
+
+  # Веб ходит в бэкенд С СЕРВЕРА, по внутреннему имени сети: браузер к
+  # API не обращается вовсе — только к /api/* самого Next. Поэтому адрес
+  # задаётся переменной времени выполнения, а не аргументом сборки, и
+  # образ не привязан ни к какому стенду.
+  web:
+    environment:
+      API_BASE_URL: http://backend:3000/v1
 
