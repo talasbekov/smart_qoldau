@@ -56,6 +56,22 @@ describe('DashboardStats', () => {
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Здравствуйте, Айгуль');
   });
 
+  it('здоровается по имени, а не по имени с фамилией', () => {
+    render(
+      <DashboardStats
+        name="Айгуль Смагулова"
+        stats={{ total: 1, completed: 0 }}
+        balanceTiyn={0}
+        rating={0}
+        reviews={0}
+      />,
+    );
+
+    // «Здравствуйте, Айгуль Смагулова» звучит как обращение из банка.
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Здравствуйте, Айгуль');
+    expect(screen.getByRole('heading', { level: 1 })).not.toHaveTextContent('Смагулова');
+  });
+
   it('пустой день говорит об этом словами, а не показывает четыре нуля', () => {
     render(<DashboardStats name="Айгуль" stats={{ total: 0, completed: 0 }} balanceTiyn={0} rating={0} reviews={0} />);
 

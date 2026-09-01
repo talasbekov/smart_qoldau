@@ -52,7 +52,11 @@ export default function DashboardStats({
 }) {
   return (
     <>
-      <h1 className="mb-1 text-2xl font-extrabold text-ink">Здравствуйте, {name}</h1>
+      {/* Только имя: «Здравствуйте, Айгуль Смагулова» звучит как
+          обращение из банка, а не как кабинет своего рабочего места. */}
+      <h1 className="mb-1 text-2xl font-extrabold text-ink">
+        Здравствуйте, {name.split(' ')[0]}
+      </h1>
       <p className="mb-6 text-sm text-muted">
         {stats.total === 0
           ? 'Сегодня консультаций нет'
