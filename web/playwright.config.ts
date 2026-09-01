@@ -14,7 +14,9 @@ export default defineConfig({
   // серверный рендер и кэширование. Dev-сервер ведёт себя иначе и
   // зелёный в нём ничего не доказывает.
   webServer: {
-    command: `npm run build && npm run start -- -p ${PORT}`,
+    // Именно standalone-сборка: она и едет в контейнере (см. Dockerfile).
+    // `next start` со standalone не работает и проверял бы другой режим.
+    command: `npm run build && PORT=${PORT} npm run start:standalone`,
     url: BASE_URL,
     reuseExistingServer: !process.env.CI,
     timeout: 300_000,

@@ -10,7 +10,8 @@
     "test": "jest",
     "api:generate": "cd ../backend && npm run openapi:dump && cd ../web && npx --yes openapi-typescript@7.13.0 ../docs/openapi.json -o lib/api/generated.ts",
     "e2e": "playwright test",
-    "e2e:ui": "playwright test --ui"
+    "e2e:ui": "playwright test --ui",
+    "start:standalone": "mkdir -p public && cp -r public .next/standalone/ 2>/dev/null; cp -r .next/static .next/standalone/.next/ && node .next/standalone/server.js"
   },
   "dependencies": {
     "next": "^15.5.24",
