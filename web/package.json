@@ -14,6 +14,7 @@
     "start:standalone": "mkdir -p public && cp -r public .next/standalone/ 2>/dev/null; cp -r .next/static .next/standalone/.next/ && node .next/standalone/server.js"
   },
   "dependencies": {
+    "livekit-client": "^2.22.2",
     "next": "^15.5.24",
     "next-intl": "^4.13.7",
     "react": "^19.2.8",
