@@ -4,4 +4,10 @@
          to allow setting breakpoints, to provide hot reload, etc.
     -->
     <uses-permission android:name="android.permission.INTERNET"/>
+
+    <!-- Локальный стенд отдаётся по http (см. infra/nginx.stand.conf), а
+         Android с targetSdk 28+ по умолчанию режет открытый трафик. Разрешаем
+         его ТОЛЬКО в debug-манифесте: релизная сборка это наложение не
+         подхватывает и продолжает требовать https. -->
+    <application android:usesCleartextTraffic="true" />
 </manifest>
