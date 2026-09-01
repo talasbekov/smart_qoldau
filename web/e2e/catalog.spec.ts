@@ -32,3 +32,15 @@ test('пустая выборка объясняется словами, а не
 
   await expect(page.getByText('По заданным фильтрам специалисты не найдены')).toBeVisible();
 });
+
+test('экстренные службы доступны и на внутренней странице, не только на главной', async ({
+  page,
+}) => {
+  // Человек приходит из поиска сразу в каталог или на профиль — на
+  // главную с её дисклеймером он может вообще не попасть.
+  await page.goto('/ru/catalog');
+
+  const services = page.getByRole('navigation', { name: /Экстренные службы/ });
+  await expect(services).toBeVisible();
+  await expect(services.getByRole('link', { name: /112/ })).toHaveAttribute('href', 'tel:112');
+});

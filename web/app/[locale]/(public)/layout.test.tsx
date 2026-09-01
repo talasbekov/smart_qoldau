@@ -7,6 +7,10 @@ jest.mock('@/components/Header', () => ({
   __esModule: true,
   default: () => <header>шапка</header>,
 }));
+jest.mock('@/components/emergency/EmergencyBar', () => ({
+  __esModule: true,
+  default: () => <nav aria-label="Экстренные службы">службы</nav>,
+}));
 jest.mock('@/components/Footer', () => ({
   __esModule: true,
   default: () => <footer>подвал</footer>,
@@ -32,6 +36,15 @@ describe('PublicLayout', () => {
     // Ссылка стоит ДО шапки: иначе к содержимому пришлось бы идти
     // через всю навигацию, а смысл ссылки именно в том, чтобы её обойти.
     expect(skip.compareDocumentPosition(screen.getByRole('banner'))).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING,
+    );
+  });
+
+  it('экстренные службы идут до шапки: в кризисе человек не должен искать', () => {
+    render(<PublicLayout>{<p>содержимое</p>}</PublicLayout>);
+
+    const services = screen.getByRole('navigation', { name: 'Экстренные службы' });
+    expect(services.compareDocumentPosition(screen.getByRole('banner'))).toBe(
       Node.DOCUMENT_POSITION_FOLLOWING,
     );
   });

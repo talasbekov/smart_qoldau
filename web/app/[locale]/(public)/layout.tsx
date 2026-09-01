@@ -1,3 +1,4 @@
+import EmergencyBar from '@/components/emergency/EmergencyBar';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 
@@ -16,6 +17,7 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
       >
         Перейти к основному содержимому
       </a>
+      <EmergencyBar />
       <Header />
       <div id="main">{children}</div>
       <Footer />
