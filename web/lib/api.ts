@@ -1,29 +1,16 @@
 import type { CreateTicketPayload } from './ticket';
+import { listExperts } from './api/public';
 
-export const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:3000/v1';
+// Единственный источник правды по публичному API — lib/api/public.ts,
+// типы там генерируются из OpenAPI бэкенда. Здесь остаётся форма
+// поддержки и совместимый реэкспорт, чтобы существующие импорты
+// `@/lib/api` не переписывать разом.
+import { API_BASE_URL } from './api/public';
+export { API_BASE_URL };
+export type { ExpertPublic } from './api/public';
 
-export interface ExpertPublic {
-  id: string;
-  displayName: string;
-  city: string;
-  experience: string;
-  priceTiyn: number;
-  languages: string[];
-  ratingAvg: number;
-  ratingCount: number;
-  photoUrl: string | null;
-}
-
-export async function fetchPublicExperts(take: number): Promise<ExpertPublic[]> {
-  try {
-    const response = await fetch(`${API_BASE_URL}/experts?take=${take}`, {
-      next: { revalidate: 300 },
-    });
-    if (!response.ok) return [];
-    return (await response.json()) as ExpertPublic[];
-  } catch {
-    return [];
-  }
+export async function fetchPublicExperts(take: number) {
+  return listExperts({ take });
 }
 
 export type SubmitTicketResult = { ok: true } | { ok: false; error: 'RATE_LIMITED' | 'VALIDATION' | 'NETWORK' };

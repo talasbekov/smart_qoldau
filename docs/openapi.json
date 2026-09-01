@@ -5150,7 +5150,7 @@
             "description": "Slug-и тем из справочника /v1/topics",
             "type": "array",
             "items": {
-              "type": "array"
+              "type": "string"
             }
           }
         },
@@ -5202,7 +5202,7 @@
             ],
             "type": "array",
             "items": {
-              "type": "array"
+              "type": "string"
             }
           },
           "formats": {
@@ -5213,7 +5213,7 @@
             ],
             "type": "array",
             "items": {
-              "type": "array"
+              "type": "string"
             }
           },
           "topicSlugs": {
@@ -5223,7 +5223,7 @@
             ],
             "type": "array",
             "items": {
-              "type": "array"
+              "type": "string"
             }
           },
           "verificationStatus": {
@@ -5370,7 +5370,7 @@
             ],
             "type": "array",
             "items": {
-              "type": "array"
+              "type": "string"
             }
           },
           "about": {
@@ -5496,7 +5496,7 @@
             ],
             "type": "array",
             "items": {
-              "type": "array"
+              "type": "string"
             }
           },
           "formats": {
@@ -5507,7 +5507,7 @@
             ],
             "type": "array",
             "items": {
-              "type": "array"
+              "type": "string"
             }
           },
           "topicSlugs": {
@@ -5517,7 +5517,7 @@
             ],
             "type": "array",
             "items": {
-              "type": "array"
+              "type": "string"
             }
           },
           "workStatus": {
@@ -6900,7 +6900,7 @@
             "description": "Горячие линии при статусе CALLBACK_REQUESTED",
             "type": "array",
             "items": {
-              "type": "array"
+              "type": "string"
             }
           }
         },
@@ -7206,7 +7206,7 @@
             "description": "Коды тегов из набора выставленной оценки",
             "type": "array",
             "items": {
-              "type": "array"
+              "type": "string"
             }
           }
         },
@@ -7240,7 +7240,7 @@
             ],
             "type": "array",
             "items": {
-              "type": "array"
+              "type": "string"
             }
           },
           "createdAt": {
@@ -7305,7 +7305,7 @@
             ],
             "type": "array",
             "items": {
-              "type": "array"
+              "type": "string"
             }
           },
           "createdAt": {
@@ -7395,7 +7395,7 @@
             ],
             "type": "array",
             "items": {
-              "type": "array"
+              "type": "string"
             }
           },
           "createdAt": {
