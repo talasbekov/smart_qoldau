@@ -87,7 +87,7 @@ export default async function HomePage() {
           <div className="flex-1 min-w-[280px]">
             <h2 className="text-2xl font-extrabold text-ink mb-2">{t('urgentTitle')}</h2>
             <p className="text-[#3f6b62] text-sm mb-1 max-w-[520px]">{t('urgentText')}</p>
-            <p className="text-[#5f857c] text-xs">{t('urgentEmergency')}</p>
+            <p className="text-[#52736b] text-xs">{t('urgentEmergency')}</p>
           </div>
           <Link
             href="/support"

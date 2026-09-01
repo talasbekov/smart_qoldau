@@ -9,13 +9,13 @@ export default async function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-10">
           <div>
             <div className="text-white font-extrabold text-sm mb-2">SmartQoldau</div>
-            <div className="text-white/50 text-xs">{t('tagline')}</div>
+            <div className="text-white/60 text-xs">{t('tagline')}</div>
           </div>
           <div>
             <div className="text-white/90 font-bold text-xs mb-3">{t('clientsTitle')}</div>
             <div className="flex flex-col gap-2">
               <Link href="/about" className="text-white/55 text-xs">
-                {t('about')}
+                {t('clientsAbout')}
               </Link>
               <Link href="/support" className="text-white/55 text-xs">
                 {t('clientsSupport')}
@@ -43,7 +43,7 @@ export default async function Footer() {
             </div>
           </div>
         </div>
-        <div className="border-t border-white/10 pt-5 text-white/40 text-xs text-center">
+        <div className="border-t border-white/10 pt-5 text-white/60 text-xs text-center">
           {t('copyright')}
         </div>
       </div>
