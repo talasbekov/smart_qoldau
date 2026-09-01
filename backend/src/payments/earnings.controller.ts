@@ -13,6 +13,7 @@ import { CurrentExpert } from '../experts/current-expert.decorator';
 import { PaymentsService } from './payments.service';
 import { EarningsDto } from './dto/earnings.dto';
 import { ListEarningsDto } from './dto/list-earnings.dto';
+import { DailyEarningsDto, ListDailyEarningsDto } from './dto/daily-earnings.dto';
 
 // Живёт в PaymentsModule (не ExpertsModule) — бизнес-домен начислений
 // принадлежит платёжному контуру, аналогично PaymentsController рядом с
@@ -36,5 +37,19 @@ export class EarningsController {
     @Query() query: ListEarningsDto,
   ): Promise<EarningsDto> {
     return this.payments.getEarnings(expert.id, query);
+  }
+
+  // Отдельный маршрут, а не разбор списка начислений на клиенте: тот
+  // постраничный, и месяц потребовал бы десятка запросов. Нужен и вебу
+  // (график на дашборде), и мобильному приложению.
+  @Get('daily')
+  @ApiOperation({ summary: 'Доход эксперта по дням (Asia/Almaty) для графика' })
+  @ApiOkResponse({ type: DailyEarningsDto })
+  @ApiUnauthorizedResponse({ description: 'UNAUTHORIZED' })
+  async daily(
+    @CurrentExpert() expert: Expert,
+    @Query() query: ListDailyEarningsDto,
+  ): Promise<DailyEarningsDto> {
+    return this.payments.getDailyEarnings(expert.id, query);
   }
 }

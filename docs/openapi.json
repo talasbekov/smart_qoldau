@@ -2309,6 +2309,57 @@
         ]
       }
     },
+    "/v1/experts/me/earnings/daily": {
+      "get": {
+        "operationId": "EarningsController_daily",
+        "parameters": [
+          {
+            "name": "from",
+            "required": false,
+            "in": "query",
+            "description": "Начало периода. По умолчанию — 30 дней назад",
+            "schema": {
+              "example": "2026-08-01",
+              "type": "string"
+            }
+          },
+          {
+            "name": "to",
+            "required": false,
+            "in": "query",
+            "description": "Конец периода. По умолчанию — сегодня",
+            "schema": {
+              "example": "2026-09-01",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DailyEarningsDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Доход эксперта по дням (Asia/Almaty) для графика",
+        "tags": [
+          "payments"
+        ]
+      }
+    },
     "/v1/webhooks/payments": {
       "post": {
         "operationId": "PaymentsWebhookController_handle",
@@ -6530,6 +6581,43 @@
         "required": [
           "balanceTiyn",
           "items"
+        ]
+      },
+      "DailyEarningDto": {
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string",
+            "example": "2026-09-01",
+            "description": "Дата по Asia/Almaty"
+          },
+          "amountTiyn": {
+            "type": "number",
+            "description": "Доход эксперта за день в тиынах (после комиссии)"
+          },
+          "consultations": {
+            "type": "number",
+            "description": "Сколько консультаций оплачено в этот день"
+          }
+        },
+        "required": [
+          "date",
+          "amountTiyn",
+          "consultations"
+        ]
+      },
+      "DailyEarningsDto": {
+        "type": "object",
+        "properties": {
+          "days": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DailyEarningDto"
+            }
+          }
+        },
+        "required": [
+          "days"
         ]
       },
       "NotificationDto": {

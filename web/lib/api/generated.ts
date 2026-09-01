@@ -809,6 +809,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/experts/me/earnings/daily": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Доход эксперта по дням (Asia/Almaty) для графика */
+        get: operations["EarningsController_daily"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/webhooks/payments": {
         parameters: {
             query?: never;
@@ -2291,6 +2308,20 @@ export interface components {
             /** @description Текущий баланс эксперта в тиынах (из ledger) */
             balanceTiyn: number;
             items: components["schemas"]["EarningsItemDto"][];
+        };
+        DailyEarningDto: {
+            /**
+             * @description Дата по Asia/Almaty
+             * @example 2026-09-01
+             */
+            date: string;
+            /** @description Доход эксперта за день в тиынах (после комиссии) */
+            amountTiyn: number;
+            /** @description Сколько консультаций оплачено в этот день */
+            consultations: number;
+        };
+        DailyEarningsDto: {
+            days: components["schemas"]["DailyEarningDto"][];
         };
         NotificationDto: {
             id: string;
@@ -4745,6 +4776,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["EarningsDto"];
+                };
+            };
+            /** @description UNAUTHORIZED */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    EarningsController_daily: {
+        parameters: {
+            query?: {
+                /** @description Начало периода. По умолчанию — 30 дней назад */
+                from?: string;
+                /** @description Конец периода. По умолчанию — сегодня */
+                to?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DailyEarningsDto"];
                 };
             };
             /** @description UNAUTHORIZED */

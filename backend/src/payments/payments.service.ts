@@ -31,6 +31,12 @@ import { PayResultDto } from './dto/pay-result.dto';
 import { PaymentStatusDto } from './dto/payment-status.dto';
 import { EarningsDto } from './dto/earnings.dto';
 import { ListEarningsDto } from './dto/list-earnings.dto';
+import { ListDailyEarningsDto } from './dto/daily-earnings.dto';
+import {
+  groupByAlmatyDay,
+  MAX_DAILY_RANGE_DAYS,
+  type DailyEarning,
+} from './daily-earnings';
 
 // Ставка комиссии переехала в premium.constants как COMMISSION_BP_REGULAR
 // (базисные пункты): с приходом Premium ставок стало две, и держать их в
@@ -557,5 +563,40 @@ export class PaymentsService {
         createdAt: p.updatedAt,
       })),
     };
+  }
+
+  // GET /v1/experts/me/earnings/daily — доход по дням для графика на
+  // дашборде. Отдельный метод, а не разбор списка начислений на клиенте:
+  // тот постраничный, и месяц потребовал бы десятка запросов.
+  async getDailyEarnings(
+    expertId: string,
+    filters: ListDailyEarningsDto,
+  ): Promise<{ days: DailyEarning[] }> {
+    const to = filters.to ? new Date(filters.to) : new Date();
+    const from = filters.from
+      ? new Date(filters.from)
+      : new Date(to.getTime() - 29 * 86_400_000);
+
+    // Период ограничен сверху: без этого один запрос выгружает всю
+    // историю эксперта, и график за неделю стоит как за три года.
+    const spanDays = Math.floor((to.getTime() - from.getTime()) / 86_400_000) + 1;
+    if (spanDays > MAX_DAILY_RANGE_DAYS) {
+      apiError(
+        'EARNINGS_RANGE_TOO_LONG',
+        `Период не может превышать ${MAX_DAILY_RANGE_DAYS} дней`,
+        400,
+      );
+    }
+
+    const payments = await this.prisma.payment.findMany({
+      where: {
+        expertId,
+        status: PaymentStatus.CAPTURED,
+        updatedAt: { gte: from, lte: new Date(to.getTime() + 86_400_000) },
+      },
+      select: { updatedAt: true, amountTiyn: true, discountTiyn: true },
+    });
+
+    return { days: groupByAlmatyDay(payments, from, to) };
   }
 }
