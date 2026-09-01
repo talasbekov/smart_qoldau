@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { apiFetch } from '@/lib/api/client';
+import { connectRealtime, type SqSocket } from '@/lib/realtime/socket';
 
 export type RequestState = {
   id: string;
@@ -10,12 +10,6 @@ export type RequestState = {
   consultationId?: string | null;
   hotlines?: string[] | null;
 };
-
-// Опрос раз в пять секунд — ВРЕМЕННОЕ решение до задачи 5, где появится
-// сокет: подбор придёт событием `request.matched`, и опрос уйдёт.
-// Оставлять его насовсем нельзя — это лишняя нагрузка на бэкенд при
-// каждой заявке и задержка до пяти секунд там, где ответ уже готов.
-const POLL_MS = 5000;
 
 export default function RequestStatus({
   requestId,
@@ -30,24 +24,43 @@ export default function RequestStatus({
   const [state, setState] = useState(initial);
 
   useEffect(() => {
-    if (state.status === 'MATCHED' && state.consultationId) {
-      router.push(`/${locale}/consultations/${state.consultationId}`);
-      return;
-    }
     if (state.status !== 'SEARCHING') return;
 
-    const timer = setInterval(async () => {
-      try {
-        const fresh = await apiFetch<RequestState>(`requests/${requestId}`);
-        if (fresh) setState(fresh);
-      } catch {
-        // Разрыв связи не должен ронять экран ожидания: следующая
-        // попытка через пять секунд.
-      }
-    }, POLL_MS);
+    let socket: SqSocket | null = null;
+    let dropped = false;
 
-    return () => clearInterval(timer);
-  }, [state, requestId, locale, router]);
+    void (async () => {
+      try {
+        const connected = await connectRealtime();
+        if (dropped) {
+          connected.close();
+          return;
+        }
+        socket = connected;
+        connected.on('request.updated', (payload) => {
+          const fresh = payload as RequestState;
+          // Комната адресована пользователю, а заявок у него может быть
+          // несколько за сессию — чужое событие игнорируем.
+          if (fresh.id === requestId) setState(fresh);
+        });
+      } catch {
+        // Подключиться не удалось — экран остаётся на месте и говорит,
+        // что идёт поиск. Хуже было бы показать ошибку человеку, который
+        // ждёт помощи: заявка при этом жива.
+      }
+    })();
+
+    return () => {
+      dropped = true;
+      socket?.close();
+    };
+  }, [state.status, requestId]);
+
+  useEffect(() => {
+    if (state.status === 'MATCHED' && state.consultationId) {
+      router.push(`/${locale}/consultations/${state.consultationId}`);
+    }
+  }, [state, locale, router]);
 
   if (state.status === 'CANCELLED') {
     return <p className="text-body">Заявка отменена</p>;
@@ -56,9 +69,7 @@ export default function RequestStatus({
   if (state.status === 'NO_EXPERTS' || state.status === 'CALLBACK_REQUESTED') {
     return (
       <div>
-        <h1 className="mb-2 text-xl font-extrabold text-ink">
-          Сейчас никого свободного нет
-        </h1>
+        <h1 className="mb-2 text-xl font-extrabold text-ink">Сейчас никого свободного нет</h1>
         <p className="mb-4 text-sm text-body">
           Мы напишем, как только специалист освободится. Если помощь нужна прямо сейчас —
           позвоните:
@@ -81,9 +92,7 @@ export default function RequestStatus({
 
   return (
     <div>
-      <h1 className="mb-2 text-xl font-extrabold text-ink">
-        Ищем свободного специалиста для вас
-      </h1>
+      <h1 className="mb-2 text-xl font-extrabold text-ink">Ищем свободного специалиста для вас</h1>
       <p className="text-sm text-muted" aria-live="polite">
         Обычно это занимает одну–две минуты. Страницу можно не закрывать.
       </p>

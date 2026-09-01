@@ -3,6 +3,22 @@ import { render, screen, waitFor, act } from '@testing-library/react';
 const push = jest.fn();
 jest.mock('next/navigation', () => ({ useRouter: () => ({ push }) }));
 
+// Сокет подменяется целиком: тест проверяет реакцию экрана на событие,
+// а не транспорт — у него свои тесты.
+const handlers: Record<string, (payload: unknown) => void> = {};
+const close = jest.fn();
+jest.mock('@/lib/realtime/socket', () => ({
+  connectRealtime: async () => ({
+    on: (event: string, handler: (payload: unknown) => void) => {
+      handlers[event] = handler;
+      return () => delete handlers[event];
+    },
+    onReady: () => () => {},
+    send: () => {},
+    close,
+  }),
+}));
+
 // eslint-disable-next-line import/first
 import RequestStatus from './RequestStatus';
 
@@ -31,16 +47,36 @@ describe('RequestStatus', () => {
     expect(screen.getByText(/Ищем свободного специалиста/i)).toBeInTheDocument();
   });
 
-  it('когда специалист найден, ведёт к консультации', async () => {
-    respond([{ id: 'r1', status: 'MATCHED', consultationId: 'c1' }]);
-    jest.useFakeTimers();
-
+  it('когда специалист найден, ведёт к консультации по событию сокета', async () => {
     render(<RequestStatus requestId="r1" initial={{ id: 'r1', status: 'SEARCHING' }} locale="ru" />);
+    await waitFor(() => expect(handlers['request.updated']).toBeDefined());
+
     await act(async () => {
-      jest.advanceTimersByTime(5000);
+      handlers['request.updated']({ id: 'r1', status: 'MATCHED', consultationId: 'c1' });
     });
 
     await waitFor(() => expect(push).toHaveBeenCalledWith('/ru/consultations/c1'));
+  });
+
+  it('не реагирует на событие о чужой заявке', async () => {
+    render(<RequestStatus requestId="r1" initial={{ id: 'r1', status: 'SEARCHING' }} locale="ru" />);
+    await waitFor(() => expect(handlers['request.updated']).toBeDefined());
+
+    await act(async () => {
+      handlers['request.updated']({ id: 'other', status: 'MATCHED', consultationId: 'c9' });
+    });
+
+    expect(push).not.toHaveBeenCalled();
+  });
+
+  it('закрывает сокет, когда экран уходит', async () => {
+    const { unmount } = render(
+      <RequestStatus requestId="r1" initial={{ id: 'r1', status: 'SEARCHING' }} locale="ru" />,
+    );
+    await waitFor(() => expect(handlers['request.updated']).toBeDefined());
+
+    unmount();
+    await waitFor(() => expect(close).toHaveBeenCalled());
   });
 
   it('когда свободных нет, объясняет и предлагает экстренные службы', async () => {
