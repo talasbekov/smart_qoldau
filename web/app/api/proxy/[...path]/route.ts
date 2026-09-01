@@ -11,6 +11,7 @@ const ALLOWED = new Set([
   'consultations',
   'requests',
   'offers',
+  'reviews',
   'favorites',
   'notifications',
   'premium',
