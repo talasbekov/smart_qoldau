@@ -1,0 +1,40 @@
+import { authorizedFetch } from '@/lib/api/authorized';
+import WeekSchedule from '@/components/expert-cabinet/WeekSchedule';
+import type { components } from '@/lib/api/generated';
+
+type ScheduleResponse = components['schemas']['ScheduleResponseDto'];
+type Day = components['schemas']['ScheduleDayDto'];
+
+// Бэкенд может вернуть не все дни (эксперт заполнил не всю неделю), а
+// редактор должен показывать неделю целиком — иначе выключенный день
+// невозможно включить.
+function fillWeek(days: Day[]): Day[] {
+  const byWeekday = new Map(days.map((day) => [day.weekday, day]));
+
+  return Array.from({ length: 7 }, (_, weekday) => {
+    const existing = byWeekday.get(weekday);
+    if (existing) return existing;
+    return {
+      weekday,
+      enabled: false,
+      startMin: 540,
+      endMin: 1080,
+      breakStart: null,
+      breakEnd: null,
+    } as Day;
+  });
+}
+
+export default async function SchedulePage() {
+  const schedule = await authorizedFetch<ScheduleResponse>('experts/me/schedule');
+
+  return (
+    <>
+      <h1 className="mb-2 text-2xl font-extrabold text-ink">Расписание</h1>
+      <p className="mb-6 text-sm text-muted">
+        Заявки приходят только в рабочие часы — и только пока вкладка открыта.
+      </p>
+      <WeekSchedule initial={fillWeek(schedule?.days ?? [])} />
+    </>
+  );
+}
