@@ -251,6 +251,75 @@
         ]
       }
     },
+    "/v1/experts/me/clients": {
+      "get": {
+        "operationId": "ExpertClientsController_list",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ClientCardDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Клиенты эксперта, давшие согласие (Р-27)",
+        "tags": [
+          "experts"
+        ]
+      }
+    },
+    "/v1/experts/me/clients/{clientUserId}": {
+      "get": {
+        "operationId": "ExpertClientsController_detail",
+        "parameters": [
+          {
+            "name": "clientUserId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClientDetailDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "CLIENT_NOT_FOUND — клиент не давал согласия, встреч после согласия не было, или это не ваш клиент"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Карточка клиента: имя и история встреч (Р-27)",
+        "tags": [
+          "experts"
+        ]
+      }
+    },
     "/v1/experts": {
       "post": {
         "operationId": "ExpertsController_create",
@@ -4552,6 +4621,31 @@
       }
     },
     "/v1/me": {
+      "get": {
+        "operationId": "AccountController_profile",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProfileDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Свой профиль: имя и отметка согласия (Р-27)",
+        "tags": [
+          "account"
+        ]
+      },
       "delete": {
         "operationId": "AccountController_remove",
         "parameters": [],
@@ -4575,6 +4669,43 @@
           }
         ],
         "summary": "Удалить свой аккаунт и данные (ТЗ §5.1). Консультации, платежи и проводки остаются как учётные записи, PII из аккаунта вычищается.",
+        "tags": [
+          "account"
+        ]
+      }
+    },
+    "/v1/me/expert-visibility": {
+      "post": {
+        "operationId": "AccountController_acceptExpertVisibility",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AcceptExpertVisibilityDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProfileDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Согласиться, что психолог видит имя и историю встреч, и назвать имя (Р-27)",
         "tags": [
           "account"
         ]
@@ -5165,6 +5296,104 @@
         "required": [
           "phone",
           "code"
+        ]
+      },
+      "ClientCardDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "displayName": {
+            "type": "string",
+            "description": "Как клиент попросил к нему обращаться"
+          },
+          "consultations": {
+            "type": "number",
+            "description": "Сколько встреч было после согласия"
+          },
+          "lastAt": {
+            "type": "string",
+            "nullable": true,
+            "description": "Последняя встреча"
+          }
+        },
+        "required": [
+          "id",
+          "displayName",
+          "consultations",
+          "lastAt"
+        ]
+      },
+      "ClientHistoryItemDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "startedAt": {
+            "type": "string",
+            "nullable": true
+          },
+          "endedAt": {
+            "type": "string",
+            "nullable": true
+          },
+          "status": {
+            "type": "string"
+          },
+          "topicSlug": {
+            "type": "string"
+          },
+          "hasNote": {
+            "type": "boolean",
+            "description": "Есть ли заметка. Текст не отдаётся: он зашифрован и читается в самой консультации"
+          }
+        },
+        "required": [
+          "id",
+          "startedAt",
+          "endedAt",
+          "status",
+          "topicSlug",
+          "hasNote"
+        ]
+      },
+      "ClientDetailDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "displayName": {
+            "type": "string",
+            "description": "Как клиент попросил к нему обращаться"
+          },
+          "consultations": {
+            "type": "number",
+            "description": "Сколько встреч было после согласия"
+          },
+          "lastAt": {
+            "type": "string",
+            "nullable": true,
+            "description": "Последняя встреча"
+          },
+          "history": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ClientHistoryItemDto"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "displayName",
+          "consultations",
+          "lastAt",
+          "history"
         ]
       },
       "CreateExpertDto": {
@@ -7968,6 +8197,39 @@
         },
         "required": [
           "locale"
+        ]
+      },
+      "ProfileDto": {
+        "type": "object",
+        "properties": {
+          "displayName": {
+            "type": "string",
+            "nullable": true,
+            "description": "Как к человеку обращаться"
+          },
+          "expertVisibilityAcceptedAt": {
+            "type": "string",
+            "nullable": true,
+            "description": "Когда человек согласился, что психолог видит его имя и историю встреч (Р-27)"
+          }
+        },
+        "required": [
+          "displayName",
+          "expertVisibilityAcceptedAt"
+        ]
+      },
+      "AcceptExpertVisibilityDto": {
+        "type": "object",
+        "properties": {
+          "displayName": {
+            "type": "string",
+            "description": "Как к человеку обращаться. Свободная строка без проверки.",
+            "example": "Айгерим",
+            "maxLength": 64
+          }
+        },
+        "required": [
+          "displayName"
         ]
       },
       "CreateTicketDto": {

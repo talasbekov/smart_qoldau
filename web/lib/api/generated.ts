@@ -137,6 +137,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/experts/me/clients": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Клиенты эксперта, давшие согласие (Р-27) */
+        get: operations["ExpertClientsController_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/experts/me/clients/{clientUserId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Карточка клиента: имя и история встреч (Р-27) */
+        get: operations["ExpertClientsController_detail"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/experts": {
         parameters: {
             query?: never;
@@ -1640,11 +1674,29 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        /** Свой профиль: имя и отметка согласия (Р-27) */
+        get: operations["AccountController_profile"];
         put?: never;
         post?: never;
         /** Удалить свой аккаунт и данные (ТЗ §5.1). Консультации, платежи и проводки остаются как учётные записи, PII из аккаунта вычищается. */
         delete: operations["AccountController_remove"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/me/expert-visibility": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Согласиться, что психолог видит имя и историю встреч, и назвать имя (Р-27) */
+        post: operations["AccountController_acceptExpertVisibility"];
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -1850,6 +1902,37 @@ export interface components {
              * @example 123456
              */
             code: string;
+        };
+        ClientCardDto: {
+            /** Format: uuid */
+            id: string;
+            /** @description Как клиент попросил к нему обращаться */
+            displayName: string;
+            /** @description Сколько встреч было после согласия */
+            consultations: number;
+            /** @description Последняя встреча */
+            lastAt: string | null;
+        };
+        ClientHistoryItemDto: {
+            /** Format: uuid */
+            id: string;
+            startedAt: string | null;
+            endedAt: string | null;
+            status: string;
+            topicSlug: string;
+            /** @description Есть ли заметка. Текст не отдаётся: он зашифрован и читается в самой консультации */
+            hasNote: boolean;
+        };
+        ClientDetailDto: {
+            /** Format: uuid */
+            id: string;
+            /** @description Как клиент попросил к нему обращаться */
+            displayName: string;
+            /** @description Сколько встреч было после согласия */
+            consultations: number;
+            /** @description Последняя встреча */
+            lastAt: string | null;
+            history: components["schemas"]["ClientHistoryItemDto"][];
         };
         CreateExpertDto: {
             /** @example Айгуль С. */
@@ -2788,6 +2871,19 @@ export interface components {
             /** @enum {string} */
             locale: "ru" | "kz";
         };
+        ProfileDto: {
+            /** @description Как к человеку обращаться */
+            displayName: string | null;
+            /** @description Когда человек согласился, что психолог видит его имя и историю встреч (Р-27) */
+            expertVisibilityAcceptedAt: string | null;
+        };
+        AcceptExpertVisibilityDto: {
+            /**
+             * @description Как к человеку обращаться. Свободная строка без проверки.
+             * @example Айгерим
+             */
+            displayName: string;
+        };
         CreateTicketDto: {
             /**
              * @description Набор допустимых категорий зависит от типа автора (клиент/гость vs эксперт) — см. CATEGORIES_BY_AUTHOR
@@ -3145,6 +3241,53 @@ export interface operations {
             };
             /** @description PHONE_ALREADY_REGISTERED — номер уже используется другим аккаунтом */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ExpertClientsController_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClientCardDto"][];
+                };
+            };
+        };
+    };
+    ExpertClientsController_detail: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                clientUserId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClientDetailDto"];
+                };
+            };
+            /** @description CLIENT_NOT_FOUND — клиент не давал согласия, встреч после согласия не было, или это не ваш клиент */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -6521,6 +6664,25 @@ export interface operations {
             };
         };
     };
+    AccountController_profile: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProfileDto"];
+                };
+            };
+        };
+    };
     AccountController_remove: {
         parameters: {
             query?: never;
@@ -6557,6 +6719,29 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    AccountController_acceptExpertVisibility: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AcceptExpertVisibilityDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProfileDto"];
+                };
             };
         };
     };

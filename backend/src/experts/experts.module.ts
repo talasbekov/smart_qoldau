@@ -2,6 +2,8 @@ import { Module } from '@nestjs/common';
 import { AuditModule } from '../audit/audit.module';
 import { StorageModule } from '../storage/storage.module';
 import { ExpertsController } from './experts.controller';
+import { ExpertClientsController } from './clients.controller';
+import { ExpertClientsService } from './clients.service';
 import { ExpertsService } from './experts.service';
 import { ExpertGuard } from './expert.guard';
 import { DocumentsController } from './documents.controller';
@@ -17,12 +19,14 @@ import { ProfileModerationService } from './profile-moderation.service';
   // регистрироваться раньше ExpertsPublicController (GET /v1/experts/:id),
   // иначе публичный маршрут перехватит 'me' как :id.
   controllers: [
+    ExpertClientsController,
     ExpertsController,
     PhotoController,
     DocumentsController,
     ExpertsPublicController,
   ],
   providers: [
+    ExpertClientsService,
     ExpertsService,
     ExpertGuard,
     DocumentsService,
