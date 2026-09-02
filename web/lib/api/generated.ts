@@ -911,6 +911,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/premium/plans": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Тарифы Premium и цены (публично) */
+        get: operations["PremiumPublicController_plans"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/premium": {
         parameters: {
             query?: never;
@@ -2353,6 +2370,19 @@ export interface components {
         };
         SlotsResponseDto: {
             items: components["schemas"]["SlotDto"][];
+        };
+        PremiumPlanDto: {
+            /** @enum {string} */
+            plan: "MONTH" | "YEAR";
+            /** @description Цена тарифа в тиынах */
+            priceTiyn: number;
+            /** @description Длина оплаченного периода в днях */
+            periodDays: number;
+        };
+        PremiumPlansDto: {
+            plans: components["schemas"]["PremiumPlanDto"][];
+            /** @description Скидка Premium на консультацию, в процентах */
+            discountPercent: number;
         };
         PremiumStatusDto: {
             /** @description Есть ли доступ к Premium прямо сейчас. Остаётся true после отмены до конца оплаченного периода и во время ретраев автопродления (Р-09). */
@@ -4948,6 +4978,25 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    PremiumPublicController_plans: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PremiumPlansDto"];
+                };
             };
         };
     };

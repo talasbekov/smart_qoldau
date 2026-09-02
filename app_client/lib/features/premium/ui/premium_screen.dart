@@ -15,8 +15,8 @@ import '../state/premium_controller.dart';
 /// сумму ДО запроса, а отдельного справочника тарифов в API нет. Значение
 /// одно на всех поверхностях — 4 990 ₸ из старого веб-прототипа устарело.
 const _priceByPlan = <PremiumPlan, int>{
-  PremiumPlan.month: 299000,
-  PremiumPlan.year: 2390000,
+  PremiumPlan.month: 499000,
+  PremiumPlan.year: 3990000,
 };
 
 class PremiumScreen extends ConsumerStatefulWidget {

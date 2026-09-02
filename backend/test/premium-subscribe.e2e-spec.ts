@@ -136,7 +136,7 @@ describe('Premium: оформление, отмена, статус (e2e)', () =
     const credit = tx!.entries.find(
       (e) => e.account === 'platform:subscription',
     );
-    expect(credit!.creditTiyn).toBe(299_000);
+    expect(credit!.creditTiyn).toBe(499_000);
   });
 
   it('повторная подписка при активной -> 409 SUBSCRIPTION_EXISTS', async () => {
@@ -165,7 +165,7 @@ describe('Premium: оформление, отмена, статус (e2e)', () =
     ).toBe(0);
   });
 
-  it('годовой тариф списывает 23 900 ₸ и даёт период длиннее месячного', async () => {
+  it('годовой тариф списывает 39 900 ₸ и даёт период длиннее месячного', async () => {
     const cli = await clientWithCard();
     const res = await post(cli.accessToken, '/v1/premium/subscribe')
       .send({ plan: 'YEAR', paymentMethodId: cli.paymentMethodId })
@@ -180,7 +180,7 @@ describe('Premium: оформление, отмена, статус (e2e)', () =
     });
     expect(
       tx.entries.find((e) => e.account === 'platform:subscription')!.creditTiyn,
-    ).toBe(2_390_000);
+    ).toBe(3_990_000);
     const days =
       (sub.currentPeriodEnd.getTime() - sub.createdAt.getTime()) / 86_400_000;
     expect(Math.round(days)).toBe(365);

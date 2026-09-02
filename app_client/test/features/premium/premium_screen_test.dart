@@ -1,4 +1,4 @@
-// Виджет-тесты экрана Premium (E12, задача 8): тарифы Р-08, оформление,
+// Виджет-тесты экрана Premium (E12, задача 8): тарифы, оформление,
 // отмена, объяснение отказа банка.
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -46,7 +46,7 @@ void main() {
     when(() => api.paymentMethods()).thenAnswer((_) async => [_card()]);
   });
 
-  testWidgets('показывает оба тарифа Р-08 и оформляет выбранный', (
+  testWidgets('показывает оба тарифа и оформляет выбранный', (
     tester,
   ) async {
     when(() => api.premiumStatus()).thenAnswer((_) async => PremiumStatus.none);
@@ -60,8 +60,8 @@ void main() {
     await tester.pumpWidget(_wrap(api));
     await tester.pumpAndSettle();
 
-    expect(find.textContaining('2\u00A0990'), findsOneWidget);
-    expect(find.textContaining('23\u00A0900'), findsOneWidget);
+    expect(find.textContaining('4\u00A0990'), findsOneWidget);
+    expect(find.textContaining('39\u00A0900'), findsOneWidget);
 
     await tester.tap(find.byKey(const Key('sq-premium-plan-year')));
     await tester.pump();
