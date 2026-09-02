@@ -6206,6 +6206,8 @@ export interface operations {
     ContentController_list: {
         parameters: {
             query?: {
+                /** @description Язык для анонимного читателя: у него нет профиля с локалью */
+                locale?: "ru" | "kk";
                 kind?: "MEDITATION" | "MUSIC" | "ARTICLE" | "BREATHING";
                 /** @description Категория-чипс: sleep | anxiety | ... */
                 category?: string;
@@ -6327,7 +6329,9 @@ export interface operations {
     };
     ContentController_byId: {
         parameters: {
-            query?: never;
+            query: {
+                locale: string;
+            };
             header?: never;
             path: {
                 id: string;

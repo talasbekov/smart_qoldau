@@ -39,6 +39,7 @@ describe('Контент: пейволл Premium (E13, e2e)', () => {
   let prisma: PrismaService;
   let premiumId = '';
   let freeId = '';
+  let premiumArticleId = '';
 
   async function cleanup() {
     const users = await prisma.user.findMany({
@@ -120,6 +121,28 @@ describe('Контент: пейволл Premium (E13, e2e)', () => {
       },
     });
     freeId = free.id;
+
+    // Платная СТАТЬЯ: у неё, в отличие от медитации, всё содержимое лежит
+    // в теле ответа карточки, а не за подписанной ссылкой.
+    const paidArticle = await prisma.contentItem.create({
+      data: {
+        kind: 'ARTICLE',
+        access: 'PREMIUM',
+        slug: `${SLUG_PREFIX}paid-article`,
+        category: 'anxiety',
+        titleRu: 'Платная статья',
+        titleKk: 'Ақылы мақала',
+        summaryRu: 'Только для Premium',
+        summaryKk: 'Тек Premium үшін',
+        payload: {
+          markdownRu: '# Секретный текст за подпиской',
+          markdownKk: '# Жазылым артындағы мәтін',
+        },
+        durationSec: 300,
+        publishedAt: new Date(),
+      },
+    });
+    premiumArticleId = paidArticle.id;
   }
 
   async function subscribe(token: string) {
@@ -172,6 +195,69 @@ describe('Контент: пейволл Premium (E13, e2e)', () => {
     // Ключ файла наружу не уходит вообще — иначе пейволл обходится
     // знанием имени объекта.
     expect(JSON.stringify(res.body)).not.toContain('sleep-1.mp3');
+  });
+
+  it('без подписки тело платной СТАТЬИ не отдаётся: иначе пейволла нет', async () => {
+    const cli = await clientUser(app, PH_C1, () => lastCode);
+
+    const card = await get(
+      cli.accessToken,
+      `/v1/content/${premiumArticleId}`,
+    ).expect(200);
+
+    // Карточка видна — человек должен понимать, что за пейволлом.
+    expect(card.body.locked).toBe(true);
+    expect(card.body.title).toBe('Платная статья');
+    // А текста нет. У медитации пейволл стоит на подписанной ссылке, у
+    // статьи её нет вовсе: содержимое приходит прямо в карточке, и без
+    // этой проверки платную статью читает кто угодно.
+    expect(card.body.body).toBeUndefined();
+    expect(JSON.stringify(card.body)).not.toContain('Секретный текст');
+  });
+
+  it('с подпиской тело платной статьи отдаётся', async () => {
+    const cli = await clientUser(app, PH_C1, () => lastCode);
+    await subscribe(cli.accessToken);
+
+    const card = await get(
+      cli.accessToken,
+      `/v1/content/${premiumArticleId}`,
+    ).expect(200);
+
+    expect(card.body.locked).toBe(false);
+    expect(card.body.body.markdown).toContain('Секретный текст');
+  });
+
+  it('аноним видит список материалов: страницы существуют ради поиска', async () => {
+    const res = await request(app.getHttpServer())
+      .get('/v1/content?take=50')
+      .expect(200);
+
+    const slugs = (res.body as { slug: string }[]).map((i) => i.slug);
+    expect(slugs).toContain(`${SLUG_PREFIX}free`);
+    expect(slugs).toContain(`${SLUG_PREFIX}meditation`);
+  });
+
+  it('аноним видит карточку платного материала, но не его текст', async () => {
+    const res = await request(app.getHttpServer())
+      .get(`/v1/content/${premiumArticleId}`)
+      .expect(200);
+
+    // Карточка нужна поисковику и человеку: он должен понимать, что
+    // именно за пейволлом. Текст — нет.
+    expect(res.body.title).toBe('Платная статья');
+    expect(res.body.locked).toBe(true);
+    expect(res.body.body).toBeUndefined();
+    expect(JSON.stringify(res.body)).not.toContain('Секретный текст');
+  });
+
+  it('аноним получает материалы на запрошенном языке', async () => {
+    const res = await request(app.getHttpServer())
+      .get(`/v1/content/${premiumArticleId}?locale=kk`)
+      .expect(200);
+
+    // У анонима нет профиля с локалью — язык приходит из адреса страницы.
+    expect(res.body.title).toBe('Ақылы мақала');
   });
 
   it('бесплатный материал доступен без подписки', async () => {

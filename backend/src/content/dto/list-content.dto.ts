@@ -3,6 +3,7 @@ import { ContentKind } from '@prisma/client';
 import { Type } from 'class-transformer';
 import {
   IsEnum,
+  IsIn,
   IsInt,
   IsOptional,
   IsString,
@@ -12,6 +13,14 @@ import {
 } from 'class-validator';
 
 export class ListContentDto {
+  @ApiPropertyOptional({
+    enum: ['ru', 'kk'],
+    description: 'Язык для анонимного читателя: у него нет профиля с локалью',
+  })
+  @IsOptional()
+  @IsIn(['ru', 'kk'])
+  locale?: string;
+
   @ApiPropertyOptional({ enum: ContentKind })
   @IsOptional()
   @IsEnum(ContentKind)

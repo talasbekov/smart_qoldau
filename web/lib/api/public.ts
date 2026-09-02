@@ -8,6 +8,8 @@ export type Topic = components['schemas']['TopicDto'];
 export type ExpertReviews = components['schemas']['ExpertReviewsDto'];
 export type ReviewItem = components['schemas']['ReviewItemDto'];
 export type PremiumPlans = components['schemas']['PremiumPlansDto'];
+export type ContentItem = components['schemas']['ContentItemDto'];
+export type ContentKind = 'MEDITATION' | 'MUSIC' | 'ARTICLE' | 'BREATHING';
 
 export type ListExpertsParams = {
   topic?: string;
@@ -76,6 +78,41 @@ export async function getPremiumPlans(): Promise<PremiumPlans | null> {
     });
     if (!response.ok) return null;
     return (await response.json()) as PremiumPlans;
+  } catch {
+    return null;
+  }
+}
+
+// Материалы одним разделом с фильтрами — решение владельца от
+// 2026-09-02 (расхождение №11 закрыто в пользу текущей реализации).
+export async function listContent(params: {
+  kind?: string;
+  category?: string;
+  locale?: string;
+  take?: number;
+  skip?: number;
+}): Promise<ContentItem[]> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/content${toQuery(params)}`, {
+      next: { revalidate: 300, tags: ['content'] },
+    });
+    if (!response.ok) return [];
+    return (await response.json()) as ContentItem[];
+  } catch {
+    return [];
+  }
+}
+
+export async function getContentItem(
+  id: string,
+  locale: string,
+): Promise<ContentItem | null> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/content/${id}?locale=${locale}`, {
+      next: { revalidate: 300, tags: ['content', `content:${id}`] },
+    });
+    if (!response.ok) return null;
+    return (await response.json()) as ContentItem;
   } catch {
     return null;
   }

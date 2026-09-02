@@ -272,7 +272,27 @@ describe('Контент: списки и карточки (E13, e2e)', () => {
     expect(secondPage.body[0].slug).not.toBe(firstPage.body[0].slug);
   });
 
-  it('без токена -> 401', async () => {
-    await request(app.getHttpServer()).get('/v1/content').expect(401);
+  it('список и карточка открыты без токена — они существуют ради поиска', async () => {
+    await request(app.getHttpServer()).get('/v1/content').expect(200);
+    await request(app.getHttpServer())
+      .get(`/v1/content/${articleId}`)
+      .expect(200);
+  });
+
+  it('личные маршруты по-прежнему требуют токен', async () => {
+    // Прогресс, голос, стрик и ссылка на медиа — про конкретного
+    // человека. Открытие списка анониму их не касается.
+    await request(app.getHttpServer()).get('/v1/content/streak').expect(401);
+    await request(app.getHttpServer())
+      .get(`/v1/content/${articleId}/media`)
+      .expect(401);
+    await request(app.getHttpServer())
+      .post(`/v1/content/${articleId}/progress`)
+      .send({ positionPermille: 100 })
+      .expect(401);
+    await request(app.getHttpServer())
+      .post(`/v1/content/${articleId}/vote`)
+      .send({ useful: true })
+      .expect(401);
   });
 });

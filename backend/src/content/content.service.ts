@@ -63,15 +63,16 @@ export class ContentService {
   ) {}
 
   async list(
-    userId: string,
+    userId: string | null,
     filter: {
       kind?: ContentKind;
       category?: string;
       take?: number;
       skip?: number;
+      locale?: string;
     },
   ): Promise<ContentItemDto[]> {
-    const locale = await this.localeOfUser(userId);
+    const locale = await this.localeOfUser(userId, filter.locale);
     const where: Prisma.ContentItemWhereInput = {
       publishedAt: { not: null },
       ...(filter.kind ? { kind: filter.kind } : {}),
@@ -90,12 +91,14 @@ export class ContentService {
         take: Math.min(filter.take ?? DEFAULT_TAKE, MAX_TAKE),
         skip: filter.skip ?? 0,
       }),
-      this.premium.isPremiumAt(userId, this.clock.now()),
+      userId ? this.premium.isPremiumAt(userId, this.clock.now()) : false,
     ]);
 
-    const progress = await this.prisma.contentProgress.findMany({
-      where: { userId, itemId: { in: items.map((i) => i.id) } },
-    });
+    const progress = userId
+      ? await this.prisma.contentProgress.findMany({
+          where: { userId, itemId: { in: items.map((i) => i.id) } },
+        })
+      : [];
     const positionById = new Map(
       progress.map((p) => [p.itemId, p.positionPermille]),
     );
@@ -109,13 +112,22 @@ export class ContentService {
     );
   }
 
-  async byId(userId: string, id: string): Promise<ContentItemDto> {
+  async byId(
+    userId: string | null,
+    id: string,
+    fallbackLocale?: string,
+  ): Promise<ContentItemDto> {
     const item = await this.findPublished(id);
-    const locale = await this.localeOfUser(userId);
-    const premium = await this.premium.isPremiumAt(userId, this.clock.now());
-    const progress = await this.prisma.contentProgress.findUnique({
-      where: { userId_itemId: { userId, itemId: id } },
-    });
+    const locale = await this.localeOfUser(userId, fallbackLocale);
+    const premium = userId
+      ? await this.premium.isPremiumAt(userId, this.clock.now())
+      : false;
+    const locked = item.access === ContentAccess.PREMIUM && !premium;
+    const progress = userId
+      ? await this.prisma.contentProgress.findUnique({
+          where: { userId_itemId: { userId, itemId: id } },
+        })
+      : null;
 
     return {
       ...this.card(item, locale, premium),
@@ -123,7 +135,11 @@ export class ContentService {
       positionPermille: progress?.positionPermille ?? 0,
       usefulYes: item.usefulYes,
       usefulNo: item.usefulNo,
-      body: this.body(item, locale),
+      // Тело — ТОЛЬКО при наличии доступа. У медитации и музыки пейволл
+      // стоит на подписанной ссылке, а у статьи и дыхательной практики
+      // ссылки нет вовсе: всё содержимое приходит здесь. Без этой
+      // проверки платную статью читал любой вошедший.
+      body: locked ? undefined : this.body(item, locale),
     };
   }
 
@@ -233,7 +249,9 @@ export class ContentService {
 
   private async assertAccess(userId: string, item: ContentItem): Promise<void> {
     if (item.access === ContentAccess.FREE) return;
-    const premium = await this.premium.isPremiumAt(userId, this.clock.now());
+    const premium = userId
+      ? await this.premium.isPremiumAt(userId, this.clock.now())
+      : false;
     if (!premium) {
       apiError(
         'PREMIUM_REQUIRED',
@@ -263,7 +281,15 @@ export class ContentService {
     return this.storage.contentUrl(key, COVER_TTL_SEC);
   }
 
-  private async localeOfUser(userId: string): Promise<ContentLocale> {
+  // Аноним профиля не имеет: язык приходит из адреса страницы, а не из
+  // базы. Публичные страницы материалов существуют ради поиска, и там
+  // читателя ещё нет.
+  private async localeOfUser(
+    userId: string | null,
+    fallback?: string,
+  ): Promise<ContentLocale> {
+    if (!userId) return localeOf(fallback ?? 'ru');
+
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
       select: { locale: true },

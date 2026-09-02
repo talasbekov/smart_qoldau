@@ -4098,6 +4098,19 @@
         "operationId": "ContentController_list",
         "parameters": [
           {
+            "name": "locale",
+            "required": false,
+            "in": "query",
+            "description": "Язык для анонимного читателя: у него нет профиля с локалью",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "ru",
+                "kk"
+              ]
+            }
+          },
+          {
             "name": "kind",
             "required": false,
             "in": "query",
@@ -4289,6 +4302,14 @@
             "name": "id",
             "required": true,
             "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "locale",
+            "required": true,
+            "in": "query",
             "schema": {
               "type": "string"
             }
