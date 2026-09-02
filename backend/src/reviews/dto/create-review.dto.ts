@@ -34,6 +34,7 @@ export class CreateReviewDto {
   // это был бы второй канал публичного текста в обход модерации. Сама
   // принадлежность набору проверяется в сервисе: она зависит от rating.
   @ApiPropertyOptional({
+    type: String,
     isArray: true,
     maxItems: 3,
     example: ['attentive', 'helped_figure_out'],

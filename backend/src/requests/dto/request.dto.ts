@@ -27,6 +27,7 @@ export class RequestDto {
   consultationId?: string;
 
   @ApiPropertyOptional({
+    type: String,
     isArray: true,
     example: ['150', '103', '112'],
     description: 'Горячие линии при статусе CALLBACK_REQUESTED',

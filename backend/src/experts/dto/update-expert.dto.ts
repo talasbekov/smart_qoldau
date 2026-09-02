@@ -57,7 +57,7 @@ export class UpdateExpertDto {
   @IsIn(SESSION_FORMATS, { each: true })
   formats?: string[];
 
-  @ApiPropertyOptional({ isArray: true, example: ['self-esteem'] })
+  @ApiPropertyOptional({ type: String, isArray: true, example: ['self-esteem'] })
   @IsOptional()
   @ArrayNotEmpty()
   topicSlugs?: string[];

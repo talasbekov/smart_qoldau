@@ -109,31 +109,15 @@ services:
     depends_on: [backend]
     networks: [edge]
 
-  # Веб-кабинет эксперта (E14): тот же код, что мобильное приложение,
-  # собранный под браузер. Раздаётся статикой, ноды в рантайме нет.
-  expert-web:
-    image: ${EXPERT_WEB_IMAGE:-smartqoldau-expert-web:latest}
-    build:
-      context: ..
-      dockerfile: app_expert/Dockerfile
-    restart: unless-stopped
-    depends_on: [backend]
-    networks: [edge]
 
-  # Веб-версия клиента (E15).
-  client-web:
-    image: ${CLIENT_WEB_IMAGE:-smartqoldau-client-web:latest}
-    build:
-      context: ..
-      dockerfile: app_client/Dockerfile
-    restart: unless-stopped
-    depends_on: [backend]
-    networks: [edge]
 
-  landing:
-    image: ${LANDING_IMAGE:-smartqoldau-landing:latest}
+  web:
+    image: ${WEB_IMAGE:-smartqoldau-web:latest}
     build:
-      context: ../landing
+      context: ../web
+    environment:
+      API_BASE_URL: http://backend:3000/v1
+      SITE_URL: ${SITE_URL:-https://smartqoldau.kz}
     restart: unless-stopped
     networks: [edge]
 

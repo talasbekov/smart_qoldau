@@ -12,7 +12,7 @@ export class ReviewItemDto {
   @ApiPropertyOptional({ nullable: true })
   expertReply: string | null;
 
-  @ApiProperty({ isArray: true, example: ['attentive'] })
+  @ApiProperty({ type: String, isArray: true, example: ['attentive'] })
   tags: string[];
 
   @ApiProperty()

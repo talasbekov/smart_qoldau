@@ -48,6 +48,7 @@ export class CreateExpertDto {
   formats: string[];
 
   @ApiProperty({
+    type: String,
     isArray: true,
     example: ['anxiety-stress', 'burnout'],
     description: 'Slug-и тем из справочника /v1/topics',
