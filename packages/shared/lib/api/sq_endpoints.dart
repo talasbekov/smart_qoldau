@@ -126,6 +126,7 @@ abstract final class SqEndpoints {
   // --- аккаунт ---
   /// `DELETE` — удаление своего аккаунта и данных (ТЗ §5.1).
   static const me = '/me';
+  static const meExpertVisibility = '/me/expert-visibility';
 
   // --- обращения в поддержку ---
   static const tickets = '/tickets';

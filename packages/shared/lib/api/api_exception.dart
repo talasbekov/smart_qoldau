@@ -20,6 +20,10 @@ abstract final class ApiErrorCode {
   static const smsRateLimited = 'SMS_RATE_LIMITED';
   static const phoneAlreadyRegistered = 'PHONE_ALREADY_REGISTERED';
   static const activeRequestExists = 'ACTIVE_REQUEST_EXISTS';
+  /// Р-27: заявка не создаётся, пока человек не согласился, что психолог
+  /// увидит его имя и историю встреч.
+  static const expertVisibilityConsentRequired =
+      'EXPERT_VISIBILITY_CONSENT_REQUIRED';
   static const expertUnavailable = 'EXPERT_UNAVAILABLE';
   static const expertNotFound = 'EXPERT_NOT_FOUND';
   static const expertBlocked = 'EXPERT_BLOCKED';

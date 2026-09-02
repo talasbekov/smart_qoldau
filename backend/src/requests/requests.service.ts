@@ -21,6 +21,7 @@ import {
 import { NotificationsService } from '../notifications/notifications.service';
 import { PremiumService } from '../premium/premium.service';
 import { apiError } from '../common/filters/app-exception.filter';
+import { needsExpertVisibilityConsent } from '../account/consent';
 import { CreateRequestDto } from './dto/create-request.dto';
 import { RequestDto } from './dto/request.dto';
 import { OfferDto } from './dto/offer.dto';
@@ -67,6 +68,22 @@ export class RequestsService {
     clientUserId: string,
     dto: CreateRequestDto,
   ): Promise<RequestDto> {
+    // Р-27: психолог увидит имя и историю встреч, поэтому человек должен
+    // об этом узнать и согласиться — ОДИН раз, перед первой заявкой.
+    // Проверка стоит здесь, а не в интерфейсе: обойти экран согласия,
+    // дёрнув API напрямую, не должно быть можно.
+    const client = await this.prisma.user.findUnique({
+      where: { id: clientUserId },
+      select: { expertVisibilityAcceptedAt: true },
+    });
+    if (client && needsExpertVisibilityConsent(client)) {
+      apiError(
+        'EXPERT_VISIBILITY_CONSENT_REQUIRED',
+        'Нужно согласие: психолог увидит ваше имя и историю встреч',
+        409,
+      );
+    }
+
     // Abuse-гейт (Р-01/Р-17) ПЕРЕД созданием: автоподбор закрыт после 3+
     // отмен/no-show за 30 дней; направленная заявка (expertId задан —
     // ручной выбор из каталога) проходит всегда.

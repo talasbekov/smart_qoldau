@@ -25,6 +25,10 @@ class RequestsRepository {
     expertId: expertId,
   );
 
+  /// Р-27: согласиться, что психолог видит имя и историю встреч.
+  Future<void> acceptExpertVisibility(String displayName) =>
+      _api.acceptExpertVisibility(displayName);
+
   /// `GET /v1/requests/{id}` — текущее состояние своей заявки.
   Future<MatchRequest> get(String id) => _api.requestById(id);
 

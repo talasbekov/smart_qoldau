@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 
 import 'auth_interceptor.dart';
+import 'sq_api_account.dart';
 import 'sq_api_auth.dart';
 import 'sq_api_base.dart';
 import 'sq_api_consultations.dart';
@@ -31,6 +32,7 @@ import 'token_refresher.dart';
 /// подключение `AuthInterceptor`.
 class SqApi extends SqApiBase
     with
+        SqApiAccount,
         SqApiAuth,
         SqApiExperts,
         SqApiExpertProfile,

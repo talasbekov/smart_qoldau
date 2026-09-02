@@ -3,14 +3,14 @@
 import { usePathname } from 'next/navigation';
 import { Link } from '@/lib/i18n/navigation';
 
-// Разделы «Клиенты» и «Чаты» из прототипа сюда не входят: первый
-// упирается в PII-инвариант (расхождение №10, ждёт решения владельца),
-// второй не нужен отдельным пунктом — переписка живёт внутри
-// консультации.
+// «Клиенты» появились решением Р-27 (расхождение №10 закрыто): психолог
+// видит имя и историю встреч тех, кто дал согласие. «Чаты» отдельным
+// пунктом по-прежнему нет — переписка живёт внутри консультации.
 const SECTIONS = [
   { href: '/expert', label: 'Главная' },
   { href: '/expert/offers', label: 'Заявки' },
   { href: '/expert/consultations', label: 'Консультации' },
+  { href: '/expert/clients', label: 'Клиенты' },
   { href: '/expert/schedule', label: 'Расписание' },
   { href: '/expert/earnings', label: 'Доход' },
   { href: '/expert/reviews', label: 'Рейтинг' },
