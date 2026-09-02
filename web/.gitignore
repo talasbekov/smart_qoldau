@@ -5,3 +5,7 @@ next-env.d.ts
 # Playwright
 test-results/
 playwright-report/
+
+# Артефакт инкрементальной сборки TypeScript: меняется на каждом прогоне
+# tsc и в истории только шумит.
+tsconfig.tsbuildinfo
