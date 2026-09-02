@@ -4,6 +4,15 @@ import 'sq_endpoints.dart';
 
 /// Подписка Premium (E12).
 mixin SqApiPremium on SqApiBase {
+  /// `GET /premium/plans` — тарифы и цены. Публичный маршрут: витрину
+  /// смотрят и до входа.
+  Future<PremiumPlans> premiumPlans() => guard(() async {
+    final response = await dio.get<Map<String, dynamic>>(
+      SqEndpoints.premiumPlans,
+    );
+    return PremiumPlans.fromJson(response.data!);
+  });
+
   /// `GET /premium` — статус подписки текущего пользователя.
   Future<PremiumStatus> premiumStatus() => guard(() async {
     final response = await dio.get<Map<String, dynamic>>(SqEndpoints.premium);

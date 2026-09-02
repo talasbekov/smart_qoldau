@@ -113,6 +113,7 @@ abstract final class SqEndpoints {
 
   // --- Premium (E12) ---
   static const premium = '/premium';
+  static const premiumPlans = '/premium/plans';
   static const premiumSubscribe = '/premium/subscribe';
   static const premiumCancel = '/premium/cancel';
   static String paymentMethodById(String id) => '/payment-methods/$id';

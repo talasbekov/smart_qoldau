@@ -11,13 +11,18 @@ import '../../../core/route_paths.dart';
 import '../../../l10n/app_localizations.dart';
 import '../state/premium_controller.dart';
 
-/// Цены Р-08 в тиынах. Дублируют бэкенд намеренно: экран обязан показать
-/// сумму ДО запроса, а отдельного справочника тарифов в API нет. Значение
-/// одно на всех поверхностях — 4 990 ₸ из старого веб-прототипа устарело.
-const _priceByPlan = <PremiumPlan, int>{
+/// ЗАПАСНЫЕ цены в тиынах. Настоящие приходят из `GET /premium/plans` —
+/// копия в приложении означала бы, что смена цены требует релиза в
+/// маркетах. Эти значения показываются, только если справочник тарифов
+/// не ответил: пустое место вместо суммы хуже слегка устаревшей суммы.
+const _fallbackPriceByPlan = <PremiumPlan, int>{
   PremiumPlan.month: 499000,
   PremiumPlan.year: 3990000,
 };
+
+/// Цена тарифа: из API, если он ответил, иначе запасная.
+int _priceTiyn(PremiumPlans? plans, PremiumPlan plan) =>
+    plans?.priceTiyn(plan) ?? _fallbackPriceByPlan[plan]!;
 
 class PremiumScreen extends ConsumerStatefulWidget {
   const PremiumScreen({super.key});
@@ -154,6 +159,7 @@ class _PremiumScreenState extends ConsumerState<PremiumScreen> {
         PremiumPlan.month,
         l10n.premiumPlanMonth,
         const Key('sq-premium-plan-month'),
+        plans: data.plans,
       ),
       const SizedBox(height: SqSpacing.m),
       _planTile(
@@ -162,6 +168,7 @@ class _PremiumScreenState extends ConsumerState<PremiumScreen> {
         l10n.premiumPlanYear,
         const Key('sq-premium-plan-year'),
         hint: l10n.premiumPlanYearHint,
+        plans: data.plans,
       ),
       const SizedBox(height: SqSpacing.l),
       if (data.hasCard)
@@ -195,6 +202,7 @@ class _PremiumScreenState extends ConsumerState<PremiumScreen> {
     String title,
     Key key, {
     String? hint,
+    PremiumPlans? plans,
   }) {
     final selected = _selected == plan;
     final period = plan == PremiumPlan.month
@@ -223,7 +231,7 @@ class _PremiumScreenState extends ConsumerState<PremiumScreen> {
                     Text(title, style: SqTypography.title),
                     Text(
                       l10n.premiumPlanPrice(
-                        formatTenge(_priceByPlan[plan]!),
+                        formatTenge(_priceTiyn(plans, plan)),
                         period.toLowerCase(),
                       ),
                       style: SqTypography.body,
