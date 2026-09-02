@@ -44,6 +44,39 @@ void main() {
   setUp(() {
     api = MockSqApi();
     when(() => api.paymentMethods()).thenAnswer((_) async => [_card()]);
+    // По умолчанию справочник тарифов недоступен: проверяем, что экран
+    // это переживает, а отдельный тест ниже — что цена приходит из API.
+    when(() => api.premiumPlans()).thenThrow(Exception('нет связи'));
+  });
+
+  testWidgets('цена берётся из API, а не из зашитой копии', (tester) async {
+    when(() => api.premiumStatus()).thenAnswer((_) async => PremiumStatus.none);
+    when(() => api.premiumPlans()).thenAnswer(
+      (_) async => const PremiumPlans(
+        prices: {PremiumPlan.month: 777000, PremiumPlan.year: 5000000},
+        discountPercent: 10,
+      ),
+    );
+
+    await tester.pumpWidget(_wrap(api));
+    await tester.pumpAndSettle();
+
+    // Смена цены на бэкенде должна доезжать до людей без релиза в
+    // маркетах — ради этого справочник и заведён.
+    expect(find.textContaining('7\u00A0770'), findsOneWidget);
+    expect(find.textContaining('4\u00A0990'), findsNothing);
+  });
+
+  testWidgets('если справочник тарифов не ответил, цена всё равно видна', (
+    tester,
+  ) async {
+    when(() => api.premiumStatus()).thenAnswer((_) async => PremiumStatus.none);
+
+    await tester.pumpWidget(_wrap(api));
+    await tester.pumpAndSettle();
+
+    // Пустое место вместо суммы хуже слегка устаревшей суммы.
+    expect(find.textContaining('4\u00A0990'), findsOneWidget);
   });
 
   testWidgets('показывает оба тарифа и оформляет выбранный', (

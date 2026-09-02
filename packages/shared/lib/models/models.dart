@@ -32,3 +32,4 @@ export 'schedule_exception.dart';
 export 'ticket.dart';
 export 'topic.dart';
 export 'client_profile.dart';
+export 'premium_plans.dart';

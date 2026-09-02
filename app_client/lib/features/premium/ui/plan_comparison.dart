@@ -31,10 +31,17 @@ const _premiumFeatures = <String>[
   'Скидка на консультации',
 ];
 
+/// Запасная цена месяца в тиынах. Настоящая приходит из API.
+const _fallbackMonthPriceTiyn = 499000;
+
 class PlanComparison extends StatelessWidget {
-  const PlanComparison({super.key, this.onSubscribe});
+  const PlanComparison({super.key, this.onSubscribe, this.monthPriceTiyn});
 
   final VoidCallback? onSubscribe;
+
+  /// Цена месяца из `GET /premium/plans`. Не задана — берётся запасная:
+  /// пустое место вместо суммы хуже слегка устаревшей суммы.
+  final int? monthPriceTiyn;
 
   @override
   Widget build(BuildContext context) {
@@ -51,10 +58,11 @@ class PlanComparison extends StatelessWidget {
     final premium = _PlanCard(
       key: const Key('sq-plan-premium'),
       title: l10n.premiumTitle,
-      // 4 990 ₸ — решение владельца от 2026-09-02. Формат суммы общий
-      // для всего продукта. ДОЛГ: цену надо брать из GET /v1/premium/plans,
-      // а не хранить здесь копию — см. задачу в Plane.
-      price: '${formatTenge(499000)} / ${l10n.premiumPlanMonth.toLowerCase()}',
+      // Цена приходит из API; 4 990 ₸ — запасное значение на случай, если
+      // справочник тарифов не ответил.
+      price:
+          '${formatTenge(monthPriceTiyn ?? _fallbackMonthPriceTiyn)} / '
+          '${l10n.premiumPlanMonth.toLowerCase()}',
       features: _premiumFeatures,
       highlighted: true,
       action: onSubscribe,

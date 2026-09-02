@@ -10,6 +10,10 @@ class PremiumRepository {
   final SqApi _api;
 
   /// `GET /v1/premium` — статус подписки.
+  /// Тарифы и цены из API. Копия цен в приложении означала бы, что смена
+  /// цены требует релиза в маркетах.
+  Future<PremiumPlans> plans() => _api.premiumPlans();
+
   Future<PremiumStatus> status() => _api.premiumStatus();
 
   /// `POST /v1/premium/subscribe` — оформить подписку картой.

@@ -12,10 +12,18 @@ import '../data/premium_repository.dart';
 /// оформить подписку нечем, если карт нет, и предлагать тарифы в такой
 /// ситуации значит вести человека в тупик.
 class PremiumState {
-  const PremiumState({required this.status, required this.cards});
+  const PremiumState({
+    required this.status,
+    required this.cards,
+    required this.plans,
+  });
 
   final PremiumStatus status;
   final List<PaymentMethod> cards;
+
+  /// Цены из API. Пусто — если бэкенд не ответил; экран берёт запасные
+  /// значения, чтобы не показывать пустое место вместо суммы.
+  final PremiumPlans? plans;
 
   bool get hasCard => cards.isNotEmpty;
 }
@@ -26,13 +34,22 @@ class PremiumController extends AutoDisposeAsyncNotifier<PremiumState> {
 
   Future<PremiumState> _load() async {
     final repository = ref.read(premiumRepositoryProvider);
+    // Цены и статус — независимые запросы: падение справочника тарифов не
+    // должно закрывать человеку доступ к своей подписке.
+    PremiumPlans? plans;
+    try {
+      plans = await repository.plans();
+    } catch (_) {
+      // Справочник тарифов не ответил — экран покажет запасные значения.
+      plans = null;
+    }
     final status = await repository.status();
     // Карты нужны только тем, кто ещё не подписан: активной подписке
     // выбирать нечего, а лишний запрос — лишняя точка отказа.
     final cards = status.active
         ? const <PaymentMethod>[]
         : await repository.cards();
-    return PremiumState(status: status, cards: cards);
+    return PremiumState(status: status, cards: cards, plans: plans);
   }
 
   Future<void> reload() async {
@@ -49,13 +66,23 @@ class PremiumController extends AutoDisposeAsyncNotifier<PremiumState> {
     final status = await ref
         .read(premiumRepositoryProvider)
         .subscribe(plan: plan, paymentMethodId: card.id);
-    state = AsyncData(PremiumState(status: status, cards: const []));
+    state = AsyncData(
+      PremiumState(
+        status: status,
+        cards: const [],
+        plans: current?.plans,
+      ),
+    );
   }
 
   Future<void> cancel() async {
     final status = await ref.read(premiumRepositoryProvider).cancel();
     state = AsyncData(
-      PremiumState(status: status, cards: state.valueOrNull?.cards ?? const []),
+      PremiumState(
+        status: status,
+        cards: state.valueOrNull?.cards ?? const [],
+        plans: state.valueOrNull?.plans,
+      ),
     );
   }
 }
