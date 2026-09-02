@@ -1,5 +1,4 @@
 // Р-27: профиль клиента и согласие на видимость психологу.
-import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http_mock_adapter/http_mock_adapter.dart';
 import 'package:shared/shared.dart';
