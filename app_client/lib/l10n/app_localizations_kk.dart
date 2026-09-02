@@ -181,7 +181,7 @@ class AppLocalizationsKk extends AppLocalizations {
   String get actionLoginByPhone => 'Нөмір арқылы кіру';
 
   @override
-  String get actionContinueAnonymously => 'Анонимді түрде жалғастыру';
+  String get actionContinueAnonymously => 'Нөмірсіз жалғастыру';
 
   @override
   String get welcomeTermsLink => 'Пайдаланушы келісімі';
@@ -197,7 +197,7 @@ class AppLocalizationsKk extends AppLocalizations {
       'Психологпен чатта, аудио немесе бейне арқылы сөйлесіңіз — өзіңізге ыңғайлы форматты таңдаңыз';
 
   @override
-  String get slidesTitle2 => 'Құпия және анонимді';
+  String get slidesTitle2 => 'Құпия';
 
   @override
   String get slidesDescription2 =>

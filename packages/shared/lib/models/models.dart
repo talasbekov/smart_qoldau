@@ -31,3 +31,4 @@ export 'schedule_day.dart';
 export 'schedule_exception.dart';
 export 'ticket.dart';
 export 'topic.dart';
+export 'client_profile.dart';

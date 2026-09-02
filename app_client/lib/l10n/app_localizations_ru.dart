@@ -182,7 +182,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get actionLoginByPhone => 'Войти по номеру';
 
   @override
-  String get actionContinueAnonymously => 'Продолжить анонимно';
+  String get actionContinueAnonymously => 'Продолжить без номера';
 
   @override
   String get welcomeTermsLink => 'Пользовательское соглашение';
@@ -198,7 +198,7 @@ class AppLocalizationsRu extends AppLocalizations {
       'Общайтесь с психологом в чате, по аудио или видео — выбирайте удобный формат';
 
   @override
-  String get slidesTitle2 => 'Конфиденциально и анонимно';
+  String get slidesTitle2 => 'Конфиденциально';
 
   @override
   String get slidesDescription2 =>

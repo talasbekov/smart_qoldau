@@ -12,6 +12,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared/shared.dart';
 
+import '../../consent/ui/expert_visibility_sheet.dart';
+
 import '../../../core/error_text.dart';
 import '../../../core/route_paths.dart';
 import '../../../l10n/app_localizations.dart';
@@ -114,6 +116,28 @@ class _ExpertScreenState extends ConsumerState<ExpertScreen> {
       );
     } on ApiException catch (error) {
       if (!mounted) return;
+      // Р-27: сервер отказал, потому что человек ещё не согласился, что
+      // психолог увидит его имя и историю встреч. Показываем объяснение
+      // и повторяем действие — реакция на ответ, а не проверка на каждом
+      // входе: заявку заводят из нескольких мест, и пропущенный путь
+      // означал бы непонятную ошибку вместо экрана.
+      if (error.code == ApiErrorCode.expertVisibilityConsentRequired) {
+        setState(() => _booking = false);
+        final accepted = await showExpertVisibilityConsent(
+          context: context,
+          onAccept: (displayName) => ref
+              .read(requestsRepositoryProvider)
+              .acceptExpertVisibility(displayName),
+        );
+        if (accepted && mounted) {
+          await _createRequest(
+            topicSlug: topicSlug,
+            format: format,
+            expertId: expertId,
+          );
+        }
+        return;
+      }
       if (error.code == ApiErrorCode.expertUnavailable && expertId != null) {
         setState(() => _booking = false);
         await _offerAutoMatch(topicSlug: topicSlug, format: format);
