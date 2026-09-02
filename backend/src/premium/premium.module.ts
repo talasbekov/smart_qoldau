@@ -5,6 +5,7 @@ import { ClockModule } from '../common/clock/clock.module';
 import { NotificationsModule } from '../notifications/notifications.module';
 import { PaymentsModule } from '../payments/payments.module';
 import { PremiumController } from './premium.controller';
+import { PremiumPublicController } from './premium-public.controller';
 import { PremiumService } from './premium.service';
 import { PremiumRenewalService } from './premium-renewal.service';
 
@@ -19,7 +20,7 @@ import { PremiumRenewalService } from './premium-renewal.service';
     NotificationsModule,
     forwardRef(() => PaymentsModule),
   ],
-  controllers: [PremiumController],
+  controllers: [PremiumPublicController, PremiumController],
   providers: [PremiumService, PremiumRenewalService],
   exports: [PremiumService, PremiumRenewalService],
 })

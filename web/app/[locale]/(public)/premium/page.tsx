@@ -1,6 +1,11 @@
 import type { Metadata } from 'next';
 import { getTranslations } from 'next-intl/server';
 import { Link } from '@/lib/i18n/navigation';
+import { getPremiumPlans } from '@/lib/api/public';
+
+function tenge(tiyn: number): string {
+  return `${new Intl.NumberFormat('ru-KZ').format(Math.round(tiyn / 100))} ₸`;
+}
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations('premium');
@@ -9,6 +14,13 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default async function PremiumPage() {
   const t = await getTranslations('premium');
+  const plans = await getPremiumPlans();
+  const priceOf = (plan: 'MONTH' | 'YEAR', fallbackKey: 'priceMonthly' | 'priceYearly') => {
+    const found = plans?.plans.find((p) => p.plan === plan);
+    // Запасной вариант из перевода — только на случай, если бэкенд
+    // недоступен: страница тарифов не должна падать целиком из-за него.
+    return found ? tenge(found.priceTiyn) : t(fallbackKey);
+  };
 
   return (
     <main className="max-w-[900px] mx-auto px-8 py-16 text-center">
@@ -32,11 +44,11 @@ export default async function PremiumPage() {
         <div className="rounded-3xl bg-gradient-to-br from-ink to-primary-dark p-7">
           <div className="font-extrabold text-white mb-1">{t('premiumName')}</div>
           <div className="text-2xl font-extrabold text-white mb-1">
-            {t('priceMonthly')}
+            {priceOf('MONTH', 'priceMonthly')}
             <span className="text-xs font-semibold text-white/60"> {t('pricePeriodMonthly')}</span>
           </div>
           <div className="text-sm font-semibold text-white/70 mb-4">
-            {t('priceYearly')}
+            {priceOf('YEAR', 'priceYearly')}
             <span className="text-xs font-semibold text-white/50"> {t('pricePeriodYearly')}</span>
           </div>
           <div className="flex flex-col gap-2 mb-5">

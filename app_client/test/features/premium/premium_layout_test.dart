@@ -2,8 +2,9 @@
 // на широком экране два тарифа сравниваются колонками «Базовый» и
 // «Premium» со списками возможностей.
 //
-// Цены берутся НЕ из прототипа: там 4 990 ₸/мес — устаревшее значение,
-// расхождение №1, закрытое решением Р-08 (2 990 ₸/мес и 23 900 ₸/год).
+// Цена в прототипе (4 990 ₸/мес) и цена в продукте разошлись — это было
+// расхождение №1. Решением владельца от 2026-09-02 оно закрыто в пользу
+// прототипа: 4 990 ₸/мес и 39 900 ₸/год.
 // Из прототипа здесь только раскладка.
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -51,11 +52,13 @@ void main() {
     expect(premium.dy, greaterThan(basic.dy));
   });
 
-  testWidgets('цена по Р-08, а не из устаревшего прототипа', (tester) async {
+  testWidgets('цена — действующая, а не прежняя', (tester) async {
     await _pumpAt(tester, const Size(1440, 1024));
 
-    expect(find.textContaining('2 990'), findsOneWidget);
-    expect(find.textContaining('4 990'), findsNothing);
+    expect(find.textContaining('4 990'), findsOneWidget);
+    // Прежние 2 990 ₸ не должны остаться нигде: тест ловит
+    // недоправленную копию цены.
+    expect(find.textContaining('2 990'), findsNothing);
   });
 
   testWidgets('возможности перечислены обеим сторонам', (tester) async {

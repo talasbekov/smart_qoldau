@@ -2558,6 +2558,28 @@
         ]
       }
     },
+    "/v1/premium/plans": {
+      "get": {
+        "operationId": "PremiumPublicController_plans",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PremiumPlansDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Тарифы Premium и цены (публично)",
+        "tags": [
+          "premium"
+        ]
+      }
+    },
     "/v1/premium": {
       "get": {
         "operationId": "PremiumController_status",
@@ -6715,6 +6737,50 @@
         },
         "required": [
           "items"
+        ]
+      },
+      "PremiumPlanDto": {
+        "type": "object",
+        "properties": {
+          "plan": {
+            "type": "string",
+            "enum": [
+              "MONTH",
+              "YEAR"
+            ]
+          },
+          "priceTiyn": {
+            "type": "number",
+            "description": "Цена тарифа в тиынах"
+          },
+          "periodDays": {
+            "type": "number",
+            "description": "Длина оплаченного периода в днях"
+          }
+        },
+        "required": [
+          "plan",
+          "priceTiyn",
+          "periodDays"
+        ]
+      },
+      "PremiumPlansDto": {
+        "type": "object",
+        "properties": {
+          "plans": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PremiumPlanDto"
+            }
+          },
+          "discountPercent": {
+            "type": "number",
+            "description": "Скидка Premium на консультацию, в процентах"
+          }
+        },
+        "required": [
+          "plans",
+          "discountPercent"
         ]
       },
       "PremiumStatusDto": {

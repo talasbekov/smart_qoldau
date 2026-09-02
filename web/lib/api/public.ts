@@ -7,6 +7,7 @@ export type ExpertPublic = components['schemas']['ExpertPublicDto'];
 export type Topic = components['schemas']['TopicDto'];
 export type ExpertReviews = components['schemas']['ExpertReviewsDto'];
 export type ReviewItem = components['schemas']['ReviewItemDto'];
+export type PremiumPlans = components['schemas']['PremiumPlansDto'];
 
 export type ListExpertsParams = {
   topic?: string;
@@ -60,6 +61,21 @@ export async function getExpertReviews(id: string, take = 5): Promise<ExpertRevi
     });
     if (!response.ok) return null;
     return (await response.json()) as ExpertReviews;
+  } catch {
+    return null;
+  }
+}
+
+// Цены живут на бэкенде и приходят по API. Держать их в файлах перевода
+// (как было) — значит менять цену правкой перевода и получать разные
+// суммы в разных локалях.
+export async function getPremiumPlans(): Promise<PremiumPlans | null> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/premium/plans`, {
+      next: { revalidate: 3600, tags: ['premium-plans'] },
+    });
+    if (!response.ok) return null;
+    return (await response.json()) as PremiumPlans;
   } catch {
     return null;
   }

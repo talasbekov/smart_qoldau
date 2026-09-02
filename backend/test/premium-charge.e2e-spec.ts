@@ -27,7 +27,7 @@ describe('Платёжный порт: charge для подписки (e2e)', ()
     const first = await provider.charge({
       idempotencyKey: `sub:test:${Date.now()}:1`,
       token,
-      amountTiyn: 299_000,
+      amountTiyn: 499_000,
     });
     expect(first.status).toBe('captured');
     expect(first.providerChargeId).toBeTruthy();
@@ -36,12 +36,12 @@ describe('Платёжный порт: charge для подписки (e2e)', ()
     const again = await provider.charge({
       idempotencyKey: `sub:test:idem`,
       token,
-      amountTiyn: 299_000,
+      amountTiyn: 499_000,
     });
     const third = await provider.charge({
       idempotencyKey: `sub:test:idem`,
       token,
-      amountTiyn: 299_000,
+      amountTiyn: 499_000,
     });
     expect(third.providerChargeId).toBe(again.providerChargeId);
   });
@@ -56,7 +56,7 @@ describe('Платёжный порт: charge для подписки (e2e)', ()
     const result = await provider.charge({
       idempotencyKey: `sub:test:${Date.now()}:2`,
       token,
-      amountTiyn: 299_000,
+      amountTiyn: 499_000,
     });
     expect(result.status).toBe('declined');
     expect(result.declineReason).toBeTruthy();

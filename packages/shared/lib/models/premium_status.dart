@@ -3,7 +3,7 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 part 'premium_status.freezed.dart';
 part 'premium_status.g.dart';
 
-/// Тарифы Premium (Р-08): 2 990 ₸ в месяц или 23 900 ₸ в год. Состав у обоих
+/// Тарифы Premium (Р-08): 4 990 ₸ в месяц или 39 900 ₸ в год. Состав у обоих
 /// одинаковый, годовой отличается только ценой и длиной периода.
 enum PremiumPlan {
   @JsonValue('MONTH')
