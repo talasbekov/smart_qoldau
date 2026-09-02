@@ -118,7 +118,9 @@ export default function ExpertProfile({
           >
             Записаться на консультацию
           </Link>
-          <p className="mt-3 text-center text-xs text-muted">Можно обратиться анонимно</p>
+          <p className="mt-3 text-center text-xs text-muted">
+            Конфиденциально: знает только ваш психолог
+          </p>
         </aside>
       </div>
     </>

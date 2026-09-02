@@ -37,6 +37,46 @@ const OPEN_PAYMENT_STATUSES: PaymentStatus[] = [
  */
 @Injectable()
 export class AccountService {
+  // Р-27: согласие принимается ОДИН раз, вместе с именем — двумя шагами
+  // в этом месте человек с большей вероятностью передумает.
+  //
+  // Повторный вызов НЕ переписывает время: согласие датируется моментом,
+  // когда его дали впервые, иначе граница «до/после» поедет и прошлые
+  // консультации задним числом окажутся раскрытыми.
+  async acceptExpertVisibility(
+    userId: string,
+    displayName: string,
+  ): Promise<{ displayName: string; expertVisibilityAcceptedAt: Date }> {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user || user.deletedAt) {
+      apiError('NOT_FOUND', 'Аккаунт не найден', 404);
+    }
+
+    const updated = await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        displayName: displayName.trim(),
+        expertVisibilityAcceptedAt:
+          user.expertVisibilityAcceptedAt ?? this.clock.now(),
+      },
+    });
+
+    return {
+      displayName: updated.displayName!,
+      expertVisibilityAcceptedAt: updated.expertVisibilityAcceptedAt!,
+    };
+  }
+
+  async profile(userId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { displayName: true, expertVisibilityAcceptedAt: true },
+    });
+    if (!user) apiError('NOT_FOUND', 'Аккаунт не найден', 404);
+
+    return user;
+  }
+
   constructor(
     private prisma: PrismaService,
     private audit: AuditService,

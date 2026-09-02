@@ -113,7 +113,8 @@ export default function ReviewList({
               {'★'.repeat(review.rating)}
               <span className="sr-only">{`оценка ${review.rating} из 5`}</span>
             </p>
-            {/* Анонимность клиента — инвариант, а не оформление. */}
+            {/* Отзыв не называет клиента и после Р-27: карточку клиента
+                видит только его психолог, а отзыв читают все. */}
             <p className="mb-2 text-xs text-faint">
               {new Date(review.createdAt).toLocaleDateString('ru-KZ')} · Анонимный клиент
             </p>

@@ -13,7 +13,7 @@ export const metadata: Metadata = {
     template: '%s | SmartQoldau',
   },
   description:
-    'Проверенные психологи в чате, аудио и видео. Анонимно, без записи за неделю.',
+    'Проверенные психологи в чате, аудио и видео. Конфиденциально, без записи за неделю.',
 };
 
 export function generateStaticParams() {

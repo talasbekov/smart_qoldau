@@ -31,7 +31,9 @@ describe('AboutPage', () => {
 
     expect(screen.getByText('1–2 мин')).toBeInTheDocument();
     expect(screen.getByText('Чат · Аудио · Видео')).toBeInTheDocument();
-    expect(screen.getByText('Анонимно')).toBeInTheDocument();
+    // Р-27: обещаем тайну обращения, а не неизвестность имени —
+    // психолог видит клиента, посторонние нет.
+    expect(screen.getByText('Конфиденциально')).toBeInTheDocument();
   });
 
   it('принципы перечислены и ведут к поддержке', async () => {
