@@ -1,17 +1,20 @@
 import sitemap from './sitemap';
-import { listExperts, listTopics } from '@/lib/api/public';
+import { listContent, listExperts, listTopics } from '@/lib/api/public';
 
 jest.mock('@/lib/api/public', () => ({
   listExperts: jest.fn(),
   listTopics: jest.fn(),
+  listContent: jest.fn(),
 }));
 
 const experts = listExperts as jest.Mock;
 const topics = listTopics as jest.Mock;
+const content = listContent as jest.Mock;
 
 beforeEach(() => {
   experts.mockResolvedValue([{ id: 'e1' }, { id: 'e2' }]);
   topics.mockResolvedValue([{ slug: 'burnout' }]);
+  content.mockResolvedValue([{ id: 'c1' }]);
 });
 
 describe('sitemap', () => {
@@ -52,6 +55,13 @@ describe('sitemap', () => {
     // Карта сайта, падающая из-за бэкенда, валит сборку целиком.
     expect(urls).toContain('https://smartqoldau.kz/ru');
     expect(urls.some((u) => u.includes('/experts/'))).toBe(false);
+  });
+
+  it('включает материалы: без них платные страницы не найдутся в поиске', async () => {
+    const urls = (await sitemap()).map((e) => e.url);
+
+    expect(urls).toContain('https://smartqoldau.kz/ru/materials');
+    expect(urls).toContain('https://smartqoldau.kz/ru/materials/c1');
   });
 
   it('не выдаёт дублей: один адрес — одна запись', async () => {

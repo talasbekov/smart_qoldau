@@ -23,6 +23,12 @@ export default async function Header() {
           >
             {t('catalog')}
           </NavLink>
+          <NavLink
+            href="/materials"
+            className="rounded px-1 py-2 text-xs font-semibold text-ink-soft aria-[current=page]:text-primary aria-[current=page]:underline aria-[current=page]:underline-offset-4"
+          >
+            {t('materials')}
+          </NavLink>
           <NavLink href="/about" className="rounded px-1 py-2 text-xs font-semibold text-ink-soft aria-[current=page]:text-primary aria-[current=page]:underline aria-[current=page]:underline-offset-4">
             {t('about')}
           </NavLink>
