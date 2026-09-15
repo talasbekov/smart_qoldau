@@ -68,6 +68,7 @@ export default function ExpertSessionActions({
     | 'submitting'
     | 'reconciling'
     | 'uncertain'
+    | 'retryable'
     | 'error'
     | 'success'
   >('idle');
@@ -189,6 +190,15 @@ export default function ExpertSessionActions({
           outcome: current.outcome,
           paymentStatus: current.paymentStatus,
         });
+        return;
+      }
+      if (
+        current?.status === 'ACTIVE' &&
+        current.outcome == null &&
+        current.paymentStatus === 'HELD'
+      ) {
+        setCompleteError(copy.completionActive);
+        setCompletePhase('retryable');
         return;
       }
       setCompleteError(copy.completionNotConfirmed);
@@ -394,7 +404,9 @@ export default function ExpertSessionActions({
           <div className="mt-5 rounded-2xl bg-chip p-4">
             <h3 className="font-extrabold text-ink">{copy.confirmTitle}</h3>
             <p className="mt-2 font-semibold text-ink">{outcomeLabels[outcome]}</p>
-            {completePhase !== 'uncertain' && completePhase !== 'reconciling' ? (
+            {completePhase !== 'uncertain' &&
+            completePhase !== 'reconciling' &&
+            completePhase !== 'retryable' ? (
               <p className="mt-2 text-sm leading-6 text-body">
                 {outcome === 'COMPLETED'
                   ? copy.confirmCompleted
@@ -403,14 +415,18 @@ export default function ExpertSessionActions({
             ) : null}
 
             {completeError ? (
-              <p role="alert" className="mt-3 text-sm font-semibold text-red-700">
+              <p
+                role={completePhase === 'retryable' ? 'status' : 'alert'}
+                className={`mt-3 text-sm font-semibold ${
+                  completePhase === 'retryable' ? 'text-body' : 'text-red-700'
+                }`}
+              >
                 {completeError}
               </p>
             ) : null}
 
             <div className="mt-4 flex flex-wrap gap-3">
-              {completePhase === 'uncertain' ||
-              completePhase === 'reconciling' ? (
+              {completePhase === 'uncertain' || completePhase === 'reconciling' ? (
                 <button
                   type="button"
                   disabled={completePhase === 'reconciling'}
@@ -421,6 +437,23 @@ export default function ExpertSessionActions({
                     ? copy.checkingStatus
                     : copy.checkStatus}
                 </button>
+              ) : completePhase === 'retryable' ? (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => void checkCompletionStatus()}
+                    className="min-h-12 rounded-2xl border border-border bg-white px-4 text-sm font-bold text-ink focus:outline-none focus:ring-2 focus:ring-primary"
+                  >
+                    {copy.checkStatus}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => void complete()}
+                    className="min-h-12 rounded-2xl bg-red-700 px-4 text-sm font-bold text-white focus:outline-none focus:ring-2 focus:ring-red-700 focus:ring-offset-2"
+                  >
+                    {copy.retryFinish}
+                  </button>
+                </>
               ) : (
                 <>
                   <button

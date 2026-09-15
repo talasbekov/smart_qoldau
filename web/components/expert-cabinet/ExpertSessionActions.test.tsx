@@ -280,6 +280,43 @@ describe('ExpertSessionActions', () => {
     ).toHaveLength(1);
   });
 
+  it('после подтверждённого ACTIVE + HELD разрешает только явный ручной повтор outcome', async () => {
+    let posts = 0;
+    let reads = 0;
+    apiFetch.mockImplementation((path: string, init?: RequestInit) => {
+      if (path.endsWith('/note')) return Promise.resolve(NOTE);
+      if (path.endsWith('/complete') && init) {
+        posts += 1;
+        if (posts === 1) return Promise.reject(new TypeError('request not sent'));
+        return Promise.resolve(completeResult('CAPTURED'));
+      }
+      if (path === 'consultations/c1' && !init) {
+        reads += 1;
+        return Promise.resolve({
+          status: 'ACTIVE',
+          outcome: null,
+          paymentStatus: 'HELD',
+        });
+      }
+      throw new Error(`unexpected ${path}`);
+    });
+    await renderLoaded();
+    fireEvent.click(screen.getByRole('button', { name: 'Завершить консультацию' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Подтвердить завершение' }));
+
+    const retry = await screen.findByRole('button', {
+      name: 'Повторить завершение',
+    });
+    expect(posts).toBe(1);
+    expect(reads).toBe(1);
+    expect(screen.queryByText('Консультация завершена')).toBeNull();
+
+    fireEvent.click(retry);
+
+    expect(await screen.findByText('Консультация завершена')).toBeInTheDocument();
+    expect(posts).toBe(2);
+  });
+
   it('для неактивной консультации не даёт повторно отправить outcome, но оставляет заметку', async () => {
     await renderLoaded({ active: false });
 
