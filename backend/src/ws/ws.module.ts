@@ -5,6 +5,7 @@ import { PrismaModule } from '../prisma/prisma.module';
 import { ExpertsModule } from '../experts/experts.module';
 import { ChatModule } from '../chat/chat.module';
 import { NotificationsModule } from '../notifications/notifications.module';
+import { AuthModule } from '../auth/auth.module';
 import { EventsGateway } from './events.gateway';
 import { EventsService } from './events.service';
 
@@ -18,11 +19,12 @@ import { EventsService } from './events.service';
 // цикла нет.
 //
 // JwtModule сконфигурирован здесь ЛОКАЛЬНО (тот же секрет из ConfigService,
-// что и AuthModule) — не трогаем/не расширяем AuthModule ради WS-нужд.
+// что и AuthModule); AuthModule предоставляет общий current-state check.
 @Global()
 @Module({
   imports: [
     PrismaModule,
+    AuthModule,
     ExpertsModule,
     ChatModule,
     NotificationsModule,
