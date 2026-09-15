@@ -11,6 +11,8 @@ import type { Consultation } from './ConsultationList';
 type PaymentMethod = components['schemas']['PaymentMethodDto'];
 type PaymentStatus = components['schemas']['PaymentStatusDto'];
 type PayResult = components['schemas']['PayResultDto'];
+type PremiumStatus = components['schemas']['PremiumStatusDto'];
+type PremiumPlans = components['schemas']['PremiumPlansDto'];
 
 type Phase =
   | 'checking'
@@ -21,6 +23,13 @@ type Phase =
   | 'captured'
   | 'voided'
   | 'unavailable';
+
+type ReconcileResult = PaymentStatus['status'] | 'NOT_FOUND' | 'UNKNOWN';
+type PremiumPricing =
+  | { kind: 'loading' }
+  | { kind: 'inactive' }
+  | { kind: 'active'; discountPercent: number }
+  | { kind: 'unknown' };
 
 const POLL_DELAY_MS = 1500;
 
@@ -51,6 +60,9 @@ export default function PaymentCheckout({
   const [confirmedAmountTiyn, setConfirmedAmountTiyn] = useState<number | null>(
     null,
   );
+  const [premiumPricing, setPremiumPricing] = useState<PremiumPricing>({
+    kind: 'loading',
+  });
   const submitLock = useRef(false);
 
   const payable =
@@ -79,7 +91,38 @@ export default function PaymentCheckout({
     }
   }, []);
 
-  const reconcile = useCallback(async () => {
+  const loadPremiumPricing = useCallback(async () => {
+    try {
+      const premium = await apiFetch<PremiumStatus>('premium');
+      if (!premium) {
+        setPremiumPricing({ kind: 'unknown' });
+        return;
+      }
+      if (!premium.active) {
+        setPremiumPricing({ kind: 'inactive' });
+        return;
+      }
+
+      const plans = await apiFetch<PremiumPlans>('premium/plans');
+      if (
+        !plans ||
+        !Number.isFinite(plans.discountPercent) ||
+        plans.discountPercent < 0 ||
+        plans.discountPercent > 100
+      ) {
+        setPremiumPricing({ kind: 'unknown' });
+        return;
+      }
+      setPremiumPricing({
+        kind: 'active',
+        discountPercent: plans.discountPercent,
+      });
+    } catch {
+      setPremiumPricing({ kind: 'unknown' });
+    }
+  }, []);
+
+  const reconcile = useCallback(async (): Promise<ReconcileResult> => {
     setMessage(null);
     setPhase((current) => (current === 'pending' ? 'pending' : 'checking'));
     try {
@@ -89,7 +132,7 @@ export default function PaymentCheckout({
       if (!payment) {
         setPhase('unknown');
         setMessage(t('statusUnknown'));
-        return;
+        return 'UNKNOWN';
       }
 
       setConfirmedAmountTiyn(payment.amountTiyn);
@@ -97,23 +140,23 @@ export default function PaymentCheckout({
         case 'HELD':
           submitLock.current = false;
           openConsultation();
-          return;
+          return 'HELD';
         case 'PENDING':
           setPhase('pending');
-          return;
+          return 'PENDING';
         case 'FAILED':
           submitLock.current = false;
           setPhase('declined');
           setMessage(t('declinedBody'));
-          return;
+          return 'FAILED';
         case 'CAPTURED':
           submitLock.current = false;
           setPhase('captured');
-          return;
+          return 'CAPTURED';
         case 'VOIDED':
           submitLock.current = false;
           setPhase('voided');
-          return;
+          return 'VOIDED';
       }
     } catch (caught) {
       if (
@@ -124,10 +167,11 @@ export default function PaymentCheckout({
         submitLock.current = false;
         setConfirmedAmountTiyn(null);
         setPhase('idle');
-        return;
+        return 'NOT_FOUND';
       }
       setPhase('unknown');
       setMessage(t('statusUnknown'));
+      return 'UNKNOWN';
     }
   }, [consultation.id, openConsultation, t]);
 
@@ -137,13 +181,30 @@ export default function PaymentCheckout({
       return;
     }
     void loadMethods();
+    void loadPremiumPricing();
     void reconcile();
-  }, [loadMethods, payable, reconcile]);
+  }, [loadMethods, loadPremiumPricing, payable, reconcile]);
 
   useEffect(() => {
     if (phase !== 'pending') return;
-    const timer = window.setTimeout(() => void reconcile(), POLL_DELAY_MS);
-    return () => window.clearTimeout(timer);
+    let cancelled = false;
+    let timer: number | undefined;
+
+    const poll = async () => {
+      const result = await reconcile();
+      // Следующий запрос начинается только после завершения предыдущего:
+      // одинаковый PENDING не меняет React state и сам по себе не
+      // перезапустил бы effect.
+      if (!cancelled && result === 'PENDING') {
+        timer = window.setTimeout(() => void poll(), POLL_DELAY_MS);
+      }
+    };
+
+    timer = window.setTimeout(() => void poll(), POLL_DELAY_MS);
+    return () => {
+      cancelled = true;
+      if (timer !== undefined) window.clearTimeout(timer);
+    };
   }, [phase, reconcile]);
 
   async function submit(event: React.FormEvent) {
@@ -208,9 +269,16 @@ export default function PaymentCheckout({
     }
   }
 
-  const amountTiyn = confirmedAmountTiyn ?? consultation.priceTiyn;
+  const estimatedPremiumAmountTiyn =
+    premiumPricing.kind === 'active'
+      ? consultation.priceTiyn -
+        Math.round(
+          (consultation.priceTiyn * premiumPricing.discountPercent) / 100,
+        )
+      : null;
   const canPay =
     payable &&
+    premiumPricing.kind !== 'loading' &&
     methods !== null &&
     methods.length > 0 &&
     selectedMethodId !== null &&
@@ -233,16 +301,50 @@ export default function PaymentCheckout({
       </div>
 
       <section className="rounded-[20px] border border-border bg-white p-5 sm:p-6">
-        <div className="flex items-start justify-between gap-4">
+        <div>
           <div>
             <h2 className="font-extrabold text-ink">{t('lineItem')}</h2>
             <p className="mt-1 text-sm text-muted">
               {t('duration', { minutes: consultation.plannedDurationMin })}
             </p>
           </div>
-          <p className="shrink-0 text-xl font-extrabold tabular-nums text-ink">
-            {tenge(amountTiyn, locale)}
-          </p>
+          <dl className="mt-4 space-y-3 border-t border-border pt-4">
+            <div className="flex items-baseline justify-between gap-4">
+              <dt className="text-sm text-body">{t('basePrice')}</dt>
+              <dd className="shrink-0 font-bold tabular-nums text-ink">
+                {tenge(consultation.priceTiyn, locale)}
+              </dd>
+            </div>
+
+            {confirmedAmountTiyn !== null ? (
+              <div className="flex items-baseline justify-between gap-4">
+                <dt className="text-sm font-bold text-ink">
+                  {t('confirmedPaymentAmount')}
+                </dt>
+                <dd className="shrink-0 text-xl font-extrabold tabular-nums text-ink">
+                  {tenge(confirmedAmountTiyn, locale)}
+                </dd>
+              </div>
+            ) : premiumPricing.kind === 'active' &&
+              estimatedPremiumAmountTiyn !== null ? (
+              <div className="flex items-baseline justify-between gap-4">
+                <dt className="text-sm font-bold text-ink">
+                  {t('premiumEstimate', {
+                    discount: premiumPricing.discountPercent,
+                  })}
+                </dt>
+                <dd className="shrink-0 text-xl font-extrabold tabular-nums text-ink">
+                  {tenge(estimatedPremiumAmountTiyn, locale)}
+                </dd>
+              </div>
+            ) : null}
+          </dl>
+
+          {confirmedAmountTiyn === null && premiumPricing.kind === 'unknown' ? (
+            <p className="mt-3 text-sm leading-6 text-amber-800">
+              {t('priceEstimateUnavailable')}
+            </p>
+          ) : null}
         </div>
 
         <div className="mt-5 rounded-2xl bg-chip p-4 text-sm leading-6 text-body">

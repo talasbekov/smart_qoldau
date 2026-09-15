@@ -1,4 +1,10 @@
-import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
+import {
+  render,
+  screen,
+  fireEvent,
+  waitFor,
+  act,
+} from '@testing-library/react';
 
 const handlers: Record<string, (payload: unknown) => void> = {};
 const send = jest.fn();
@@ -50,12 +56,23 @@ describe('Chat', () => {
     expect(await screen.findByText('Здравствуйте')).toBeInTheDocument();
   });
 
+  it('в режиме только чтения показывает историю без средств отправки', async () => {
+    history.items = [message()];
+    render(<Chat consultationId="c1" readOnly />);
+
+    expect(await screen.findByText('Здравствуйте')).toBeInTheDocument();
+    expect(screen.queryByLabelText('Сообщение')).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Отправить' })).toBeNull();
+  });
+
   it('показывает входящее сообщение из сокета', async () => {
     render(<Chat consultationId="c1" />);
     await waitFor(() => expect(handlers['chat.message']).toBeDefined());
 
     await act(async () => {
-      handlers['chat.message'](message({ id: 'm2', text: 'Как вы себя чувствуете?' }));
+      handlers['chat.message'](
+        message({ id: 'm2', text: 'Как вы себя чувствуете?' }),
+      );
     });
 
     expect(screen.getByText('Как вы себя чувствуете?')).toBeInTheDocument();
@@ -78,7 +95,9 @@ describe('Chat', () => {
     await waitFor(() => expect(handlers['chat.message']).toBeDefined());
 
     await act(async () => {
-      handlers['chat.message'](message({ id: 'x', consultationId: 'c2', text: 'чужое' }));
+      handlers['chat.message'](
+        message({ id: 'x', consultationId: 'c2', text: 'чужое' }),
+      );
     });
 
     expect(screen.queryByText('чужое')).toBeNull();
@@ -88,17 +107,24 @@ describe('Chat', () => {
     render(<Chat consultationId="c1" />);
     await waitFor(() => expect(handlers['chat.message']).toBeDefined());
 
-    fireEvent.change(screen.getByLabelText('Сообщение'), { target: { value: 'Спасибо' } });
+    fireEvent.change(screen.getByLabelText('Сообщение'), {
+      target: { value: 'Спасибо' },
+    });
     fireEvent.click(screen.getByRole('button', { name: 'Отправить' }));
 
-    expect(send).toHaveBeenCalledWith('chat.send', { consultationId: 'c1', text: 'Спасибо' });
+    expect(send).toHaveBeenCalledWith('chat.send', {
+      consultationId: 'c1',
+      text: 'Спасибо',
+    });
   });
 
   it('не отправляет пустое сообщение', async () => {
     render(<Chat consultationId="c1" />);
     await waitFor(() => expect(handlers['chat.message']).toBeDefined());
 
-    fireEvent.change(screen.getByLabelText('Сообщение'), { target: { value: '   ' } });
+    fireEvent.change(screen.getByLabelText('Сообщение'), {
+      target: { value: '   ' },
+    });
     fireEvent.click(screen.getByRole('button', { name: 'Отправить' }));
 
     expect(send).not.toHaveBeenCalled();
@@ -108,7 +134,9 @@ describe('Chat', () => {
     render(<Chat consultationId="c1" />);
     await waitFor(() => expect(handlers['chat.message']).toBeDefined());
 
-    fireEvent.change(screen.getByLabelText('Сообщение'), { target: { value: 'Спасибо' } });
+    fireEvent.change(screen.getByLabelText('Сообщение'), {
+      target: { value: 'Спасибо' },
+    });
     fireEvent.click(screen.getByRole('button', { name: 'Отправить' }));
 
     expect(screen.getByLabelText('Сообщение')).toHaveValue('');
@@ -122,7 +150,9 @@ describe('Chat', () => {
       handlers['chat.error']({ code: 'CONSULTATION_NOT_ACTIVE' });
     });
 
-    expect(screen.getByRole('alert')).toHaveTextContent(/завершена|не активна/i);
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      /завершена|не активна/i,
+    );
   });
 
   it('лента объявлена живой областью: новые сообщения читаются вслух', async () => {

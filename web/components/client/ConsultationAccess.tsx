@@ -23,20 +23,31 @@ export default function ConsultationAccess({
 
   if (needsPayment) {
     return (
-      <section className="rounded-[20px] border border-border bg-white p-6">
-        <h2 className="text-lg font-extrabold text-ink">
-          {copy.accessPaymentTitle}
-        </h2>
-        <p className="mt-2 max-w-xl text-sm leading-6 text-body">
-          {copy.accessPaymentBody}
-        </p>
-        <Link
-          href={paymentHref}
-          className="mt-5 inline-flex min-h-12 items-center rounded-2xl bg-primary px-5 text-sm font-bold text-white focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
-        >
-          {copy.payConsultation}
-        </Link>
-      </section>
+      <div className="flex flex-col gap-6">
+        <section className="rounded-[20px] border border-border bg-white p-6">
+          <h2 className="text-lg font-extrabold text-ink">
+            {copy.accessPaymentTitle}
+          </h2>
+          <p className="mt-2 max-w-xl text-sm leading-6 text-body">
+            {copy.accessPaymentBody}
+          </p>
+          <Link
+            href={paymentHref}
+            className="mt-5 inline-flex min-h-12 items-center rounded-2xl bg-primary px-5 text-sm font-bold text-white focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+          >
+            {copy.payConsultation}
+          </Link>
+        </section>
+
+        {consultation.status === 'ACTIVE' && consultation.format === 'chat' ? (
+          <section className="rounded-[20px] border border-border bg-white p-4">
+            <h2 className="mb-3 font-extrabold text-ink">
+              {copy.historyTitle}
+            </h2>
+            <Chat consultationId={consultation.id} readOnly />
+          </section>
+        ) : null}
+      </div>
     );
   }
 

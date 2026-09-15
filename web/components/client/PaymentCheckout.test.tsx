@@ -100,6 +100,18 @@ function initialData(
       if (handled) return handled;
     }
     if (url.endsWith('/payment-methods')) return response(200, [CARD]);
+    if (url.endsWith('/premium/plans')) {
+      return response(200, { plans: [], discountPercent: 10 });
+    }
+    if (url.endsWith('/premium')) {
+      return response(200, {
+        active: false,
+        plan: null,
+        currentPeriodEnd: null,
+        cancelled: false,
+        inGrace: false,
+      });
+    }
     if (url.endsWith('/consultations/c1/payment')) {
       return response(404, { code: 'PAYMENT_NOT_FOUND' });
     }
@@ -134,6 +146,79 @@ describe('PaymentCheckout', () => {
       await screen.findByRole('radio', { name: /4242.*visa/i }),
     ).toBeChecked();
     expect(screen.getByRole('button', { name: 'Оплатить' })).toBeEnabled();
+  });
+
+  it('для активного Premium отделяет базовую цену от оценочной суммы со скидкой', async () => {
+    initialData(async (url) => {
+      if (url.endsWith('/premium')) {
+        return response(200, {
+          active: true,
+          plan: 'MONTH',
+          currentPeriodEnd: '2026-10-16T00:00:00.000Z',
+          cancelled: false,
+          inGrace: false,
+        });
+      }
+      return undefined as never;
+    });
+    renderCheckout();
+
+    expect(screen.getByText('Базовая цена')).toBeInTheDocument();
+    expect(
+      await screen.findByText('Оценка с Premium −10%'),
+    ).toBeInTheDocument();
+    expect(screen.getByText('3 591 ₸')).toBeInTheDocument();
+  });
+
+  it('при ошибке Premium показывает только базовую цену без точного обещания суммы', async () => {
+    initialData(async (url) => {
+      if (url.endsWith('/premium')) throw new TypeError('premium unavailable');
+      return undefined as never;
+    });
+    renderCheckout();
+
+    expect(screen.getByText('Базовая цена')).toBeInTheDocument();
+    expect(
+      await screen.findByText(/итоговую сумму подтвердим/i),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/оценка с Premium/i)).toBeNull();
+    expect(screen.getByRole('button', { name: 'Оплатить' })).toBeEnabled();
+  });
+
+  it('не разрешает оплату, пока статус Premium ещё проверяется', async () => {
+    const premiumPending = new Promise<Response>(() => {});
+    mockFetch(async (url) => {
+      if (url.endsWith('/payment-methods')) return response(200, [CARD]);
+      if (url.endsWith('/premium')) return premiumPending;
+      if (url.endsWith('/consultations/c1/payment')) {
+        return response(404, { code: 'PAYMENT_NOT_FOUND' });
+      }
+      throw new Error(`Unexpected request: ${url}`);
+    });
+    renderCheckout();
+
+    expect(await screen.findByRole('radio', { name: /4242/i })).toBeChecked();
+    expect(screen.getByRole('button', { name: 'Оплатить' })).toBeDisabled();
+  });
+
+  it('после создания платежа обозначает сумму из payment snapshot как подтверждённую', async () => {
+    initialData(async (url) => {
+      if (url.endsWith('/consultations/c1/payment')) {
+        return response(200, {
+          status: 'CAPTURED',
+          amountTiyn: 359100,
+          maskedPan: '**** 4242',
+        });
+      }
+      return undefined as never;
+    });
+    renderCheckout();
+
+    expect(
+      await screen.findByText('Подтверждённая сумма платежа'),
+    ).toBeInTheDocument();
+    expect(screen.getByText('3 591 ₸')).toBeInTheDocument();
+    expect(screen.getByText('Базовая цена')).toBeInTheDocument();
   });
 
   it('пустое состояние не собирает реквизиты карты и предлагает обновить список', async () => {
@@ -328,13 +413,13 @@ describe('PaymentCheckout', () => {
     );
   });
 
-  it('после reload ждёт PENDING и автоматически открывает консультацию лишь при HELD', async () => {
+  it('после reload продолжает опрашивать PENDING до HELD', async () => {
     jest.useFakeTimers();
     let statusReads = 0;
     initialData(async (url) => {
       if (url.endsWith('/consultations/c1/payment')) {
         statusReads += 1;
-        return statusReads === 1
+        return statusReads <= 2
           ? response(200, {
               status: 'PENDING',
               amountTiyn: 399000,
@@ -358,9 +443,68 @@ describe('PaymentCheckout', () => {
     await act(async () => {
       jest.advanceTimersByTime(1500);
     });
+    expect(statusReads).toBe(2);
+    expect(replace).not.toHaveBeenCalled();
+
+    await act(async () => {
+      jest.advanceTimersByTime(1500);
+    });
     await waitFor(() =>
       expect(replace).toHaveBeenCalledWith('/ru/consultations/c1'),
     );
+    expect(statusReads).toBe(3);
+  });
+
+  it('не перекрывает PENDING-запросы и не возобновляет polling после unmount', async () => {
+    jest.useFakeTimers();
+    let statusReads = 0;
+    let releasePending!: (value: Response) => void;
+    const pendingResponse = new Promise<Response>((resolve) => {
+      releasePending = resolve;
+    });
+    initialData(async (url) => {
+      if (url.endsWith('/consultations/c1/payment')) {
+        statusReads += 1;
+        if (statusReads === 1) {
+          return response(200, {
+            status: 'PENDING',
+            amountTiyn: 399000,
+            maskedPan: '**** 4242',
+          });
+        }
+        return pendingResponse;
+      }
+      return undefined as never;
+    });
+    const view = renderCheckout();
+    expect(await screen.findByRole('status')).toHaveTextContent(
+      /банк подтверждает/i,
+    );
+
+    await act(async () => {
+      jest.advanceTimersByTime(1500);
+    });
+    expect(statusReads).toBe(2);
+
+    await act(async () => {
+      jest.advanceTimersByTime(6000);
+    });
+    expect(statusReads).toBe(2);
+
+    view.unmount();
+    await act(async () => {
+      releasePending(
+        await response(200, {
+          status: 'PENDING',
+          amountTiyn: 399000,
+          maskedPan: '**** 4242',
+        }),
+      );
+    });
+    await act(async () => {
+      jest.advanceTimersByTime(1500);
+    });
+    expect(statusReads).toBe(2);
   });
 
   it('CAPTURED не считает разрешением live-сессии', async () => {

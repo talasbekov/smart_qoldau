@@ -6,7 +6,11 @@ jest.mock('./Session', () => ({
 }));
 jest.mock('./Chat', () => ({
   __esModule: true,
-  default: () => <div data-testid="chat">chat</div>,
+  default: ({ readOnly }: { readOnly?: boolean }) => (
+    <div data-testid="chat" data-read-only={readOnly ? 'true' : 'false'}>
+      chat
+    </div>
+  ),
 }));
 
 // eslint-disable-next-line import/first
@@ -53,6 +57,27 @@ describe('ConsultationAccess', () => {
     ).toHaveAttribute('href', '/ru/consultations/c1/payment');
     expect(screen.queryByTestId('session')).toBeNull();
     expect(screen.queryByTestId('chat')).toBeNull();
+  });
+
+  it('ACTIVE chat с FAILED сохраняет историю только для чтения рядом с оплатой', () => {
+    render(
+      <ConsultationAccess
+        consultation={consultation({
+          format: 'chat',
+          paymentStatus: 'FAILED',
+        })}
+        locale="ru"
+      />,
+    );
+
+    expect(
+      screen.getByRole('link', { name: 'Оплатить консультацию' }),
+    ).toBeInTheDocument();
+    expect(screen.getByTestId('chat')).toHaveAttribute(
+      'data-read-only',
+      'true',
+    );
+    expect(screen.queryByTestId('session')).toBeNull();
   });
 
   it('ACTIVE с подтверждённым HELD открывает сессию', () => {
