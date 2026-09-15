@@ -56,21 +56,47 @@ export class NotificationsService {
     const locale: NotificationLocale = user?.locale === 'kz' ? 'kz' : 'ru';
     const { title, body } = renderTemplate(type, locale, data);
 
-    const notification = await this.prisma.notification.create({
-      data: {
-        userId,
-        type,
-        title,
-        body,
-        data: data as Prisma.InputJsonValue,
-        // Явно из ClockService (а не @default(now()) БД) — иначе 10с-окно
-        // SMS-fallback (OfferPushFallbackService, задача 5) не подчиняется
-        // виртуальному времени в e2e (тот же паттерн, что и Request.createdAt
-        // в RequestsService.create()).
-        createdAt: this.clock.now(),
-      },
+    const notification = await this.prisma.$transaction(async (tx) => {
+      const created = await tx.notification.create({
+        data: {
+          userId,
+          type,
+          title,
+          body,
+          data: data as Prisma.InputJsonValue,
+          // Явно из ClockService (а не @default(now()) БД) — иначе 10с-окно
+          // SMS-fallback (OfferPushFallbackService, задача 5) не подчиняется
+          // виртуальному времени в e2e (тот же паттерн, что и Request.createdAt
+          // в RequestsService.create()).
+          createdAt: this.clock.now(),
+        },
+      });
+
+      // ack доставки идёт по notificationId — приложение вызывает
+      // POST /v1/notifications/:id/ack, получив пуш. notificationId также
+      // служит ключом дедупликации на клиентской границе at-least-once.
+      const pushData: Record<string, string> = Object.fromEntries(
+        Object.entries(data).map(([k, v]) => [k, String(v)]),
+      );
+      pushData.notificationId = created.id;
+      pushData.type = type;
+
+      // Notification и задание доставки — один commit: ни orphan-записи без
+      // push job, ни job без центра уведомлений наблюдаться не могут.
+      await this.outbox.enqueue(
+        {
+          notificationId: created.id,
+          userId,
+          type,
+          payload: pushData,
+        },
+        tx,
+      );
+      return created;
     });
 
+    // Realtime — best-effort и только post-commit. Клиент никогда не увидит
+    // по WS запись, которую транзакция notification+outbox затем откатила.
     this.events.emitToUser(userId, 'notification.new', {
       id: notification.id,
       type,
@@ -78,25 +104,6 @@ export class NotificationsService {
       body,
       data,
       createdAt: notification.createdAt,
-    });
-
-    // ack доставки идёт по notificationId — приложение вызывает
-    // POST /v1/notifications/:id/ack, получив пуш.
-    const pushData: Record<string, string> = Object.fromEntries(
-      Object.entries(data).map(([k, v]) => [k, String(v)]),
-    );
-    pushData.notificationId = notification.id;
-    pushData.type = type;
-
-    // Веер по устройствам снят с пути запроса (E11a, задача 3): здесь
-    // остаётся одна вставка в очередь, а рассылкой занимается
-    // OutboxSweepService. WS запускается best-effort: асинхронная проверка
-    // допуска получателя не задерживает и не отменяет вставку в outbox.
-    await this.outbox.enqueue({
-      notificationId: notification.id,
-      userId,
-      type,
-      payload: pushData,
     });
   }
 

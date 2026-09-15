@@ -27,22 +27,24 @@ describe('OutboxSweepService', () => {
   let now: Date;
 
   const prisma = {
+    $queryRaw: async () => rows,
+    $transaction: async (callback: (tx: unknown) => unknown) =>
+      callback(prisma),
     notificationOutbox: {
-      findMany: async () => rows,
-      update: async ({
+      updateMany: async ({
         where,
         data,
       }: {
-        where: { id: string };
+        where: { id: string; leaseToken: string };
         data: Record<string, unknown>;
       }) => {
         updates.push({ id: where.id, data });
-        return { id: where.id };
+        return { count: 1 };
       },
     },
     notification: {
       findUnique: async () => ({ title: 'Заголовок', body: 'Текст' }),
-      update: async () => ({}),
+      updateMany: async () => ({ count: 1 }),
     },
     device: {
       findMany: async () => [{ id: 'd1', token: 'tok-1' }],

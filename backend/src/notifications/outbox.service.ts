@@ -18,13 +18,16 @@ export class OutboxService {
   ) {}
 
   /// Ставит отправку пуша в очередь. Одна вставка, никаких сетевых вызовов.
-  async enqueue(params: {
-    notificationId: string;
-    userId: string;
-    type: string;
-    payload: Record<string, unknown>;
-  }): Promise<void> {
-    await this.prisma.notificationOutbox.create({
+  async enqueue(
+    params: {
+      notificationId: string;
+      userId: string;
+      type: string;
+      payload: Record<string, unknown>;
+    },
+    client: Pick<Prisma.TransactionClient, 'notificationOutbox'> = this.prisma,
+  ): Promise<void> {
+    await client.notificationOutbox.create({
       data: {
         notificationId: params.notificationId,
         userId: params.userId,

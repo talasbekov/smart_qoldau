@@ -690,9 +690,16 @@ model NotificationOutbox {
   sentAt         DateTime? @map("sent_at")
   deadAt         DateTime? @map("dead_at")
   lastError      String?   @map("last_error")
+  // Lease делает claim конкурентно-безопасным между worker-процессами.
+  // Nullable для совместимости с уже существующими строками/деплоем схемы;
+  // истёкший lease означает crash recovery и допускает повторную доставку.
+  leaseToken     String?   @map("lease_token")
+  leaseExpiresAt DateTime? @map("lease_expires_at")
   createdAt      DateTime  @default(now()) @map("created_at")
 
   @@index([sentAt, deadAt, nextAttemptAt])
+  // Частичный индекс pending-очереди создаётся raw SQL в миграции: Prisma
+  // partial indexes не выражает.
   @@map("notification_outbox")
 }
 
