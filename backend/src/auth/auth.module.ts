@@ -3,6 +3,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtModule, JwtModuleOptions } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { AuditModule } from '../audit/audit.module';
+import { AccountAccessService } from './account-access.service';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { JwtStrategy } from './jwt.strategy';
@@ -30,6 +31,7 @@ import { MobizonSmsProvider } from './sms/sms.mobizon.provider';
   controllers: [AuthController],
   providers: [
     AuthService,
+    AccountAccessService,
     JwtStrategy,
     {
       provide: SMS_PROVIDER_TOKEN,
@@ -44,6 +46,6 @@ import { MobizonSmsProvider } from './sms/sms.mobizon.provider';
   ],
   // SMS_PROVIDER_TOKEN нужен и вне auth — SMS-fallback критичных
   // уведомлений (E9, задача 5) шлёт добивку тем же портом/провайдером.
-  exports: [SMS_PROVIDER_TOKEN],
+  exports: [SMS_PROVIDER_TOKEN, AccountAccessService],
 })
 export class AuthModule {}

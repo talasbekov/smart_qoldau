@@ -18,10 +18,8 @@ import { ChatService, SenderRole } from '../chat/chat.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
 
-interface JwtPayload {
-  sub: string;
-  isGuest: boolean;
-}
+import { JwtPayload } from '../auth/jwt.strategy';
+import { AccountAccessService } from '../auth/account-access.service';
 
 interface SocketData {
   userId: string;
@@ -58,6 +56,7 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection {
     private chat: ChatService,
     private prisma: PrismaService,
     private notifications: NotificationsService,
+    private access: AccountAccessService,
   ) {}
 
   afterInit(server: Server): void {
@@ -74,15 +73,20 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection {
     let payload: JwtPayload;
     try {
       payload = await this.jwt.verifyAsync<JwtPayload>(token);
+      if (payload.isAdmin) {
+        client.disconnect(true);
+        return;
+      }
+      await this.access.assertActive(payload.sub);
     } catch {
       client.disconnect(true);
       return;
     }
 
+    if (!client.connected) return;
     await client.join(`user:${payload.sub}`);
 
     const data: SocketData = { userId: payload.sub };
-    client.data = data;
 
     try {
       const expert = await this.experts.findByUserId(payload.sub);
@@ -105,6 +109,8 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection {
     // уходят в пустоту. Живому приложению это незаметно (человек не
     // начинает печатать в ту же миллисекунду), но полагаться на удачу
     // нельзя: тот, кому важно не пропустить событие, ждёт 'ready'.
+    if (!client.connected) return;
+    client.data = data;
     client.emit('ready', { expertId: data.expertId ?? null });
   }
 
@@ -119,7 +125,7 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection {
     @MessageBody() payload: ChatSendPayload,
   ): Promise<void> {
     const data = client.data as SocketData | undefined;
-    if (!data?.userId) return;
+    if (!data?.userId || !(await this.authorizeAction(client, data))) return;
 
     try {
       const resolved = await this.chat.resolveParticipant(
@@ -164,7 +170,8 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection {
     @MessageBody() payload: ChatTypingPayload,
   ): Promise<void> {
     const data = client.data as SocketData | undefined;
-    if (!data?.userId || !payload?.consultationId) return;
+    if (!data?.userId || !(await this.authorizeAction(client, data))) return;
+    if (!payload?.consultationId) return;
 
     try {
       const { consultation, role } = await this.chat.resolveParticipant(
@@ -181,6 +188,22 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection {
       });
     } catch {
       // не участник/консультация не найдена -> молча игнор
+    }
+  }
+
+  // A socket can outlive the account's access. Fail closed before resolving
+  // participants or producing any event; disconnect also removes room access.
+  private async authorizeAction(
+    client: Socket,
+    data?: SocketData,
+  ): Promise<boolean> {
+    if (!client.connected || !data?.userId) return false;
+    try {
+      await this.access.assertActive(data.userId);
+      return client.connected;
+    } catch {
+      client.disconnect(true);
+      return false;
     }
   }
 
