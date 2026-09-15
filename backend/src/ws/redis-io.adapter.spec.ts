@@ -10,7 +10,11 @@ describe('RedisIoAdapter', () => {
     const duplicates: unknown[] = [];
     return {
       duplicate: jest.fn(() => {
-        const copy = { name: `copy-${duplicates.length}`, quit: jest.fn() };
+        const copy = {
+          name: `copy-${duplicates.length}`,
+          quit: jest.fn(),
+          publish: jest.fn().mockResolvedValue(0),
+        };
         duplicates.push(copy);
         return copy;
       }),
