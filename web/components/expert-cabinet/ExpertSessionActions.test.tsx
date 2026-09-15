@@ -110,6 +110,35 @@ describe('ExpertSessionActions', () => {
     });
   });
 
+  it('не затирает правки, внесённые во время сохранения предыдущей версии', async () => {
+    let resolveSave!: (value: unknown) => void;
+    apiFetch.mockImplementation((_path: string, init?: RequestInit) => {
+      if (!init) return Promise.resolve(NOTE);
+      return new Promise((resolve) => {
+        resolveSave = resolve;
+      });
+    });
+    await renderLoaded();
+    fireEvent.change(screen.getByLabelText('Приватная заметка'), {
+      target: { value: 'Первая версия' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Сохранить заметку' }));
+    fireEvent.change(screen.getByLabelText('Приватная заметка'), {
+      target: { value: 'Первая версия и новое наблюдение' },
+    });
+
+    resolveSave({ text: 'Первая версия' });
+
+    await waitFor(() =>
+      expect(screen.queryByRole('button', { name: 'Сохраняем…' })).toBeNull(),
+    );
+    expect(screen.getByLabelText('Приватная заметка')).toHaveValue(
+      'Первая версия и новое наблюдение',
+    );
+    expect(screen.queryByText('Заметка сохранена')).toBeNull();
+    expect(screen.getByRole('button', { name: 'Сохранить заметку' })).toBeEnabled();
+  });
+
   it('при ошибке заметки сохраняет текст и даёт повторить', async () => {
     apiFetch
       .mockResolvedValueOnce(NOTE)
@@ -206,6 +235,49 @@ describe('ExpertSessionActions', () => {
     expect(await screen.findByText('Консультация завершена')).toBeInTheDocument();
     expect(screen.getByRole('status')).toHaveTextContent(/расчёт.*ожидает/i);
     expect(screen.getByRole('status')).toHaveTextContent(/HELD.*не CAPTURED/i);
+  });
+
+  it('после потерянного ответа сверяет сервер и показывает подтверждённый outcome', async () => {
+    apiFetch.mockImplementation((path: string, init?: RequestInit) => {
+      if (path.endsWith('/note')) return Promise.resolve(NOTE);
+      if (path.endsWith('/complete') && init) {
+        return Promise.reject(new TypeError('response lost after commit'));
+      }
+      if (path === 'consultations/c1' && !init) {
+        return Promise.resolve(completeResult('HELD'));
+      }
+      throw new Error(`unexpected ${path}`);
+    });
+    await renderLoaded();
+    fireEvent.click(screen.getByRole('button', { name: 'Завершить консультацию' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Подтвердить завершение' }));
+
+    expect(await screen.findByText('Консультация завершена')).toBeInTheDocument();
+    expect(screen.getByText(/подтверждённый исход.*консультация состоялась/i)).toBeInTheDocument();
+    expect(screen.getByRole('status')).toHaveTextContent(/HELD.*не CAPTURED/i);
+    expect(screen.queryByText(/исход не сохранён/i)).toBeNull();
+    expect(apiFetch).toHaveBeenCalledWith('consultations/c1');
+  });
+
+  it('при недоступной сверке сохраняет неопределённость и не повторяет POST вслепую', async () => {
+    apiFetch
+      .mockResolvedValueOnce(NOTE)
+      .mockRejectedValueOnce(new TypeError('response lost'))
+      .mockRejectedValueOnce(new TypeError('status unavailable'))
+      .mockRejectedValueOnce(new TypeError('still unavailable'));
+    await renderLoaded();
+    fireEvent.click(screen.getByRole('button', { name: 'Завершить консультацию' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Подтвердить завершение' }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(/неизвестно.*сохранён/i);
+    expect(screen.queryByText(/исход не сохранён/i)).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Повторить завершение' })).toBeNull();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Проверить статус' }));
+    await waitFor(() => expect(apiFetch).toHaveBeenCalledTimes(4));
+    expect(
+      apiFetch.mock.calls.filter(([path]) => path === 'consultations/c1/complete'),
+    ).toHaveLength(1);
   });
 
   it('для неактивной консультации не даёт повторно отправить outcome, но оставляет заметку', async () => {

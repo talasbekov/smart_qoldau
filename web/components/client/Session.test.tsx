@@ -199,4 +199,24 @@ describe('Session', () => {
     expect(unsubscribeState).toHaveBeenCalled();
     expect(call.leave).toHaveBeenCalled();
   });
+
+  it('unmount отменяет ещё не завершившийся join до получения Call', async () => {
+    let receivedSignal: AbortSignal | undefined;
+    joinCall.mockImplementationOnce(
+      (...args: unknown[]) => {
+        receivedSignal = args[3] as AbortSignal | undefined;
+        return new Promise(() => undefined);
+      },
+    );
+    const { unmount } = render(
+      <Session consultationId="c1" format="audio" locale="ru" />,
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Подключиться' }));
+    await waitFor(() => expect(joinCall).toHaveBeenCalled());
+
+    unmount();
+
+    expect(receivedSignal).toBeDefined();
+    expect(receivedSignal?.aborted).toBe(true);
+  });
 });

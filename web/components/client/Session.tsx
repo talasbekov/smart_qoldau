@@ -55,11 +55,13 @@ export default function Session({
   const audioRef = useRef<HTMLAudioElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const mountedRef = useRef(true);
+  const pendingJoinRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
     mountedRef.current = true;
     return () => {
       mountedRef.current = false;
+      pendingJoinRef.current?.abort();
     };
   }, []);
 
@@ -88,11 +90,18 @@ export default function Session({
   }, [call, copy.disconnected, format]);
 
   async function connect(devices: Chosen) {
-    if (connecting) return;
+    if (connecting || pendingJoinRef.current) return;
+    const controller = new AbortController();
+    pendingJoinRef.current = controller;
     setError(null);
     setConnecting(true);
     try {
-      const joined = await joinCall(consultationId, format, devices);
+      const joined = await joinCall(
+        consultationId,
+        format,
+        devices,
+        controller.signal,
+      );
       if (!mountedRef.current) {
         await joined.leave();
         return;
@@ -103,6 +112,9 @@ export default function Session({
     } catch (caught) {
       if (mountedRef.current) setError(errorCopy(caught, copy));
     } finally {
+      if (pendingJoinRef.current === controller) {
+        pendingJoinRef.current = null;
+      }
       if (mountedRef.current) setConnecting(false);
     }
   }

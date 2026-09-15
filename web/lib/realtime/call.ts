@@ -58,6 +58,7 @@ function classifyCallError(caught: unknown): CallError {
 async function requestGrant(
   consultationId: string,
   format: 'audio' | 'video',
+  signal?: AbortSignal,
 ): Promise<Grant> {
   let response: Response;
   try {
@@ -67,6 +68,7 @@ async function requestGrant(
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ format }),
+        signal,
       },
     );
   } catch (caught) {
@@ -87,18 +89,30 @@ async function requestGrant(
   return (await response.json()) as Grant;
 }
 
+function throwIfAborted(signal?: AbortSignal) {
+  if (!signal?.aborted) return;
+  const cancelled = new Error('Call join cancelled');
+  cancelled.name = 'AbortError';
+  throw cancelled;
+}
+
 export async function joinCall(
   consultationId: string,
   format: 'audio' | 'video',
   devices: Chosen,
+  signal?: AbortSignal,
 ): Promise<Call> {
-  const grant = await requestGrant(consultationId, format);
+  const grant = await requestGrant(consultationId, format, signal);
+  // Некоторые fetch-моки и старые реализации не отклоняют promise по abort.
+  // До создания Room повторно проверяем владение попыткой подключения.
+  throwIfAborted(signal);
   const room = new Room();
   const remoteTracks = new Set<RemoteTrack>();
   const stateHandlers = new Set<(state: CallState) => void>();
   let mediaTargets: RemoteMediaTargets | null = null;
   let state: CallState = 'connected';
   let leavePromise: Promise<void> | null = null;
+  let cleanupPromise: Promise<void> | null = null;
 
   function targetFor(track: RemoteTrack): HTMLMediaElement | null {
     if (!mediaTargets) return null;
@@ -172,10 +186,30 @@ export async function joinCall(
     ]);
   }
 
+  function cleanupRoom(emitDisconnected: boolean): Promise<void> {
+    if (cleanupPromise) return cleanupPromise;
+    cleanupPromise = (async () => {
+      removeRoomListeners();
+      detachAllRemoteTracks();
+      // disconnect вызывается одновременно с выключением устройств: cleanup
+      // не должен ждать зависшего запроса камеры, чтобы освободить room.
+      await Promise.allSettled([stopLocalTracks(), room.disconnect()]);
+      if (emitDisconnected) emitState('disconnected');
+    })();
+    return cleanupPromise;
+  }
+
+  const onJoinAborted = () => {
+    void cleanupRoom(false);
+  };
+
   addRoomListeners();
+  signal?.addEventListener('abort', onJoinAborted, { once: true });
 
   try {
+    throwIfAborted(signal);
     await room.connect(grant.url, grant.token);
+    throwIfAborted(signal);
 
     // TrackSubscribed не обязан сработать для публикаций, которые уже были
     // подписаны к моменту, когда UI получил Call. Явно забираем snapshot.
@@ -189,20 +223,21 @@ export async function joinCall(
       true,
       devices.microphoneId ? { deviceId: devices.microphoneId } : undefined,
     );
+    throwIfAborted(signal);
     // В аудиоформате камера не включается вовсе.
     if (format === 'video') {
       await room.localParticipant.setCameraEnabled(
         true,
         devices.cameraId ? { deviceId: devices.cameraId } : undefined,
       );
+      throwIfAborted(signal);
     }
   } catch (caught) {
-    removeRoomListeners();
-    detachAllRemoteTracks();
-    await stopLocalTracks();
-    await room.disconnect().catch(() => undefined);
+    signal?.removeEventListener('abort', onJoinAborted);
+    await cleanupRoom(false);
     throw classifyCallError(caught);
   }
+  signal?.removeEventListener('abort', onJoinAborted);
 
   return {
     room,
@@ -231,13 +266,7 @@ export async function joinCall(
     },
     leave: () => {
       if (leavePromise) return leavePromise;
-      leavePromise = (async () => {
-        removeRoomListeners();
-        detachAllRemoteTracks();
-        await stopLocalTracks();
-        await room.disconnect();
-        emitState('disconnected');
-      })();
+      leavePromise = cleanupRoom(true);
       return leavePromise;
     },
     onStateChange: (handler) => {

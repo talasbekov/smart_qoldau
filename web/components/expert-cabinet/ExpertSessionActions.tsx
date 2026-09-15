@@ -19,12 +19,24 @@ type CompleteResult = {
   outcome: Outcome;
   paymentStatus: PaymentStatus;
 };
+type ConsultationSnapshot = {
+  status: string;
+  outcome?: string | null;
+  paymentStatus: PaymentStatus;
+};
 
 const OUTCOMES: Outcome[] = [
   'COMPLETED',
   'CLIENT_NO_SHOW',
   'CLIENT_CANCELLED',
   'TECH_ISSUE',
+];
+const PAYMENT_STATUSES: PaymentStatus[] = [
+  'UNPAID',
+  'HELD',
+  'CAPTURED',
+  'VOIDED',
+  'FAILED',
 ];
 
 export default function ExpertSessionActions({
@@ -43,6 +55,7 @@ export default function ExpertSessionActions({
   const mountedRef = useRef(true);
   const saveLock = useRef(false);
   const completeLock = useRef(false);
+  const noteRef = useRef('');
   const [note, setNote] = useState('');
   const [savedNote, setSavedNote] = useState('');
   const [notePhase, setNotePhase] = useState<
@@ -50,9 +63,16 @@ export default function ExpertSessionActions({
   >('loading');
   const [outcome, setOutcome] = useState<Outcome>('COMPLETED');
   const [completePhase, setCompletePhase] = useState<
-    'idle' | 'confirm' | 'submitting' | 'error' | 'success'
+    | 'idle'
+    | 'confirm'
+    | 'submitting'
+    | 'reconciling'
+    | 'uncertain'
+    | 'error'
+    | 'success'
   >('idle');
   const [completeError, setCompleteError] = useState<string | null>(null);
+  const [resultOutcome, setResultOutcome] = useState<Outcome | null>(null);
   const [resultPaymentStatus, setResultPaymentStatus] =
     useState<PaymentStatus | null>(null);
 
@@ -64,6 +84,7 @@ export default function ExpertSessionActions({
       );
       if (!mountedRef.current) return;
       const text = result?.text ?? '';
+      noteRef.current = text;
       setNote(text);
       setSavedNote(text);
       setNotePhase('idle');
@@ -103,9 +124,16 @@ export default function ExpertSessionActions({
       );
       if (!mountedRef.current) return;
       const confirmed = saved?.text ?? trimmed;
-      setNote(confirmed);
       setSavedNote(confirmed);
-      setNotePhase('saved');
+      if (noteRef.current === trimmed) {
+        noteRef.current = confirmed;
+        setNote(confirmed);
+        setNotePhase('saved');
+      } else {
+        // Ответ относится к отправленному snapshot. Более свежий draft
+        // остаётся в поле и по-прежнему требует сохранения.
+        setNotePhase('idle');
+      }
     } catch {
       if (mountedRef.current) setNotePhase('error');
     } finally {
@@ -123,8 +151,63 @@ export default function ExpertSessionActions({
     if (!(caught instanceof ApiError)) return copy.completeError;
     if (caught.code === 'INVALID_OUTCOME') return copy.invalidOutcome;
     if (caught.code === 'PAYMENT_HOLD_REQUIRED') return copy.holdRequired;
-    if (caught.code === 'CONSULTATION_NOT_ACTIVE') return copy.notActive;
     return copy.completeError;
+  }
+
+  function isOutcome(value: unknown): value is Outcome {
+    return OUTCOMES.includes(value as Outcome);
+  }
+
+  function isPaymentStatus(value: unknown): value is PaymentStatus {
+    return PAYMENT_STATUSES.includes(value as PaymentStatus);
+  }
+
+  function applyConfirmedCompletion(confirmed: CompleteResult) {
+    setOutcome(confirmed.outcome);
+    setResultOutcome(confirmed.outcome);
+    setResultPaymentStatus(confirmed.paymentStatus);
+    setCompleteError(null);
+    setCompletePhase('success');
+    router.refresh();
+  }
+
+  async function reconcileCompletion() {
+    setCompleteError(null);
+    setCompletePhase('reconciling');
+    try {
+      const current = await apiFetch<ConsultationSnapshot>(
+        `consultations/${consultationId}`,
+      );
+      if (!mountedRef.current) return;
+      if (
+        current?.status === 'COMPLETED' &&
+        isOutcome(current.outcome) &&
+        isPaymentStatus(current.paymentStatus)
+      ) {
+        applyConfirmedCompletion({
+          status: 'COMPLETED',
+          outcome: current.outcome,
+          paymentStatus: current.paymentStatus,
+        });
+        return;
+      }
+      setCompleteError(copy.completionNotConfirmed);
+      setCompletePhase('uncertain');
+    } catch {
+      if (!mountedRef.current) return;
+      setCompleteError(copy.completionUnknown);
+      setCompletePhase('uncertain');
+    }
+  }
+
+  async function checkCompletionStatus() {
+    if (completeLock.current) return;
+    completeLock.current = true;
+    try {
+      await reconcileCompletion();
+    } finally {
+      completeLock.current = false;
+    }
   }
 
   async function complete() {
@@ -144,13 +227,19 @@ export default function ExpertSessionActions({
       if (!confirmed || confirmed.status !== 'COMPLETED') {
         throw new Error('Completion was not confirmed');
       }
-      setResultPaymentStatus(confirmed.paymentStatus);
-      setCompletePhase('success');
-      router.refresh();
+      applyConfirmedCompletion(confirmed);
     } catch (caught) {
       if (!mountedRef.current) return;
-      setCompleteError(completionError(caught));
-      setCompletePhase('error');
+      if (
+        caught instanceof ApiError &&
+        (caught.code === 'INVALID_OUTCOME' ||
+          caught.code === 'PAYMENT_HOLD_REQUIRED')
+      ) {
+        setCompleteError(completionError(caught));
+        setCompletePhase('error');
+      } else {
+        await reconcileCompletion();
+      }
     } finally {
       completeLock.current = false;
     }
@@ -210,6 +299,7 @@ export default function ExpertSessionActions({
               id="expert-session-note"
               value={note}
               onChange={(event) => {
+                noteRef.current = event.target.value;
                 setNote(event.target.value);
                 if (notePhase === 'saved' || notePhase === 'error') {
                   setNotePhase('idle');
@@ -255,9 +345,12 @@ export default function ExpertSessionActions({
         <h2 className="text-lg font-extrabold text-ink">{copy.finishTitle}</h2>
         <p className="mt-2 text-sm leading-6 text-body">{copy.finishHint}</p>
 
-        {completePhase === 'success' && resultPaymentStatus ? (
+        {completePhase === 'success' && resultPaymentStatus && resultOutcome ? (
           <div className="mt-5">
             <h3 className="font-extrabold text-ink">{copy.completedTitle}</h3>
+            <p className="mt-2 text-sm font-semibold text-ink">
+              {copy.confirmedOutcome}: {outcomeLabels[resultOutcome]}
+            </p>
             <p
               role="status"
               aria-live="polite"
@@ -301,11 +394,13 @@ export default function ExpertSessionActions({
           <div className="mt-5 rounded-2xl bg-chip p-4">
             <h3 className="font-extrabold text-ink">{copy.confirmTitle}</h3>
             <p className="mt-2 font-semibold text-ink">{outcomeLabels[outcome]}</p>
-            <p className="mt-2 text-sm leading-6 text-body">
-              {outcome === 'COMPLETED'
-                ? copy.confirmCompleted
-                : copy.confirmUnsuccessful}
-            </p>
+            {completePhase !== 'uncertain' && completePhase !== 'reconciling' ? (
+              <p className="mt-2 text-sm leading-6 text-body">
+                {outcome === 'COMPLETED'
+                  ? copy.confirmCompleted
+                  : copy.confirmUnsuccessful}
+              </p>
+            ) : null}
 
             {completeError ? (
               <p role="alert" className="mt-3 text-sm font-semibold text-red-700">
@@ -314,35 +409,54 @@ export default function ExpertSessionActions({
             ) : null}
 
             <div className="mt-4 flex flex-wrap gap-3">
-              <button
-                type="button"
-                disabled={completePhase === 'submitting'}
-                onClick={() => {
-                  setCompleteError(null);
-                  setCompletePhase('idle');
-                }}
-                className="min-h-12 rounded-2xl border border-border bg-white px-4 text-sm font-bold text-ink disabled:opacity-60 focus:outline-none focus:ring-2 focus:ring-primary"
-              >
-                {copy.back}
-              </button>
-              <button
-                type="button"
-                disabled={completePhase === 'submitting'}
-                onClick={() => void complete()}
-                className="min-h-12 rounded-2xl bg-red-700 px-4 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-60 focus:outline-none focus:ring-2 focus:ring-red-700 focus:ring-offset-2"
-              >
-                {completePhase === 'submitting'
-                  ? copy.completing
-                  : completePhase === 'error'
-                    ? copy.retryFinish
-                    : copy.confirmFinish}
-              </button>
+              {completePhase === 'uncertain' ||
+              completePhase === 'reconciling' ? (
+                <button
+                  type="button"
+                  disabled={completePhase === 'reconciling'}
+                  onClick={() => void checkCompletionStatus()}
+                  className="min-h-12 rounded-2xl bg-primary px-4 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-60 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+                >
+                  {completePhase === 'reconciling'
+                    ? copy.checkingStatus
+                    : copy.checkStatus}
+                </button>
+              ) : (
+                <>
+                  <button
+                    type="button"
+                    disabled={completePhase === 'submitting'}
+                    onClick={() => {
+                      setCompleteError(null);
+                      setCompletePhase('idle');
+                    }}
+                    className="min-h-12 rounded-2xl border border-border bg-white px-4 text-sm font-bold text-ink disabled:opacity-60 focus:outline-none focus:ring-2 focus:ring-primary"
+                  >
+                    {copy.back}
+                  </button>
+                  <button
+                    type="button"
+                    disabled={completePhase === 'submitting'}
+                    onClick={() => void complete()}
+                    className="min-h-12 rounded-2xl bg-red-700 px-4 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-60 focus:outline-none focus:ring-2 focus:ring-red-700 focus:ring-offset-2"
+                  >
+                    {completePhase === 'submitting'
+                      ? copy.completing
+                      : completePhase === 'error'
+                        ? copy.retryFinish
+                        : copy.confirmFinish}
+                  </button>
+                </>
+              )}
             </div>
           </div>
         )}
 
         <p className="mt-4 text-xs leading-5 text-muted">
-          {copy.currentPaymentStatus.replace('{status}', initialPaymentStatus)}
+          {copy.currentPaymentStatus.replace(
+            '{status}',
+            resultPaymentStatus ?? initialPaymentStatus,
+          )}
         </p>
       </section>
     </div>

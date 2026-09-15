@@ -1,4 +1,5 @@
 import { CallError, joinCall } from './call';
+import { waitFor } from '@testing-library/react';
 
 type Handler = (...args: any[]) => void;
 
@@ -210,5 +211,67 @@ describe('joinCall', () => {
       joinCall('c1', 'video', { cameraId: null, microphoneId: null }),
     ).rejects.toMatchObject<Partial<CallError>>({ reason: 'not-active' });
     expect(room.connect).not.toHaveBeenCalled();
+  });
+
+  it('отмена до позднего grant не создаёт комнату и не включает микрофон', async () => {
+    let resolveGrant!: (value: unknown) => void;
+    global.fetch = jest.fn(
+      () =>
+        new Promise((resolve) => {
+          resolveGrant = resolve;
+        }),
+    ) as unknown as typeof fetch;
+    const controller = new AbortController();
+    const joining = (joinCall as typeof joinCall)(
+      'c1',
+      'audio',
+      { cameraId: null, microphoneId: null },
+      controller.signal,
+    );
+
+    controller.abort();
+    resolveGrant({ ok: true, json: async () => GRANT });
+
+    await expect(joining).rejects.toBeDefined();
+    expect(room.connect).not.toHaveBeenCalled();
+    expect(room.localParticipant.setMicrophoneEnabled).not.toHaveBeenCalledWith(
+      true,
+      undefined,
+    );
+  });
+
+  it('отмена во время запуска камеры сразу гасит опубликованный микрофон и room', async () => {
+    tokenResponds(200, GRANT);
+    let resolveCamera!: () => void;
+    room.localParticipant.setCameraEnabled.mockImplementationOnce(
+      () =>
+        new Promise<void>((resolve) => {
+          resolveCamera = resolve;
+        }),
+    );
+    const controller = new AbortController();
+    const joining = (joinCall as typeof joinCall)(
+      'c1',
+      'video',
+      { cameraId: null, microphoneId: null },
+      controller.signal,
+    );
+    await waitFor(() =>
+      expect(room.localParticipant.setCameraEnabled).toHaveBeenCalledWith(
+        true,
+        undefined,
+      ),
+    );
+
+    controller.abort();
+    try {
+      await waitFor(() => expect(room.disconnect).toHaveBeenCalled(), {
+        timeout: 150,
+      });
+      expect(room.localParticipant.setMicrophoneEnabled).toHaveBeenCalledWith(false);
+    } finally {
+      resolveCamera();
+      await joining.catch(() => undefined);
+    }
   });
 });
