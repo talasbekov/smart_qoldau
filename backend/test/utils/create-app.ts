@@ -9,7 +9,25 @@ export async function createApp(
 ): Promise<INestApplication> {
   const moduleRef = await builder.compile();
   const app = moduleRef.createNestApplication({ rawBody: true });
-  configureApp(app);
-  await app.init();
-  return app;
+  try {
+    configureApp(app);
+    await app.init();
+    return app;
+  } catch (bootstrapError) {
+    try {
+      await app.close();
+    } catch (cleanupError) {
+      if (
+        bootstrapError !== null &&
+        (typeof bootstrapError === 'object' ||
+          typeof bootstrapError === 'function')
+      ) {
+        Object.defineProperty(bootstrapError, 'cleanupError', {
+          value: cleanupError,
+          configurable: true,
+        });
+      }
+    }
+    throw bootstrapError;
+  }
 }
