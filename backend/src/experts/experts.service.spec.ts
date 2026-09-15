@@ -26,7 +26,7 @@ describe('ExpertsService.updateWorkStatus — компенсация presence п
 
   beforeAll(() => {
     redis = new RedisService({
-      getOrThrow: () => 'redis://localhost:6379',
+      getOrThrow: () => process.env.REDIS_URL ?? 'redis://localhost:6379',
     } as never);
     presence = new PresenceService(redis, new ClockService());
   });

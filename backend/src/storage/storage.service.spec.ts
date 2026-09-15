@@ -5,12 +5,13 @@ describe('StorageService (MinIO)', () => {
   let service: StorageService;
   beforeAll(async () => {
     const config = new ConfigService({
-      S3_ENDPOINT: 'http://localhost:9000',
-      S3_ACCESS_KEY: 'sq-minio',
-      S3_SECRET_KEY: 'sq-minio-secret',
-      S3_BUCKET_DOCUMENTS: 'expert-documents-test',
-      S3_BUCKET_AVATARS: 'sq-avatars-test',
-      S3_BUCKET_CONTENT: 'sq-content-test',
+      S3_ENDPOINT: process.env.S3_ENDPOINT ?? 'http://localhost:9000',
+      S3_ACCESS_KEY: process.env.S3_ACCESS_KEY ?? 'sq-minio',
+      S3_SECRET_KEY: process.env.S3_SECRET_KEY ?? 'sq-minio-secret',
+      S3_BUCKET_DOCUMENTS:
+        process.env.S3_BUCKET_DOCUMENTS ?? 'expert-documents-test',
+      S3_BUCKET_AVATARS: process.env.S3_BUCKET_AVATARS ?? 'sq-avatars-test',
+      S3_BUCKET_CONTENT: process.env.S3_BUCKET_CONTENT ?? 'sq-content-test',
     });
     service = new StorageService(config);
     await service.ensureBucket();
