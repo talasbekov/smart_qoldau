@@ -68,37 +68,3 @@ describe('StorageService: бакет аватаров', () => {
     );
   });
 });
-
-// Отдельный блок против живого MinIO: политика публичного чтения — это то,
-// ради чего бакет вообще разделён, и мок её не проверяет.
-describe('StorageService: аватар читается без подписи (MinIO)', () => {
-  let service: StorageService;
-
-  beforeAll(async () => {
-    service = new StorageService(
-      new ConfigService({
-        S3_ENDPOINT: 'http://localhost:9000',
-        S3_ACCESS_KEY: 'sq-minio',
-        S3_SECRET_KEY: 'sq-minio-secret',
-        S3_BUCKET_DOCUMENTS: DOCUMENTS_BUCKET,
-        S3_BUCKET_AVATARS: AVATARS_BUCKET,
-        S3_BUCKET_CONTENT: 'sq-content-test',
-      }),
-    );
-    await service.ensureAvatarsBucket();
-  });
-
-  it('положенный аватар доступен по avatarUrl, а после удаления — нет', async () => {
-    const key = 'spec-avatar.txt';
-    await service.putAvatar(key, Buffer.from('avatar-bytes'), 'text/plain');
-
-    const url = service.avatarUrl(key);
-    expect(url).not.toContain('X-Amz-Signature');
-    const res = await fetch(url);
-    expect(res.status).toBe(200);
-    expect(await res.text()).toBe('avatar-bytes');
-
-    await service.deleteAvatar(key);
-    expect((await fetch(url)).status).toBe(404);
-  });
-});

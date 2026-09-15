@@ -15,6 +15,7 @@
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\"",
     "lint:fix": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
     "test": "jest",
+    "test:integration": "jest --config ./test/jest-integration.json",
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
@@ -104,6 +105,14 @@
     ],
     "coverageDirectory": "../coverage",
     "testEnvironment": "node",
+    "testPathIgnorePatterns": [
+      "<rootDir>/prisma/.*\\.spec\\.ts$",
+      "<rootDir>/audit/audit\\.service\\.spec\\.ts$",
+      "<rootDir>/storage/(storage\\.service|storage-avatars\\.integration)\\.spec\\.ts$",
+      "<rootDir>/redis/redis\\.service\\.spec\\.ts$",
+      "<rootDir>/presence/presence\\.service\\.spec\\.ts$",
+      "<rootDir>/experts/experts\\.service\\.spec\\.ts$"
+    ],
     "testTimeout": 15000,
     "maxWorkers": "50%"
   }

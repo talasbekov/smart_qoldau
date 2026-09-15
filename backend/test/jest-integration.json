@@ -1,0 +1,19 @@
+{
+  "moduleFileExtensions": ["js", "json", "ts"],
+  "rootDir": "..",
+  "testEnvironment": "node",
+  "testMatch": [
+    "<rootDir>/src/prisma/**/*.spec.ts",
+    "<rootDir>/src/audit/audit.service.spec.ts",
+    "<rootDir>/src/storage/storage.service.spec.ts",
+    "<rootDir>/src/storage/storage-avatars.integration.spec.ts",
+    "<rootDir>/src/redis/redis.service.spec.ts",
+    "<rootDir>/src/presence/presence.service.spec.ts",
+    "<rootDir>/src/experts/experts.service.spec.ts"
+  ],
+  "transform": {
+    "^.+\\.(t|j)s$": "ts-jest"
+  },
+  "testTimeout": 15000,
+  "maxWorkers": 1
+}
