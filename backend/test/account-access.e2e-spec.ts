@@ -504,6 +504,61 @@ describe('E29 current account access (HTTP + WS)', () => {
     );
   });
 
+  it.each(['user', 'expert'] as const)(
+    '%s room keeps FIFO across Redis while another room remains independent',
+    async (kind) => {
+      const local = await ready(tokens[1]);
+      const remote = await ready(tokens[1], remoteWsUrl);
+      const unrelated = await ready(tokens[2], remoteWsUrl);
+      const received: string[][] = [[], []];
+      const completed = [local, remote].flatMap((socket, index) => {
+        socket.on('offer.new', () => received[index].push('offer.new'));
+        socket.on('offer.revoked', () => received[index].push('offer.revoked'));
+        return [event(socket, 'offer.new'), event(socket, 'offer.revoked')];
+      });
+      let release!: () => void;
+      let started!: () => void;
+      const delayed = new Promise<void>((resolve) => {
+        release = resolve;
+      });
+      const checking = new Promise<void>((resolve) => {
+        started = resolve;
+      });
+      const access = app.get(AccountAccessService);
+      const check = access.assertActive.bind(access);
+      jest
+        .spyOn(access, 'assertActive')
+        .mockImplementationOnce(async (userId) => {
+          started();
+          await delayed;
+          await check(userId);
+        });
+      const events = app.get(EventsService);
+      const send = (name: string) =>
+        kind === 'user'
+          ? events.emitToUser(users[1], name, { offerId: 'fifo' })
+          : events.emitToExpert(expertId, name, { offerId: 'fifo' });
+      let beforeRelease: string[][];
+      try {
+        send('offer.new');
+        await checking;
+        send('offer.revoked');
+        const marker = event(unrelated, 'fifo.marker');
+        events.emitToUser(users[2], 'fifo.marker', {});
+        await marker;
+        beforeRelease = received.map((items) => [...items]);
+      } finally {
+        release();
+      }
+      await Promise.all(completed);
+      expect(beforeRelease).toEqual([[], []]);
+      expect(received).toEqual([
+        ['offer.new', 'offer.revoked'],
+        ['offer.new', 'offer.revoked'],
+      ]);
+    },
+  );
+
   it('unrelated participant remains denied on HTTP and WS', async () => {
     await get(tokens[2], messagesPath()).expect(404);
     const stranger = await ready(tokens[2]);
