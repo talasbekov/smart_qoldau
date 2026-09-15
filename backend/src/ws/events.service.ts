@@ -11,6 +11,7 @@ import { PrismaService } from '../prisma/prisma.service';
 export class EventsService {
   private readonly logger = new Logger(EventsService.name);
   private server: Server | null = null;
+  private readonly roomTails = new Map<string, Promise<void>>();
 
   constructor(
     private readonly access: AccountAccessService,
@@ -60,14 +61,25 @@ export class EventsService {
     payload: unknown,
   ): void {
     const room = `${kind}:${id}`;
-    void this.safeEmit(kind, id, room, event, payload).catch((e: unknown) => {
-      this.logger.error(
-        `emit failed room=${room} event=${event}: ${
-          e instanceof Error ? e.message : String(e)
-        }`,
-        e instanceof Error ? e.stack : undefined,
-      );
-    });
+    // Serialize only this room on this emitter instance. Check access when the
+    // event reaches the head, not when queued; slow DB checks cannot invert
+    // offer.new/offer.revoked. Other rooms keep making progress independently.
+    const previous = this.roomTails.get(room) ?? Promise.resolve();
+    const pending = previous
+      .then(() => this.safeEmit(kind, id, room, event, payload))
+      .catch((e: unknown) => {
+        this.logger.error(
+          `emit failed room=${room} event=${event}: ${
+            e instanceof Error ? e.message : String(e)
+          }`,
+          e instanceof Error ? e.stack : undefined,
+        );
+      })
+      .finally(() => {
+        // A completed element must not delete the tail of a newer element.
+        if (this.roomTails.get(room) === pending) this.roomTails.delete(room);
+      });
+    this.roomTails.set(room, pending);
   }
 
   private async safeEmit(
