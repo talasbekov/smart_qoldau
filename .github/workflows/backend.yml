@@ -86,6 +86,7 @@ jobs:
       - run: npx prisma migrate deploy && npx prisma db seed
       - run: npm run lint
       - run: npm test
+      - run: npm run test:integration -- --runInBand
       - run: npm run test:e2e
       - name: Stop MinIO
         if: always()
