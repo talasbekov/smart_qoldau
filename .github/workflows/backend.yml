@@ -1,26 +1,92 @@
 name: backend
-on: { pull_request: { paths: ['backend/**'] }, push: { branches: [main] } }
+on:
+  pull_request:
+    paths: ["backend/**", ".github/workflows/backend.yml"]
+  push:
+    branches: [main]
 jobs:
   test:
     runs-on: ubuntu-latest
     services:
       postgres:
         image: postgres:16-alpine
-        env: { POSTGRES_USER: sq, POSTGRES_PASSWORD: sq, POSTGRES_DB: smartqoldau_test }
-        ports: ['5433:5432']
-      redis: { image: redis:7-alpine, ports: ['6379:6379'] }
+        env:
+          {
+            POSTGRES_USER: sq,
+            POSTGRES_PASSWORD: sq,
+            POSTGRES_DB: smartqoldau_test,
+          }
+        ports: ["5433:5432"]
+        options: >-
+          --health-cmd "pg_isready -U sq -d smartqoldau_test"
+          --health-interval 2s
+          --health-timeout 5s
+          --health-retries 15
+      redis:
+        image: redis:7-alpine
+        ports: ["6379:6379"]
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 2s
+          --health-timeout 5s
+          --health-retries 15
     env:
       DATABASE_URL: postgresql://sq:sq@localhost:5433/smartqoldau_test
       REDIS_URL: redis://localhost:6379
       JWT_SECRET: ci-secret-0123456789abcdef0123456789abcdef
       SMS_PROVIDER: dev
+      S3_ENDPOINT: http://localhost:9000
+      S3_ACCESS_KEY: ci-minio
+      S3_SECRET_KEY: ci-minio-test-secret
+      S3_BUCKET_DOCUMENTS: ci-expert-documents
+      S3_BUCKET_AVATARS: ci-avatars
+      S3_BUCKET_CONTENT: ci-content
+      CHAT_ENCRYPTION_KEY: 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+      LIVEKIT_API_KEY: ci-livekit-key
+      LIVEKIT_API_SECRET: ci-livekit-secret
+      LIVEKIT_URL: ws://localhost:7880
+      PAYMENT_PROVIDER: mock
+      PUSH_PROVIDER: mock
+      PAYMENT_WEBHOOK_SECRET: ci-payment-webhook-secret-32-chars
+      PAYOUT_WEBHOOK_SECRET: ci-payout-webhook-secret-32-chars
+      THROTTLE_ENABLED: "false"
     defaults: { run: { working-directory: backend } }
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
-        with: { node-version: 22, cache: npm, cache-dependency-path: backend/package-lock.json }
+        with:
+          {
+            node-version: 22,
+            cache: npm,
+            cache-dependency-path: backend/package-lock.json,
+          }
       - run: npm ci
+      - name: Start MinIO
+        run: |
+          docker run --detach --rm --name minio \
+            --publish 9000:9000 \
+            --env MINIO_ROOT_USER="$S3_ACCESS_KEY" \
+            --env MINIO_ROOT_PASSWORD="$S3_SECRET_KEY" \
+            minio/minio@sha256:14cea493d9a34af32f524e538b8346cf79f3321eff8e708c1e2960462bd8936e \
+            server /data
+
+          for _ in {1..30}; do
+            if curl --fail --silent http://localhost:9000/minio/health/live >/dev/null; then
+              exit 0
+            fi
+            if ! docker inspect --format '{{.State.Running}}' minio | grep --quiet '^true$'; then
+              docker logs minio
+              exit 1
+            fi
+            sleep 2
+          done
+
+          docker logs minio
+          exit 1
       - run: npx prisma migrate deploy && npx prisma db seed
       - run: npm run lint
       - run: npm test
       - run: npm run test:e2e
+      - name: Stop MinIO
+        if: always()
+        run: docker rm --force minio >/dev/null 2>&1 || true

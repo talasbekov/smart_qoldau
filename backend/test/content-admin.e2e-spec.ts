@@ -9,6 +9,7 @@ import { adminUser } from './utils/admin-helpers';
 import { clientUser } from './utils/client-helpers';
 
 const SLUG_PREFIX = 'e2e-cms-';
+const CATEGORY = 'e2e-cms';
 const EDITOR_EMAIL = 'e2e-content-editor@smartqoldau.kz';
 const OPERATOR_EMAIL = 'e2e-content-outsider@smartqoldau.kz';
 const PH_C1 = '+77087800001';
@@ -49,7 +50,7 @@ const ARTICLE = {
   kind: 'ARTICLE',
   access: 'FREE',
   slug: `${SLUG_PREFIX}article`,
-  category: 'anxiety',
+  category: CATEGORY,
   titleRu: 'Как справиться с тревогой',
   titleKk: 'Мазасыздық',
   summaryRu: 'Кратко',
@@ -111,6 +112,15 @@ describe('Контент: CMS редактора (E13, e2e)', () => {
     return adminUser(app, ['CONTENT_EDITOR'], EDITOR_EMAIL);
   }
 
+  async function clientFixtureSlugs(token: string): Promise<string[]> {
+    const res = await get(token, `/v1/content?category=${CATEGORY}`).expect(
+      200,
+    );
+    return res.body
+      .map((item: { slug: string }) => item.slug)
+      .filter((slug: string) => slug.startsWith(SLUG_PREFIX));
+  }
+
   it('редактор создаёт черновик, публикует и снимает с публикации', async () => {
     const ed = await editor();
     const cli = await clientUser(app, PH_C1, () => lastCode);
@@ -120,23 +130,19 @@ describe('Контент: CMS редактора (E13, e2e)', () => {
       .expect(201);
     expect(created.body.publishedAt).toBeNull();
     // Черновик клиенту не виден — редактор готовит его сколько нужно.
-    expect(
-      (await get(cli.accessToken, '/v1/content').expect(200)).body,
-    ).toHaveLength(0);
+    expect(await clientFixtureSlugs(cli.accessToken)).toEqual([]);
 
     await patch(ed.token, `/v1/admin/content/${created.body.id}`)
       .send({ published: true })
       .expect(200);
-    expect(
-      (await get(cli.accessToken, '/v1/content').expect(200)).body,
-    ).toHaveLength(1);
+    expect(await clientFixtureSlugs(cli.accessToken)).toEqual([
+      `${SLUG_PREFIX}article`,
+    ]);
 
     await patch(ed.token, `/v1/admin/content/${created.body.id}`)
       .send({ published: false })
       .expect(200);
-    expect(
-      (await get(cli.accessToken, '/v1/content').expect(200)).body,
-    ).toHaveLength(0);
+    expect(await clientFixtureSlugs(cli.accessToken)).toEqual([]);
   });
 
   it('список редактора показывает и черновики', async () => {

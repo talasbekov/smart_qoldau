@@ -11,6 +11,8 @@ const PH_RU = '+77087500001';
 const PH_KZ = '+77087500002';
 const ALL_PHONES = [PH_RU, PH_KZ];
 const SLUG_PREFIX = 'e2e-content-';
+const CATEGORY_ANXIETY = `${SLUG_PREFIX}anxiety`;
+const CATEGORY_FOCUS = `${SLUG_PREFIX}focus`;
 
 let lastCode = '';
 
@@ -65,7 +67,7 @@ describe('Контент: списки и карточки (E13, e2e)', () => {
         kind: 'ARTICLE',
         access: 'FREE',
         slug: `${SLUG_PREFIX}article`,
-        category: 'anxiety',
+        category: CATEGORY_ANXIETY,
         titleRu: 'Как справиться с тревогой',
         titleKk: 'Мазасыздықпен қалай күресуге болады',
         summaryRu: 'Кратко',
@@ -82,7 +84,7 @@ describe('Контент: списки и карточки (E13, e2e)', () => {
         kind: 'BREATHING',
         access: 'FREE',
         slug: `${SLUG_PREFIX}breathing`,
-        category: 'anxiety',
+        category: CATEGORY_ANXIETY,
         titleRu: 'Квадратное дыхание',
         titleKk: 'Шаршы тыныс алу',
         summaryRu: 'Четыре фазы по 4 секунды',
@@ -107,7 +109,7 @@ describe('Контент: списки и карточки (E13, e2e)', () => {
         kind: 'ARTICLE',
         access: 'FREE',
         slug: `${SLUG_PREFIX}draft`,
-        category: 'anxiety',
+        category: CATEGORY_ANXIETY,
         titleRu: 'Черновик',
         titleKk: 'Жоба',
         summaryRu: 'Не готово',
@@ -124,7 +126,7 @@ describe('Контент: списки и карточки (E13, e2e)', () => {
         kind: 'ARTICLE',
         access: 'FREE',
         slug: `${SLUG_PREFIX}ru-only`,
-        category: 'focus',
+        category: CATEGORY_FOCUS,
         titleRu: 'Только по-русски',
         titleKk: '',
         summaryRu: 'Перевода нет',
@@ -157,14 +159,28 @@ describe('Контент: списки и карточки (E13, e2e)', () => {
 
   it('список отдаёт только опубликованное, на языке пользователя', async () => {
     const ru = await clientUser(app, PH_RU, () => lastCode);
-    const res = await get(ru.accessToken, '/v1/content').expect(200);
+    const res = await get(
+      ru.accessToken,
+      `/v1/content?category=${CATEGORY_ANXIETY}`,
+    ).expect(200);
 
     const slugs = res.body.map((i: { slug: string }) => i.slug);
     expect(slugs).toContain(`${SLUG_PREFIX}article`);
-    expect(slugs).toContain(`${SLUG_PREFIX}ru-only`);
     // Черновик не показывается никому.
     expect(slugs).not.toContain(`${SLUG_PREFIX}draft`);
-    expect(res.body[0].title).toBe('Как справиться с тревогой');
+    expect(
+      res.body.find(
+        (item: { slug: string }) => item.slug === `${SLUG_PREFIX}article`,
+      )?.title,
+    ).toBe('Как справиться с тревогой');
+
+    const focus = await get(
+      ru.accessToken,
+      `/v1/content?category=${CATEGORY_FOCUS}`,
+    ).expect(200);
+    expect(focus.body.map((i: { slug: string }) => i.slug)).toEqual([
+      `${SLUG_PREFIX}ru-only`,
+    ]);
   });
 
   it('казахскому пользователю материал без перевода не показывается', async () => {
@@ -173,11 +189,23 @@ describe('Контент: списки и карточки (E13, e2e)', () => {
       .send({ locale: 'kz' })
       .expect(200);
 
-    const res = await get(kz.accessToken, '/v1/content').expect(200);
+    const res = await get(
+      kz.accessToken,
+      `/v1/content?category=${CATEGORY_ANXIETY}`,
+    ).expect(200);
     const slugs = res.body.map((i: { slug: string }) => i.slug);
     expect(slugs).toContain(`${SLUG_PREFIX}article`);
-    expect(slugs).not.toContain(`${SLUG_PREFIX}ru-only`);
-    expect(res.body[0].title).toBe('Мазасыздықпен қалай күресуге болады');
+    expect(
+      res.body.find(
+        (item: { slug: string }) => item.slug === `${SLUG_PREFIX}article`,
+      )?.title,
+    ).toBe('Мазасыздықпен қалай күресуге болады');
+
+    const focus = await get(
+      kz.accessToken,
+      `/v1/content?category=${CATEGORY_FOCUS}`,
+    ).expect(200);
+    expect(focus.body).toEqual([]);
   });
 
   it('фильтры по виду и категории сужают список', async () => {
@@ -185,7 +213,7 @@ describe('Контент: списки и карточки (E13, e2e)', () => {
 
     const breathing = await get(
       ru.accessToken,
-      '/v1/content?kind=BREATHING',
+      `/v1/content?kind=BREATHING&category=${CATEGORY_ANXIETY}`,
     ).expect(200);
     expect(breathing.body.map((i: { slug: string }) => i.slug)).toEqual([
       `${SLUG_PREFIX}breathing`,
@@ -193,7 +221,7 @@ describe('Контент: списки и карточки (E13, e2e)', () => {
 
     const focus = await get(
       ru.accessToken,
-      '/v1/content?category=focus',
+      `/v1/content?category=${CATEGORY_FOCUS}`,
     ).expect(200);
     expect(focus.body.map((i: { slug: string }) => i.slug)).toEqual([
       `${SLUG_PREFIX}ru-only`,
@@ -259,17 +287,21 @@ describe('Контент: списки и карточки (E13, e2e)', () => {
   it('список ограничен страницей: take и skip', async () => {
     const ru = await clientUser(app, PH_RU, () => lastCode);
 
-    const firstPage = await get(ru.accessToken, '/v1/content?take=1').expect(
-      200,
-    );
-    expect(firstPage.body).toHaveLength(1);
+    const firstPage = await get(
+      ru.accessToken,
+      `/v1/content?category=${CATEGORY_ANXIETY}&take=1`,
+    ).expect(200);
+    expect(firstPage.body.map((i: { slug: string }) => i.slug)).toEqual([
+      `${SLUG_PREFIX}article`,
+    ]);
 
     const secondPage = await get(
       ru.accessToken,
-      '/v1/content?take=1&skip=1',
+      `/v1/content?category=${CATEGORY_ANXIETY}&take=1&skip=1`,
     ).expect(200);
-    expect(secondPage.body).toHaveLength(1);
-    expect(secondPage.body[0].slug).not.toBe(firstPage.body[0].slug);
+    expect(secondPage.body.map((i: { slug: string }) => i.slug)).toEqual([
+      `${SLUG_PREFIX}breathing`,
+    ]);
   });
 
   it('список и карточка открыты без токена — они существуют ради поиска', async () => {
