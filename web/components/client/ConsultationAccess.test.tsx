@@ -2,7 +2,11 @@ import { render, screen } from '@testing-library/react';
 
 jest.mock('./Session', () => ({
   __esModule: true,
-  default: () => <div data-testid="session">session</div>,
+  default: ({ locale }: { locale?: string }) => (
+    <div data-testid="session" data-locale={locale}>
+      session
+    </div>
+  ),
 }));
 jest.mock('./Chat', () => ({
   __esModule: true,
@@ -129,5 +133,16 @@ describe('ConsultationAccess', () => {
     expect(
       screen.getByRole('link', { name: 'Кеңес ақысын төлеу' }),
     ).toHaveAttribute('href', '/kz/consultations/c1/payment');
+  });
+
+  it('передаёт locale в live-сессию', () => {
+    render(
+      <ConsultationAccess
+        consultation={consultation({ paymentStatus: 'HELD' })}
+        locale="kz"
+      />,
+    );
+
+    expect(screen.getByTestId('session')).toHaveAttribute('data-locale', 'kz');
   });
 });

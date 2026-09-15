@@ -1,31 +1,87 @@
-import { Room, RoomEvent } from 'livekit-client';
+import {
+  Room,
+  RoomEvent,
+  Track,
+  type RemoteParticipant,
+  type RemoteTrack,
+} from 'livekit-client';
 import type { Chosen } from '@/components/client/DeviceCheck';
+
+export type CallState = 'connected' | 'reconnecting' | 'disconnected';
+export type CallErrorReason =
+  | 'not-active'
+  | 'payment-required'
+  | 'permission-denied'
+  | 'device-missing'
+  | 'connection'
+  | 'unknown';
+
+export class CallError extends Error {
+  constructor(readonly reason: CallErrorReason) {
+    super(reason);
+    this.name = 'CallError';
+  }
+}
+
+export type RemoteMediaTargets = {
+  audio: HTMLAudioElement;
+  video?: HTMLVideoElement | null;
+};
 
 export type Call = {
   room: Room;
+  bindRemoteMedia: (targets: RemoteMediaTargets) => () => void;
   leave: () => Promise<void>;
-  onDisconnected: (handler: () => void) => void;
+  onStateChange: (handler: (state: CallState) => void) => () => void;
+  onDisconnected: (handler: () => void) => () => void;
 };
 
 type Grant = { token: string; url: string; room: string };
 
+function classifyCallError(caught: unknown): CallError {
+  if (caught instanceof CallError) return caught;
+
+  const name = caught instanceof Error ? caught.name : '';
+  if (name === 'NotAllowedError' || name === 'SecurityError') {
+    return new CallError('permission-denied');
+  }
+  if (name === 'NotFoundError' || name === 'OverconstrainedError') {
+    return new CallError('device-missing');
+  }
+  if (caught instanceof TypeError) return new CallError('connection');
+  return new CallError('unknown');
+}
+
 // Пропуск в комнату выдаёт NestJS: он один знает, активна ли
-// консультация и оплачена ли она. Медиапоток идёт мимо и Next, и Nest —
+// консультация и подтверждён ли hold. Медиапоток идёт мимо Next и Nest —
 // напрямую в LiveKit.
-async function requestGrant(consultationId: string, format: 'audio' | 'video'): Promise<Grant> {
-  const response = await fetch(`/api/proxy/consultations/${consultationId}/media-token`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ format }),
-  });
+async function requestGrant(
+  consultationId: string,
+  format: 'audio' | 'video',
+): Promise<Grant> {
+  let response: Response;
+  try {
+    response = await fetch(
+      `/api/proxy/consultations/${consultationId}/media-token`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ format }),
+      },
+    );
+  } catch (caught) {
+    throw classifyCallError(caught);
+  }
 
   if (!response.ok) {
-    const code = ((await response.json().catch(() => null)) as { code?: string } | null)?.code;
-    throw new Error(
-      code === 'CONSULTATION_NOT_ACTIVE'
-        ? 'Консультация не активна — подключиться нельзя'
-        : 'Не удалось подключиться к звонку',
-    );
+    const code = (
+      (await response.json().catch(() => null)) as { code?: string } | null
+    )?.code;
+    if (code === 'CONSULTATION_NOT_ACTIVE') throw new CallError('not-active');
+    if (code === 'PAYMENT_HOLD_REQUIRED') {
+      throw new CallError('payment-required');
+    }
+    throw new CallError('connection');
   }
 
   return (await response.json()) as Grant;
@@ -37,28 +93,164 @@ export async function joinCall(
   devices: Chosen,
 ): Promise<Call> {
   const grant = await requestGrant(consultationId, format);
-
   const room = new Room();
-  await room.connect(grant.url, grant.token);
+  const remoteTracks = new Set<RemoteTrack>();
+  const stateHandlers = new Set<(state: CallState) => void>();
+  let mediaTargets: RemoteMediaTargets | null = null;
+  let state: CallState = 'connected';
+  let leavePromise: Promise<void> | null = null;
 
-  await room.localParticipant.setMicrophoneEnabled(
-    true,
-    devices.microphoneId ? { deviceId: devices.microphoneId } : undefined,
-  );
-  // В аудиоформате камера не включается вовсе: человек выбрал разговор
-  // без видео, и включать её «на всякий случай» — нарушение этого выбора.
-  if (format === 'video') {
-    await room.localParticipant.setCameraEnabled(
+  function targetFor(track: RemoteTrack): HTMLMediaElement | null {
+    if (!mediaTargets) return null;
+    if (track.kind === Track.Kind.Audio) return mediaTargets.audio;
+    if (track.kind === Track.Kind.Video) return mediaTargets.video ?? null;
+    return null;
+  }
+
+  function attachTrack(track: RemoteTrack) {
+    remoteTracks.add(track);
+    const target = targetFor(track);
+    if (target) track.attach(target);
+  }
+
+  function detachTrack(track: RemoteTrack) {
+    const target = targetFor(track);
+    if (target) track.detach(target);
+    remoteTracks.delete(track);
+  }
+
+  function detachAllRemoteTracks() {
+    for (const track of remoteTracks) {
+      const target = targetFor(track);
+      if (target) track.detach(target);
+    }
+    remoteTracks.clear();
+  }
+
+  function emitState(next: CallState) {
+    state = next;
+    stateHandlers.forEach((handler) => handler(next));
+  }
+
+  const onTrackSubscribed = (track: RemoteTrack) => attachTrack(track);
+  const onTrackUnsubscribed = (track: RemoteTrack) => detachTrack(track);
+  const onParticipantDisconnected = (participant: RemoteParticipant) => {
+    participant.trackPublications.forEach((publication) => {
+      if (publication.track) detachTrack(publication.track);
+    });
+  };
+  const onReconnecting = () => emitState('reconnecting');
+  const onReconnected = () => emitState('connected');
+  const onDisconnected = () => {
+    detachAllRemoteTracks();
+    removeRoomListeners();
+    emitState('disconnected');
+  };
+
+  function addRoomListeners() {
+    room.on(RoomEvent.TrackSubscribed, onTrackSubscribed);
+    room.on(RoomEvent.TrackUnsubscribed, onTrackUnsubscribed);
+    room.on(RoomEvent.ParticipantDisconnected, onParticipantDisconnected);
+    room.on(RoomEvent.Reconnecting, onReconnecting);
+    room.on(RoomEvent.Reconnected, onReconnected);
+    room.on(RoomEvent.Disconnected, onDisconnected);
+  }
+
+  function removeRoomListeners() {
+    room.off(RoomEvent.TrackSubscribed, onTrackSubscribed);
+    room.off(RoomEvent.TrackUnsubscribed, onTrackUnsubscribed);
+    room.off(RoomEvent.ParticipantDisconnected, onParticipantDisconnected);
+    room.off(RoomEvent.Reconnecting, onReconnecting);
+    room.off(RoomEvent.Reconnected, onReconnected);
+    room.off(RoomEvent.Disconnected, onDisconnected);
+  }
+
+  async function stopLocalTracks() {
+    await Promise.allSettled([
+      room.localParticipant.setMicrophoneEnabled(false),
+      room.localParticipant.setCameraEnabled(false),
+    ]);
+  }
+
+  addRoomListeners();
+
+  try {
+    await room.connect(grant.url, grant.token);
+
+    // TrackSubscribed не обязан сработать для публикаций, которые уже были
+    // подписаны к моменту, когда UI получил Call. Явно забираем snapshot.
+    room.remoteParticipants.forEach((participant) => {
+      participant.trackPublications.forEach((publication) => {
+        if (publication.track) attachTrack(publication.track);
+      });
+    });
+
+    await room.localParticipant.setMicrophoneEnabled(
       true,
-      devices.cameraId ? { deviceId: devices.cameraId } : undefined,
+      devices.microphoneId ? { deviceId: devices.microphoneId } : undefined,
     );
+    // В аудиоформате камера не включается вовсе.
+    if (format === 'video') {
+      await room.localParticipant.setCameraEnabled(
+        true,
+        devices.cameraId ? { deviceId: devices.cameraId } : undefined,
+      );
+    }
+  } catch (caught) {
+    removeRoomListeners();
+    detachAllRemoteTracks();
+    await stopLocalTracks();
+    await room.disconnect().catch(() => undefined);
+    throw classifyCallError(caught);
   }
 
   return {
     room,
-    leave: () => room.disconnect(),
+    bindRemoteMedia: (targets) => {
+      if (mediaTargets) {
+        for (const track of remoteTracks) {
+          const previousTarget = targetFor(track);
+          if (previousTarget) track.detach(previousTarget);
+        }
+      }
+
+      mediaTargets = targets;
+      remoteTracks.forEach((track) => {
+        const target = targetFor(track);
+        if (target) track.attach(target);
+      });
+
+      return () => {
+        if (mediaTargets !== targets) return;
+        for (const track of remoteTracks) {
+          const target = targetFor(track);
+          if (target) track.detach(target);
+        }
+        mediaTargets = null;
+      };
+    },
+    leave: () => {
+      if (leavePromise) return leavePromise;
+      leavePromise = (async () => {
+        removeRoomListeners();
+        detachAllRemoteTracks();
+        await stopLocalTracks();
+        await room.disconnect();
+        emitState('disconnected');
+      })();
+      return leavePromise;
+    },
+    onStateChange: (handler) => {
+      stateHandlers.add(handler);
+      handler(state);
+      return () => stateHandlers.delete(handler);
+    },
     onDisconnected: (handler) => {
-      room.on(RoomEvent.Disconnected, handler);
+      const stateHandler = (next: CallState) => {
+        if (next === 'disconnected') handler();
+      };
+      stateHandlers.add(stateHandler);
+      return () => stateHandlers.delete(stateHandler);
     },
   };
 }

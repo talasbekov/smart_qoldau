@@ -19,14 +19,20 @@ function toDevice(info: MediaDeviceInfo, index: number): Device {
   };
 }
 
-export async function listDevices(): Promise<Devices> {
+export async function listDevices(
+  format: 'audio' | 'video' = 'video',
+): Promise<Devices> {
   const media = navigator.mediaDevices;
   if (!media?.enumerateDevices) throw new DeviceError('unsupported');
 
   try {
     // Без выданного доступа браузер отдаёт устройства без названий —
     // выбрать из «Устройство 1» и «Устройство 2» человек не сможет.
-    const probe = await media.getUserMedia({ audio: true, video: true });
+    const probe = await media.getUserMedia({
+      audio: true,
+      // Аудиоконсультация не должна требовать наличия или разрешения камеры.
+      video: format === 'video',
+    });
     // Пробную дорожку обязательно гасим: иначе индикатор камеры горит
     // ещё до входа в комнату, и это выглядит как слежка.
     for (const track of probe.getTracks()) track.stop();

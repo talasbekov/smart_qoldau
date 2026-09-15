@@ -43,6 +43,22 @@ describe('listDevices', () => {
     expect(getUserMedia).toHaveBeenCalledWith({ audio: true, video: true });
   });
 
+  it('в аудиоформате не требует камеру и не включает её для проверки', async () => {
+    const getUserMedia = jest.fn().mockResolvedValue({ getTracks: () => [] });
+    mockMedia({
+      getUserMedia,
+      enumerateDevices: jest
+        .fn()
+        .mockResolvedValue(DEVICES.filter((device) => device.kind !== 'videoinput')),
+    });
+
+    await expect(listDevices('audio')).resolves.toEqual({
+      cameras: [],
+      microphones: [{ id: 'mic1', label: 'Микрофон гарнитуры' }],
+    });
+    expect(getUserMedia).toHaveBeenCalledWith({ audio: true, video: false });
+  });
+
   it('гасит пробную дорожку: иначе камера горит до конца сессии', async () => {
     const stop = jest.fn();
     mockMedia({

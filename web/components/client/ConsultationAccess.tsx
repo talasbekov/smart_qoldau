@@ -76,6 +76,7 @@ export default function ConsultationAccess({
       <Session
         consultationId={consultation.id}
         format={consultation.format as 'audio' | 'video'}
+        locale={locale}
       />
     );
   }

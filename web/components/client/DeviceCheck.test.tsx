@@ -2,7 +2,7 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 
 const listDevices = jest.fn();
 jest.mock('@/lib/realtime/devices', () => ({
-  listDevices: () => listDevices(),
+  listDevices: (...args: unknown[]) => listDevices(...args),
   DeviceError: class DeviceError extends Error {
     constructor(public reason: string) {
       super(reason);
@@ -40,6 +40,7 @@ describe('DeviceCheck', () => {
 
     await screen.findByLabelText('Микрофон');
     expect(screen.queryByLabelText('Камера')).toBeNull();
+    expect(listDevices).toHaveBeenCalledWith('audio');
   });
 
   it('передаёт выбранные устройства при входе', async () => {
@@ -75,5 +76,14 @@ describe('DeviceCheck', () => {
     await waitFor(() =>
       expect(screen.getByRole('button', { name: /Подключиться/ })).toBeDisabled(),
     );
+  });
+
+  it('показывает казахские подписи в kz locale', async () => {
+    listDevices.mockResolvedValue(DEVICES);
+    render(<DeviceCheck format="audio" locale="kz" onJoin={jest.fn()} />);
+
+    expect(await screen.findByLabelText('Микрофон')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Қосылу' })).toBeInTheDocument();
+    expect(screen.getByRole('heading')).toHaveTextContent(/тексеріңіз/i);
   });
 });

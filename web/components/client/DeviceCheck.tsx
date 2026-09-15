@@ -2,25 +2,23 @@
 
 import { useEffect, useState } from 'react';
 import { listDevices, DeviceError, type Devices } from '@/lib/realtime/devices';
+import ru from '@/messages/ru.json';
+import kz from '@/messages/kz.json';
 
 export type Chosen = { cameraId: string | null; microphoneId: string | null };
-
-const REASONS: Record<string, string> = {
-  denied: 'Браузер не дал доступ к камере и микрофону. Разрешите его в адресной строке — или можно продолжить в чате',
-  missing: 'Камеру или микрофон не нашли. Проверьте, подключены ли они — или можно продолжить в чате',
-  unsupported: 'Этот браузер не умеет видеозвонки. Можно продолжить в чате',
-  unknown: 'Не удалось получить доступ к устройствам. Можно продолжить в чате',
-};
 
 // Выбор устройств ДО входа в комнату: после входа человек уже в разговоре,
 // и «сейчас, я не тот микрофон выбрал» — плохое начало консультации.
 export default function DeviceCheck({
   format,
+  locale = 'ru',
   onJoin,
 }: {
   format: 'audio' | 'video';
+  locale?: string;
   onJoin: (chosen: Chosen) => void;
 }) {
+  const copy = locale === 'kz' ? kz.session : ru.session;
   const [devices, setDevices] = useState<Devices | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [cameraId, setCameraId] = useState<string | null>(null);
@@ -29,9 +27,16 @@ export default function DeviceCheck({
   useEffect(() => {
     let dropped = false;
 
-    void listDevices()
+    void listDevices(format)
       .then((found) => {
         if (dropped) return;
+        if (
+          found.microphones.length === 0 ||
+          (format === 'video' && found.cameras.length === 0)
+        ) {
+          setError(copy.deviceMissing);
+          return;
+        }
         setDevices(found);
         setCameraId(found.cameras[0]?.id ?? null);
         setMicrophoneId(found.microphones[0]?.id ?? null);
@@ -39,17 +44,23 @@ export default function DeviceCheck({
       .catch((caught) => {
         if (dropped) return;
         const reason = caught instanceof DeviceError ? caught.reason : 'unknown';
-        setError(REASONS[reason] ?? REASONS.unknown);
+        const reasons = {
+          denied: copy.deviceDenied,
+          missing: copy.deviceMissing,
+          unsupported: copy.deviceUnsupported,
+          unknown: copy.deviceUnknown,
+        };
+        setError(reasons[reason] ?? reasons.unknown);
       });
 
     return () => {
       dropped = true;
     };
-  }, []);
+  }, [copy.deviceDenied, copy.deviceMissing, copy.deviceUnknown, copy.deviceUnsupported, format]);
 
   return (
     <div className="flex max-w-md flex-col gap-4">
-      <h2 className="text-lg font-extrabold text-ink">Проверьте камеру и микрофон</h2>
+      <h2 className="text-lg font-extrabold text-ink">{copy.deviceTitle}</h2>
 
       {error ? (
         <p role="alert" className="rounded-2xl bg-chip p-4 text-sm text-body">
@@ -60,7 +71,7 @@ export default function DeviceCheck({
           {format === 'video' && (
             <div>
               <label htmlFor="camera" className="mb-1 block text-xs font-semibold text-muted">
-                Камера
+                {copy.camera}
               </label>
               <select
                 id="camera"
@@ -79,7 +90,7 @@ export default function DeviceCheck({
 
           <div>
             <label htmlFor="microphone" className="mb-1 block text-xs font-semibold text-muted">
-              Микрофон
+              {copy.microphone}
             </label>
             <select
               id="microphone"
@@ -103,7 +114,7 @@ export default function DeviceCheck({
         onClick={() => onJoin({ cameraId, microphoneId })}
         className="h-12 rounded-2xl bg-primary text-sm font-bold text-white disabled:opacity-60 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
       >
-        Подключиться
+        {copy.join}
       </button>
     </div>
   );
