@@ -16,7 +16,9 @@ class FakeSocket extends EventEmitter {
 
 const fake = new FakeSocket();
 const io = jest.fn((..._args: unknown[]) => fake);
-jest.mock('socket.io-client', () => ({ io: (...args: unknown[]) => io(...args) }));
+jest.mock('socket.io-client', () => ({
+  io: (...args: unknown[]) => io(...args),
+}));
 
 const originalFetch = global.fetch;
 afterEach(() => {
@@ -40,7 +42,9 @@ describe('connectRealtime', () => {
 
     await connectRealtime();
 
-    expect((global.fetch as jest.Mock).mock.calls[0][0]).toBe('/api/realtime/token');
+    expect((global.fetch as jest.Mock).mock.calls[0][0]).toBe(
+      '/api/realtime/token',
+    );
   });
 
   it('передаёт токен в рукопожатии, как ждёт шлюз', async () => {
@@ -48,7 +52,9 @@ describe('connectRealtime', () => {
 
     await connectRealtime();
 
-    const options = io.mock.calls[0][1] as unknown as { auth: { token: string } };
+    const options = io.mock.calls[0][1] as unknown as {
+      auth: { token: string };
+    };
     expect(options.auth.token).toBe('access-value');
   });
 
@@ -76,6 +82,48 @@ describe('connectRealtime', () => {
     fake.emit('ready', { expertId: null });
 
     expect(seen).toEqual([{ expertId: null }]);
+  });
+
+  it('не теряет быстрый ready, пришедший до регистрации React handler', async () => {
+    tokenResponds(200, { token: 'access-value' });
+    const socket = await connectRealtime();
+    fake.emit('ready', { expertId: 'e1' });
+    const seen: unknown[] = [];
+
+    socket.onReady((data) => seen.push(data));
+    await Promise.resolve();
+
+    expect(seen).toEqual([{ expertId: 'e1' }]);
+  });
+
+  it('не буферизует chat.send до ready и сообщает вызывающему, что emit не состоялся', async () => {
+    tokenResponds(200, { token: 'access-value' });
+    const socket = await connectRealtime();
+
+    expect(
+      socket.send('chat.send', { consultationId: 'c1', text: 'draft' }),
+    ).toBe(false);
+    expect(fake.emitted).toEqual([]);
+
+    fake.emit('ready', { expertId: null });
+    expect(
+      socket.send('chat.send', { consultationId: 'c1', text: 'draft' }),
+    ).toBe(true);
+    expect(fake.emitted).toContainEqual({
+      event: 'chat.send',
+      payload: { consultationId: 'c1', text: 'draft' },
+    });
+  });
+
+  it('после disconnect снова запрещает send до нового ready', async () => {
+    tokenResponds(200, { token: 'access-value' });
+    const socket = await connectRealtime();
+    fake.emit('ready', { expertId: null });
+    fake.emit('disconnect', 'transport close');
+
+    expect(
+      socket.send('chat.send', { consultationId: 'c1', text: 'draft' }),
+    ).toBe(false);
   });
 
   it('отписка снимает слушателя и закрывает сокет', async () => {

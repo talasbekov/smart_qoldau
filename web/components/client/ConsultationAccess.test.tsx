@@ -10,8 +10,12 @@ jest.mock('./Session', () => ({
 }));
 jest.mock('./Chat', () => ({
   __esModule: true,
-  default: ({ readOnly }: { readOnly?: boolean }) => (
-    <div data-testid="chat" data-read-only={readOnly ? 'true' : 'false'}>
+  default: ({ readOnly, locale }: { readOnly?: boolean; locale?: string }) => (
+    <div
+      data-testid="chat"
+      data-read-only={readOnly ? 'true' : 'false'}
+      data-locale={locale}
+    >
       chat
     </div>
   ),
@@ -144,5 +148,24 @@ describe('ConsultationAccess', () => {
     );
 
     expect(screen.getByTestId('session')).toHaveAttribute('data-locale', 'kz');
+  });
+
+  it('завершённая консультация оставляет локализованную историю только для чтения', () => {
+    render(
+      <ConsultationAccess
+        consultation={consultation({
+          status: 'COMPLETED',
+          paymentStatus: 'CAPTURED',
+          format: 'chat',
+        })}
+        locale="kz"
+      />,
+    );
+
+    expect(screen.getByTestId('chat')).toHaveAttribute(
+      'data-read-only',
+      'true',
+    );
+    expect(screen.getByTestId('chat')).toHaveAttribute('data-locale', 'kz');
   });
 });

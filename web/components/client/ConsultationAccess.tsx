@@ -44,7 +44,7 @@ export default function ConsultationAccess({
             <h2 className="mb-3 font-extrabold text-ink">
               {copy.historyTitle}
             </h2>
-            <Chat consultationId={consultation.id} readOnly />
+            <Chat consultationId={consultation.id} readOnly locale={locale} />
           </section>
         ) : null}
       </div>
@@ -70,7 +70,7 @@ export default function ConsultationAccess({
 
     return consultation.format === 'chat' ? (
       <div className="rounded-[20px] border border-border bg-white p-4">
-        <Chat consultationId={consultation.id} />
+        <Chat consultationId={consultation.id} locale={locale} />
       </div>
     ) : (
       <Session
@@ -105,7 +105,7 @@ export default function ConsultationAccess({
   // запрещает новые сообщения для неактивной консультации.
   return (
     <div className="rounded-[20px] border border-border bg-white p-4">
-      <Chat consultationId={consultation.id} />
+      <Chat consultationId={consultation.id} readOnly locale={locale} />
     </div>
   );
 }

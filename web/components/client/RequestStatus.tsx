@@ -2,11 +2,19 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { apiFetch } from '@/lib/api/client';
 import { connectRealtime, type SqSocket } from '@/lib/realtime/socket';
+import ru from '@/messages/ru.json';
+import kz from '@/messages/kz.json';
+
+const FALLBACK_DELAYS_MS = [0, 2_000, 5_000] as const;
+
+type SyncStatus = 'connecting' | 'online' | 'recovering' | 'offline';
 
 export type RequestState = {
   id: string;
-  status: 'SEARCHING' | 'MATCHED' | 'CANCELLED' | 'NO_EXPERTS' | 'CALLBACK_REQUESTED';
+  status:
+    'SEARCHING' | 'MATCHED' | 'CANCELLED' | 'NO_EXPERTS' | 'CALLBACK_REQUESTED';
   consultationId?: string | null;
   hotlines?: string[] | null;
 };
@@ -22,12 +30,76 @@ export default function RequestStatus({
 }) {
   const router = useRouter();
   const [state, setState] = useState(initial);
+  const [syncStatus, setSyncStatus] = useState<SyncStatus>('connecting');
+  const [retryNonce, setRetryNonce] = useState(0);
+  const copy = locale === 'kz' ? kz.requestStatus : ru.requestStatus;
 
   useEffect(() => {
     if (state.status !== 'SEARCHING') return;
 
     let socket: SqSocket | null = null;
     let dropped = false;
+    let fallbackActive = false;
+    let retryTimer: ReturnType<typeof setTimeout> | null = null;
+    let inFlight: Promise<RequestState | null> | null = null;
+    const abort = new AbortController();
+
+    const resync = (): Promise<RequestState | null> => {
+      if (inFlight) return inFlight;
+
+      setSyncStatus('recovering');
+      const request = apiFetch<RequestState>(`requests/${requestId}`, {
+        signal: abort.signal,
+      })
+        .then((fresh) => {
+          if (!fresh || fresh.id !== requestId) {
+            throw new Error('Некорректный ответ статуса заявки');
+          }
+          if (!dropped) setState(fresh);
+          return fresh;
+        })
+        .finally(() => {
+          if (inFlight === request) inFlight = null;
+        });
+      inFlight = request;
+      return request;
+    };
+
+    const stopFallback = () => {
+      fallbackActive = false;
+      if (retryTimer) clearTimeout(retryTimer);
+      retryTimer = null;
+    };
+
+    const startFallback = () => {
+      if (fallbackActive || dropped) return;
+      fallbackActive = true;
+
+      const poll = (attempt: number) => {
+        if (dropped || !fallbackActive) return;
+        if (attempt >= FALLBACK_DELAYS_MS.length) {
+          fallbackActive = false;
+          setSyncStatus('offline');
+          return;
+        }
+
+        const run = () => {
+          retryTimer = null;
+          void resync()
+            .then((fresh) => {
+              if (fresh?.status === 'SEARCHING') poll(attempt + 1);
+              else stopFallback();
+            })
+            .catch(() => poll(attempt + 1));
+        };
+
+        const delay = FALLBACK_DELAYS_MS[attempt];
+        if (delay === 0) run();
+        else retryTimer = setTimeout(run, delay);
+      };
+
+      poll(0);
+    };
 
     void (async () => {
       try {
@@ -37,24 +109,37 @@ export default function RequestStatus({
           return;
         }
         socket = connected;
+        connected.onReady(() => {
+          stopFallback();
+          void resync()
+            .then(() => {
+              if (!dropped) setSyncStatus('online');
+            })
+            .catch(() => startFallback());
+        });
+        connected.on('disconnect', startFallback);
+        connected.on('connect_error', startFallback);
         connected.on('request.updated', (payload) => {
+          if (dropped) return;
           const fresh = payload as RequestState;
           // Комната адресована пользователю, а заявок у него может быть
           // несколько за сессию — чужое событие игнорируем.
           if (fresh.id === requestId) setState(fresh);
         });
       } catch {
-        // Подключиться не удалось — экран остаётся на месте и говорит,
-        // что идёт поиск. Хуже было бы показать ошибку человеку, который
-        // ждёт помощи: заявка при этом жива.
+        // Socket — только ускоритель. При недоступном realtime сразу
+        // запускаем ограниченный REST fallback.
+        startFallback();
       }
     })();
 
     return () => {
       dropped = true;
+      stopFallback();
+      abort.abort();
       socket?.close();
     };
-  }, [state.status, requestId]);
+  }, [state.status, requestId, retryNonce]);
 
   useEffect(() => {
     if (state.status === 'MATCHED' && state.consultationId) {
@@ -63,17 +148,16 @@ export default function RequestStatus({
   }, [state, locale, router]);
 
   if (state.status === 'CANCELLED') {
-    return <p className="text-body">Заявка отменена</p>;
+    return <p className="text-body">{copy.cancelled}</p>;
   }
 
   if (state.status === 'NO_EXPERTS' || state.status === 'CALLBACK_REQUESTED') {
     return (
       <div>
-        <h1 className="mb-2 text-xl font-extrabold text-ink">Сейчас никого свободного нет</h1>
-        <p className="mb-4 text-sm text-body">
-          Мы напишем, как только специалист освободится. Если помощь нужна прямо сейчас —
-          позвоните:
-        </p>
+        <h1 className="mb-2 text-xl font-extrabold text-ink">
+          {copy.unavailableTitle}
+        </h1>
+        <p className="mb-4 text-sm text-body">{copy.unavailableBody}</p>
         <ul className="flex flex-wrap gap-3">
           {(state.hotlines ?? ['150', '103', '112']).map((number) => (
             <li key={number}>
@@ -92,10 +176,35 @@ export default function RequestStatus({
 
   return (
     <div>
-      <h1 className="mb-2 text-xl font-extrabold text-ink">Ищем свободного специалиста для вас</h1>
+      <h1 className="mb-2 text-xl font-extrabold text-ink">
+        {copy.searchingTitle}
+      </h1>
       <p className="text-sm text-muted" aria-live="polite">
-        Обычно это занимает одну–две минуты. Страницу можно не закрывать.
+        {copy.searchingBody}
       </p>
+      {syncStatus === 'recovering' ? (
+        <p role="status" className="mt-3 text-sm font-semibold text-body">
+          {copy.recovering}
+        </p>
+      ) : null}
+      {syncStatus === 'offline' ? (
+        <div
+          role="alert"
+          className="mt-3 rounded-2xl bg-chip p-4 text-sm text-body"
+        >
+          <p>{copy.offline}</p>
+          <button
+            type="button"
+            onClick={() => {
+              setSyncStatus('connecting');
+              setRetryNonce((current) => current + 1);
+            }}
+            className="mt-3 min-h-11 rounded-xl bg-primary px-4 py-2 font-bold text-white focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+          >
+            {copy.retry}
+          </button>
+        </div>
+      ) : null}
     </div>
   );
 }

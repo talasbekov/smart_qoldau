@@ -15,12 +15,15 @@ export default async function ExpertConsultationPage({
   params: Promise<{ locale: string; id: string }>;
 }) {
   const { locale, id } = await params;
-  const consultation = await authorizedFetch<ExpertConsultation>(`consultations/${id}`);
+  const consultation = await authorizedFetch<ExpertConsultation>(
+    `consultations/${id}`,
+  );
   if (!consultation) notFound();
 
   const live = consultation.status === 'ACTIVE';
   const paidLive = live && consultation.paymentStatus === 'HELD';
-  const callFormat = consultation.format === 'chat' ? null : consultation.format;
+  const callFormat =
+    consultation.format === 'chat' ? null : consultation.format;
   const checkoutCopy = locale === 'kz' ? kz.checkout : ru.checkout;
   const expertCopy = locale === 'kz' ? kz.expertSession : ru.expertSession;
   const statusLabels: Record<string, string> = {
@@ -50,6 +53,7 @@ export default async function ExpertConsultationPage({
           consultationId={id}
           format={callFormat as 'audio' | 'video'}
           locale={locale}
+          senderRole="EXPERT"
         />
       ) : (
         <div className="flex flex-col gap-4">
@@ -67,7 +71,12 @@ export default async function ExpertConsultationPage({
             </section>
           ) : null}
           <div className="rounded-[20px] border border-border bg-white p-4">
-            <Chat consultationId={id} readOnly={!paidLive} />
+            <Chat
+              consultationId={id}
+              readOnly={!paidLive}
+              locale={locale}
+              senderRole="EXPERT"
+            />
           </div>
         </div>
       )}

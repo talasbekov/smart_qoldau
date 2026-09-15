@@ -7,14 +7,37 @@ jest.mock('@/lib/api/authorized', () => ({
 jest.mock('next/navigation', () => ({ notFound: jest.fn() }));
 jest.mock('@/components/client/Session', () => ({
   __esModule: true,
-  default: ({ locale }: { locale: string }) => (
-    <div data-testid="session" data-locale={locale} />
+  default: ({
+    locale,
+    senderRole,
+  }: {
+    locale: string;
+    senderRole?: string;
+  }) => (
+    <div
+      data-testid="session"
+      data-locale={locale}
+      data-sender-role={senderRole}
+    />
   ),
 }));
 jest.mock('@/components/client/Chat', () => ({
   __esModule: true,
-  default: ({ readOnly }: { readOnly?: boolean }) => (
-    <div data-testid="chat" data-read-only={readOnly ? 'true' : 'false'} />
+  default: ({
+    readOnly,
+    locale,
+    senderRole,
+  }: {
+    readOnly?: boolean;
+    locale?: string;
+    senderRole?: string;
+  }) => (
+    <div
+      data-testid="chat"
+      data-read-only={readOnly ? 'true' : 'false'}
+      data-locale={locale}
+      data-sender-role={senderRole}
+    />
   ),
 }));
 jest.mock('@/components/expert-cabinet/ExpertSessionActions', () => ({
@@ -60,8 +83,18 @@ describe('ExpertConsultationPage', () => {
     await renderPage('kz');
 
     expect(screen.getByTestId('session')).toHaveAttribute('data-locale', 'kz');
-    expect(screen.getByTestId('expert-actions')).toHaveAttribute('data-active', 'true');
-    expect(screen.getByTestId('expert-actions')).toHaveAttribute('data-locale', 'kz');
+    expect(screen.getByTestId('session')).toHaveAttribute(
+      'data-sender-role',
+      'EXPERT',
+    );
+    expect(screen.getByTestId('expert-actions')).toHaveAttribute(
+      'data-active',
+      'true',
+    );
+    expect(screen.getByTestId('expert-actions')).toHaveAttribute(
+      'data-locale',
+      'kz',
+    );
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(
       'Кеңес · клиент №ABCD-1234',
     );
@@ -69,14 +102,29 @@ describe('ExpertConsultationPage', () => {
   });
 
   it('ACTIVE без HELD не монтирует live и оставляет историю read-only', async () => {
-    authorizedFetch.mockResolvedValue(consultation({ paymentStatus: 'UNPAID' }));
+    authorizedFetch.mockResolvedValue(
+      consultation({ paymentStatus: 'UNPAID' }),
+    );
 
     await renderPage();
 
     expect(screen.queryByTestId('session')).toBeNull();
-    expect(screen.getByTestId('chat')).toHaveAttribute('data-read-only', 'true');
-    expect(screen.getByRole('status')).toHaveTextContent(/без подтверждённого холда/i);
-    expect(screen.getByTestId('expert-actions')).toHaveAttribute('data-active', 'true');
+    expect(screen.getByTestId('chat')).toHaveAttribute(
+      'data-read-only',
+      'true',
+    );
+    expect(screen.getByTestId('chat')).toHaveAttribute(
+      'data-sender-role',
+      'EXPERT',
+    );
+    expect(screen.getByTestId('chat')).toHaveAttribute('data-locale', 'ru');
+    expect(screen.getByRole('status')).toHaveTextContent(
+      /без подтверждённого холда/i,
+    );
+    expect(screen.getByTestId('expert-actions')).toHaveAttribute(
+      'data-active',
+      'true',
+    );
   });
 
   it('завершённая консультация хранит read-only историю и не повторяет outcome', async () => {
@@ -86,7 +134,13 @@ describe('ExpertConsultationPage', () => {
 
     await renderPage();
 
-    expect(screen.getByTestId('chat')).toHaveAttribute('data-read-only', 'true');
-    expect(screen.getByTestId('expert-actions')).toHaveAttribute('data-active', 'false');
+    expect(screen.getByTestId('chat')).toHaveAttribute(
+      'data-read-only',
+      'true',
+    );
+    expect(screen.getByTestId('expert-actions')).toHaveAttribute(
+      'data-active',
+      'false',
+    );
   });
 });

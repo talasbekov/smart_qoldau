@@ -15,10 +15,7 @@ import Chat from './Chat';
 const CONTROL =
   'min-h-12 rounded-2xl px-4 py-3 text-sm font-bold disabled:cursor-not-allowed disabled:opacity-60 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2';
 
-function errorCopy(
-  caught: unknown,
-  copy: (typeof ru)['session'],
-): string {
+function errorCopy(caught: unknown, copy: (typeof ru)['session']): string {
   if (!(caught instanceof CallError)) return copy.connectionError;
   switch (caught.reason) {
     case 'not-active':
@@ -38,10 +35,12 @@ export default function Session({
   consultationId,
   format,
   locale = 'ru',
+  senderRole = 'CLIENT',
 }: {
   consultationId: string;
   format: 'audio' | 'video';
   locale?: string;
+  senderRole?: 'CLIENT' | 'EXPERT';
 }) {
   const copy = locale === 'kz' ? kz.session : ru.session;
   const [call, setCall] = useState<Call | null>(null);
@@ -203,8 +202,12 @@ export default function Session({
             ) : (
               <div className="flex min-h-52 items-center justify-center rounded-[20px] bg-ink p-6 text-center text-white">
                 <div>
-                  <p className="text-lg font-extrabold">{copy.audioConnected}</p>
-                  <p className="mt-2 text-sm text-white/80">{copy.audioWaiting}</p>
+                  <p className="text-lg font-extrabold">
+                    {copy.audioConnected}
+                  </p>
+                  <p className="mt-2 text-sm text-white/80">
+                    {copy.audioWaiting}
+                  </p>
                 </div>
               </div>
             )}
@@ -254,7 +257,11 @@ export default function Session({
       </div>
 
       <aside className="min-w-0 rounded-[20px] border border-border bg-white p-4">
-        <Chat consultationId={consultationId} />
+        <Chat
+          consultationId={consultationId}
+          locale={locale}
+          senderRole={senderRole}
+        />
       </aside>
     </div>
   );
