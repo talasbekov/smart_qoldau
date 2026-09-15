@@ -17,15 +17,19 @@ export async function createApp(
     try {
       await app.close();
     } catch (cleanupError) {
-      if (
-        bootstrapError !== null &&
-        (typeof bootstrapError === 'object' ||
-          typeof bootstrapError === 'function')
-      ) {
-        Object.defineProperty(bootstrapError, 'cleanupError', {
-          value: cleanupError,
-          configurable: true,
-        });
+      try {
+        if (
+          bootstrapError !== null &&
+          (typeof bootstrapError === 'object' ||
+            typeof bootstrapError === 'function')
+        ) {
+          Object.defineProperty(bootstrapError, 'cleanupError', {
+            value: cleanupError,
+            configurable: true,
+          });
+        }
+      } catch {
+        // Diagnostic attachment is best-effort; preserve the bootstrap error.
       }
     }
     throw bootstrapError;

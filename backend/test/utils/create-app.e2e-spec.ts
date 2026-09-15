@@ -26,7 +26,7 @@ class FailingResource implements OnModuleInit, OnModuleDestroy {
 
 @Injectable()
 class FailingCleanupResource implements OnModuleInit, OnModuleDestroy {
-  static readonly bootstrapError = new Error(BOOTSTRAP_ERROR);
+  static readonly bootstrapError = Object.freeze(new Error(BOOTSTRAP_ERROR));
   static closed = false;
 
   private interval?: ReturnType<typeof setInterval>;
@@ -89,7 +89,7 @@ describe('createApp', () => {
     expect(FailingResource.closed).toBe(true);
   });
 
-  it('preserves the bootstrap error when cleanup also fails', async () => {
+  it('preserves a frozen bootstrap error when cleanup also fails', async () => {
     const builder = Test.createTestingModule({
       providers: [FailingCleanupResource],
     });
