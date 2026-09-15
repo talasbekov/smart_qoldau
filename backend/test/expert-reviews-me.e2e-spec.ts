@@ -1,3 +1,7 @@
+import {
+  holdConsultation,
+  cleanupPaidConsultations,
+} from './utils/paid-consultation';
 import { Test } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
@@ -54,6 +58,7 @@ describe('GET /experts/me/reviews — свои отзывы с id (долг E7)'
   const clientUserIds: string[] = [];
 
   async function cleanup() {
+    await cleanupPaidConsultations(app);
     const users = await prisma.user.findMany({
       where: { phone: { in: ALL_PHONES } },
       select: { id: true },
@@ -188,6 +193,7 @@ describe('GET /experts/me/reviews — свои отзывы с id (долг E7)'
       `/v1/offers/${offerId}/accept`,
     ).expect(200);
     const consultationId = accepted.body.consultationId as string;
+    await holdConsultation(app, consultationId);
     await post(exp.accessToken, `/v1/consultations/${consultationId}/complete`)
       .send({ outcome: 'COMPLETED' })
       .expect(200);

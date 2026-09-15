@@ -10,6 +10,7 @@ import {
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
+  ApiResponse,
   ApiBadRequestResponse,
   ApiConflictResponse,
   ApiExtraModels,
@@ -89,6 +90,11 @@ export class ConsultationsController {
     return this.consultations.listForUser(user.sub, query);
   }
 
+  @ApiResponse({
+    status: 402,
+    description:
+      'PAYMENT_HOLD_REQUIRED — исход COMPLETED требует подтверждённого hold',
+  })
   @Post(':id/complete')
   @HttpCode(200)
   @ApiOperation({

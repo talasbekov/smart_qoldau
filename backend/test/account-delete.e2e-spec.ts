@@ -1,3 +1,7 @@
+import {
+  holdConsultation,
+  cleanupPaidConsultations,
+} from './utils/paid-consultation';
 import { Test } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
@@ -47,6 +51,7 @@ describe('Удаление аккаунта по запросу (ТЗ §5.1)', (
   const registeredExpertIds: string[] = [];
 
   async function cleanup() {
+    await cleanupPaidConsultations(app);
     const users = await prisma.user.findMany({
       where: { phone: { in: ALL_PHONES } },
       select: { id: true },
@@ -169,6 +174,7 @@ describe('Удаление аккаунта по запросу (ТЗ §5.1)', (
       `/v1/offers/${offers.body[0].offerId}/accept`,
     ).expect(200);
     const consultationId = accepted.body.consultationId as string;
+    await holdConsultation(app, consultationId);
 
     await prisma.chatMessage.create({
       data: {

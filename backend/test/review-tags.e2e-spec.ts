@@ -1,3 +1,7 @@
+import {
+  holdConsultation,
+  cleanupPaidConsultations,
+} from './utils/paid-consultation';
 import { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import request from 'supertest';
@@ -36,6 +40,7 @@ describe('Теги отзыва и reviewId (e2e)', () => {
   let expert: { accessToken: string; expertId: string };
 
   async function cleanup() {
+    await cleanupPaidConsultations(app);
     const users = await prisma.user.findMany({
       where: { phone: { in: ALL_PHONES } },
       select: { id: true },
@@ -105,6 +110,7 @@ describe('Теги отзыва и reviewId (e2e)', () => {
       .set('Authorization', `Bearer ${expert.accessToken}`)
       .expect(200);
     const consultationId = accepted.body.consultationId as string;
+    await holdConsultation(app, consultationId);
     await request(app.getHttpServer())
       .post(`/v1/consultations/${consultationId}/complete`)
       .set('Authorization', `Bearer ${expert.accessToken}`)

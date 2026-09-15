@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { Consultation, ConsultationStatus } from '@prisma/client';
+import { Consultation } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import {
   ConsultationsService,
@@ -36,6 +36,10 @@ export class ChatService {
     return this.consultations.resolveParticipant(consultationId, userSub);
   }
 
+  async assertLiveAccess(consultation: Consultation): Promise<void> {
+    await this.consultations.assertLiveAccess(consultation);
+  }
+
   async send(
     consultationId: string,
     senderUserId: string,
@@ -56,9 +60,7 @@ export class ChatService {
     role: SenderRole,
     text: string,
   ): Promise<MessageDto> {
-    if (consultation.status !== ConsultationStatus.ACTIVE) {
-      apiError('CONSULTATION_NOT_ACTIVE', 'Консультация не активна', 409);
-    }
+    await this.assertLiveAccess(consultation);
 
     const trimmed = text?.trim() ?? '';
     if (trimmed.length < 1 || trimmed.length > MAX_TEXT_LENGTH) {

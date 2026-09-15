@@ -1,6 +1,8 @@
 import { Body, Controller, Param, Post, UseGuards } from '@nestjs/common';
 import {
   ApiBearerAuth,
+  ApiResponse,
+  ApiConflictResponse,
   ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
@@ -26,6 +28,11 @@ export class MediaController {
       'LiveKit-токен для участника ACTIVE-консультации; эскалация формата chat->audio->video (понижение запрещено)',
   })
   @ApiOkResponse({ type: MediaTokenResponseDto })
+  @ApiResponse({
+    status: 402,
+    description: 'PAYMENT_HOLD_REQUIRED — подтверждённый hold обязателен',
+  })
+  @ApiConflictResponse({ description: 'CONSULTATION_NOT_ACTIVE' })
   @ApiNotFoundResponse({ description: 'CONSULTATION_NOT_FOUND' })
   async mediaToken(
     @CurrentUser() user: JwtPayload,

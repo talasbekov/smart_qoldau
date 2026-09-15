@@ -2,6 +2,7 @@ import { forwardRef, Inject, Injectable, Logger } from '@nestjs/common';
 import {
   Consultation,
   ConsultationOutcome,
+  ConsultationPaymentStatus,
   ConsultationStatus,
   Prisma,
   Request,
@@ -206,6 +207,12 @@ export class ConsultationsService {
     if (role !== 'expert')
       apiError('FORBIDDEN', 'Только эксперт может завершить консультацию', 403);
 
+    // Only a confirmed hold permits the successful outcome. Cancellation and
+    // unsuccessful outcomes remain available even if payment never succeeded.
+    if (outcome === ConsultationOutcome.COMPLETED) {
+      await this.assertLiveAccess(consultation);
+    }
+
     // Р-01: исход «клиент не пришёл» против собственных данных платформы
     // (LiveKit зафиксировал подключение клиента) недоступен — 3 таких исхода
     // закрыли бы клиенту автоподбор, и villainous-эксперт мог бы копить их
@@ -223,7 +230,13 @@ export class ConsultationsService {
 
     const now = this.clock.now();
     const result = await this.prisma.consultation.updateMany({
-      where: { id: consultationId, status: ConsultationStatus.ACTIVE },
+      where: {
+        id: consultationId,
+        status: ConsultationStatus.ACTIVE,
+        ...(outcome === ConsultationOutcome.COMPLETED
+          ? { paymentStatus: ConsultationPaymentStatus.HELD }
+          : {}),
+      },
       data: { status: ConsultationStatus.COMPLETED, outcome, endedAt: now },
     });
     if (result.count === 0)
@@ -499,6 +512,15 @@ export class ConsultationsService {
 
     apiError('CONSULTATION_NOT_FOUND', 'Консультация не найдена', 404);
     throw new Error('unreachable');
+  }
+
+  // Separate from participation: checkout and completed history must stay
+  // accessible without a live hold. Call only after resolving the participant.
+  async assertLiveAccess(consultation: Consultation): Promise<void> {
+    if (consultation.status !== ConsultationStatus.ACTIVE) {
+      apiError('CONSULTATION_NOT_ACTIVE', 'Консультация не активна', 409);
+    }
+    await this.payments.assertHeld(consultation);
   }
 
   async findForParticipant(

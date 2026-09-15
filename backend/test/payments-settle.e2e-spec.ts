@@ -389,19 +389,20 @@ describe('Settle по исходу консультации (E5, задача 5,
     expect(balance).toBe(0);
   });
 
-  it('complete без оплаты -> COMPLETED без денег, audit payment.missing_on_completion, баланс 0', async () => {
+  it('complete без оплаты -> 402, ACTIVE без денег, баланс 0', async () => {
     const exp = await acceptingExpert(PH_E4);
     const cli = await clientUser(PH_C4);
     const { consultationId } = await matchClientToExpert(cli, exp);
 
     await post(exp.accessToken, `/v1/consultations/${consultationId}/complete`)
       .send({ outcome: 'COMPLETED' })
-      .expect(200);
+      .expect(402);
 
     const consultation = await prisma.consultation.findUnique({
       where: { id: consultationId },
     });
-    expect(consultation!.status).toBe('COMPLETED');
+    expect(consultation!.status).toBe('ACTIVE');
+    expect(consultation!.outcome).toBeNull();
     expect(consultation!.paymentStatus).toBe('UNPAID');
 
     const payment = await prisma.payment.findUnique({
@@ -411,15 +412,6 @@ describe('Settle по исходу консультации (E5, задача 5,
 
     const balance = await ledger.balanceTiyn(expertAccount(exp.expertId));
     expect(balance).toBe(0);
-
-    const auditMissing = await prisma.auditLog.findFirst({
-      where: {
-        entity: 'payment',
-        transition: 'payment.missing_on_completion',
-      },
-      orderBy: { createdAt: 'desc' },
-    });
-    expect(auditMissing).not.toBeNull();
   });
 
   it('повторный complete -> 409, settle не задваивает баланс', async () => {

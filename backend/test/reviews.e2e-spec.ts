@@ -1,3 +1,7 @@
+import {
+  holdConsultation,
+  cleanupPaidConsultations,
+} from './utils/paid-consultation';
 import { randomUUID } from 'crypto';
 import { Test } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
@@ -109,6 +113,7 @@ describe('Отзывы и рейтинг (E4, задача 7)', () => {
   const clientUserIds: string[] = [];
 
   async function cleanup() {
+    await cleanupPaidConsultations(app);
     const users = await prisma.user.findMany({
       where: { phone: { in: ALL_PHONES } },
       select: { id: true },
@@ -250,6 +255,7 @@ describe('Отзывы и рейтинг (E4, задача 7)', () => {
       exp.accessToken,
       `/v1/offers/${offerId}/accept`,
     ).expect(200);
+    await holdConsultation(app, accepted.body.consultationId);
     return {
       requestId: r.body.id as string,
       consultationId: accepted.body.consultationId as string,

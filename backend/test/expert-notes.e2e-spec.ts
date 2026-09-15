@@ -1,3 +1,7 @@
+import {
+  holdConsultation,
+  cleanupPaidConsultations,
+} from './utils/paid-consultation';
 import { Test } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
@@ -64,6 +68,7 @@ describe('Приватные шифрованные заметки экспер�
   const clientUserIds: string[] = [];
 
   async function cleanup() {
+    await cleanupPaidConsultations(app);
     const users = await prisma.user.findMany({
       where: { phone: { in: ALL_PHONES } },
       select: { id: true },
@@ -235,6 +240,7 @@ describe('Приватные шифрованные заметки экспер�
       exp.accessToken,
       `/v1/offers/${offerId}/accept`,
     ).expect(200);
+    await holdConsultation(app, accepted.body.consultationId);
     return {
       requestId: r.body.id as string,
       consultationId: accepted.body.consultationId as string,

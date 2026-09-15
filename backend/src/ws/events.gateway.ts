@@ -178,6 +178,7 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection {
         payload.consultationId,
         data.userId,
       );
+      await this.chat.assertLiveAccess(consultation);
       const typing = {
         consultationId: payload.consultationId,
         senderRole: role,
