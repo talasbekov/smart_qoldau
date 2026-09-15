@@ -1,3 +1,7 @@
+import {
+  holdConsultation,
+  cleanupPaidConsultations,
+} from './utils/paid-consultation';
 import { Test } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
 import { AdminRole } from '@prisma/client';
@@ -108,6 +112,7 @@ describe('Ответы эксперта, жалобы, админ-модерац
   const clientUserIds: string[] = [];
 
   async function cleanup() {
+    await cleanupPaidConsultations(app);
     const users = await prisma.user.findMany({
       where: { phone: { in: ALL_PHONES } },
       select: { id: true },
@@ -274,6 +279,7 @@ describe('Ответы эксперта, жалобы, админ-модерац
       `/v1/offers/${offerId}/accept`,
     ).expect(200);
     const consultationId = accepted.body.consultationId as string;
+    await holdConsultation(app, consultationId);
     await post(exp.accessToken, `/v1/consultations/${consultationId}/complete`)
       .send({ outcome: 'COMPLETED' })
       .expect(200);

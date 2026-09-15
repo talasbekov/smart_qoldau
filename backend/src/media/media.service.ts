@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { AccessToken } from 'livekit-server-sdk';
-import { Consultation, ConsultationStatus } from '@prisma/client';
+import { Consultation } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import { EventsService } from '../ws/events.service';
@@ -85,9 +85,7 @@ export class MediaService {
       userSub,
     );
 
-    if (consultation.status !== ConsultationStatus.ACTIVE) {
-      apiError('CONSULTATION_NOT_ACTIVE', 'Консультация не активна', 409);
-    }
+    await this.consultations.assertLiveAccess(consultation);
 
     const currentRank = FORMAT_RANK[consultation.format] ?? 0;
     const requestedRank = FORMAT_RANK[format];

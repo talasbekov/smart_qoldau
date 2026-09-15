@@ -1,3 +1,7 @@
+import {
+  holdConsultation,
+  cleanupPaidConsultations,
+} from './utils/paid-consultation';
 import { Test } from '@nestjs/testing';
 import { INestApplication, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
@@ -67,6 +71,7 @@ describe('LiveKit-токены, вебхуки участников, эскал�
   const registeredExpertIds: string[] = [];
 
   async function cleanup() {
+    await cleanupPaidConsultations(app);
     const users = await prisma.user.findMany({
       where: { phone: { in: ALL_PHONES } },
       select: { id: true },
@@ -193,6 +198,7 @@ describe('LiveKit-токены, вебхуки участников, эскал�
         startedAt: new Date(),
       },
     });
+    await holdConsultation(app, consultation.id);
     return consultation;
   }
 

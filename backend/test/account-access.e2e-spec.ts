@@ -1,3 +1,7 @@
+import {
+  holdConsultation,
+  cleanupPaidConsultations,
+} from './utils/paid-consultation';
 import { randomUUID } from 'node:crypto';
 import { AddressInfo } from 'node:net';
 import { INestApplication, Logger } from '@nestjs/common';
@@ -184,6 +188,7 @@ describe('E29 current account access (HTTP + WS)', () => {
       },
     });
     consultationId = consultation.id;
+    await holdConsultation(app, consultationId);
     admin = await adminUser(app, ['VERIFICATION_OPERATOR']);
     await app.listen(0, '127.0.0.1');
     wsUrl = `http://127.0.0.1:${(app.getHttpServer().address() as AddressInfo).port}/ws`;
@@ -210,6 +215,7 @@ describe('E29 current account access (HTTP + WS)', () => {
 
   afterAll(async () => {
     if (prisma && consultationId) {
+      await cleanupPaidConsultations(app);
       await prisma.chatMessage.deleteMany({ where: { consultationId } });
       await prisma.consultation.delete({ where: { id: consultationId } });
       await prisma.topic.delete({ where: { id: topicId } });

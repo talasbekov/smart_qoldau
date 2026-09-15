@@ -1,5 +1,6 @@
 import { Inject, Injectable, Logger, forwardRef } from '@nestjs/common';
 import {
+  Consultation,
   ConsultationOutcome,
   ConsultationPaymentStatus,
   ConsultationStatus,
@@ -310,6 +311,26 @@ export class PaymentsService {
     }
   }
 
+  // Payment is the source of truth; the consultation mirror alone cannot
+  // prove a hold exists. A captured/voided payment cannot start a live session.
+  async assertHeld(consultation: Consultation): Promise<void> {
+    const payment = await this.prisma.payment.findUnique({
+      where: { consultationId: consultation.id },
+    });
+    if (
+      consultation.paymentStatus !== ConsultationPaymentStatus.HELD ||
+      payment?.status !== PaymentStatus.HELD ||
+      !payment.providerHoldId ||
+      !payment.holdCreatedAt
+    ) {
+      apiError(
+        'PAYMENT_HOLD_REQUIRED',
+        'Для консультации требуется подтверждённый холд оплаты',
+        402,
+      );
+    }
+  }
+
   // GET /v1/consultations/:id/payment — только клиент-участник; эксперт
   // (или чужой) -> 404 CONSULTATION_NOT_FOUND (PII платежа клиента).
   async getStatus(
@@ -345,8 +366,8 @@ export class PaymentsService {
   // Вызывается из ConsultationsService.complete()/cancel() ПОСЛЕ фиксации
   // исхода, вне транзакции исхода, в try/catch на стороне вызывающего —
   // сбой settle никогда не должен откатывать исход консультации. Ветвится
-  // по Payment.status; CAPTURED/VOIDED — no-op (идемпотентность повторного
-  // вызова).
+  // по Payment.status; повторный CAPTURED и VOIDED для несостоявшейся
+  // консультации — no-op. COMPLETED без hold/capture — явная ошибка.
   async settle(consultationId: string): Promise<void> {
     const consultation = await this.prisma.consultation.findUniqueOrThrow({
       where: { id: consultationId },
@@ -364,8 +385,30 @@ export class PaymentsService {
           transition: 'payment.missing_on_completion',
           payload: { consultationId },
         });
+        await this.assertHeld(consultation);
       }
       return;
+    }
+
+    // PENDING на завершённой консультации = pay() оборвался между
+    // provider.hold и записью HELD (деньги могут быть заморожены у
+    // провайдера без следа у нас) — sweep такие записи не подбирает,
+    // оставляем хлебную крошку для ручного разбора.
+    if (payment.status === PaymentStatus.PENDING) {
+      await this.audit.log({
+        actorType: 'system',
+        entity: 'payment',
+        entityId: payment.id,
+        transition: 'payment.stuck_pending_on_settle',
+        payload: { consultationId },
+      });
+    }
+
+    if (
+      consultation.outcome === ConsultationOutcome.COMPLETED &&
+      payment.status !== PaymentStatus.CAPTURED
+    ) {
+      await this.assertHeld(consultation);
     }
 
     if (
@@ -375,22 +418,7 @@ export class PaymentsService {
       return;
     }
 
-    if (payment.status !== PaymentStatus.HELD) {
-      // PENDING на завершённой консультации = pay() оборвался между
-      // provider.hold и записью HELD (деньги могут быть заморожены у
-      // провайдера без следа у нас) — sweep такие записи не подбирает,
-      // оставляем хлебную крошку для ручного разбора.
-      if (payment.status === PaymentStatus.PENDING) {
-        await this.audit.log({
-          actorType: 'system',
-          entity: 'payment',
-          entityId: payment.id,
-          transition: 'payment.stuck_pending_on_settle',
-          payload: { consultationId },
-        });
-      }
-      return;
-    }
+    if (payment.status !== PaymentStatus.HELD) return;
 
     if (consultation.outcome === ConsultationOutcome.COMPLETED) {
       await this.captureAndCredit(payment, consultation.expertId);

@@ -1,3 +1,7 @@
+import {
+  holdConsultation,
+  cleanupPaidConsultations,
+} from './utils/paid-consultation';
 import { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { AdminRole } from '@prisma/client';
@@ -46,6 +50,7 @@ describe('Публичный профиль специалиста: сквозн
   let storage: StorageService;
 
   async function cleanup() {
+    await cleanupPaidConsultations(app);
     await prisma.adminUser.deleteMany({
       where: { email: { startsWith: EMAIL_PREFIX } },
     });
@@ -232,6 +237,7 @@ describe('Публичный профиль специалиста: сквозн
       .set('Authorization', `Bearer ${expert.accessToken}`)
       .expect(200);
     const consultationId = accepted.body.consultationId as string;
+    await holdConsultation(app, consultationId);
     await request(app.getHttpServer())
       .post(`/v1/consultations/${consultationId}/complete`)
       .set('Authorization', `Bearer ${expert.accessToken}`)

@@ -1837,6 +1837,9 @@
               }
             }
           },
+          "402": {
+            "description": "PAYMENT_HOLD_REQUIRED — исход COMPLETED требует подтверждённого hold"
+          },
           "403": {
             "description": "FORBIDDEN — не эксперт-участник"
           },
@@ -3748,8 +3751,14 @@
               }
             }
           },
+          "402": {
+            "description": "PAYMENT_HOLD_REQUIRED — подтверждённый hold обязателен"
+          },
           "404": {
             "description": "CONSULTATION_NOT_FOUND"
+          },
+          "409": {
+            "description": "CONSULTATION_NOT_ACTIVE"
           }
         },
         "security": [
