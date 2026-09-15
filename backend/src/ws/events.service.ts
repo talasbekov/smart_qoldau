@@ -1,25 +1,32 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Namespace, Server } from 'socket.io';
+import { AccountAccessService } from '../auth/account-access.service';
+import { PrismaService } from '../prisma/prisma.service';
 
 // Тонкая обёртка над socket.io Server: комнаты user:{userId} и
 // expert:{expertId} (см. EventsGateway.handleConnection). Все эмиты —
-// best-effort (safeEmit try/catch + Logger.error) — сбой WS-рассылки не
+// best-effort (safeEmit + terminal catch) — сбой WS-рассылки не
 // должен ломать бизнес-операцию (создание заявки, accept/decline и т.д.).
 @Injectable()
 export class EventsService {
   private readonly logger = new Logger(EventsService.name);
   private server: Server | null = null;
 
+  constructor(
+    private readonly access: AccountAccessService,
+    private readonly prisma: PrismaService,
+  ) {}
+
   setServer(server: Server): void {
     this.server = server;
   }
 
   emitToUser(userId: string, event: string, payload: unknown): void {
-    this.safeEmit(`user:${userId}`, event, payload);
+    this.emit('user', userId, event, payload);
   }
 
   emitToExpert(expertId: string, event: string, payload: unknown): void {
-    this.safeEmit(`expert:${expertId}`, event, payload);
+    this.emit('expert', expertId, event, payload);
   }
 
   // Есть ли у пользователя хотя бы один живой WS-сокет (комната user:{id}).
@@ -43,17 +50,61 @@ export class EventsService {
     }
   }
 
-  private safeEmit(room: string, event: string, payload: unknown): void {
-    try {
-      if (!this.server) return;
-      this.server.to(room).emit(event, payload);
-    } catch (e) {
+  // Preserve the void, non-blocking contract for every business caller:
+  // DB/realtime latency or failure must not hold a transaction or outbox insert.
+  // The async operation has a terminal rejection handler owned by this service.
+  private emit(
+    kind: 'user' | 'expert',
+    id: string,
+    event: string,
+    payload: unknown,
+  ): void {
+    const room = `${kind}:${id}`;
+    void this.safeEmit(kind, id, room, event, payload).catch((e: unknown) => {
       this.logger.error(
         `emit failed room=${room} event=${event}: ${
           e instanceof Error ? e.message : String(e)
         }`,
         e instanceof Error ? e.stack : undefined,
       );
+    });
+  }
+
+  private async safeEmit(
+    kind: 'user' | 'expert',
+    id: string,
+    room: string,
+    event: string,
+    payload: unknown,
+  ): Promise<void> {
+    const server = this.server;
+    if (!server) return;
+    const rooms = [room];
+    try {
+      let userId = id;
+      if (kind === 'expert') {
+        const expert = await this.prisma.expert.findUnique({
+          where: { id },
+          select: { userId: true },
+        });
+        if (!expert) throw new Error('Recipient expert not found');
+        userId = expert.userId;
+        rooms.push(`user:${userId}`);
+      }
+      // Current account state, NOT per-socket JWT expiry/session revocation.
+      // No cache: a completed denial applies to the next recipient check.
+      await this.access.assertActive(userId);
+    } catch (e) {
+      // Disconnect locally even if Redis cannot publish. The second operation
+      // addresses the same rooms across ALL adapter instances (no local map).
+      // If expert resolution failed, its room still identifies its ready sockets.
+      try {
+        server.local.in(rooms).disconnectSockets(true);
+      } finally {
+        server.in(rooms).disconnectSockets(true);
+      }
+      throw e;
     }
+    server.to(room).emit(event, payload);
   }
 }

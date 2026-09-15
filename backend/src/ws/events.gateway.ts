@@ -178,14 +178,19 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection {
         payload.consultationId,
         data.userId,
       );
-      const targetRoom =
-        role === 'client'
-          ? `expert:${consultation.expertId}`
-          : `user:${consultation.clientUserId}`;
-      this.server.to(targetRoom).emit('chat.typing', {
+      const typing = {
         consultationId: payload.consultationId,
         senderRole: role,
-      });
+      };
+      if (role === 'client') {
+        this.events.emitToExpert(consultation.expertId, 'chat.typing', typing);
+      } else {
+        this.events.emitToUser(
+          consultation.clientUserId,
+          'chat.typing',
+          typing,
+        );
+      }
     } catch {
       // не участник/консультация не найдена -> молча игнор
     }

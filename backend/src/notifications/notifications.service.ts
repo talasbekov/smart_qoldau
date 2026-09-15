@@ -90,9 +90,8 @@ export class NotificationsService {
 
     // Веер по устройствам снят с пути запроса (E11a, задача 3): здесь
     // остаётся одна вставка в очередь, а рассылкой занимается
-    // OutboxSweepService. In-app запись и WS-событие по-прежнему
-    // синхронные — это одна вставка и локальный emit, задерживать их
-    // нечем, а реалтайм на них держится.
+    // OutboxSweepService. WS запускается best-effort: асинхронная проверка
+    // допуска получателя не задерживает и не отменяет вставку в outbox.
     await this.outbox.enqueue({
       notificationId: notification.id,
       userId,
