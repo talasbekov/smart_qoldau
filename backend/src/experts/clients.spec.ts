@@ -34,7 +34,10 @@ describe('видимые эксперту консультации (Р-27)', () 
   });
 
   it('консультацию ровно в момент согласия считает разрешённой', () => {
-    const visible = visibleConsultations([consultation({ startedAt: consentAt })], consentAt);
+    const visible = visibleConsultations(
+      [consultation({ startedAt: consentAt })],
+      consentAt,
+    );
 
     expect(visible).toHaveLength(1);
   });
@@ -47,7 +50,11 @@ describe('карточка клиента', () => {
       [consultation(), consultation({ id: 'c2' })],
     );
 
-    expect(card).toMatchObject({ id: 'u1', displayName: 'Айгерим', consultations: 2 });
+    expect(card).toMatchObject({
+      id: 'u1',
+      displayName: 'Айгерим',
+      consultations: 2,
+    });
   });
 
   it('НЕ содержит телефон ни в каком виде', () => {
@@ -68,10 +75,16 @@ describe('карточка клиента', () => {
   });
 
   it('помнит дату последней встречи', () => {
-    const card = toClientCard({ id: 'u1', displayName: 'Айгерим', phone: null }, [
-      consultation({ startedAt: new Date('2026-09-01T10:00:00.000Z') }),
-      consultation({ id: 'c2', startedAt: new Date('2026-09-10T10:00:00.000Z') }),
-    ]);
+    const card = toClientCard(
+      { id: 'u1', displayName: 'Айгерим', phone: null },
+      [
+        consultation({ startedAt: new Date('2026-09-01T10:00:00.000Z') }),
+        consultation({
+          id: 'c2',
+          startedAt: new Date('2026-09-10T10:00:00.000Z'),
+        }),
+      ],
+    );
 
     expect(card.lastAt).toEqual(new Date('2026-09-10T10:00:00.000Z'));
   });

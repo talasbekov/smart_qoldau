@@ -23,10 +23,18 @@ export class ExpertPublicDto {
   @ApiProperty({ type: String, isArray: true, example: ['ru', 'kz'] })
   languages: string[];
 
-  @ApiProperty({ type: String, isArray: true, example: ['chat', 'audio', 'video'] })
+  @ApiProperty({
+    type: String,
+    isArray: true,
+    example: ['chat', 'audio', 'video'],
+  })
   formats: string[];
 
-  @ApiProperty({ type: String, isArray: true, example: ['anxiety-stress', 'burnout'] })
+  @ApiProperty({
+    type: String,
+    isArray: true,
+    example: ['anxiety-stress', 'burnout'],
+  })
   topicSlugs: string[];
 
   @ApiProperty({ enum: WorkStatus })

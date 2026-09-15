@@ -10,7 +10,11 @@ export class ClientCardDto {
   @ApiProperty({ description: 'Сколько встреч было после согласия' })
   consultations: number;
 
-  @ApiProperty({ type: String, nullable: true, description: 'Последняя встреча' })
+  @ApiProperty({
+    type: String,
+    nullable: true,
+    description: 'Последняя встреча',
+  })
   lastAt: Date | null;
 }
 

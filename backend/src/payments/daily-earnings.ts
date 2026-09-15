@@ -33,7 +33,10 @@ export function groupByAlmatyDay(
   from: Date,
   to: Date,
 ): DailyEarning[] {
-  const totals = new Map<string, { amountTiyn: number; consultations: number }>();
+  const totals = new Map<
+    string,
+    { amountTiyn: number; consultations: number }
+  >();
 
   for (const payment of payments) {
     const key = almatyDay(payment.updatedAt);

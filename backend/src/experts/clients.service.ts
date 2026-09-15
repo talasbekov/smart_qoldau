@@ -55,33 +55,45 @@ export class ExpertClientsService {
       select: { id: true, displayName: true, expertVisibilityAcceptedAt: true },
     });
 
-    return clients
-      .map((client) => {
-        const rows: ConsultationRow[] = consultations
-          .filter((c) => c.clientUserId === client.id)
-          .map((c) => ({
-            id: c.id,
-            startedAt: c.startedAt,
-            endedAt: c.endedAt,
-            status: c.status,
-            topicSlug: c.topic?.slug ?? '',
-          }));
+    return (
+      clients
+        .map((client) => {
+          const rows: ConsultationRow[] = consultations
+            .filter((c) => c.clientUserId === client.id)
+            .map((c) => ({
+              id: c.id,
+              startedAt: c.startedAt,
+              endedAt: c.endedAt,
+              status: c.status,
+              topicSlug: c.topic?.slug ?? '',
+            }));
 
-        const visible = visibleConsultations(rows, client.expertVisibilityAcceptedAt);
-        return { client, visible };
-      })
-      // Клиент, у которого после согласия ещё не было встреч, в списке не
-      // нужен: показывать нечего, а имя без истории — лишние данные.
-      .filter(({ visible }) => visible.length > 0)
-      .map(({ client, visible }) =>
-        toClientCard({ id: client.id, displayName: client.displayName, phone: null }, visible),
-      )
-      .sort((a, b) => (b.lastAt?.getTime() ?? 0) - (a.lastAt?.getTime() ?? 0));
+          const visible = visibleConsultations(
+            rows,
+            client.expertVisibilityAcceptedAt,
+          );
+          return { client, visible };
+        })
+        // Клиент, у которого после согласия ещё не было встреч, в списке не
+        // нужен: показывать нечего, а имя без истории — лишние данные.
+        .filter(({ visible }) => visible.length > 0)
+        .map(({ client, visible }) =>
+          toClientCard(
+            { id: client.id, displayName: client.displayName, phone: null },
+            visible,
+          ),
+        )
+        .sort((a, b) => (b.lastAt?.getTime() ?? 0) - (a.lastAt?.getTime() ?? 0))
+    );
   }
 
   async detail(expertId: string, clientUserId: string): Promise<ClientDetail> {
     const client = await this.prisma.user.findFirst({
-      where: { id: clientUserId, expertVisibilityAcceptedAt: { not: null }, deletedAt: null },
+      where: {
+        id: clientUserId,
+        expertVisibilityAcceptedAt: { not: null },
+        deletedAt: null,
+      },
       select: { id: true, displayName: true, expertVisibilityAcceptedAt: true },
     });
     if (!client) apiError('CLIENT_NOT_FOUND', 'Клиент не найден', 404);
@@ -110,8 +122,12 @@ export class ExpertClientsService {
       status: c.status,
       topicSlug: c.topic?.slug ?? '',
     }));
-    const visible = visibleConsultations(rows, client.expertVisibilityAcceptedAt);
-    if (visible.length === 0) apiError('CLIENT_NOT_FOUND', 'Клиент не найден', 404);
+    const visible = visibleConsultations(
+      rows,
+      client.expertVisibilityAcceptedAt,
+    );
+    if (visible.length === 0)
+      apiError('CLIENT_NOT_FOUND', 'Клиент не найден', 404);
 
     // Данные стали чувствительнее — доступ к ним должен быть виден.
     // Тот же приём, что у журнала доступа к метаданным консультаций
@@ -127,7 +143,10 @@ export class ExpertClientsService {
 
     const visibleIds = new Set(visible.map((v) => v.id));
     return {
-      ...toClientCard({ id: client.id, displayName: client.displayName, phone: null }, visible),
+      ...toClientCard(
+        { id: client.id, displayName: client.displayName, phone: null },
+        visible,
+      ),
       history: consultations
         .filter((c) => visibleIds.has(c.id))
         .map((c) => ({

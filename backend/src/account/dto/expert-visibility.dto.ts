@@ -15,7 +15,11 @@ export class AcceptExpertVisibilityDto {
 }
 
 export class ProfileDto {
-  @ApiProperty({ type: String, nullable: true, description: 'Как к человеку обращаться' })
+  @ApiProperty({
+    type: String,
+    nullable: true,
+    description: 'Как к человеку обращаться',
+  })
   displayName: string | null;
 
   @ApiProperty({

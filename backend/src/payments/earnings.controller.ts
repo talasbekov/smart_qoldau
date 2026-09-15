@@ -13,7 +13,10 @@ import { CurrentExpert } from '../experts/current-expert.decorator';
 import { PaymentsService } from './payments.service';
 import { EarningsDto } from './dto/earnings.dto';
 import { ListEarningsDto } from './dto/list-earnings.dto';
-import { DailyEarningsDto, ListDailyEarningsDto } from './dto/daily-earnings.dto';
+import {
+  DailyEarningsDto,
+  ListDailyEarningsDto,
+} from './dto/daily-earnings.dto';
 
 // Живёт в PaymentsModule (не ExpertsModule) — бизнес-домен начислений
 // принадлежит платёжному контуру, аналогично PaymentsController рядом с

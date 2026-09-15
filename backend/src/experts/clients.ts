@@ -35,11 +35,15 @@ export function visibleConsultations(
   if (!consentAt) return [];
 
   return rows.filter(
-    (row) => row.startedAt !== null && row.startedAt.getTime() >= consentAt.getTime(),
+    (row) =>
+      row.startedAt !== null && row.startedAt.getTime() >= consentAt.getTime(),
   );
 }
 
-export function toClientCard(client: ClientRow, rows: ConsultationRow[]): ClientCard {
+export function toClientCard(
+  client: ClientRow,
+  rows: ConsultationRow[],
+): ClientCard {
   const dates = rows
     .map((row) => row.startedAt)
     .filter((date): date is Date => date !== null)

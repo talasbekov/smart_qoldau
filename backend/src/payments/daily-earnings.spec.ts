@@ -9,7 +9,10 @@ const payment = (updatedAt: string, amountTiyn: number) => ({
 describe('groupByAlmatyDay', () => {
   it('складывает начисления одного дня', () => {
     const days = groupByAlmatyDay(
-      [payment('2026-09-01T06:00:00.000Z', 100_000), payment('2026-09-01T09:00:00.000Z', 200_000)],
+      [
+        payment('2026-09-01T06:00:00.000Z', 100_000),
+        payment('2026-09-01T09:00:00.000Z', 200_000),
+      ],
       new Date('2026-09-01T00:00:00.000Z'),
       new Date('2026-09-01T00:00:00.000Z'),
     );
@@ -39,7 +42,11 @@ describe('groupByAlmatyDay', () => {
     );
 
     expect(days).toHaveLength(3);
-    expect(days[0]).toEqual({ date: '2026-09-01', amountTiyn: 0, consultations: 0 });
+    expect(days[0]).toEqual({
+      date: '2026-09-01',
+      amountTiyn: 0,
+      consultations: 0,
+    });
   });
 
   it('удерживает 15 % — ту же долю, что в списке начислений', () => {
@@ -55,7 +62,13 @@ describe('groupByAlmatyDay', () => {
 
   it('Premium-скидка не уменьшает долю эксперта', () => {
     const days = groupByAlmatyDay(
-      [{ updatedAt: new Date('2026-09-01T06:00:00.000Z'), amountTiyn: 359_100, discountTiyn: 39_900 }],
+      [
+        {
+          updatedAt: new Date('2026-09-01T06:00:00.000Z'),
+          amountTiyn: 359_100,
+          discountTiyn: 39_900,
+        },
+      ],
       new Date('2026-09-01T00:00:00.000Z'),
       new Date('2026-09-01T00:00:00.000Z'),
     );

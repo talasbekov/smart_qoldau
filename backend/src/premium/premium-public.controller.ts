@@ -24,11 +24,13 @@ export class PremiumPublicController {
   @ApiOkResponse({ type: PremiumPlansDto })
   plans(): PremiumPlansDto {
     return {
-      plans: (Object.keys(PREMIUM_PRICES) as SubscriptionPlan[]).map((plan) => ({
-        plan,
-        priceTiyn: PREMIUM_PRICES[plan],
-        periodDays: PERIOD_DAYS[plan],
-      })),
+      plans: (Object.keys(PREMIUM_PRICES) as SubscriptionPlan[]).map(
+        (plan) => ({
+          plan,
+          priceTiyn: PREMIUM_PRICES[plan],
+          periodDays: PERIOD_DAYS[plan],
+        }),
+      ),
       discountPercent: PREMIUM_DISCOUNT_BP / 100,
     };
   }

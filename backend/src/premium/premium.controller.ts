@@ -24,7 +24,6 @@ import { PremiumService } from './premium.service';
 import { SubscribeDto } from './dto/subscribe.dto';
 import { PremiumStatusDto } from './dto/premium-status.dto';
 
-
 @ApiTags('premium')
 @ApiBearerAuth()
 @Controller('premium')

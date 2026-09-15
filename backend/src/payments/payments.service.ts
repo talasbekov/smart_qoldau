@@ -579,7 +579,8 @@ export class PaymentsService {
 
     // Период ограничен сверху: без этого один запрос выгружает всю
     // историю эксперта, и график за неделю стоит как за три года.
-    const spanDays = Math.floor((to.getTime() - from.getTime()) / 86_400_000) + 1;
+    const spanDays =
+      Math.floor((to.getTime() - from.getTime()) / 86_400_000) + 1;
     if (spanDays > MAX_DAILY_RANGE_DAYS) {
       apiError(
         'EARNINGS_RANGE_TOO_LONG',

@@ -30,7 +30,9 @@ describe('Клиенты эксперта (Р-27, e2e)', () => {
   let clientToken = '';
   let expertToken = '';
 
-  async function login(phone: string): Promise<{ token: string; userId: string }> {
+  async function login(
+    phone: string,
+  ): Promise<{ token: string; userId: string }> {
     await request(app.getHttpServer())
       .post('/v1/auth/request-code')
       .send({ phone })
@@ -56,12 +58,21 @@ describe('Клиенты эксперта (Р-27, e2e)', () => {
     });
     const expertIds = experts.map((e) => e.id);
 
-    await prisma.expertNote.deleteMany({ where: { expertId: { in: expertIds } } });
+    await prisma.expertNote.deleteMany({
+      where: { expertId: { in: expertIds } },
+    });
     await prisma.consultation.deleteMany({
-      where: { OR: [{ clientUserId: { in: ids } }, { expertId: { in: expertIds } }] },
+      where: {
+        OR: [{ clientUserId: { in: ids } }, { expertId: { in: expertIds } }],
+      },
     });
     await prisma.requestCandidate.deleteMany({
-      where: { OR: [{ expertId: { in: expertIds } }, { request: { clientUserId: { in: ids } } }] },
+      where: {
+        OR: [
+          { expertId: { in: expertIds } },
+          { request: { clientUserId: { in: ids } } },
+        ],
+      },
     });
     await prisma.request.deleteMany({ where: { clientUserId: { in: ids } } });
     await prisma.expert.deleteMany({ where: { id: { in: expertIds } } });
@@ -178,7 +189,10 @@ describe('Клиенты эксперта (Р-27, e2e)', () => {
       .expect(200);
 
     expect(res.body).toHaveLength(1);
-    expect(res.body[0]).toMatchObject({ displayName: 'Айгерим', consultations: 1 });
+    expect(res.body[0]).toMatchObject({
+      displayName: 'Айгерим',
+      consultations: 1,
+    });
   });
 
   it('телефон клиента не отдаётся ни в списке, ни в карточке', async () => {
@@ -203,7 +217,9 @@ describe('Клиенты эксперта (Р-27, e2e)', () => {
     await acceptConsent(clientToken);
     await makeConsultation(new Date());
 
-    const other = await prisma.expert.findFirstOrThrow({ where: { id: expertId } });
+    const other = await prisma.expert.findFirstOrThrow({
+      where: { id: expertId },
+    });
     // Эксперт запрашивает клиента, с которым не работал: сам себя.
     await request(app.getHttpServer())
       .get(`/v1/experts/me/clients/${other.userId}`)

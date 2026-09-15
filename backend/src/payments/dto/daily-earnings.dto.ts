@@ -5,7 +5,9 @@ export class DailyEarningDto {
   @ApiProperty({ example: '2026-09-01', description: 'Дата по Asia/Almaty' })
   date: string;
 
-  @ApiProperty({ description: 'Доход эксперта за день в тиынах (после комиссии)' })
+  @ApiProperty({
+    description: 'Доход эксперта за день в тиынах (после комиссии)',
+  })
   amountTiyn: number;
 
   @ApiProperty({ description: 'Сколько консультаций оплачено в этот день' })
@@ -26,7 +28,10 @@ export class ListDailyEarningsDto {
   @IsISO8601()
   from?: string;
 
-  @ApiPropertyOptional({ example: '2026-09-01', description: 'Конец периода. По умолчанию — сегодня' })
+  @ApiPropertyOptional({
+    example: '2026-09-01',
+    description: 'Конец периода. По умолчанию — сегодня',
+  })
   @IsOptional()
   @IsISO8601()
   to?: string;

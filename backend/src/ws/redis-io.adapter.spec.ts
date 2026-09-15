@@ -46,7 +46,10 @@ describe('RedisIoAdapter', () => {
     await adapter.connectToRedis();
     const server = { adapter: jest.fn() };
     jest
-      .spyOn(Object.getPrototypeOf(Object.getPrototypeOf(adapter)), 'createIOServer')
+      .spyOn(
+        Object.getPrototypeOf(Object.getPrototypeOf(adapter)),
+        'createIOServer',
+      )
       .mockReturnValue(server);
 
     adapter.createIOServer(3000, {} as never);
@@ -59,11 +62,16 @@ describe('RedisIoAdapter', () => {
     const adapter = new RedisIoAdapter({} as never, redis as never);
     const server = { adapter: jest.fn() };
     jest
-      .spyOn(Object.getPrototypeOf(Object.getPrototypeOf(adapter)), 'createIOServer')
+      .spyOn(
+        Object.getPrototypeOf(Object.getPrototypeOf(adapter)),
+        'createIOServer',
+      )
       .mockReturnValue(server);
 
     // Молчаливый пропуск означал бы, что в проде сокеты разъехались, а
     // узнали бы мы об этом по жалобам, а не по падению.
-    expect(() => adapter.createIOServer(3000, {} as never)).toThrow(/connectToRedis/);
+    expect(() => adapter.createIOServer(3000, {} as never)).toThrow(
+      /connectToRedis/,
+    );
   });
 });
