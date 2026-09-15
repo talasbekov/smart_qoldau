@@ -24,7 +24,8 @@ type Phase =
   | 'voided'
   | 'unavailable';
 
-type ReconcileResult = PaymentStatus['status'] | 'NOT_FOUND' | 'UNKNOWN';
+type ReconcileResult =
+  PaymentStatus['status'] | 'NOT_FOUND' | 'UNKNOWN' | 'STALE';
 type PremiumPricing =
   | { kind: 'loading' }
   | { kind: 'inactive' }
@@ -64,20 +65,31 @@ export default function PaymentCheckout({
     kind: 'loading',
   });
   const submitLock = useRef(false);
+  const mountedRef = useRef(true);
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
 
   const payable =
     consultation.status === 'ACTIVE' || consultation.status === 'SCHEDULED';
   const consultationHref = `/${locale}/consultations/${consultation.id}`;
 
   const openConsultation = useCallback(() => {
+    if (!mountedRef.current) return;
     replace(consultationHref);
     refresh();
   }, [consultationHref, refresh, replace]);
 
   const loadMethods = useCallback(async () => {
+    if (!mountedRef.current) return;
     setMethodsError(false);
     try {
       const list = await apiFetch<PaymentMethod[]>('payment-methods');
+      if (!mountedRef.current) return;
       const next = list ?? [];
       setMethods(next);
       setSelectedMethodId((current) =>
@@ -86,6 +98,7 @@ export default function PaymentCheckout({
           : (next[0]?.id ?? null),
       );
     } catch {
+      if (!mountedRef.current) return;
       setMethodsError(true);
       setMethods(null);
     }
@@ -94,6 +107,7 @@ export default function PaymentCheckout({
   const loadPremiumPricing = useCallback(async () => {
     try {
       const premium = await apiFetch<PremiumStatus>('premium');
+      if (!mountedRef.current) return;
       if (!premium) {
         setPremiumPricing({ kind: 'unknown' });
         return;
@@ -104,6 +118,7 @@ export default function PaymentCheckout({
       }
 
       const plans = await apiFetch<PremiumPlans>('premium/plans');
+      if (!mountedRef.current) return;
       if (
         !plans ||
         !Number.isFinite(plans.discountPercent) ||
@@ -118,17 +133,20 @@ export default function PaymentCheckout({
         discountPercent: plans.discountPercent,
       });
     } catch {
+      if (!mountedRef.current) return;
       setPremiumPricing({ kind: 'unknown' });
     }
   }, []);
 
   const reconcile = useCallback(async (): Promise<ReconcileResult> => {
+    if (!mountedRef.current) return 'STALE';
     setMessage(null);
     setPhase((current) => (current === 'pending' ? 'pending' : 'checking'));
     try {
       const payment = await apiFetch<PaymentStatus>(
         `consultations/${consultation.id}/payment`,
       );
+      if (!mountedRef.current) return 'STALE';
       if (!payment) {
         setPhase('unknown');
         setMessage(t('statusUnknown'));
@@ -159,6 +177,7 @@ export default function PaymentCheckout({
           return 'VOIDED';
       }
     } catch (caught) {
+      if (!mountedRef.current) return 'STALE';
       if (
         caught instanceof ApiError &&
         caught.status === 404 &&
@@ -210,6 +229,7 @@ export default function PaymentCheckout({
   async function submit(event: React.FormEvent) {
     event.preventDefault();
     if (
+      !mountedRef.current ||
       !selectedMethodId ||
       submitLock.current ||
       phase === 'checking' ||
@@ -229,6 +249,7 @@ export default function PaymentCheckout({
           body: JSON.stringify({ paymentMethodId: selectedMethodId }),
         },
       );
+      if (!mountedRef.current) return;
       if (result?.status === 'HELD') {
         submitLock.current = false;
         openConsultation();
@@ -236,6 +257,7 @@ export default function PaymentCheckout({
       }
       await reconcile();
     } catch (caught) {
+      if (!mountedRef.current) return;
       if (caught instanceof ApiError && caught.code === 'PROVIDER_DECLINED') {
         submitLock.current = false;
         setPhase('declined');

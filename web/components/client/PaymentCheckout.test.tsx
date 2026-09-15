@@ -507,6 +507,78 @@ describe('PaymentCheckout', () => {
     expect(statusReads).toBe(2);
   });
 
+  it('игнорирует поздний HELD после unmount без navigation side effects', async () => {
+    jest.useFakeTimers();
+    let statusReads = 0;
+    let releaseHeld!: (value: Response) => void;
+    const delayedHeld = new Promise<Response>((resolve) => {
+      releaseHeld = resolve;
+    });
+    initialData(async (url) => {
+      if (url.endsWith('/consultations/c1/payment')) {
+        statusReads += 1;
+        if (statusReads === 1) {
+          return response(200, {
+            status: 'PENDING',
+            amountTiyn: 399000,
+            maskedPan: '**** 4242',
+          });
+        }
+        return delayedHeld;
+      }
+      return undefined as never;
+    });
+    const view = renderCheckout();
+    expect(await screen.findByRole('status')).toHaveTextContent(
+      /банк подтверждает/i,
+    );
+
+    await act(async () => {
+      jest.advanceTimersByTime(1500);
+    });
+    expect(statusReads).toBe(2);
+    view.unmount();
+
+    await act(async () => {
+      releaseHeld(
+        await response(200, {
+          status: 'HELD',
+          amountTiyn: 399000,
+          maskedPan: '**** 4242',
+        }),
+      );
+    });
+
+    expect(replace).not.toHaveBeenCalled();
+    expect(refresh).not.toHaveBeenCalled();
+  });
+
+  it('игнорирует поздний HELD от POST после unmount', async () => {
+    let releasePay!: (value: Response) => void;
+    const delayedPay = new Promise<Response>((resolve) => {
+      releasePay = resolve;
+    });
+    initialData(async (url, init) => {
+      if (url.endsWith('/consultations/c1/pay') && init.method === 'POST') {
+        return delayedPay;
+      }
+      return undefined as never;
+    });
+    const view = renderCheckout();
+    await screen.findByRole('radio', { name: /4242/i });
+    const pay = await screen.findByRole('button', { name: 'Оплатить' });
+    await waitFor(() => expect(pay).toBeEnabled());
+
+    fireEvent.click(pay);
+    view.unmount();
+    await act(async () => {
+      releasePay(await response(200, { status: 'HELD' }));
+    });
+
+    expect(replace).not.toHaveBeenCalled();
+    expect(refresh).not.toHaveBeenCalled();
+  });
+
   it('CAPTURED не считает разрешением live-сессии', async () => {
     initialData(async (url) => {
       if (url.endsWith('/consultations/c1/payment')) {
