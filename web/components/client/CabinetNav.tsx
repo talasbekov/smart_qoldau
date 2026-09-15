@@ -2,12 +2,14 @@
 
 import { usePathname } from 'next/navigation';
 import { Link } from '@/lib/i18n/navigation';
+import ru from '@/messages/ru.json';
+import kz from '@/messages/kz.json';
 
 const SECTIONS = [
-  { href: '/consultations', label: 'Консультации' },
-  { href: '/favorites', label: 'Избранное' },
-  { href: '/notifications', label: 'Уведомления' },
-  { href: '/profile', label: 'Профиль' },
+  { href: '/consultations', label: 'consultations' },
+  { href: '/favorites', label: 'favorites' },
+  { href: '/notifications', label: 'notifications' },
+  { href: '/profile', label: 'profile' },
 ] as const;
 
 const ITEM =
@@ -15,16 +17,22 @@ const ITEM =
 
 export default function CabinetNav() {
   const pathname = usePathname();
+  const locale = pathname.split('/')[1];
+  const copy = locale === 'kz' ? kz.cabinet : ru.cabinet;
   const withoutLocale = pathname.replace(/^\/[^/]+/, '') || '/';
 
   return (
-    <nav aria-label="Разделы кабинета" className="flex gap-1 lg:flex-col">
+    <nav
+      aria-label={copy.navLabel}
+      className="flex flex-wrap gap-1 lg:flex-col lg:flex-nowrap"
+    >
       {SECTIONS.map((section) => {
         // Раздел активен и на своих вложенных страницах: карточка
         // консультации — часть раздела консультаций, и подсветка там
         // пропадать не должна.
         const active =
-          withoutLocale === section.href || withoutLocale.startsWith(`${section.href}/`);
+          withoutLocale === section.href ||
+          withoutLocale.startsWith(`${section.href}/`);
 
         return (
           <Link
@@ -33,7 +41,7 @@ export default function CabinetNav() {
             aria-current={active ? 'page' : undefined}
             className={ITEM}
           >
-            {section.label}
+            {copy[section.label]}
           </Link>
         );
       })}

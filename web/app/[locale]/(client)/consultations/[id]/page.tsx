@@ -1,8 +1,7 @@
 import { notFound } from 'next/navigation';
 import { authorizedFetch } from '@/lib/api/authorized';
 import type { Consultation } from '@/components/client/ConsultationList';
-import Session from '@/components/client/Session';
-import Chat from '@/components/client/Chat';
+import ConsultationAccess from '@/components/client/ConsultationAccess';
 
 const STATUS_LABELS: Record<string, string> = {
   SCHEDULED: 'Запланирована',
@@ -16,12 +15,11 @@ export default async function ConsultationPage({
 }: {
   params: Promise<{ locale: string; id: string }>;
 }) {
-  const { id } = await params;
-  const consultation = await authorizedFetch<Consultation>(`consultations/${id}`);
+  const { locale, id } = await params;
+  const consultation = await authorizedFetch<Consultation>(
+    `consultations/${id}`,
+  );
   if (!consultation) notFound();
-
-  const live = consultation.status === 'ACTIVE';
-  const callFormat = consultation.format === 'chat' ? null : consultation.format;
 
   return (
     <>
@@ -32,15 +30,7 @@ export default async function ConsultationPage({
         {STATUS_LABELS[consultation.status] ?? consultation.status}
       </p>
 
-      {live && callFormat ? (
-        <Session consultationId={id} format={callFormat as 'audio' | 'video'} />
-      ) : (
-        // Чат остаётся доступен и до, и после звонка: переписка — часть
-        // консультации, а не приложение к видео.
-        <div className="rounded-[20px] border border-border bg-white p-4">
-          <Chat consultationId={id} />
-        </div>
-      )}
+      <ConsultationAccess consultation={consultation} locale={locale} />
     </>
   );
 }

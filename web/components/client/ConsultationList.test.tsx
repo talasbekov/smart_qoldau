@@ -40,27 +40,36 @@ describe('ConsultationList', () => {
     render(<ConsultationList items={[]} locale="ru" />);
 
     expect(screen.getByText(/пока нет консультаций/i)).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /Найти специалиста/ })).toHaveAttribute(
-      'href',
-      '/ru/requests/new',
-    );
+    expect(
+      screen.getByRole('link', { name: /Найти специалиста/ }),
+    ).toHaveAttribute('href', '/ru/requests/new');
   });
 
   it('делит на предстоящие и прошедшие', () => {
     render(
       <ConsultationList
-        items={[consultation(), consultation({ id: 'c2', status: 'COMPLETED' })]}
+        items={[
+          consultation(),
+          consultation({ id: 'c2', status: 'COMPLETED' }),
+        ]}
         locale="ru"
       />,
     );
 
-    expect(screen.getByRole('heading', { name: /Предстоящие/ })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: /Прошедшие/ })).toBeInTheDocument();
+    expect(
+      screen.getByRole('heading', { name: /Предстоящие/ }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('heading', { name: /Прошедшие/ }),
+    ).toBeInTheDocument();
   });
 
   it('у прошедшей без отзыва зовёт оценить', () => {
     render(
-      <ConsultationList items={[consultation({ status: 'COMPLETED', reviewId: null })]} locale="ru" />,
+      <ConsultationList
+        items={[consultation({ status: 'COMPLETED', reviewId: null })]}
+        locale="ru"
+      />,
     );
 
     expect(screen.getByRole('link', { name: /Оценить/ })).toBeInTheDocument();
@@ -68,7 +77,10 @@ describe('ConsultationList', () => {
 
   it('у оценённой не зовёт оценить второй раз', () => {
     render(
-      <ConsultationList items={[consultation({ status: 'COMPLETED', reviewId: 'rev1' })]} locale="ru" />,
+      <ConsultationList
+        items={[consultation({ status: 'COMPLETED', reviewId: 'rev1' })]}
+        locale="ru"
+      />,
     );
 
     expect(screen.queryByRole('link', { name: /Оценить/ })).toBeNull();
@@ -87,13 +99,53 @@ describe('ConsultationList', () => {
   });
 
   it('неоплаченная предстоящая зовёт оплатить', () => {
-    render(<ConsultationList items={[consultation({ paymentStatus: 'UNPAID' })]} locale="ru" />);
+    render(
+      <ConsultationList
+        items={[consultation({ paymentStatus: 'UNPAID' })]}
+        locale="ru"
+      />,
+    );
 
-    expect(screen.getByRole('link', { name: /Оплатить/ })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /Оплатить/ })).toHaveAttribute(
+      'href',
+      '/ru/consultations/c1/payment',
+    );
+  });
+
+  it('ссылка на оплату локализована для казахского маршрута', () => {
+    render(
+      <ConsultationList
+        items={[consultation({ paymentStatus: 'UNPAID' })]}
+        locale="kz"
+      />,
+    );
+
+    expect(screen.getByRole('link', { name: 'Төлеу' })).toHaveAttribute(
+      'href',
+      '/kz/consultations/c1/payment',
+    );
+  });
+
+  it('после отказа оплаты оставляет путь к повторной попытке', () => {
+    render(
+      <ConsultationList
+        items={[consultation({ paymentStatus: 'FAILED' })]}
+        locale="ru"
+      />,
+    );
+
+    expect(
+      screen.getByRole('link', { name: /Повторить оплату/ }),
+    ).toHaveAttribute('href', '/ru/consultations/c1/payment');
   });
 
   it('срочная помечена: это другой сценарий и другая цена времени', () => {
-    render(<ConsultationList items={[consultation({ isEmergency: true })]} locale="ru" />);
+    render(
+      <ConsultationList
+        items={[consultation({ isEmergency: true })]}
+        locale="ru"
+      />,
+    );
 
     expect(screen.getByText(/Срочная/)).toBeInTheDocument();
   });

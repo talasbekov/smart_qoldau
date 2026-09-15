@@ -1,10 +1,16 @@
 import Link from 'next/link';
 import type { components } from '@/lib/api/generated';
 import ExpertAvatar from '@/components/expert/ExpertAvatar';
+import ru from '@/messages/ru.json';
+import kz from '@/messages/kz.json';
 
 export type Consultation = components['schemas']['ConsultationClientDto'];
 
-const FORMAT_LABELS: Record<string, string> = { chat: 'Чат', audio: 'Аудио', video: 'Видео' };
+const FORMAT_LABELS: Record<string, string> = {
+  chat: 'Чат',
+  audio: 'Аудио',
+  video: 'Видео',
+};
 
 const STATUS_LABELS: Record<string, string> = {
   SCHEDULED: 'Запланирована',
@@ -32,14 +38,22 @@ function Card({ item, locale }: { item: Consultation; locale: string }) {
   const cancelled = item.status === 'CANCELLED';
   // Оплату предлагаем только там, где она ещё имеет смысл: у отменённой
   // консультации кнопка «оплатить» — прямой путь потерять деньги.
-  const needsPayment = !finished && !cancelled && item.paymentStatus === 'UNPAID';
+  const needsPayment =
+    !finished &&
+    !cancelled &&
+    (item.paymentStatus === 'UNPAID' || item.paymentStatus === 'FAILED');
+  const checkout = locale === 'kz' ? kz.checkout : ru.checkout;
+  const payLabel =
+    item.paymentStatus === 'FAILED' ? checkout.retryPayment : checkout.pay;
 
   return (
     <li className="rounded-[20px] border border-border bg-white p-5">
       <div className="mb-3 flex items-center gap-3">
         <ExpertAvatar photoUrl={item.expert.photoUrl} size={48} />
         <div className="min-w-0">
-          <p className="text-[15px] font-extrabold text-ink">{item.expert.displayName}</p>
+          <p className="text-[15px] font-extrabold text-ink">
+            {item.expert.displayName}
+          </p>
           <p className="text-xs text-faint">
             {FORMAT_LABELS[item.format] ?? item.format} · {when(item.startedAt)}
           </p>
@@ -51,7 +65,9 @@ function Card({ item, locale }: { item: Consultation; locale: string }) {
           {STATUS_LABELS[item.status] ?? item.status}
         </span>
         {item.isEmergency && (
-          <span className="rounded-full bg-chip px-3 py-1 text-ink">Срочная</span>
+          <span className="rounded-full bg-chip px-3 py-1 text-ink">
+            Срочная
+          </span>
         )}
         <span className="text-muted">{tenge(item.priceTiyn)}</span>
       </div>
@@ -65,10 +81,10 @@ function Card({ item, locale }: { item: Consultation; locale: string }) {
         </Link>
         {needsPayment && (
           <Link
-            href={`/${locale}/consultations/${item.id}#payment`}
+            href={`/${locale}/consultations/${item.id}/payment`}
             className="rounded-xl px-3 py-2 text-sm font-bold text-primary focus:outline-none focus:ring-2 focus:ring-primary"
           >
-            Оплатить
+            {payLabel}
           </Link>
         )}
         {finished && !item.reviewId && (
@@ -105,8 +121,12 @@ export default function ConsultationList({
     );
   }
 
-  const upcoming = items.filter((i) => i.status === 'SCHEDULED' || i.status === 'ACTIVE');
-  const past = items.filter((i) => i.status === 'COMPLETED' || i.status === 'CANCELLED');
+  const upcoming = items.filter(
+    (i) => i.status === 'SCHEDULED' || i.status === 'ACTIVE',
+  );
+  const past = items.filter(
+    (i) => i.status === 'COMPLETED' || i.status === 'CANCELLED',
+  );
 
   return (
     <div className="flex flex-col gap-8">
