@@ -39,7 +39,8 @@ Integration prerequisites:
 
 Exit status: 0 when every selected check passes; 1 when a check fails; 2 when
 a required command or installed dependency is unavailable (or integration
-preconditions are not satisfied).
+preconditions are not satisfied). When both failures and unavailable checks
+occur, a failed check takes precedence and the exit status is 1.
 EOF
 }
 
@@ -115,15 +116,25 @@ run_flutter_check() {
   fi
 
   printf '\n==> %s\n' "$label"
-  if (cd -- "$directory" && flutter "$@"); then
+  if (cd -- "$directory" && flutter "$@" --no-pub); then
     record_result "$label" PASS ''
   else
-    record_result "$label" FAILED "flutter $*"
+    record_result "$label" FAILED "flutter $* --no-pub"
   fi
 }
 
 is_local_service_url() {
   [[ "$1" =~ ^[a-zA-Z][a-zA-Z0-9+.-]*://([^/@]+@)?(localhost|127\.0\.0\.1|\[::1\])(:[0-9]+)?(/|$) ]]
+}
+
+database_path_is_test() {
+  local authority_and_path database_path
+  authority_and_path="${1#*://}"
+  [[ "$authority_and_path" == */* ]] || return 1
+  database_path="${authority_and_path#*/}"
+  database_path="${database_path%%\?*}"
+  database_path="${database_path%%\#*}"
+  [[ "$database_path" == *test* ]]
 }
 
 check_integration_preconditions() {
@@ -138,7 +149,7 @@ check_integration_preconditions() {
       return 1
     fi
   done
-  if [[ "$DATABASE_URL" != *test* ]]; then
+  if ! database_path_is_test "$DATABASE_URL"; then
     record_result backend-integration UNAVAILABLE 'DATABASE_URL must name a dedicated test database (contain "test")'
     return 1
   fi
