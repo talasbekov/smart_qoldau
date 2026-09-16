@@ -61,7 +61,7 @@ beforeEach(() => {
 const message = (over: Record<string, unknown> = {}) => ({
   id: 'm1',
   consultationId: 'c1',
-  senderRole: 'EXPERT',
+  senderRole: 'expert',
   text: 'Здравствуйте',
   createdAt: '2026-09-02T10:00:00.000Z',
   ...over,
@@ -209,7 +209,7 @@ describe('Chat', () => {
 
     await act(async () => {
       handlers['chat.message'](
-        message({ id: 'own-1', senderRole: 'CLIENT', text: 'Спасибо' }),
+        message({ id: 'own-1', senderRole: 'client', text: 'Спасибо' }),
       );
     });
 
@@ -239,7 +239,7 @@ describe('Chat', () => {
 
     await act(async () => {
       handlers['chat.message'](
-        message({ id: 'own-2', senderRole: 'CLIENT', text: 'Первый текст' }),
+        message({ id: 'own-2', senderRole: 'client', text: 'Первый текст' }),
       );
     });
 
@@ -293,7 +293,7 @@ describe('Chat', () => {
       handlers['chat.message'](
         message({
           id: 'own-confirmed',
-          senderRole: 'CLIENT',
+          senderRole: 'client',
           text: 'Уже сохранено',
         }),
       );
@@ -382,7 +382,7 @@ describe('Chat', () => {
       items: [
         message({
           id: 'persisted-own',
-          senderRole: 'CLIENT',
+          senderRole: 'client',
           text: 'Проверить доставку',
         }),
       ],
@@ -457,7 +457,7 @@ describe('Chat', () => {
     history.items = [
       message({
         id: 'old-same',
-        senderRole: 'CLIENT',
+        senderRole: 'client',
         text: 'Одинаковый текст',
       }),
     ];
@@ -623,7 +623,7 @@ describe('Chat', () => {
       items: [
         message({
           id: 'after-reconnect',
-          senderRole: 'CLIENT',
+          senderRole: 'client',
           text: 'Пережить reconnect',
         }),
       ],

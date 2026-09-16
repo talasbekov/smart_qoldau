@@ -2,17 +2,12 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { apiFetch } from '@/lib/api/client';
+import type { components } from '@/lib/api/generated';
 import { connectRealtime, type SqSocket } from '@/lib/realtime/socket';
 import ru from '@/messages/ru.json';
 import kz from '@/messages/kz.json';
 
-type Message = {
-  id: string;
-  consultationId: string;
-  senderRole: 'CLIENT' | 'EXPERT';
-  text: string;
-  createdAt: string;
-};
+type Message = components['schemas']['MessageDto'];
 
 type PendingMessage = {
   attemptId: number;
@@ -31,7 +26,7 @@ type HistoryStatus = 'loading' | 'ready' | 'error';
 export default function Chat({
   consultationId,
   readOnly = false,
-  senderRole = 'CLIENT',
+  senderRole = 'client',
   locale = 'ru',
 }: {
   consultationId: string;
@@ -378,7 +373,7 @@ export default function Chat({
           <li
             key={message.id}
             className={
-              message.senderRole === 'CLIENT'
+              message.senderRole === senderRole
                 ? 'max-w-[80%] self-end rounded-2xl bg-primary px-4 py-2 text-sm text-white'
                 : 'max-w-[80%] self-start rounded-2xl bg-chip px-4 py-2 text-sm text-ink'
             }

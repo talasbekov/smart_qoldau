@@ -85,7 +85,7 @@ describe('ExpertConsultationPage', () => {
     expect(screen.getByTestId('session')).toHaveAttribute('data-locale', 'kz');
     expect(screen.getByTestId('session')).toHaveAttribute(
       'data-sender-role',
-      'EXPERT',
+      'expert',
     );
     expect(screen.getByTestId('expert-actions')).toHaveAttribute(
       'data-active',
@@ -115,7 +115,7 @@ describe('ExpertConsultationPage', () => {
     );
     expect(screen.getByTestId('chat')).toHaveAttribute(
       'data-sender-role',
-      'EXPERT',
+      'expert',
     );
     expect(screen.getByTestId('chat')).toHaveAttribute('data-locale', 'ru');
     expect(screen.getByRole('status')).toHaveTextContent(

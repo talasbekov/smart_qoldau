@@ -42,25 +42,42 @@ export default function RequestStatus({
     let fallbackActive = false;
     let retryTimer: ReturnType<typeof setTimeout> | null = null;
     let inFlight: Promise<RequestState | null> | null = null;
+    let resyncQueued = false;
     const abort = new AbortController();
 
-    const resync = (): Promise<RequestState | null> => {
-      if (inFlight) return inFlight;
+    const resync = (queueIfBusy = false): Promise<RequestState | null> => {
+      if (inFlight) {
+        if (queueIfBusy) resyncQueued = true;
+        return inFlight;
+      }
 
-      setSyncStatus('recovering');
-      const request = apiFetch<RequestState>(`requests/${requestId}`, {
-        signal: abort.signal,
-      })
-        .then((fresh) => {
+      const run = async () => {
+        let fresh: RequestState | null = null;
+        do {
+          resyncQueued = false;
+          setSyncStatus('recovering');
+          fresh = await apiFetch<RequestState>(`requests/${requestId}`, {
+            signal: abort.signal,
+          });
           if (!fresh || fresh.id !== requestId) {
             throw new Error('Некорректный ответ статуса заявки');
           }
-          if (!dropped) setState(fresh);
-          return fresh;
-        })
-        .finally(() => {
-          if (inFlight === request) inFlight = null;
-        });
+          if (!dropped) {
+            const next = fresh;
+            // MATCHED и прочие финальные состояния необратимы на этом
+            // экране: запоздавший SEARCHING из REST не должен отменить
+            // более новое событие сокета в том же React batch.
+            setState((current) =>
+              current.status === 'SEARCHING' ? next : current,
+            );
+          }
+        } while (!dropped && resyncQueued);
+        return fresh;
+      };
+
+      const request = run().finally(() => {
+        if (inFlight === request) inFlight = null;
+      });
       inFlight = request;
       return request;
     };
@@ -111,7 +128,9 @@ export default function RequestStatus({
         socket = connected;
         connected.onReady(() => {
           stopFallback();
-          void resync()
+          // Если fallback-запрос уже идёт, ставим ещё один за ним: только
+          // запрос, начатый после ready, закрывает окно пропущенных событий.
+          void resync(true)
             .then(() => {
               if (!dropped) setSyncStatus('online');
             })
@@ -124,7 +143,11 @@ export default function RequestStatus({
           const fresh = payload as RequestState;
           // Комната адресована пользователю, а заявок у него может быть
           // несколько за сессию — чужое событие игнорируем.
-          if (fresh.id === requestId) setState(fresh);
+          if (fresh.id === requestId) {
+            setState((current) =>
+              current.status === 'SEARCHING' ? fresh : current,
+            );
+          }
         });
       } catch {
         // Socket — только ускоритель. При недоступном realtime сразу

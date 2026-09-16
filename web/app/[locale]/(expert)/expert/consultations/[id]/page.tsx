@@ -53,7 +53,7 @@ export default async function ExpertConsultationPage({
           consultationId={id}
           format={callFormat as 'audio' | 'video'}
           locale={locale}
-          senderRole="EXPERT"
+          senderRole="expert"
         />
       ) : (
         <div className="flex flex-col gap-4">
@@ -75,7 +75,7 @@ export default async function ExpertConsultationPage({
               consultationId={id}
               readOnly={!paidLive}
               locale={locale}
-              senderRole="EXPERT"
+              senderRole="expert"
             />
           </div>
         </div>

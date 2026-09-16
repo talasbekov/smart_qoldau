@@ -35,12 +35,12 @@ export default function Session({
   consultationId,
   format,
   locale = 'ru',
-  senderRole = 'CLIENT',
+  senderRole = 'client',
 }: {
   consultationId: string;
   format: 'audio' | 'video';
   locale?: string;
-  senderRole?: 'CLIENT' | 'EXPERT';
+  senderRole?: 'client' | 'expert';
 }) {
   const copy = locale === 'kz' ? kz.session : ru.session;
   const [call, setCall] = useState<Call | null>(null);

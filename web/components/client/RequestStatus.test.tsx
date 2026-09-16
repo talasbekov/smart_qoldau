@@ -304,7 +304,58 @@ describe('RequestStatus', () => {
     expect(push).toHaveBeenCalledWith('/ru/consultations/c-retry');
   });
 
-  it('не запускает перекрывающийся REST resync при ready и disconnect', async () => {
+  it('после ready выполняет свежий REST resync вслед за уже начатым, не перекрывая запросы', async () => {
+    let resolveFallback!: (value: { id: string; status: 'SEARCHING' }) => void;
+    let resolveReady!: (value: {
+      id: string;
+      status: 'MATCHED';
+      consultationId: string;
+    }) => void;
+    apiFetch
+      .mockReturnValueOnce(
+        new Promise((resolve) => {
+          resolveFallback = resolve;
+        }),
+      )
+      .mockReturnValueOnce(
+        new Promise((resolve) => {
+          resolveReady = resolve;
+        }),
+      );
+    connectRealtime.mockResolvedValue(connectedSocket());
+    render(
+      <RequestStatus
+        requestId="r1"
+        initial={{ id: 'r1', status: 'SEARCHING' }}
+        locale="ru"
+      />,
+    );
+    await waitFor(() => expect(handlers.ready).toBeDefined());
+
+    act(() => handlers.disconnect('transport close'));
+    await waitFor(() => expect(apiFetch).toHaveBeenCalledTimes(1));
+
+    act(() => handlers.ready({ expertId: null }));
+    expect(apiFetch).toHaveBeenCalledTimes(1);
+
+    resolveFallback({ id: 'r1', status: 'SEARCHING' });
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    expect(apiFetch).toHaveBeenCalledTimes(2);
+
+    resolveReady({
+      id: 'r1',
+      status: 'MATCHED',
+      consultationId: 'c-after-ready',
+    });
+    await waitFor(() =>
+      expect(push).toHaveBeenCalledWith('/ru/consultations/c-after-ready'),
+    );
+  });
+
+  it('не позволяет старому REST SEARCHING перезаписать MATCHED из сокета', async () => {
     let resolveRequest!: (value: { id: string; status: 'SEARCHING' }) => void;
     apiFetch.mockReturnValue(
       new Promise((resolve) => {
@@ -321,18 +372,21 @@ describe('RequestStatus', () => {
     );
     await waitFor(() => expect(handlers.ready).toBeDefined());
 
-    act(() => {
-      handlers.ready({ expertId: null });
-      handlers.disconnect('transport close');
-    });
-    expect(apiFetch).toHaveBeenCalledTimes(1);
+    act(() => handlers.ready({ expertId: null }));
+    await waitFor(() => expect(apiFetch).toHaveBeenCalledTimes(1));
 
-    resolveRequest({ id: 'r1', status: 'SEARCHING' });
     await act(async () => {
+      handlers['request.updated']({
+        id: 'r1',
+        status: 'MATCHED',
+        consultationId: 'c-socket-wins',
+      });
+      resolveRequest({ id: 'r1', status: 'SEARCHING' });
       await Promise.resolve();
       await Promise.resolve();
     });
-    expect(apiFetch).toHaveBeenCalledTimes(1);
+
+    expect(push).toHaveBeenCalledWith('/ru/consultations/c-socket-wins');
   });
 
   it('abort-ит REST resync и не навигирует после unmount', async () => {
