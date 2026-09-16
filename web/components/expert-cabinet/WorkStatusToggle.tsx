@@ -204,7 +204,6 @@ export default function WorkStatusToggle({
 
   const readCanonical = useCallback(
     async (
-      adoptIntent = false,
       expectedGeneration = transition.current.generation,
     ): Promise<WorkStatus | null> => {
       const requestedAtRevision = transition.current.canonicalRevision;
@@ -218,16 +217,22 @@ export default function WorkStatusToggle({
       ) {
         return transition.current.canonical;
       }
+      return actual.workStatus;
+    },
+    [],
+  );
+
+  const applyCanonicalSnapshot = useCallback(
+    (workStatus: WorkStatus, adoptIntent = false) => {
       transition.current.unknownAccepting = false;
       if (adoptIntent) {
-        if (actual.workStatus === 'ACCEPTING') {
+        if (workStatus === 'ACCEPTING') {
           transition.current.intentAccepting = true;
-        } else if (actual.workStatus === 'NOT_ACCEPTING') {
+        } else if (workStatus === 'NOT_ACCEPTING') {
           transition.current.intentAccepting = false;
         }
       }
-      reflectCanonical(actual.workStatus);
-      return actual.workStatus;
+      reflectCanonical(workStatus);
     },
     [reflectCanonical],
   );
@@ -241,7 +246,7 @@ export default function WorkStatusToggle({
           transition.current.canonical === 'BUSY' ||
           transition.current.canonical === 'UNAVAILABLE';
         const actual = reconcileFirst
-          ? await readCanonical(adoptRestoredManagedStatus, operationGeneration)
+          ? await readCanonical(operationGeneration)
           : transition.current.canonical;
         if (
           actual === null ||
@@ -249,6 +254,9 @@ export default function WorkStatusToggle({
         ) {
           finishSaving(operationGeneration, 'idle');
           return;
+        }
+        if (reconcileFirst) {
+          applyCanonicalSnapshot(actual, adoptRestoredManagedStatus);
         }
         if (
           actual === 'BUSY' ||
@@ -308,7 +316,7 @@ export default function WorkStatusToggle({
           return;
         }
         try {
-          const actual = await readCanonical(false, operationGeneration);
+          const actual = await readCanonical(operationGeneration);
           if (
             actual === null ||
             transition.current.generation !== operationGeneration
@@ -316,6 +324,7 @@ export default function WorkStatusToggle({
             finishSaving(operationGeneration, 'idle');
             return;
           }
+          applyCanonicalSnapshot(actual);
           if (actual === 'ACCEPTING' && transition.current.intentAccepting) {
             setConfirmedOnline(true);
             finishSaving(operationGeneration, 'idle');
@@ -339,6 +348,7 @@ export default function WorkStatusToggle({
       beginSaving,
       enqueueStatus,
       finishSaving,
+      applyCanonicalSnapshot,
       queueUnavailable,
       readCanonical,
       reflectCanonical,
@@ -358,7 +368,7 @@ export default function WorkStatusToggle({
     const operationGeneration = transition.current.generation;
     beginSaving(operationGeneration);
     try {
-      const actual = await readCanonical(false, operationGeneration);
+      const actual = await readCanonical(operationGeneration);
       if (
         actual === null ||
         transition.current.generation !== operationGeneration
@@ -373,6 +383,7 @@ export default function WorkStatusToggle({
         finishSaving(operationGeneration, 'idle');
         return;
       }
+      applyCanonicalSnapshot(actual);
       if (actual === 'BUSY' || actual === 'UNAVAILABLE') {
         transition.current.pendingAction = null;
         finishSaving(operationGeneration, 'idle');
@@ -409,6 +420,7 @@ export default function WorkStatusToggle({
       stopHeartbeat();
     }
   }, [
+    applyCanonicalSnapshot,
     beginSaving,
     enqueueStatus,
     finishSaving,
@@ -602,13 +614,20 @@ export default function WorkStatusToggle({
       }
       if (transition.current.generation !== operationGeneration) return;
       try {
-        const actual = await readCanonical(true, operationGeneration);
+        const actual = await readCanonical(operationGeneration);
         if (
           actual === null ||
           transition.current.generation !== operationGeneration
         )
           return;
-        if (!mounted.current) return;
+        if (
+          !mounted.current ||
+          transition.current.pendingAction !== pendingAction
+        ) {
+          finishSaving(operationGeneration, 'idle');
+          return;
+        }
+        applyCanonicalSnapshot(actual, true);
         const actualAccepting = actual === 'ACCEPTING';
         if (transition.current.pendingAction === pendingAction) {
           transition.current.pendingAction = null;

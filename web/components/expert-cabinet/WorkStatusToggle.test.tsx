@@ -557,6 +557,45 @@ describe('WorkStatusToggle', () => {
     },
   );
 
+  it('не применяет старый return GET после подтверждения user OFF', async () => {
+    const off = deferred<{ workStatus: string }>();
+    const returnRead = deferred<{ workStatus: string }>();
+    let serverStatus = 'ACCEPTING';
+    apiFetch.mockImplementation((path: string, init?: RequestInit) => {
+      if (path === 'experts/me') return returnRead.promise;
+      if (init?.body) {
+        const target = JSON.parse(String(init.body)).workStatus;
+        if (target === 'NOT_ACCEPTING') return off.promise;
+        serverStatus = target;
+      }
+      return Promise.resolve({ workStatus: serverStatus });
+    });
+    render(<WorkStatusToggle initial="ACCEPTING" />);
+    await waitFor(() => expect(screen.getByRole('switch')).toBeEnabled());
+
+    fireEvent.click(screen.getByRole('switch'));
+    await waitFor(() =>
+      expect(apiFetch).toHaveBeenCalledWith(
+        'experts/me/work-status',
+        expect.objectContaining({
+          body: JSON.stringify({ workStatus: 'NOT_ACCEPTING' }),
+        }),
+      ),
+    );
+    await setHidden(true);
+    await setHidden(false);
+    await waitFor(() => expect(apiFetch).toHaveBeenCalledWith('experts/me'));
+
+    serverStatus = 'NOT_ACCEPTING';
+    await act(async () => off.resolve({ workStatus: 'NOT_ACCEPTING' }));
+    expect(screen.getByRole('switch')).toHaveAttribute('aria-checked', 'false');
+    await act(async () => returnRead.resolve({ workStatus: 'ACCEPTING' }));
+
+    await waitFor(() => expect(screen.getByRole('switch')).toBeEnabled());
+    expect(serverStatus).toBe('NOT_ACCEPTING');
+    expect(screen.getByRole('switch')).toHaveAttribute('aria-checked', 'false');
+  });
+
   it('не показывает переключение успешным, когда сервер его отклонил', async () => {
     apiFetch
       .mockRejectedValueOnce(new Error('offline'))
