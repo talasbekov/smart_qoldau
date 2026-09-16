@@ -181,14 +181,15 @@ export class ExpertsService {
 
     let updated: number;
     try {
-      // One SQL statement closes both races with consultation activation:
-      // no stale self-request may overwrite BUSY after ACTIVE commits. If
-      // this update wins first, activation's post-commit side effect writes
-      // BUSY afterwards. A separate count()+update would leave a gap.
+      // The target-row CAS is rechecked by PostgreSQL against the newest row
+      // version after a concurrent UPDATE. Therefore a committed BUSY cannot
+      // be overwritten even when NOT EXISTS belongs to an older statement
+      // snapshot. If this update wins first, activation writes BUSY after it.
       updated = await this.prisma.$executeRaw`
         UPDATE "experts"
         SET "work_status" = CAST(${dto.workStatus} AS "WorkStatus")
         WHERE "id" = ${expert.id}
+          AND "work_status" <> CAST(${WorkStatus.BUSY} AS "WorkStatus")
           AND NOT EXISTS (
             SELECT 1
             FROM "consultations"

@@ -169,6 +169,7 @@ export default function ExpertSessionActions({
     setResultPaymentStatus(confirmed.paymentStatus);
     setCompleteError(null);
     setCompletePhase('success');
+    window.dispatchEvent(new Event('sq:expert-work-status-sync'));
     router.refresh();
   }
 

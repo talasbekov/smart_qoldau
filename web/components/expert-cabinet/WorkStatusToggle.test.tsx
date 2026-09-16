@@ -125,6 +125,52 @@ describe('WorkStatusToggle', () => {
     );
   });
 
+  it('переход канонического BUSY в ACCEPTING возобновляет heartbeat без hide/show', async () => {
+    const view = render(<WorkStatusToggle initial="BUSY" />);
+
+    view.rerender(<WorkStatusToggle initial="ACCEPTING" />);
+    await act(async () => jest.advanceTimersByTime(60_000));
+
+    expect(screen.getByRole('switch')).toBeEnabled();
+    expect(apiFetch).toHaveBeenCalledWith(
+      'experts/me/heartbeat',
+      expect.anything(),
+    );
+  });
+
+  it('после completion status-resync снимает BUSY даже при неизменном initial ACCEPTING', async () => {
+    let serverStatus = 'ACCEPTING';
+    apiFetch.mockImplementation(async (path: string, init?: RequestInit) => {
+      if (path === 'experts/me') return { workStatus: serverStatus };
+      if (init?.body) {
+        serverStatus = JSON.parse(String(init.body)).workStatus;
+      }
+      return { workStatus: serverStatus };
+    });
+    render(<WorkStatusToggle initial="ACCEPTING" />);
+    await waitFor(() => expect(screen.getByRole('switch')).toBeEnabled());
+
+    serverStatus = 'BUSY';
+    await act(async () => {
+      window.dispatchEvent(
+        new CustomEvent('sq:expert-work-status', { detail: 'BUSY' }),
+      );
+    });
+    expect(screen.getByRole('switch')).toBeDisabled();
+    serverStatus = 'ACCEPTING';
+    await act(async () => {
+      window.dispatchEvent(new Event('sq:expert-work-status-sync'));
+    });
+
+    await waitFor(() => expect(screen.getByRole('switch')).toBeEnabled());
+    await waitFor(() =>
+      expect(apiFetch).toHaveBeenCalledWith(
+        'experts/me/heartbeat',
+        expect.anything(),
+      ),
+    );
+  });
+
   it('выключение прекращает heartbeat', async () => {
     render(<WorkStatusToggle initial="ACCEPTING" />);
     await waitFor(() => expect(screen.getByRole('switch')).toBeEnabled());
@@ -287,6 +333,61 @@ describe('WorkStatusToggle', () => {
     await act(async () => get.reject(new TypeError('GET response lost')));
 
     await waitFor(() => expect(serverStatus).toBe('NOT_ACCEPTING'));
+  });
+
+  it('после завершённых lost PATCH и lost GET позднее скрытие сохраняет обязанность compensation', async () => {
+    let serverStatus = 'NOT_ACCEPTING';
+    apiFetch.mockImplementation((path: string, init?: RequestInit) => {
+      if (path === 'experts/me') {
+        return Promise.reject(new TypeError('GET response lost'));
+      }
+      if (init?.body) {
+        serverStatus = JSON.parse(String(init.body)).workStatus;
+        if (serverStatus === 'ACCEPTING') {
+          return Promise.reject(new TypeError('PATCH response lost'));
+        }
+      }
+      return Promise.resolve({ workStatus: serverStatus });
+    });
+    render(<WorkStatusToggle initial="NOT_ACCEPTING" />);
+
+    fireEvent.click(screen.getByRole('switch'));
+    await screen.findByRole('alert');
+    await setHidden(true);
+
+    await waitFor(() => expect(serverStatus).toBe('NOT_ACCEPTING'));
+  });
+
+  it('старый retry hide завершается до нового resume ACCEPTING', async () => {
+    const failedOffline = deferred<never>();
+    let serverStatus = 'ACCEPTING';
+    let offlineCalls = 0;
+    apiFetch.mockImplementation((path: string, init?: RequestInit) => {
+      if (path === 'experts/me') {
+        return Promise.resolve({ workStatus: serverStatus });
+      }
+      if (init?.body) {
+        const target = JSON.parse(String(init.body)).workStatus;
+        if (target === 'NOT_ACCEPTING' && ++offlineCalls === 1) {
+          return failedOffline.promise;
+        }
+        serverStatus = target;
+      }
+      return Promise.resolve({ workStatus: serverStatus });
+    });
+    render(<WorkStatusToggle initial="ACCEPTING" />);
+    await waitFor(() => expect(screen.getByRole('switch')).toBeEnabled());
+
+    await setHidden(true);
+    await waitFor(() => expect(offlineCalls).toBe(1));
+    await setHidden(false);
+    await act(async () =>
+      failedOffline.reject(new TypeError('lost offline response')),
+    );
+
+    await waitFor(() => expect(offlineCalls).toBe(2));
+    await waitFor(() => expect(serverStatus).toBe('ACCEPTING'));
+    expect(screen.getByRole('switch')).toHaveAttribute('aria-checked', 'true');
   });
 
   it('не перезаписывает канонический BUSY при hide/show', async () => {

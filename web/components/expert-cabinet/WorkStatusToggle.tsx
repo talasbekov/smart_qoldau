@@ -9,6 +9,14 @@ const HEARTBEAT_MS = 30_000;
 
 type WorkStatus = 'ACCEPTING' | 'BUSY' | 'NOT_ACCEPTING' | 'UNAVAILABLE';
 type ExpertMe = { workStatus: WorkStatus };
+type TransitionModel = {
+  intentAccepting: boolean;
+  canonical: WorkStatus;
+  canonicalRevision: number;
+  unknownAccepting: boolean;
+  generation: number;
+  offlineQueuedFor: number | null;
+};
 
 const STATUS_EVENT = 'sq:expert-work-status';
 const STATUS_SYNC_EVENT = 'sq:expert-work-status-sync';
@@ -29,10 +37,14 @@ export default function WorkStatusToggle({
   const [phase, setPhase] = useState<'idle' | 'saving' | 'error'>('idle');
   const timer = useRef<ReturnType<typeof setInterval> | null>(null);
   const mounted = useRef(true);
-  const desiredAccepting = useRef(initialAccepting);
-  const canonicalStatusRef = useRef<WorkStatus>(initial);
-  const canonicalRevision = useRef(0);
-  const compensationQueued = useRef(false);
+  const transition = useRef<TransitionModel>({
+    intentAccepting: initialAccepting,
+    canonical: initial,
+    canonicalRevision: 0,
+    unknownAccepting: false,
+    generation: 0,
+    offlineQueuedFor: null,
+  });
   const actionLock = useRef(false);
   const statusQueue = useRef<Promise<unknown>>(Promise.resolve());
 
@@ -48,7 +60,8 @@ export default function WorkStatusToggle({
       .then(() => {
         if (
           mounted.current &&
-          desiredAccepting.current &&
+          transition.current.intentAccepting &&
+          transition.current.canonical === 'ACCEPTING' &&
           document.visibilityState === 'visible'
         ) {
           setConfirmedOnline(true);
@@ -70,16 +83,28 @@ export default function WorkStatusToggle({
   }, [heartbeat]);
 
   const enqueueStatus = useCallback(
-    (workStatus: 'ACCEPTING' | 'NOT_ACCEPTING', keepalive = false) => {
+    (
+      workStatus: 'ACCEPTING' | 'NOT_ACCEPTING',
+      keepalive = false,
+      attempts = 1,
+    ) => {
       const request = statusQueue.current
         .catch(() => null)
-        .then(() =>
-          apiFetch<ExpertMe>('experts/me/work-status', {
-            method: 'PATCH',
-            body: JSON.stringify({ workStatus }),
-            keepalive,
-          }),
-        );
+        .then(async () => {
+          let lastError: unknown;
+          for (let attempt = 0; attempt < attempts; attempt += 1) {
+            try {
+              return await apiFetch<ExpertMe>('experts/me/work-status', {
+                method: 'PATCH',
+                body: JSON.stringify({ workStatus }),
+                keepalive,
+              });
+            } catch (caught) {
+              lastError = caught;
+            }
+          }
+          throw lastError;
+        });
       statusQueue.current = request.then(
         () => undefined,
         () => undefined,
@@ -91,8 +116,8 @@ export default function WorkStatusToggle({
 
   const reflectCanonical = useCallback(
     (workStatus: WorkStatus) => {
-      canonicalStatusRef.current = workStatus;
-      canonicalRevision.current += 1;
+      transition.current.canonical = workStatus;
+      transition.current.canonicalRevision += 1;
       if (!mounted.current) return;
       setCanonicalStatus(workStatus);
       if (workStatus === 'BUSY' || workStatus === 'UNAVAILABLE') {
@@ -102,7 +127,7 @@ export default function WorkStatusToggle({
         stopHeartbeat();
       } else if (workStatus === 'ACCEPTING') {
         setAccepting(true);
-      } else if (!desiredAccepting.current) {
+      } else if (!transition.current.intentAccepting) {
         setAccepting(false);
         setConfirmedOnline(false);
       }
@@ -111,70 +136,93 @@ export default function WorkStatusToggle({
   );
 
   const queueUnavailable = useCallback(() => {
+    const generation = transition.current.generation;
     if (
-      compensationQueued.current ||
-      canonicalStatusRef.current === 'BUSY' ||
-      canonicalStatusRef.current === 'UNAVAILABLE'
+      transition.current.offlineQueuedFor === generation ||
+      transition.current.canonical === 'BUSY' ||
+      transition.current.canonical === 'UNAVAILABLE'
     ) {
       return;
     }
-    compensationQueued.current = true;
+    transition.current.offlineQueuedFor = generation;
     stopHeartbeat();
     if (mounted.current) setConfirmedOnline(false);
 
     void (async () => {
       try {
-        let confirmed: ExpertMe | null = null;
-        try {
-          confirmed = await enqueueStatus('NOT_ACCEPTING', true);
-          if (confirmed?.workStatus !== 'NOT_ACCEPTING') {
-            throw new Error('status mismatch');
-          }
-        } catch {
-          // Safety compensation is idempotent. Retry once when its response
-          // is lost so a late ACCEPTING cannot survive a hidden/unloaded tab.
-          confirmed = await enqueueStatus('NOT_ACCEPTING', true);
-        }
+        // Both attempts are one serialized transition. A newer resume is
+        // queued after the retry, never between the failed attempt and retry.
+        const confirmed = await enqueueStatus('NOT_ACCEPTING', true, 2);
         if (confirmed?.workStatus === 'NOT_ACCEPTING') {
-          reflectCanonical('NOT_ACCEPTING');
-          if (mounted.current && document.visibilityState !== 'visible') {
+          transition.current.unknownAccepting = false;
+          if (transition.current.generation === generation) {
+            reflectCanonical('NOT_ACCEPTING');
+          }
+          if (
+            mounted.current &&
+            transition.current.generation === generation &&
+            document.visibilityState !== 'visible'
+          ) {
             setPhase('idle');
           }
+        } else {
+          throw new Error('status mismatch');
         }
       } catch {
-        if (mounted.current) setPhase('error');
+        if (
+          mounted.current &&
+          transition.current.generation === generation
+        ) {
+          setPhase('error');
+        }
       } finally {
-        compensationQueued.current = false;
+        if (transition.current.offlineQueuedFor === generation) {
+          transition.current.offlineQueuedFor = null;
+        }
       }
     })();
   }, [enqueueStatus, reflectCanonical, stopHeartbeat]);
 
-  const readCanonical = useCallback(async (): Promise<WorkStatus> => {
-    const requestedAtRevision = canonicalRevision.current;
-    const actual = await apiFetch<ExpertMe>('experts/me');
-    if (!actual) throw new Error('status unavailable');
-    if (
-      canonicalRevision.current !== requestedAtRevision &&
-      (canonicalStatusRef.current === 'BUSY' ||
-        canonicalStatusRef.current === 'UNAVAILABLE')
-    ) {
-      return canonicalStatusRef.current;
-    }
-    reflectCanonical(actual.workStatus);
-    return actual.workStatus;
-  }, [reflectCanonical]);
+  const readCanonical = useCallback(
+    async (adoptIntent = false): Promise<WorkStatus> => {
+      const requestedAtRevision = transition.current.canonicalRevision;
+      const actual = await apiFetch<ExpertMe>('experts/me');
+      if (!actual) throw new Error('status unavailable');
+      if (
+        transition.current.canonicalRevision !== requestedAtRevision &&
+        (transition.current.canonical === 'BUSY' ||
+          transition.current.canonical === 'UNAVAILABLE')
+      ) {
+        return transition.current.canonical;
+      }
+      transition.current.unknownAccepting = false;
+      if (adoptIntent) {
+        if (actual.workStatus === 'ACCEPTING') {
+          transition.current.intentAccepting = true;
+        } else if (actual.workStatus === 'NOT_ACCEPTING') {
+          transition.current.intentAccepting = false;
+        }
+      }
+      reflectCanonical(actual.workStatus);
+      return actual.workStatus;
+    },
+    [reflectCanonical],
+  );
 
   const applyVisibleIntent = useCallback(
     async (reconcileFirst = false) => {
       setPhase('saving');
       try {
+        const adoptRestoredManagedStatus =
+          transition.current.canonical === 'BUSY' ||
+          transition.current.canonical === 'UNAVAILABLE';
         const actual = reconcileFirst
-          ? await readCanonical()
-          : canonicalStatusRef.current;
+          ? await readCanonical(adoptRestoredManagedStatus)
+          : transition.current.canonical;
         if (
           actual === 'BUSY' ||
           actual === 'UNAVAILABLE' ||
-          !desiredAccepting.current
+          !transition.current.intentAccepting
         ) {
           if (mounted.current) setPhase('idle');
           return;
@@ -184,19 +232,20 @@ export default function WorkStatusToggle({
           return;
         }
 
-        const requestedAtRevision = canonicalRevision.current;
+        const requestedAtRevision = transition.current.canonicalRevision;
+        transition.current.unknownAccepting = true;
         const confirmed = await enqueueStatus('ACCEPTING');
         if (
-          canonicalRevision.current !== requestedAtRevision &&
-          (canonicalStatusRef.current === 'BUSY' ||
-            canonicalStatusRef.current === 'UNAVAILABLE')
+          transition.current.canonicalRevision !== requestedAtRevision &&
+          (transition.current.canonical === 'BUSY' ||
+            transition.current.canonical === 'UNAVAILABLE')
         ) {
           if (mounted.current) setPhase('idle');
           return;
         }
         if (
           !mounted.current ||
-          !desiredAccepting.current ||
+          !transition.current.intentAccepting ||
           document.visibilityState !== 'visible'
         ) {
           queueUnavailable();
@@ -205,18 +254,23 @@ export default function WorkStatusToggle({
         if (confirmed?.workStatus !== 'ACCEPTING') {
           throw new Error('status mismatch');
         }
+        transition.current.unknownAccepting = false;
         reflectCanonical('ACCEPTING');
         setConfirmedOnline(true);
         setPhase('idle');
         startHeartbeat();
       } catch {
         if (!mounted.current || document.visibilityState !== 'visible') {
-          if (desiredAccepting.current) queueUnavailable();
+          if (
+            transition.current.intentAccepting ||
+            transition.current.unknownAccepting
+          )
+            queueUnavailable();
           return;
         }
         try {
           const actual = await readCanonical();
-          if (actual === 'ACCEPTING' && desiredAccepting.current) {
+          if (actual === 'ACCEPTING' && transition.current.intentAccepting) {
             setConfirmedOnline(true);
             setPhase('idle');
             startHeartbeat();
@@ -246,38 +300,57 @@ export default function WorkStatusToggle({
   );
 
   useEffect(() => {
+    const priorCanonical = transition.current.canonical;
+    transition.current.generation += 1;
     reflectCanonical(initial);
     if (initial === 'ACCEPTING') {
-      desiredAccepting.current = true;
+      transition.current.intentAccepting = true;
+      transition.current.unknownAccepting = false;
       setAccepting(true);
+      if (
+        priorCanonical !== 'ACCEPTING' &&
+        document.visibilityState === 'visible'
+      )
+        startHeartbeat();
     } else if (initial === 'NOT_ACCEPTING') {
-      desiredAccepting.current = false;
+      transition.current.intentAccepting = false;
+      transition.current.unknownAccepting = false;
       setAccepting(false);
     }
-  }, [initial, reflectCanonical]);
+  }, [initial, reflectCanonical, startHeartbeat]);
 
   useEffect(() => {
     mounted.current = true;
+    const model = transition.current;
     let firstSync = true;
 
     function syncVisibility() {
+      transition.current.generation += 1;
       const hidden = document.visibilityState !== 'visible';
       const managed =
-        canonicalStatusRef.current === 'BUSY' ||
-        canonicalStatusRef.current === 'UNAVAILABLE';
-      setPaused(hidden && desiredAccepting.current && !managed);
+        transition.current.canonical === 'BUSY' ||
+        transition.current.canonical === 'UNAVAILABLE';
+      const needsSafetyOffline =
+        transition.current.intentAccepting ||
+        transition.current.unknownAccepting;
+      setPaused(hidden && needsSafetyOffline && !managed);
       stopHeartbeat();
 
       if (hidden) {
         setConfirmedOnline(false);
-        if (desiredAccepting.current && !managed) queueUnavailable();
-      } else if (desiredAccepting.current && !managed) {
+        if (needsSafetyOffline && !managed) queueUnavailable();
+      } else if (managed) {
+        // BUSY/UNAVAILABLE blocks writes, not canonical reads. Completion may
+        // already have restored ACCEPTING on the server.
+        void applyVisibleIntent(true);
+      } else if (transition.current.intentAccepting) {
         void applyVisibleIntent(!firstSync);
       }
       firstSync = false;
     }
 
     function syncFromServer() {
+      transition.current.generation += 1;
       void applyVisibleIntent(true);
     }
 
@@ -289,6 +362,7 @@ export default function WorkStatusToggle({
         workStatus === 'NOT_ACCEPTING' ||
         workStatus === 'UNAVAILABLE'
       ) {
+        transition.current.generation += 1;
         reflectCanonical(workStatus);
       }
     }
@@ -303,30 +377,47 @@ export default function WorkStatusToggle({
       window.removeEventListener(STATUS_SYNC_EVENT, syncFromServer);
       window.removeEventListener(STATUS_EVENT, acceptCanonicalEvent);
       stopHeartbeat();
-      if (desiredAccepting.current) queueUnavailable();
+      model.generation += 1;
+      if (model.intentAccepting || model.unknownAccepting)
+        queueUnavailable();
     };
   }, [applyVisibleIntent, queueUnavailable, reflectCanonical, stopHeartbeat]);
+
+  useEffect(() => {
+    if (
+      document.visibilityState !== 'visible' ||
+      (canonicalStatus !== 'BUSY' && canonicalStatus !== 'UNAVAILABLE')
+    )
+      return;
+    const reconciliation = setInterval(() => {
+      transition.current.generation += 1;
+      void applyVisibleIntent(true);
+    }, HEARTBEAT_MS);
+    return () => clearInterval(reconciliation);
+  }, [applyVisibleIntent, canonicalStatus]);
 
   async function toggle() {
     if (actionLock.current) return;
     if (canonicalStatus === 'BUSY' || canonicalStatus === 'UNAVAILABLE') return;
     actionLock.current = true;
-    const next = !desiredAccepting.current;
-    desiredAccepting.current = next;
+    transition.current.generation += 1;
+    const next = !transition.current.intentAccepting;
+    transition.current.intentAccepting = next;
+    if (next) transition.current.unknownAccepting = true;
     setAccepting(next);
     setPhase('saving');
     if (!next) stopHeartbeat();
 
     try {
-      const requestedAtRevision = canonicalRevision.current;
+      const requestedAtRevision = transition.current.canonicalRevision;
       const confirmed = await enqueueStatus(
         next ? 'ACCEPTING' : 'NOT_ACCEPTING',
       );
       if (!mounted.current) return;
       if (
-        canonicalRevision.current !== requestedAtRevision &&
-        (canonicalStatusRef.current === 'BUSY' ||
-          canonicalStatusRef.current === 'UNAVAILABLE')
+        transition.current.canonicalRevision !== requestedAtRevision &&
+        (transition.current.canonical === 'BUSY' ||
+          transition.current.canonical === 'UNAVAILABLE')
       ) {
         setPhase('idle');
         return;
@@ -338,6 +429,7 @@ export default function WorkStatusToggle({
       if (confirmed?.workStatus !== (next ? 'ACCEPTING' : 'NOT_ACCEPTING')) {
         throw new Error('status mismatch');
       }
+      transition.current.unknownAccepting = false;
       reflectCanonical(confirmed.workStatus);
       setConfirmedOnline(next && document.visibilityState === 'visible');
       setPaused(next && document.visibilityState !== 'visible');
@@ -353,10 +445,9 @@ export default function WorkStatusToggle({
         return;
       }
       try {
-        const actual = await readCanonical();
+        const actual = await readCanonical(true);
         if (!mounted.current) return;
         const actualAccepting = actual === 'ACCEPTING';
-        desiredAccepting.current = actual === 'BUSY' ? next : actualAccepting;
         setAccepting(actualAccepting);
         setConfirmedOnline(
           actualAccepting && document.visibilityState === 'visible',
@@ -374,8 +465,9 @@ export default function WorkStatusToggle({
         else stopHeartbeat();
       } catch {
         if (mounted.current) {
-          const fallbackAccepting = canonicalStatusRef.current === 'ACCEPTING';
-          desiredAccepting.current = fallbackAccepting;
+          const fallbackAccepting =
+            transition.current.canonical === 'ACCEPTING';
+          transition.current.intentAccepting = fallbackAccepting;
           setAccepting(fallbackAccepting);
           setConfirmedOnline(false);
           setPhase('error');

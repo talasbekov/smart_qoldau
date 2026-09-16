@@ -180,6 +180,8 @@ describe('ExpertSessionActions', () => {
 
   it('посылает outcome один раз и блокирует повторное действие до ответа', async () => {
     let resolveComplete!: (value: unknown) => void;
+    const statusSync = jest.fn();
+    window.addEventListener('sq:expert-work-status-sync', statusSync);
     apiFetch.mockImplementation((path: string, init?: RequestInit) => {
       if (path.endsWith('/note')) return Promise.resolve(NOTE);
       if (path.endsWith('/complete') && init) {
@@ -202,6 +204,8 @@ describe('ExpertSessionActions', () => {
     resolveComplete(completeResult('CAPTURED'));
     expect(await screen.findByText('Консультация завершена')).toBeInTheDocument();
     expect(refresh).toHaveBeenCalled();
+    expect(statusSync).toHaveBeenCalledTimes(1);
+    window.removeEventListener('sq:expert-work-status-sync', statusSync);
   });
 
   it('ошибка complete не выдаётся за успех, сохраняет outcome и даёт retry', async () => {
