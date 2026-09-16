@@ -153,7 +153,10 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection {
         );
       } else {
         // Replay is an ack for this exact socket only. The recipient already
-        // received (or can REST-resync) the original persisted message.
+        // received (or can REST-resync) the original persisted message. The
+        // async lookup above can outlive an account denial, so apply the same
+        // current-state fail-closed gate immediately before this direct emit.
+        if (!(await this.authorizeAction(client, data))) return;
         client.emit('chat.message', result.message);
       }
 

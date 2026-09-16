@@ -20,6 +20,7 @@ import { EventsGateway } from '../src/ws/events.gateway';
 import { AccountAccessService } from '../src/auth/account-access.service';
 import { NotificationsService } from '../src/notifications/notifications.service';
 import { AdminAuth, adminUser } from './utils/admin-helpers';
+import { ChatService } from '../src/chat/chat.service';
 
 // Real signed access tokens, HTTP guards, admin block path and Socket.IO events.
 // Removing the current-state check must allow the old token to act again.
@@ -346,6 +347,56 @@ describe('E29 current account access (HTTP + WS)', () => {
       ).toBe(1);
     },
   );
+
+  it('historical replay rechecks current account state immediately before sender-only ack', async () => {
+    const socket = await ready(tokens[0]);
+    const clientMessageId = randomUUID();
+    const payload = {
+      consultationId,
+      text: 'historical-mid-flight-denial',
+      clientMessageId,
+    };
+    const first = event(socket, 'chat.message');
+    socket.emit('chat.send', payload);
+    expect(await first).toMatchObject({ clientMessageId });
+
+    const chat = app.get(ChatService);
+    const sendResolved = chat.sendResolved.bind(chat);
+    let markReplayResolved!: () => void;
+    let releaseReplay!: () => void;
+    const replayResolved = new Promise<void>((resolve) => {
+      markReplayResolved = resolve;
+    });
+    const replayGate = new Promise<void>((resolve) => {
+      releaseReplay = resolve;
+    });
+    jest.spyOn(chat, 'sendResolved').mockImplementationOnce(async (...args) => {
+      const result = await sendResolved(...args);
+      markReplayResolved();
+      await replayGate;
+      return result;
+    });
+
+    const result = outcome([
+      [socket, 'disconnect'],
+      [socket, 'chat.message'],
+    ]);
+    socket.emit('chat.send', payload);
+    await replayResolved;
+    try {
+      await prisma.user.update({
+        where: { id: users[0] },
+        data: { deletedAt: new Date() },
+      });
+    } finally {
+      releaseReplay();
+    }
+
+    expect(await result).toBe('disconnect');
+    expect(await prisma.chatMessage.count({ where: { consultationId } })).toBe(
+      1,
+    );
+  });
 
   // The denied socket is passive: only the other participant sends after
   // the DB mutation completes. A local-only disconnect misses remoteIdle.

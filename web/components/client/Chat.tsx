@@ -279,10 +279,17 @@ export default function Chat({
             ) {
               return;
             }
-            pendingRef.current = null;
+            const code = correlated.code;
             if (pendingTimerRef.current) clearTimeout(pendingTimerRef.current);
             pendingTimerRef.current = null;
-            const code = correlated.code;
+            // INTERNAL does not prove that persistence failed: the server may
+            // have committed before a later operation threw. Keep the exact
+            // command and reconcile by its stable id before offering retry.
+            if (code === 'INTERNAL') {
+              void reconcilePending(pending.attemptId);
+              return;
+            }
+            pendingRef.current = null;
             const errors: Record<string, string> = {
               CONSULTATION_NOT_ACTIVE: copy.inactive,
               VALIDATION_FAILED: copy.tooLong,

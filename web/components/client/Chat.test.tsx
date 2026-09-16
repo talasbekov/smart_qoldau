@@ -310,6 +310,40 @@ describe('Chat', () => {
     expect(retriedId).not.toBe(clientMessageId);
   });
 
+  it('после коррелированной INTERNAL повторяет исходную попытку с тем же clientMessageId', async () => {
+    render(<Chat consultationId="c1" />);
+    await serverReady();
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    fireEvent.change(screen.getByLabelText('Сообщение'), {
+      target: { value: 'Сохранено до INTERNAL' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Отправить' }));
+    const clientMessageId = sentClientMessageId();
+    apiFetch.mockRejectedValueOnce(new Error('REST временно недоступен'));
+
+    await act(async () => {
+      handlers['chat.error']({
+        code: 'INTERNAL',
+        consultationId: 'c1',
+        clientMessageId,
+      });
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(screen.getByLabelText('Сообщение')).toHaveValue(
+      'Сохранено до INTERNAL',
+    );
+    fireEvent.click(
+      screen.getByRole('button', { name: /повторить отправку/i }),
+    );
+    expect(send).toHaveBeenCalledTimes(2);
+    expect(sentClientMessageId(1)).toBe(clientMessageId);
+  });
+
   it('игнорирует chat.error с другим clientMessageId или consultationId', async () => {
     render(<Chat consultationId="c1" />);
     await serverReady();
