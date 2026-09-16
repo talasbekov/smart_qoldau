@@ -302,13 +302,8 @@ export default function BookingFlow({
         }
       }
       if (!mounted.current) return;
-      pendingMutation.current = null;
       setNotice('notConfirmed');
-      setPhase('loading');
-      await loadSlots();
-      if (!mounted.current) return;
-      submitLock.current = false;
-      setPhase('idle');
+      setPhase('unknown');
     } catch {
       if (mounted.current) setPhase('unknown');
     } finally {

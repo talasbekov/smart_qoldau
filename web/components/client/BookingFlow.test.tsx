@@ -468,31 +468,35 @@ describe('BookingFlow', () => {
     expect(check).toBeDisabled();
     finishCheck(await response(200, []));
     expect(
-      await screen.findByRole('alert', { name: 'Изменение не найдено' }),
+      await screen.findByRole('alert', {
+        name: 'Результат пока не подтверждён',
+      }),
     ).toBeInTheDocument();
   });
 
-  it('не разблокирует новый POST, пока отрицательная сверка обновляет слоты', async () => {
-    let slotLoads = 0;
-    let finishReload!: (value: Response) => void;
-    const pendingReload = new Promise<Response>((resolve) => {
-      finishReload = resolve;
-    });
+  it('после отрицательной сверки сохраняет attempt до позднего подтверждения', async () => {
+    let checks = 0;
     const fetchMock = initialData(async (url) => {
       if (url.includes('/slots')) {
-        slotLoads += 1;
-        return slotLoads === 1
-          ? response(200, { items: [{ startAt: SLOT }] })
-          : pendingReload;
+        return response(200, {
+          items: [{ startAt: SLOT }, { startAt: SLOT_TWO }],
+        });
       }
       if (url.endsWith('/bookings')) throw new TypeError('response lost');
       if (url.endsWith('/consultations?status=SCHEDULED&take=100')) {
-        return response(200, []);
+        checks += 1;
+        return response(
+          200,
+          checks === 1
+            ? []
+            : [{ ...CONSULTATION, startedAt: SLOT, expert: EXPERT }],
+        );
       }
       return undefined;
     });
     renderFlow();
-    await screen.findByRole('radio', { name: '09:00' });
+    const first = await screen.findByRole('radio', { name: '09:00' });
+    const second = screen.getByRole('radio', { name: '10:00' });
     const submit = screen.getByRole('button', { name: 'Подтвердить запись' });
     fireEvent.click(submit);
     fireEvent.click(
@@ -500,20 +504,30 @@ describe('BookingFlow', () => {
     );
 
     expect(
-      await screen.findByRole('alert', { name: 'Изменение не найдено' }),
+      await screen.findByRole('alert', {
+        name: 'Результат пока не подтверждён',
+      }),
     ).toBeInTheDocument();
     expect(submit).toBeDisabled();
+    expect(first).toBeChecked();
+    expect(second).toBeDisabled();
+    fireEvent.click(second);
     fireEvent.click(submit);
     expect(
       fetchMock.mock.calls.filter(([url]) => String(url).endsWith('/bookings')),
     ).toHaveLength(1);
-    finishReload(await response(200, { items: [] }));
-    expect(
-      await screen.findByText(/свободных слотов нет/i),
-    ).toBeInTheDocument();
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Проверить результат' }),
+    );
+    await waitFor(() =>
+      expect(replace).toHaveBeenCalledWith(
+        `/ru/consultations/${CONSULTATION.id}`,
+      ),
+    );
+    expect(checks).toBe(2);
   });
 
-  it('проверяет следующие страницы scheduled консультаций до разрешения retry', async () => {
+  it('проверяет следующие страницы scheduled консультаций до положительного подтверждения', async () => {
     const firstPage = Array.from({ length: 100 }, (_, index) => ({
       ...CONSULTATION,
       id: `other-${index}`,
@@ -582,7 +596,9 @@ describe('BookingFlow', () => {
       screen.getByRole('button', { name: 'Подтвердить запись' }),
     ).toBeDisabled();
     expect(
-      screen.queryByRole('alert', { name: 'Изменение не найдено' }),
+      screen.queryByRole('alert', {
+        name: 'Результат пока не подтверждён',
+      }),
     ).toBeNull();
   });
 
@@ -800,7 +816,9 @@ describe('BookingFlow', () => {
       screen.getByRole('button', { name: 'Подтвердить перенос' }),
     ).toBeDisabled();
     expect(
-      screen.queryByRole('alert', { name: 'Изменение не найдено' }),
+      screen.queryByRole('alert', {
+        name: 'Результат пока не подтверждён',
+      }),
     ).toBeNull();
   });
 
