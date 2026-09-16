@@ -1,4 +1,10 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from '@testing-library/react';
 import { NextIntlClientProvider } from 'next-intl';
 import ru from '@/messages/ru.json';
 import kz from '@/messages/kz.json';
@@ -44,6 +50,7 @@ const CARD = {
 };
 
 const SLOT = '2026-09-17T04:00:00.000Z';
+const SLOT_TWO = '2026-09-17T05:00:00.000Z';
 
 const CONSULTATION: Consultation = {
   id: '44444444-4444-4444-8444-444444444444',
@@ -374,9 +381,320 @@ describe('BookingFlow', () => {
     expect(
       await screen.findByRole('alert', { name: 'Результат записи неизвестен' }),
     ).toBeInTheDocument();
+    await waitFor(() =>
+      expect(
+        screen.getByRole('button', { name: 'Проверить результат' }),
+      ).toBeEnabled(),
+    );
     expect(
       screen.getByRole('button', { name: 'Подтвердить запись' }),
     ).toBeDisabled();
+  });
+
+  it('сверяет неизменяемую исходную команду и блокирует её поля до разрешения unknown', async () => {
+    let rejectBooking!: (reason: Error) => void;
+    const pendingBooking = new Promise<Response>((_, reject) => {
+      rejectBooking = reject;
+    });
+    const fetchMock = initialData(async (url) => {
+      if (url.includes('/slots')) {
+        return response(200, {
+          items: [{ startAt: SLOT }, { startAt: SLOT_TWO }],
+        });
+      }
+      if (url.endsWith('/bookings')) return pendingBooking;
+      if (url.endsWith('/consultations?status=SCHEDULED&take=100')) {
+        return response(200, [
+          { ...CONSULTATION, startedAt: SLOT, expert: EXPERT },
+        ]);
+      }
+      return undefined;
+    });
+    renderFlow();
+    const first = await screen.findByRole('radio', { name: '09:00' });
+    const second = screen.getByRole('radio', { name: '10:00' });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Подтвердить запись' }));
+    fireEvent.click(second);
+    rejectBooking(new TypeError('response lost'));
+
+    expect(
+      await screen.findByRole('alert', { name: 'Результат записи неизвестен' }),
+    ).toBeInTheDocument();
+    expect(first).toBeChecked();
+    expect(first).toBeDisabled();
+    expect(second).toBeDisabled();
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Проверить результат' }),
+    );
+
+    await waitFor(() =>
+      expect(replace).toHaveBeenCalledWith(
+        `/ru/consultations/${CONSULTATION.id}`,
+      ),
+    );
+    expect(
+      fetchMock.mock.calls.filter(([url]) => String(url).endsWith('/bookings')),
+    ).toHaveLength(1);
+  });
+
+  it('выполняет только одну сверку unknown результата одновременно', async () => {
+    let finishCheck!: (value: Response) => void;
+    const pendingCheck = new Promise<Response>((resolve) => {
+      finishCheck = resolve;
+    });
+    const fetchMock = initialData(async (url) => {
+      if (url.endsWith('/bookings')) throw new TypeError('response lost');
+      if (url.endsWith('/consultations?status=SCHEDULED&take=100')) {
+        return pendingCheck;
+      }
+      return undefined;
+    });
+    renderFlow();
+    await screen.findByRole('radio', { name: '09:00' });
+    fireEvent.click(screen.getByRole('button', { name: 'Подтвердить запись' }));
+    const check = await screen.findByRole('button', {
+      name: 'Проверить результат',
+    });
+
+    fireEvent.click(check);
+    fireEvent.click(check);
+
+    expect(
+      fetchMock.mock.calls.filter(([url]) =>
+        String(url).endsWith('/consultations?status=SCHEDULED&take=100'),
+      ),
+    ).toHaveLength(1);
+    expect(check).toBeDisabled();
+    finishCheck(await response(200, []));
+    expect(
+      await screen.findByRole('alert', { name: 'Изменение не найдено' }),
+    ).toBeInTheDocument();
+  });
+
+  it('не разблокирует новый POST, пока отрицательная сверка обновляет слоты', async () => {
+    let slotLoads = 0;
+    let finishReload!: (value: Response) => void;
+    const pendingReload = new Promise<Response>((resolve) => {
+      finishReload = resolve;
+    });
+    const fetchMock = initialData(async (url) => {
+      if (url.includes('/slots')) {
+        slotLoads += 1;
+        return slotLoads === 1
+          ? response(200, { items: [{ startAt: SLOT }] })
+          : pendingReload;
+      }
+      if (url.endsWith('/bookings')) throw new TypeError('response lost');
+      if (url.endsWith('/consultations?status=SCHEDULED&take=100')) {
+        return response(200, []);
+      }
+      return undefined;
+    });
+    renderFlow();
+    await screen.findByRole('radio', { name: '09:00' });
+    const submit = screen.getByRole('button', { name: 'Подтвердить запись' });
+    fireEvent.click(submit);
+    fireEvent.click(
+      await screen.findByRole('button', { name: 'Проверить результат' }),
+    );
+
+    expect(
+      await screen.findByRole('alert', { name: 'Изменение не найдено' }),
+    ).toBeInTheDocument();
+    expect(submit).toBeDisabled();
+    fireEvent.click(submit);
+    expect(
+      fetchMock.mock.calls.filter(([url]) => String(url).endsWith('/bookings')),
+    ).toHaveLength(1);
+    finishReload(await response(200, { items: [] }));
+    expect(
+      await screen.findByText(/свободных слотов нет/i),
+    ).toBeInTheDocument();
+  });
+
+  it('проверяет следующие страницы scheduled консультаций до разрешения retry', async () => {
+    const firstPage = Array.from({ length: 100 }, (_, index) => ({
+      ...CONSULTATION,
+      id: `other-${index}`,
+      startedAt: SLOT_TWO,
+      expert: EXPERT,
+    }));
+    const fetchMock = initialData(async (url) => {
+      if (url.endsWith('/bookings')) throw new TypeError('response lost');
+      if (url.endsWith('/consultations?status=SCHEDULED&take=100')) {
+        return response(200, firstPage);
+      }
+      if (
+        url.endsWith('/consultations?status=SCHEDULED&take=100&skip=100')
+      ) {
+        return response(200, [
+          { ...CONSULTATION, startedAt: SLOT, expert: EXPERT },
+        ]);
+      }
+      return undefined;
+    });
+    renderFlow();
+    await screen.findByRole('radio', { name: '09:00' });
+    fireEvent.click(screen.getByRole('button', { name: 'Подтвердить запись' }));
+    fireEvent.click(
+      await screen.findByRole('button', { name: 'Проверить результат' }),
+    );
+
+    await waitFor(() =>
+      expect(replace).toHaveBeenCalledWith(
+        `/ru/consultations/${CONSULTATION.id}`,
+      ),
+    );
+    expect(
+      fetchMock.mock.calls.some(([url]) =>
+        String(url).endsWith(
+          '/consultations?status=SCHEDULED&take=100&skip=100',
+        ),
+      ),
+    ).toBe(true);
+  });
+
+  it('не считает null-ответ списка доказательством неуспешной брони', async () => {
+    initialData(async (url) => {
+      if (url.endsWith('/bookings')) throw new TypeError('response lost');
+      if (url.endsWith('/consultations?status=SCHEDULED&take=100')) {
+        return response(204, null);
+      }
+      return undefined;
+    });
+    renderFlow();
+    await screen.findByRole('radio', { name: '09:00' });
+    fireEvent.click(screen.getByRole('button', { name: 'Подтвердить запись' }));
+    fireEvent.click(
+      await screen.findByRole('button', { name: 'Проверить результат' }),
+    );
+
+    expect(
+      await screen.findByRole('alert', { name: 'Результат записи неизвестен' }),
+    ).toBeInTheDocument();
+    await waitFor(() =>
+      expect(
+        screen.getByRole('button', { name: 'Проверить результат' }),
+      ).toBeEnabled(),
+    );
+    expect(
+      screen.getByRole('button', { name: 'Подтвердить запись' }),
+    ).toBeDisabled();
+    expect(
+      screen.queryByRole('alert', { name: 'Изменение не найдено' }),
+    ).toBeNull();
+  });
+
+  it('не навигирует по позднему результату сверки после unmount', async () => {
+    let finishCheck!: (value: Response) => void;
+    const pendingCheck = new Promise<Response>((resolve) => {
+      finishCheck = resolve;
+    });
+    initialData(async (url) => {
+      if (url.endsWith('/bookings')) throw new TypeError('response lost');
+      if (url.endsWith('/consultations?status=SCHEDULED&take=100')) {
+        return pendingCheck;
+      }
+      return undefined;
+    });
+    const view = renderFlow();
+    await screen.findByRole('radio', { name: '09:00' });
+    fireEvent.click(screen.getByRole('button', { name: 'Подтвердить запись' }));
+    fireEvent.click(
+      await screen.findByRole('button', { name: 'Проверить результат' }),
+    );
+
+    view.unmount();
+    await act(async () => {
+      finishCheck(
+        await response(200, [
+          { ...CONSULTATION, startedAt: SLOT, expert: EXPERT },
+        ]),
+      );
+    });
+
+    expect(replace).not.toHaveBeenCalled();
+  });
+
+  it('игнорирует поздний ответ слотов предыдущего специалиста', async () => {
+    let finishFirst!: (value: Response) => void;
+    const firstSlots = new Promise<Response>((resolve) => {
+      finishFirst = resolve;
+    });
+    const secondExpert = {
+      ...EXPERT,
+      id: '55555555-5555-4555-8555-555555555555',
+      displayName: 'Дана К.',
+    };
+    global.fetch = jest.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.endsWith(`/experts/${EXPERT.id}/slots`)) return firstSlots;
+      if (url.endsWith(`/experts/${secondExpert.id}/slots`)) {
+        return response(200, { items: [{ startAt: SLOT_TWO }] });
+      }
+      if (url.endsWith('/payment-methods')) return response(200, [CARD]);
+      throw new Error(`Unexpected request: ${url}`);
+    }) as unknown as typeof fetch;
+    const view = renderFlow();
+
+    view.rerender(
+      <NextIntlClientProvider locale="ru" messages={ru}>
+        <BookingFlow
+          expert={secondExpert}
+          topics={TOPICS}
+          locale="ru"
+        />
+      </NextIntlClientProvider>,
+    );
+    expect(
+      await screen.findByRole('heading', { name: 'Запись к Дана К.' }),
+    ).toBeInTheDocument();
+    expect(await screen.findByRole('radio', { name: '10:00' })).toBeChecked();
+
+    await act(async () => {
+      finishFirst(await response(200, { items: [{ startAt: SLOT }] }));
+    });
+
+    expect(screen.getByRole('radio', { name: '10:00' })).toBeChecked();
+    expect(screen.queryByRole('radio', { name: '09:00' })).toBeNull();
+  });
+
+  it('для одного специалиста сохраняет результат последнего запроса слотов', async () => {
+    let slotLoads = 0;
+    let finishOldRequest!: (value: Response) => void;
+    const oldRequest = new Promise<Response>((resolve) => {
+      finishOldRequest = resolve;
+    });
+    global.fetch = jest.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.includes('/slots')) {
+        slotLoads += 1;
+        return slotLoads === 1
+          ? oldRequest
+          : response(200, { items: [{ startAt: SLOT_TWO }] });
+      }
+      if (url.endsWith('/payment-methods')) return response(200, [CARD]);
+      throw new Error(`Unexpected request: ${url}`);
+    }) as unknown as typeof fetch;
+    const view = renderFlow();
+
+    view.rerender(
+      <NextIntlClientProvider locale="ru" messages={ru}>
+        <BookingFlow
+          expert={EXPERT}
+          topics={[...TOPICS]}
+          locale="ru"
+        />
+      </NextIntlClientProvider>,
+    );
+    expect(await screen.findByRole('radio', { name: '10:00' })).toBeChecked();
+    await act(async () => {
+      finishOldRequest(await response(200, { items: [{ startAt: SLOT }] }));
+    });
+
+    expect(screen.getByRole('radio', { name: '10:00' })).toBeChecked();
+    expect(screen.queryByRole('radio', { name: '09:00' })).toBeNull();
   });
 
   it('перенос не запрашивает карту и отправляет только новый слот', async () => {
@@ -452,5 +770,82 @@ describe('BookingFlow', () => {
         String(url).endsWith(`/consultations/${CONSULTATION.id}/reschedule`),
       ),
     ).toHaveLength(1);
+  });
+
+  it('не считает null detail доказательством неуспешного переноса', async () => {
+    initialData(async (url) => {
+      if (url.endsWith(`/consultations/${CONSULTATION.id}/reschedule`)) {
+        throw new TypeError('response lost');
+      }
+      if (url.endsWith(`/consultations/${CONSULTATION.id}`)) {
+        return response(204, null);
+      }
+      return undefined;
+    });
+    renderFlow('ru', CONSULTATION);
+    await screen.findByRole('radio', { name: '09:00' });
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Подтвердить перенос' }),
+    );
+    fireEvent.click(
+      await screen.findByRole('button', { name: 'Проверить результат' }),
+    );
+
+    await waitFor(() =>
+      expect(
+        screen.getByRole('button', { name: 'Проверить результат' }),
+      ).toBeEnabled(),
+    );
+    expect(
+      screen.getByRole('button', { name: 'Подтвердить перенос' }),
+    ).toBeDisabled();
+    expect(
+      screen.queryByRole('alert', { name: 'Изменение не найдено' }),
+    ).toBeNull();
+  });
+
+  it('перенос сверяет исходный слот, даже если draft меняют до потери ответа', async () => {
+    let rejectReschedule!: (reason: Error) => void;
+    const pendingReschedule = new Promise<Response>((_, reject) => {
+      rejectReschedule = reject;
+    });
+    initialData(async (url) => {
+      if (url.includes('/slots')) {
+        return response(200, {
+          items: [{ startAt: SLOT }, { startAt: SLOT_TWO }],
+        });
+      }
+      if (url.endsWith(`/consultations/${CONSULTATION.id}/reschedule`)) {
+        return pendingReschedule;
+      }
+      if (url.endsWith(`/consultations/${CONSULTATION.id}`)) {
+        return response(200, { ...CONSULTATION, startedAt: SLOT });
+      }
+      return undefined;
+    });
+    renderFlow('ru', CONSULTATION);
+    const first = await screen.findByRole('radio', { name: '09:00' });
+    const second = screen.getByRole('radio', { name: '10:00' });
+
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Подтвердить перенос' }),
+    );
+    fireEvent.click(second);
+    rejectReschedule(new TypeError('response lost'));
+
+    expect(
+      await screen.findByRole('alert', {
+        name: 'Результат переноса неизвестен',
+      }),
+    ).toBeInTheDocument();
+    expect(first).toBeChecked();
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Проверить результат' }),
+    );
+    await waitFor(() =>
+      expect(replace).toHaveBeenCalledWith(
+        `/ru/consultations/${CONSULTATION.id}`,
+      ),
+    );
   });
 });

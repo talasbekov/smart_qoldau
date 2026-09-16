@@ -10,7 +10,7 @@ export default async function BookExpertPage({
   const { locale, expertId } = await params;
   const [expert, topics] = await Promise.all([
     getExpert(expertId),
-    listTopics(),
+    listTopics(locale === 'kz' ? 'kz' : 'ru'),
   ]);
   if (!expert) notFound();
 

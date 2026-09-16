@@ -18,7 +18,22 @@ type Slots = components['schemas']['SlotsResponseDto'];
 type PaymentMethod = components['schemas']['PaymentMethodDto'];
 type BookingResult = components['schemas']['BookingResultDto'];
 type Notice = 'conflict' | 'saveError' | 'notConfirmed' | null;
-type Phase = 'loading' | 'idle' | 'submitting' | 'unknown';
+type Phase = 'loading' | 'idle' | 'submitting' | 'unknown' | 'checking';
+type PendingMutation =
+  | {
+      mode: 'booking';
+      expertId: string;
+      slotStartAt: string;
+      topicSlug: string;
+      format: string;
+      paymentMethodId: string;
+    }
+  | {
+      mode: 'reschedule';
+      expertId: string;
+      consultationId: string;
+      slotStartAt: string;
+    };
 
 function tenge(priceTiyn: number, locale: string): string {
   return `${new Intl.NumberFormat(locale === 'kz' ? 'kk-KZ' : 'ru-KZ').format(
@@ -68,6 +83,9 @@ export default function BookingFlow({
   const [phase, setPhase] = useState<Phase>('loading');
   const [notice, setNotice] = useState<Notice>(null);
   const submitLock = useRef(false);
+  const reconcileLock = useRef(false);
+  const pendingMutation = useRef<PendingMutation | null>(null);
+  const slotsGeneration = useRef(0);
   const mounted = useRef(true);
 
   useEffect(() => {
@@ -79,10 +97,12 @@ export default function BookingFlow({
 
   const loadSlots = useCallback(async () => {
     if (!mounted.current) return;
+    const generation = ++slotsGeneration.current;
     setSlotsError(false);
+    setSlots(null);
     try {
       const result = await apiFetch<Slots>(`experts/${expert.id}/slots`);
-      if (!mounted.current) return;
+      if (!mounted.current || generation !== slotsGeneration.current) return;
       const items = result?.items ?? [];
       setSlots(items);
       setSelectedSlot((current) => {
@@ -94,7 +114,7 @@ export default function BookingFlow({
         return next;
       });
     } catch {
-      if (!mounted.current) return;
+      if (!mounted.current || generation !== slotsGeneration.current) return;
       setSlots(null);
       setSlotsError(true);
     }
@@ -121,10 +141,19 @@ export default function BookingFlow({
   }, [isReschedule]);
 
   useEffect(() => {
+    let cancelled = false;
+    setPhase('loading');
+    setTopicSlug(relevantTopics[0]?.slug ?? '');
+    setFormat(
+      expert.formats.includes('video') ? 'video' : (expert.formats[0] ?? ''),
+    );
     void Promise.all([loadSlots(), loadMethods()]).finally(() => {
-      if (mounted.current) setPhase('idle');
+      if (mounted.current && !cancelled) setPhase('idle');
     });
-  }, [loadMethods, loadSlots]);
+    return () => {
+      cancelled = true;
+    };
+  }, [expert.formats, loadMethods, loadSlots, relevantTopics]);
 
   const byDay = useMemo(() => {
     const grouped = new Map<string, Slots['items']>();
@@ -158,23 +187,39 @@ export default function BookingFlow({
     submitLock.current = true;
     setNotice(null);
     setPhase('submitting');
+    const command: PendingMutation = consultation
+      ? {
+          mode: 'reschedule',
+          expertId: expert.id,
+          consultationId: consultation.id,
+          slotStartAt: selectedSlot,
+        }
+      : {
+          mode: 'booking',
+          expertId: expert.id,
+          slotStartAt: selectedSlot,
+          topicSlug,
+          format,
+          paymentMethodId: paymentMethodId!,
+        };
+    pendingMutation.current = command;
     try {
-      const result = isReschedule
+      const result = command.mode === 'reschedule'
         ? await apiFetch<BookingResult>(
-            `consultations/${consultation!.id}/reschedule`,
+            `consultations/${command.consultationId}/reschedule`,
             {
               method: 'POST',
-              body: JSON.stringify({ slotStartAt: selectedSlot }),
+              body: JSON.stringify({ slotStartAt: command.slotStartAt }),
             },
           )
         : await apiFetch<BookingResult>('bookings', {
             method: 'POST',
             body: JSON.stringify({
-              expertId: expert.id,
-              topicSlug,
-              format,
-              slotStartAt: selectedSlot,
-              paymentMethodId,
+              expertId: command.expertId,
+              topicSlug: command.topicSlug,
+              format: command.format,
+              slotStartAt: command.slotStartAt,
+              paymentMethodId: command.paymentMethodId,
             }),
           });
       if (!mounted.current) return;
@@ -182,6 +227,7 @@ export default function BookingFlow({
         setPhase('unknown');
         return;
       }
+      pendingMutation.current = null;
       openConsultation(result.consultationId);
     } catch (caught) {
       if (!mounted.current) return;
@@ -195,11 +241,13 @@ export default function BookingFlow({
         setNotice('conflict');
         await loadSlots();
         if (!mounted.current) return;
+        pendingMutation.current = null;
         submitLock.current = false;
         setPhase('idle');
         return;
       }
       if (caught instanceof ApiError && caught.status < 500) {
+        pendingMutation.current = null;
         submitLock.current = false;
         setPhase('idle');
         setNotice('saveError');
@@ -210,38 +258,61 @@ export default function BookingFlow({
   }
 
   async function reconcile() {
-    if (!selectedSlot) return;
+    const command = pendingMutation.current;
+    if (!command || reconcileLock.current) return;
+    reconcileLock.current = true;
     setNotice(null);
+    setPhase('checking');
     try {
-      if (consultation) {
+      if (command.mode === 'reschedule') {
         const current = await apiFetch<Consultation>(
-          `consultations/${consultation.id}`,
+          `consultations/${command.consultationId}`,
         );
-        if (current?.startedAt === selectedSlot) {
-          openConsultation(consultation.id);
+        if (!mounted.current) return;
+        if (!current || typeof current.startedAt !== 'string') {
+          throw new Error('Invalid consultation');
+        }
+        if (current.startedAt === command.slotStartAt) {
+          pendingMutation.current = null;
+          openConsultation(command.consultationId);
           return;
         }
       } else {
-        const items = await apiFetch<Consultation[]>(
-          'consultations?status=SCHEDULED&take=100',
-        );
-        const found = items?.find(
-          (item) =>
-            item.expert.id === expert.id &&
-            item.startedAt === selectedSlot &&
-            item.status === 'SCHEDULED',
-        );
-        if (found) {
-          openConsultation(found.id);
-          return;
+        const take = 100;
+        let skip = 0;
+        while (true) {
+          const page = await apiFetch<Consultation[]>(
+            `consultations?status=SCHEDULED&take=${take}${skip ? `&skip=${skip}` : ''}`,
+          );
+          if (!mounted.current) return;
+          if (!Array.isArray(page)) throw new Error('Invalid consultations');
+          const found = page.find(
+            (item) =>
+              item.expert.id === command.expertId &&
+              item.startedAt === command.slotStartAt &&
+              item.status === 'SCHEDULED',
+          );
+          if (found) {
+            pendingMutation.current = null;
+            openConsultation(found.id);
+            return;
+          }
+          if (page.length < take) break;
+          skip += take;
         }
       }
+      if (!mounted.current) return;
+      pendingMutation.current = null;
+      setNotice('notConfirmed');
+      setPhase('loading');
+      await loadSlots();
+      if (!mounted.current) return;
       submitLock.current = false;
       setPhase('idle');
-      setNotice('notConfirmed');
-      await loadSlots();
     } catch {
-      setPhase('unknown');
+      if (mounted.current) setPhase('unknown');
+    } finally {
+      reconcileLock.current = false;
     }
   }
 
@@ -256,6 +327,7 @@ export default function BookingFlow({
         !paymentMethodId ||
         methods === null ||
         methods.length === 0));
+  const fieldsLocked = phase !== 'idle';
   const formatLabels: Record<string, string> = {
     chat: t('formatChat'),
     audio: t('formatAudio'),
@@ -320,8 +392,10 @@ export default function BookingFlow({
               <button
                 key={key}
                 type="button"
+                disabled={fieldsLocked}
                 aria-pressed={selectedDay === key}
                 onClick={() => {
+                  if (submitLock.current) return;
                   setSelectedDay(key);
                   setSelectedSlot(daySlots[0]?.startAt ?? null);
                 }}
@@ -342,9 +416,12 @@ export default function BookingFlow({
                   <input
                     type="radio"
                     name="slot"
+                    disabled={fieldsLocked}
                     value={slot.startAt}
                     checked={selectedSlot === slot.startAt}
-                    onChange={() => setSelectedSlot(slot.startAt)}
+                    onChange={() => {
+                      if (!submitLock.current) setSelectedSlot(slot.startAt);
+                    }}
                     className="sr-only"
                   />
                   {formatAlmatyTime(slot.startAt)}
@@ -360,8 +437,11 @@ export default function BookingFlow({
           <label className="flex flex-col gap-2 text-sm font-bold text-ink">
             {t('topic')}
             <select
+              disabled={fieldsLocked}
               value={topicSlug}
-              onChange={(event) => setTopicSlug(event.target.value)}
+              onChange={(event) => {
+                if (!submitLock.current) setTopicSlug(event.target.value);
+              }}
               className="min-h-12 rounded-xl border border-border bg-white px-4 font-medium focus:outline-none focus:ring-2 focus:ring-primary"
             >
               {relevantTopics.map((topic) => (
@@ -384,9 +464,12 @@ export default function BookingFlow({
                   <input
                     type="radio"
                     name="format"
+                    disabled={fieldsLocked}
                     value={item}
                     checked={format === item}
-                    onChange={() => setFormat(item)}
+                    onChange={() => {
+                      if (!submitLock.current) setFormat(item);
+                    }}
                   />
                   {formatLabels[item] ?? item}
                 </label>
@@ -425,9 +508,12 @@ export default function BookingFlow({
                     <input
                       type="radio"
                       name="paymentMethod"
+                      disabled={fieldsLocked}
                       value={method.id}
                       checked={paymentMethodId === method.id}
-                      onChange={() => setPaymentMethodId(method.id)}
+                      onChange={() => {
+                        if (!submitLock.current) setPaymentMethodId(method.id);
+                      }}
                     />
                     {methodLabel(method)}
                   </label>
@@ -461,22 +547,23 @@ export default function BookingFlow({
         </section>
       ) : null}
 
-      {phase === 'unknown' ? (
+      {phase === 'unknown' || phase === 'checking' ? (
         <section
           role="alert"
           aria-labelledby="unknown-title"
           className="rounded-2xl border border-border bg-chip p-5"
         >
           <h2 id="unknown-title" className="font-extrabold text-ink">
-            {isReschedule
+            {pendingMutation.current?.mode === 'reschedule'
               ? t('unknownRescheduleTitle')
               : t('unknownBookingTitle')}
           </h2>
           <p className="mt-1 text-sm text-body">{t('unknownBody')}</p>
           <button
             type="button"
+            disabled={phase === 'checking'}
             onClick={() => void reconcile()}
-            className="mt-4 min-h-11 rounded-xl bg-primary px-4 text-sm font-bold text-white focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+            className="mt-4 min-h-11 rounded-xl bg-primary px-4 text-sm font-bold text-white focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {t('checkResult')}
           </button>

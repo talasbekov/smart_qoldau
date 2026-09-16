@@ -49,6 +49,7 @@ describe('BookExpertPage', () => {
     expect(screen.getByTestId('booking')).toHaveTextContent('Айгуль С.');
     expect(screen.getByTestId('booking')).toHaveAttribute('data-topics', '1');
     expect(screen.getByTestId('booking')).toHaveAttribute('data-locale', 'kz');
+    expect(listTopics).toHaveBeenCalledWith('kz');
   });
 
   it('не показывает запись для исчезнувшего или скрытого специалиста', async () => {

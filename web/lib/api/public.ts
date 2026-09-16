@@ -118,9 +118,10 @@ export async function getContentItem(
   }
 }
 
-export async function listTopics(): Promise<Topic[]> {
+export async function listTopics(locale?: 'ru' | 'kz'): Promise<Topic[]> {
   try {
-    const response = await fetch(`${API_BASE_URL}/topics`, {
+    const query = locale ? `?locale=${locale}` : '';
+    const response = await fetch(`${API_BASE_URL}/topics${query}`, {
       next: { revalidate: 3600, tags: ['topics'] },
     });
     if (!response.ok) return [];

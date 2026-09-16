@@ -59,6 +59,16 @@ describe('getExpert', () => {
 });
 
 describe('listTopics', () => {
+  it('передаёт локаль справочника в API', async () => {
+    mockFetch(200, []);
+
+    await listTopics('kz');
+
+    expect((global.fetch as jest.Mock).mock.calls[0][0]).toContain(
+      '/topics?locale=kz',
+    );
+  });
+
   it('на ошибку отдаёт пустой справочник', async () => {
     mockFetch(500, {});
 
