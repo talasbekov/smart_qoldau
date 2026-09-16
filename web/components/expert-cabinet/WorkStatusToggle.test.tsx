@@ -503,6 +503,60 @@ describe('WorkStatusToggle', () => {
     );
   });
 
+  it.each(['confirmed', 'response lost'])(
+    'возврат после hide завершает user OFF с поздним ответом: %s',
+    async (outcome) => {
+      const off = deferred<{ workStatus: string }>();
+      let serverStatus = 'ACCEPTING';
+      apiFetch.mockImplementation((path: string, init?: RequestInit) => {
+        if (path === 'experts/me') {
+          return Promise.resolve({ workStatus: serverStatus });
+        }
+        if (init?.body) {
+          const target = JSON.parse(String(init.body)).workStatus;
+          if (target === 'NOT_ACCEPTING') return off.promise;
+          serverStatus = target;
+        }
+        return Promise.resolve({ workStatus: serverStatus });
+      });
+      render(<WorkStatusToggle initial="ACCEPTING" />);
+      await waitFor(() => expect(screen.getByRole('switch')).toBeEnabled());
+
+      fireEvent.click(screen.getByRole('switch'));
+      await waitFor(() =>
+        expect(apiFetch).toHaveBeenCalledWith(
+          'experts/me/work-status',
+          expect.objectContaining({
+            body: JSON.stringify({ workStatus: 'NOT_ACCEPTING' }),
+          }),
+        ),
+      );
+      await setHidden(true);
+      serverStatus = 'NOT_ACCEPTING';
+      await act(async () => {
+        if (outcome === 'confirmed') {
+          off.resolve({ workStatus: serverStatus });
+        } else {
+          off.reject(new TypeError('OFF response lost'));
+        }
+      });
+      await setHidden(false);
+
+      if (outcome === 'response lost') {
+        await waitFor(() =>
+          expect(apiFetch).toHaveBeenCalledWith('experts/me'),
+        );
+      }
+
+      expect(screen.getByRole('switch')).toHaveAttribute(
+        'aria-checked',
+        'false',
+      );
+      await waitFor(() => expect(screen.getByRole('switch')).toBeEnabled());
+      expect(screen.getByRole('switch')).not.toHaveTextContent(/сохраняем/i);
+    },
+  );
+
   it('не показывает переключение успешным, когда сервер его отклонил', async () => {
     apiFetch
       .mockRejectedValueOnce(new Error('offline'))

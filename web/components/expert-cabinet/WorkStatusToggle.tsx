@@ -9,6 +9,10 @@ const HEARTBEAT_MS = 30_000;
 
 type WorkStatus = 'ACCEPTING' | 'BUSY' | 'NOT_ACCEPTING' | 'UNAVAILABLE';
 type ExpertMe = { workStatus: WorkStatus };
+type PendingAction = {
+  generation: number;
+  target: 'ACCEPTING' | 'NOT_ACCEPTING';
+};
 type TransitionModel = {
   intentAccepting: boolean;
   canonical: WorkStatus;
@@ -16,6 +20,8 @@ type TransitionModel = {
   unknownAccepting: boolean;
   generation: number;
   offlineQueuedFor: number | null;
+  savingOwner: number | null;
+  pendingAction: PendingAction | null;
 };
 
 const STATUS_EVENT = 'sq:expert-work-status';
@@ -44,9 +50,25 @@ export default function WorkStatusToggle({
     unknownAccepting: false,
     generation: 0,
     offlineQueuedFor: null,
+    savingOwner: null,
+    pendingAction: null,
   });
   const actionLock = useRef(false);
   const statusQueue = useRef<Promise<unknown>>(Promise.resolve());
+
+  const beginSaving = useCallback((owner: number) => {
+    transition.current.savingOwner = owner;
+    if (mounted.current) setPhase('saving');
+  }, []);
+
+  const finishSaving = useCallback(
+    (owner: number, nextPhase: 'idle' | 'error') => {
+      if (transition.current.savingOwner !== owner) return;
+      transition.current.savingOwner = null;
+      if (mounted.current) setPhase(nextPhase);
+    },
+    [],
+  );
 
   const stopHeartbeat = useCallback(() => {
     if (timer.current) {
@@ -169,10 +191,7 @@ export default function WorkStatusToggle({
           throw new Error('status mismatch');
         }
       } catch {
-        if (
-          mounted.current &&
-          transition.current.generation === generation
-        ) {
+        if (mounted.current && transition.current.generation === generation) {
           setPhase('error');
         }
       } finally {
@@ -216,28 +235,27 @@ export default function WorkStatusToggle({
   const applyVisibleIntent = useCallback(
     async (reconcileFirst = false) => {
       const operationGeneration = transition.current.generation;
-      setPhase('saving');
+      beginSaving(operationGeneration);
       try {
         const adoptRestoredManagedStatus =
           transition.current.canonical === 'BUSY' ||
           transition.current.canonical === 'UNAVAILABLE';
         const actual = reconcileFirst
-          ? await readCanonical(
-              adoptRestoredManagedStatus,
-              operationGeneration,
-            )
+          ? await readCanonical(adoptRestoredManagedStatus, operationGeneration)
           : transition.current.canonical;
         if (
           actual === null ||
           transition.current.generation !== operationGeneration
-        )
+        ) {
+          finishSaving(operationGeneration, 'idle');
           return;
+        }
         if (
           actual === 'BUSY' ||
           actual === 'UNAVAILABLE' ||
           !transition.current.intentAccepting
         ) {
-          if (mounted.current) setPhase('idle');
+          finishSaving(operationGeneration, 'idle');
           return;
         }
         if (!mounted.current || document.visibilityState !== 'visible') {
@@ -248,13 +266,16 @@ export default function WorkStatusToggle({
         const requestedAtRevision = transition.current.canonicalRevision;
         transition.current.unknownAccepting = true;
         const confirmed = await enqueueStatus('ACCEPTING');
-        if (transition.current.generation !== operationGeneration) return;
+        if (transition.current.generation !== operationGeneration) {
+          finishSaving(operationGeneration, 'idle');
+          return;
+        }
         if (
           transition.current.canonicalRevision !== requestedAtRevision &&
           (transition.current.canonical === 'BUSY' ||
             transition.current.canonical === 'UNAVAILABLE')
         ) {
-          if (mounted.current) setPhase('idle');
+          finishSaving(operationGeneration, 'idle');
           return;
         }
         if (
@@ -271,10 +292,13 @@ export default function WorkStatusToggle({
         transition.current.unknownAccepting = false;
         reflectCanonical('ACCEPTING');
         setConfirmedOnline(true);
-        setPhase('idle');
+        finishSaving(operationGeneration, 'idle');
         startHeartbeat();
       } catch {
-        if (transition.current.generation !== operationGeneration) return;
+        if (transition.current.generation !== operationGeneration) {
+          finishSaving(operationGeneration, 'idle');
+          return;
+        }
         if (!mounted.current || document.visibilityState !== 'visible') {
           if (
             transition.current.intentAccepting ||
@@ -288,29 +312,33 @@ export default function WorkStatusToggle({
           if (
             actual === null ||
             transition.current.generation !== operationGeneration
-          )
+          ) {
+            finishSaving(operationGeneration, 'idle');
             return;
+          }
           if (actual === 'ACCEPTING' && transition.current.intentAccepting) {
             setConfirmedOnline(true);
-            setPhase('idle');
+            finishSaving(operationGeneration, 'idle');
             startHeartbeat();
           } else if (actual === 'BUSY' || actual === 'UNAVAILABLE') {
-            setPhase('idle');
+            finishSaving(operationGeneration, 'idle');
           } else {
-            setPhase('error');
+            finishSaving(operationGeneration, 'error');
             stopHeartbeat();
           }
         } catch {
           if (mounted.current) {
             setConfirmedOnline(false);
-            setPhase('error');
+            finishSaving(operationGeneration, 'error');
             stopHeartbeat();
           }
         }
       }
     },
     [
+      beginSaving,
       enqueueStatus,
+      finishSaving,
       queueUnavailable,
       readCanonical,
       reflectCanonical,
@@ -318,6 +346,76 @@ export default function WorkStatusToggle({
       stopHeartbeat,
     ],
   );
+
+  const reconcilePendingOffline = useCallback(async () => {
+    const pending = transition.current.pendingAction;
+    if (
+      pending?.target !== 'NOT_ACCEPTING' ||
+      transition.current.intentAccepting
+    )
+      return;
+
+    const operationGeneration = transition.current.generation;
+    beginSaving(operationGeneration);
+    try {
+      const actual = await readCanonical(false, operationGeneration);
+      if (
+        actual === null ||
+        transition.current.generation !== operationGeneration
+      ) {
+        finishSaving(operationGeneration, 'idle');
+        return;
+      }
+      if (
+        transition.current.pendingAction !== pending ||
+        transition.current.intentAccepting
+      ) {
+        finishSaving(operationGeneration, 'idle');
+        return;
+      }
+      if (actual === 'BUSY' || actual === 'UNAVAILABLE') {
+        transition.current.pendingAction = null;
+        finishSaving(operationGeneration, 'idle');
+        return;
+      }
+      if (actual !== 'NOT_ACCEPTING') {
+        setAccepting(false);
+        const confirmed = await enqueueStatus('NOT_ACCEPTING');
+        if (confirmed?.workStatus !== 'NOT_ACCEPTING') {
+          throw new Error('status mismatch');
+        }
+        if (
+          transition.current.generation !== operationGeneration ||
+          transition.current.pendingAction !== pending ||
+          transition.current.intentAccepting
+        ) {
+          finishSaving(operationGeneration, 'idle');
+          return;
+        }
+        reflectCanonical('NOT_ACCEPTING');
+      }
+      transition.current.pendingAction = null;
+      setAccepting(false);
+      setConfirmedOnline(false);
+      finishSaving(operationGeneration, 'idle');
+      stopHeartbeat();
+    } catch {
+      if (transition.current.generation !== operationGeneration) {
+        finishSaving(operationGeneration, 'idle');
+        return;
+      }
+      setConfirmedOnline(false);
+      finishSaving(operationGeneration, 'error');
+      stopHeartbeat();
+    }
+  }, [
+    beginSaving,
+    enqueueStatus,
+    finishSaving,
+    readCanonical,
+    reflectCanonical,
+    stopHeartbeat,
+  ]);
 
   useEffect(() => {
     const priorCanonical = transition.current.canonical;
@@ -359,6 +457,11 @@ export default function WorkStatusToggle({
       if (hidden) {
         setConfirmedOnline(false);
         if (needsSafetyOffline && !managed) queueUnavailable();
+      } else if (
+        transition.current.pendingAction?.target === 'NOT_ACCEPTING' &&
+        !transition.current.intentAccepting
+      ) {
+        void reconcilePendingOffline();
       } else if (managed) {
         // BUSY/UNAVAILABLE blocks writes, not canonical reads. Completion may
         // already have restored ACCEPTING on the server.
@@ -371,7 +474,14 @@ export default function WorkStatusToggle({
 
     function syncFromServer() {
       transition.current.generation += 1;
-      void applyVisibleIntent(true);
+      if (
+        transition.current.pendingAction?.target === 'NOT_ACCEPTING' &&
+        !transition.current.intentAccepting
+      ) {
+        void reconcilePendingOffline();
+      } else {
+        void applyVisibleIntent(true);
+      }
     }
 
     function acceptCanonicalEvent(event: Event) {
@@ -398,10 +508,15 @@ export default function WorkStatusToggle({
       window.removeEventListener(STATUS_EVENT, acceptCanonicalEvent);
       stopHeartbeat();
       model.generation += 1;
-      if (model.intentAccepting || model.unknownAccepting)
-        queueUnavailable();
+      if (model.intentAccepting || model.unknownAccepting) queueUnavailable();
     };
-  }, [applyVisibleIntent, queueUnavailable, reflectCanonical, stopHeartbeat]);
+  }, [
+    applyVisibleIntent,
+    queueUnavailable,
+    reconcilePendingOffline,
+    reflectCanonical,
+    stopHeartbeat,
+  ]);
 
   useEffect(() => {
     if (
@@ -423,10 +538,15 @@ export default function WorkStatusToggle({
     transition.current.generation += 1;
     const operationGeneration = transition.current.generation;
     const next = !transition.current.intentAccepting;
+    const pendingAction: PendingAction = {
+      generation: operationGeneration,
+      target: next ? 'ACCEPTING' : 'NOT_ACCEPTING',
+    };
+    transition.current.pendingAction = pendingAction;
     transition.current.intentAccepting = next;
     if (next) transition.current.unknownAccepting = true;
     setAccepting(next);
-    setPhase('saving');
+    beginSaving(operationGeneration);
     if (!next) stopHeartbeat();
 
     try {
@@ -435,13 +555,24 @@ export default function WorkStatusToggle({
         next ? 'ACCEPTING' : 'NOT_ACCEPTING',
       );
       if (!mounted.current) return;
-      if (transition.current.generation !== operationGeneration) return;
+      if (transition.current.generation !== operationGeneration) {
+        if (confirmed?.workStatus === pendingAction.target) {
+          if (transition.current.pendingAction === pendingAction) {
+            transition.current.pendingAction = null;
+          }
+          finishSaving(operationGeneration, 'idle');
+        }
+        return;
+      }
       if (
         transition.current.canonicalRevision !== requestedAtRevision &&
         (transition.current.canonical === 'BUSY' ||
           transition.current.canonical === 'UNAVAILABLE')
       ) {
-        setPhase('idle');
+        if (transition.current.pendingAction === pendingAction) {
+          transition.current.pendingAction = null;
+        }
+        finishSaving(operationGeneration, 'idle');
         return;
       }
       if (next && document.visibilityState !== 'visible') {
@@ -452,10 +583,13 @@ export default function WorkStatusToggle({
         throw new Error('status mismatch');
       }
       transition.current.unknownAccepting = false;
+      if (transition.current.pendingAction === pendingAction) {
+        transition.current.pendingAction = null;
+      }
       reflectCanonical(confirmed.workStatus);
       setConfirmedOnline(next && document.visibilityState === 'visible');
       setPaused(next && document.visibilityState !== 'visible');
-      setPhase('idle');
+      finishSaving(operationGeneration, 'idle');
       if (next && document.visibilityState === 'visible') startHeartbeat();
       else stopHeartbeat();
     } catch {
@@ -476,12 +610,16 @@ export default function WorkStatusToggle({
           return;
         if (!mounted.current) return;
         const actualAccepting = actual === 'ACCEPTING';
+        if (transition.current.pendingAction === pendingAction) {
+          transition.current.pendingAction = null;
+        }
         setAccepting(actualAccepting);
         setConfirmedOnline(
           actualAccepting && document.visibilityState === 'visible',
         );
         setPaused(actualAccepting && document.visibilityState !== 'visible');
-        setPhase(
+        finishSaving(
+          operationGeneration,
           actual === 'BUSY' || actual === 'UNAVAILABLE'
             ? 'idle'
             : actualAccepting === next
@@ -493,12 +631,15 @@ export default function WorkStatusToggle({
         else stopHeartbeat();
       } catch {
         if (mounted.current) {
+          if (transition.current.pendingAction === pendingAction) {
+            transition.current.pendingAction = null;
+          }
           const fallbackAccepting =
             transition.current.canonical === 'ACCEPTING';
           transition.current.intentAccepting = fallbackAccepting;
           setAccepting(fallbackAccepting);
           setConfirmedOnline(false);
-          setPhase('error');
+          finishSaving(operationGeneration, 'error');
         }
       }
     } finally {
