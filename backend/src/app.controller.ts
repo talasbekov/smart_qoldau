@@ -6,13 +6,17 @@ import { RedisService } from './redis/redis.service';
 
 type HealthDependencyStatus = 'ok' | 'fail';
 type HealthDependency = 'db' | 'redis';
+type HealthCheckInFlight = {
+  operation: Promise<HealthDependencyStatus>;
+  result: Promise<HealthDependencyStatus>;
+};
 
 const HEALTH_CHECK_TIMEOUT_MS = 1_000;
 
 @Controller()
 export class AppController {
-  private dbCheckInFlight?: Promise<HealthDependencyStatus>;
-  private redisCheckInFlight?: Promise<HealthDependencyStatus>;
+  private dbCheckInFlight?: HealthCheckInFlight;
+  private redisCheckInFlight?: HealthCheckInFlight;
 
   constructor(
     private readonly appService: AppService,
@@ -44,27 +48,17 @@ export class AppController {
     return this.checkWithTimeout('redis', () => this.redis.ping());
   }
 
-  private async checkWithTimeout(
+  private checkWithTimeout(
     dependency: HealthDependency,
     check: () => Promise<unknown>,
   ): Promise<HealthDependencyStatus> {
-    let timeout: ReturnType<typeof setTimeout> | undefined;
-    const timeoutResult = new Promise<HealthDependencyStatus>((resolve) => {
-      timeout = setTimeout(() => resolve('fail'), HEALTH_CHECK_TIMEOUT_MS);
-    });
-    const checkResult = this.getOrStartCheck(dependency, check);
-
-    try {
-      return await Promise.race([checkResult, timeoutResult]);
-    } finally {
-      if (timeout) clearTimeout(timeout);
-    }
+    return this.getOrStartCheck(dependency, check).result;
   }
 
   private getOrStartCheck(
     dependency: HealthDependency,
     check: () => Promise<unknown>,
-  ): Promise<HealthDependencyStatus> {
+  ): HealthCheckInFlight {
     const inFlight =
       dependency === 'db' ? this.dbCheckInFlight : this.redisCheckInFlight;
     if (inFlight) return inFlight;
@@ -75,18 +69,25 @@ export class AppController {
         () => 'ok',
         () => 'fail',
       );
-    if (dependency === 'db') this.dbCheckInFlight = operation;
-    else this.redisCheckInFlight = operation;
+    let timeout: ReturnType<typeof setTimeout> | undefined;
+    const timeoutResult = new Promise<HealthDependencyStatus>((resolve) => {
+      timeout = setTimeout(() => resolve('fail'), HEALTH_CHECK_TIMEOUT_MS);
+    });
+    const result = Promise.race([operation, timeoutResult]);
+    const startedCheck = { operation, result };
+    if (dependency === 'db') this.dbCheckInFlight = startedCheck;
+    else this.redisCheckInFlight = startedCheck;
 
-    void operation.finally(() => {
-      if (dependency === 'db' && this.dbCheckInFlight === operation) {
+    void operation.then(() => {
+      if (timeout) clearTimeout(timeout);
+      if (dependency === 'db' && this.dbCheckInFlight === startedCheck) {
         this.dbCheckInFlight = undefined;
       }
-      if (dependency === 'redis' && this.redisCheckInFlight === operation) {
+      if (dependency === 'redis' && this.redisCheckInFlight === startedCheck) {
         this.redisCheckInFlight = undefined;
       }
     });
 
-    return operation;
+    return startedCheck;
   }
 }

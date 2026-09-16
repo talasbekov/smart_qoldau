@@ -125,13 +125,20 @@ describe('AppController', () => {
         );
         expect(dbQuery).toHaveBeenCalledTimes(1);
 
-        const sequentialTimeout = appController.health(createResponse());
-        await jest.advanceTimersByTimeAsync(1_000);
-        await expect(sequentialTimeout).resolves.toMatchObject({
-          status: 'unhealthy',
-          db: 'fail',
-        });
+        const operationThen = jest.spyOn(
+          getInFlightOperation(appController, 'db'),
+          'then',
+        );
+        for (let index = 0; index < 16; index += 1) {
+          const sequentialTimeout = appController.health(createResponse());
+          await jest.advanceTimersByTimeAsync(1_000);
+          await expect(sequentialTimeout).resolves.toMatchObject({
+            status: 'unhealthy',
+            db: 'fail',
+          });
+        }
         expect(dbQuery).toHaveBeenCalledTimes(1);
+        expect(operationThen).not.toHaveBeenCalled();
 
         db.resolve(1);
         await db.promise;
@@ -166,10 +173,17 @@ describe('AppController', () => {
         await Promise.all(concurrentChecks);
         expect(redisPing).toHaveBeenCalledTimes(1);
 
-        const sequentialTimeout = appController.health(createResponse());
-        await jest.advanceTimersByTimeAsync(1_000);
-        await sequentialTimeout;
+        const operationThen = jest.spyOn(
+          getInFlightOperation(appController, 'redis'),
+          'then',
+        );
+        for (let index = 0; index < 16; index += 1) {
+          const sequentialTimeout = appController.health(createResponse());
+          await jest.advanceTimersByTimeAsync(1_000);
+          await sequentialTimeout;
+        }
         expect(redisPing).toHaveBeenCalledTimes(1);
+        expect(operationThen).not.toHaveBeenCalled();
 
         redis.reject(new Error('redis://secret@cache refused late'));
         await expect(redis.promise).rejects.toThrow('refused late');
@@ -209,4 +223,14 @@ function deferred<T>() {
 async function flushMicrotasks(): Promise<void> {
   await Promise.resolve();
   await Promise.resolve();
+}
+
+function getInFlightOperation(
+  controller: AppController,
+  dependency: 'db' | 'redis',
+): Promise<unknown> {
+  const field = dependency === 'db' ? 'dbCheckInFlight' : 'redisCheckInFlight';
+  return (
+    controller as unknown as Record<string, { operation: Promise<unknown> }>
+  )[field].operation;
 }
