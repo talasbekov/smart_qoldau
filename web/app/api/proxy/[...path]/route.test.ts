@@ -24,10 +24,23 @@ function upstream(status = 200, payload: unknown = { ok: true }) {
   return fn;
 }
 
-function req(path: string, method = 'GET', origin = 'http://localhost:3000') {
+function tokenFor(userId: string): string {
+  return `x.${Buffer.from(JSON.stringify({ sub: userId })).toString('base64url')}.x`;
+}
+
+function req(
+  path: string,
+  method = 'GET',
+  origin = 'http://localhost:3000',
+  supportOwner?: string,
+) {
   return new Request(`http://localhost:3000/api/proxy/${path}`, {
     method,
-    headers: { origin, 'content-type': 'application/json' },
+    headers: {
+      origin,
+      'content-type': 'application/json',
+      ...(supportOwner ? { 'x-support-owner': supportOwner } : {}),
+    },
     body: method === 'GET' ? undefined : '{}',
   });
 }
@@ -122,10 +135,13 @@ describe('прокси кабинета', () => {
   });
 
   it('пропускает только пользовательский tickets API с cookie-авторством', async () => {
-    cookie.value = 'access-value';
+    cookie.value = tokenFor('user-1');
     const fetchMock = upstream(201, { id: 'ticket-1' });
 
-    const response = await POST(req('tickets', 'POST'), ctx('tickets'));
+    const response = await POST(
+      req('tickets', 'POST', 'http://localhost:3000', 'user-1'),
+      ctx('tickets'),
+    );
 
     expect(response.status).toBe(201);
     expect(fetchMock).toHaveBeenCalledWith(
@@ -133,18 +149,23 @@ describe('прокси кабинета', () => {
       expect.objectContaining({
         method: 'POST',
         headers: expect.objectContaining({
-          Authorization: 'Bearer access-value',
+          Authorization: `Bearer ${cookie.value}`,
         }),
       }),
     );
   });
 
   it('пропускает ответ автора, но не открывает служебные или будущие ticket-действия', async () => {
-    cookie.value = 'access-value';
+    cookie.value = tokenFor('user-1');
     const fetchMock = upstream(204, null);
 
     const reply = await POST(
-      req('tickets/00000000-0000-0000-0000-000000000001/reply', 'POST'),
+      req(
+        'tickets/00000000-0000-0000-0000-000000000001/reply',
+        'POST',
+        'http://localhost:3000',
+        'user-1',
+      ),
       ctx('tickets/00000000-0000-0000-0000-000000000001/reply'),
     );
     const resolve = await POST(
@@ -160,6 +181,32 @@ describe('прокси кабинета', () => {
     expect(resolve.status).toBe(404);
     expect(remove.status).toBe(404);
     expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('не отправляет ticket mutation от устаревшей вкладки другого владельца', async () => {
+    cookie.value = tokenFor('user-b');
+    const fetchMock = upstream(201, { id: 'must-not-exist' });
+
+    const response = await POST(
+      req('tickets', 'POST', 'http://localhost:3000', 'user-a'),
+      ctx('tickets'),
+    );
+
+    expect(response.status).toBe(409);
+    await expect(response.json()).resolves.toEqual({
+      code: 'SUPPORT_SESSION_CHANGED',
+    });
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('не принимает ticket mutation без ожидаемого владельца формы', async () => {
+    cookie.value = tokenFor('user-b');
+    const fetchMock = upstream(201, { id: 'must-not-exist' });
+
+    const response = await POST(req('tickets', 'POST'), ctx('tickets'));
+
+    expect(response.status).toBe(409);
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 
   it('пропускает создание брони, но только через origin guard и пользовательскую сессию', async () => {

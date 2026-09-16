@@ -5,10 +5,13 @@ import { ApiError, apiFetch } from '@/lib/api/client';
 import { Link } from '@/lib/i18n/navigation';
 import type { TicketDetail } from '@/lib/support';
 import {
+  activateSupportOwner,
   createSupportStorage,
-  clearOtherSupportStorage,
+  isSupportSessionCurrent,
   newSupportId,
   type PendingReply,
+  type PendingState,
+  supportSessionEpochKey,
 } from '@/lib/support-storage';
 import ru from '@/messages/ru.json';
 import kz from '@/messages/kz.json';
@@ -17,7 +20,8 @@ const BUTTON =
   'min-h-12 rounded-2xl bg-primary px-5 py-3 text-sm font-bold text-white focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60';
 
 type Phase = 'loading' | 'ready' | 'missing' | 'error';
-type Notice = 'sent' | 'unknown' | 'error' | 'storage' | 'corrupt' | null;
+type Notice =
+  'sent' | 'unknown' | 'error' | 'storage' | 'corrupt' | 'session' | null;
 
 export default function TicketConversation({
   ticketId,
@@ -33,7 +37,9 @@ export default function TicketConversation({
   const [phase, setPhase] = useState<Phase>('loading');
   const [ticket, setTicket] = useState<TicketDetail | null>(null);
   const [body, setBody] = useState('');
-  const [pending, setPending] = useState<PendingReply | 'corrupt' | null>(null);
+  const [pending, setPending] = useState<
+    PendingState<PendingReply> | 'corrupt' | 'session' | null
+  >(null);
   const [notice, setNotice] = useState<Notice>(null);
   const [sending, setSending] = useState(false);
   const [hydrated, setHydrated] = useState(false);
@@ -42,6 +48,8 @@ export default function TicketConversation({
   const requestVersion = useRef(0);
   const sendingRef = useRef(false);
   const draftRevision = useRef(newSupportId());
+  const persistedRevision = useRef<string | null>(null);
+  const sessionEpoch = useRef('');
 
   const load = useCallback(async () => {
     const version = ++requestVersion.current;
@@ -82,14 +90,22 @@ export default function TicketConversation({
     setSending(false);
     setHydrated(false);
     setStorageAvailable(true);
-    clearOtherSupportStorage(userId);
+    const session = activateSupportOwner(userId);
+    if (session.status === 'valid') sessionEpoch.current = session.epoch;
+    else {
+      sessionEpoch.current = '';
+      setStorageAvailable(false);
+      setNotice('storage');
+    }
 
     const draft = storage.readReplyDraft(ticketId);
     if (draft.status === 'valid') {
       draftRevision.current = draft.value.revision;
+      persistedRevision.current = draft.value.revision;
       setBody(draft.value.payload.body);
     } else {
       draftRevision.current = newSupportId();
+      persistedRevision.current = null;
       if (draft.status === 'unavailable') {
         setStorageAvailable(false);
         setNotice('storage');
@@ -97,7 +113,7 @@ export default function TicketConversation({
     }
     const storedPending = storage.readReplyPending(ticketId);
     if (storedPending.status === 'valid') {
-      if (draft.status !== 'valid') {
+      if (draft.status !== 'valid' && !('unknown' in storedPending.value)) {
         draftRevision.current = storedPending.value.draftRevision;
         setBody(storedPending.value.payload.body);
       }
@@ -110,18 +126,48 @@ export default function TicketConversation({
       setStorageAvailable(false);
       setNotice('storage');
     }
+    const syncCrossTabState = (event: StorageEvent) => {
+      if (
+        event.key !== null &&
+        event.key !== supportSessionEpochKey &&
+        event.key !== storage.keys.replyPending(ticketId)
+      )
+        return;
+      if (
+        !sessionEpoch.current ||
+        !isSupportSessionCurrent(userId, sessionEpoch.current)
+      ) {
+        setBody('');
+        setPending('session');
+        setNotice('session');
+        return;
+      }
+      const latest = storage.readReplyPending(ticketId);
+      if (latest.status === 'valid') {
+        setPending(latest.value);
+        setNotice('unknown');
+      } else if (latest.status === 'corrupt') {
+        setPending('corrupt');
+        setNotice('corrupt');
+      }
+    };
+    window.addEventListener('storage', syncCrossTabState);
     setHydrated(true);
     void load();
     return () => {
       if (lifecycle.current === generation) lifecycle.current += 1;
       requestVersion.current += 1;
+      window.removeEventListener('storage', syncCrossTabState);
     };
   }, [load, storage, ticketId, userId]);
 
   useEffect(() => {
     if (!hydrated) return;
     if (!body) {
-      storage.removeReplyDraft(ticketId);
+      if (persistedRevision.current) {
+        storage.removeReplyDraftIfRevision(ticketId, persistedRevision.current);
+        persistedRevision.current = null;
+      }
       return;
     }
     const saved = storage.saveReplyDraft(ticketId, {
@@ -131,7 +177,7 @@ export default function TicketConversation({
     if (!saved) {
       setStorageAvailable(false);
       setNotice('storage');
-    }
+    } else persistedRevision.current = draftRevision.current;
   }, [body, hydrated, storage, ticketId]);
 
   async function submit(event: React.FormEvent) {
@@ -141,9 +187,16 @@ export default function TicketConversation({
       ticket.status === 'RESOLVED' ||
       pending ||
       !storageAvailable ||
+      !isSupportSessionCurrent(userId, sessionEpoch.current) ||
       sendingRef.current
-    )
+    ) {
+      if (!isSupportSessionCurrent(userId, sessionEpoch.current)) {
+        setBody('');
+        setPending('session');
+        setNotice('session');
+      }
       return;
+    }
 
     const snapshot: PendingReply = {
       operationId: newSupportId(),
@@ -151,25 +204,53 @@ export default function TicketConversation({
       payload: { body: body.trim() },
       baselineIds: ticket.messages.map((message) => message.id),
     };
-    if (!storage.saveReplyPending(ticketId, snapshot)) {
-      setStorageAvailable(false);
-      setNotice('storage');
-      return;
-    }
-    const generation = lifecycle.current;
     sendingRef.current = true;
     setSending(true);
     setNotice(null);
+    const generation = lifecycle.current;
+    const acquired = await storage.acquireReplyPending(ticketId, snapshot);
+    if (generation !== lifecycle.current) {
+      if (acquired === 'acquired')
+        storage.removeReplyPendingIfOperation(ticketId, snapshot.operationId);
+      return;
+    }
+    if (acquired !== 'acquired') {
+      sendingRef.current = false;
+      setSending(false);
+      if (acquired === 'occupied') {
+        const latest = storage.readReplyPending(ticketId);
+        setPending(latest.status === 'valid' ? latest.value : 'corrupt');
+        setNotice(latest.status === 'corrupt' ? 'corrupt' : 'unknown');
+      } else {
+        setStorageAvailable(false);
+        setNotice('storage');
+      }
+      return;
+    }
+    if (!isSupportSessionCurrent(userId, sessionEpoch.current)) {
+      storage.removeReplyPendingIfOperation(ticketId, snapshot.operationId);
+      sendingRef.current = false;
+      setSending(false);
+      setBody('');
+      setPending('session');
+      setNotice('session');
+      return;
+    }
     setPending(snapshot);
 
     try {
       await apiFetch(`tickets/${ticketId}/reply`, {
         method: 'POST',
+        headers: { 'X-Support-Owner': userId },
         body: JSON.stringify({ body: snapshot.payload.body }),
       });
+      if (
+        generation !== lifecycle.current ||
+        !isSupportSessionCurrent(userId, sessionEpoch.current)
+      )
+        return;
       storage.removeReplyPendingIfOperation(ticketId, snapshot.operationId);
       storage.removeReplyDraftIfRevision(ticketId, snapshot.draftRevision);
-      if (generation !== lifecycle.current) return;
       setPending(null);
       if (draftRevision.current === snapshot.draftRevision) {
         draftRevision.current = newSupportId();
@@ -179,6 +260,22 @@ export default function TicketConversation({
       void load();
     } catch (error) {
       if (generation !== lifecycle.current) return;
+      if (
+        error instanceof ApiError &&
+        error.code === 'SUPPORT_SESSION_CHANGED'
+      ) {
+        storage.removeReplyPendingIfOperation(ticketId, snapshot.operationId);
+        setBody('');
+        setPending('session');
+        setNotice('session');
+        return;
+      }
+      if (!isSupportSessionCurrent(userId, sessionEpoch.current)) {
+        setBody('');
+        setPending('session');
+        setNotice('session');
+        return;
+      }
       const definitelyRejected =
         error instanceof ApiError && error.status >= 400 && error.status < 500;
       if (definitelyRejected) {
@@ -332,6 +429,11 @@ export default function TicketConversation({
           {notice === 'corrupt' && (
             <p role="alert" className="text-sm font-semibold text-amber-800">
               {copy.pendingCorrupt}
+            </p>
+          )}
+          {notice === 'session' && (
+            <p role="alert" className="text-sm font-semibold text-amber-800">
+              {copy.sessionChanged}
             </p>
           )}
           <button

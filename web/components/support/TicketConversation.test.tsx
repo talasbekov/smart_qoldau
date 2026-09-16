@@ -92,9 +92,11 @@ describe('TicketConversation', () => {
     fireEvent.click(submit);
     fireEvent.click(submit);
 
-    expect(
-      fetchMock.mock.calls.filter(([, init]) => init?.method === 'POST'),
-    ).toHaveLength(1);
+    await waitFor(() =>
+      expect(
+        fetchMock.mock.calls.filter(([, init]) => init?.method === 'POST'),
+      ).toHaveLength(1),
+    );
     resolveReply(null);
     await waitFor(() =>
       expect(screen.getByText('Ответ отправлен')).toBeInTheDocument(),

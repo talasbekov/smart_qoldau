@@ -11,10 +11,13 @@ import {
   type TicketSummary,
 } from '@/lib/support';
 import {
+  activateSupportOwner,
   createSupportStorage,
-  clearOtherSupportStorage,
+  isSupportSessionCurrent,
   newSupportId,
   type PendingCreate,
+  type PendingState,
+  supportSessionEpochKey,
 } from '@/lib/support-storage';
 import ru from '@/messages/ru.json';
 import kz from '@/messages/kz.json';
@@ -25,7 +28,8 @@ const BUTTON =
   'min-h-12 rounded-2xl bg-primary px-5 py-3 text-sm font-bold text-white focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60';
 
 type Phase = 'loading' | 'ready' | 'error';
-type Notice = 'created' | 'unknown' | 'error' | 'storage' | 'corrupt' | null;
+type Notice =
+  'created' | 'unknown' | 'error' | 'storage' | 'corrupt' | 'session' | null;
 type ExpertProbe = { id?: string };
 
 export default function SupportCenter({
@@ -43,9 +47,9 @@ export default function SupportCenter({
   const [category, setCategory] = useState<TicketCategory>('CONSULTATIONS');
   const [subject, setSubject] = useState('');
   const [body, setBody] = useState('');
-  const [pending, setPending] = useState<PendingCreate | 'corrupt' | null>(
-    null,
-  );
+  const [pending, setPending] = useState<
+    PendingState<PendingCreate> | 'corrupt' | 'session' | null
+  >(null);
   const [notice, setNotice] = useState<Notice>(null);
   const [submitting, setSubmitting] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -55,6 +59,8 @@ export default function SupportCenter({
   const lifecycle = useRef(0);
   const submittingRef = useRef(false);
   const draftRevision = useRef(newSupportId());
+  const persistedRevision = useRef<string | null>(null);
+  const sessionEpoch = useRef('');
 
   const load = useCallback(
     async (withRoleProbe: boolean) => {
@@ -129,16 +135,24 @@ export default function SupportCenter({
     setRefreshing(false);
     setHydrated(false);
     setStorageAvailable(true);
-    clearOtherSupportStorage(userId);
+    const session = activateSupportOwner(userId);
+    if (session.status === 'valid') sessionEpoch.current = session.epoch;
+    else {
+      sessionEpoch.current = '';
+      setStorageAvailable(false);
+      setNotice('storage');
+    }
 
     const draft = storage.readCreateDraft();
     if (draft.status === 'valid') {
       draftRevision.current = draft.value.revision;
+      persistedRevision.current = draft.value.revision;
       setCategory(draft.value.payload.category);
       setSubject(draft.value.payload.subject);
       setBody(draft.value.payload.body);
     } else {
       draftRevision.current = newSupportId();
+      persistedRevision.current = null;
       if (draft.status === 'unavailable') {
         setStorageAvailable(false);
         setNotice('storage');
@@ -146,7 +160,7 @@ export default function SupportCenter({
     }
     const storedPending = storage.readCreatePending();
     if (storedPending.status === 'valid') {
-      if (draft.status !== 'valid') {
+      if (draft.status !== 'valid' && !('unknown' in storedPending.value)) {
         draftRevision.current = storedPending.value.draftRevision;
         setCategory(storedPending.value.payload.category);
         setSubject(storedPending.value.payload.subject);
@@ -161,11 +175,39 @@ export default function SupportCenter({
       setStorageAvailable(false);
       setNotice('storage');
     }
+    const syncCrossTabState = (event: StorageEvent) => {
+      if (
+        event.key !== null &&
+        event.key !== supportSessionEpochKey &&
+        event.key !== storage.keys.createPending
+      )
+        return;
+      if (
+        !sessionEpoch.current ||
+        !isSupportSessionCurrent(userId, sessionEpoch.current)
+      ) {
+        setSubject('');
+        setBody('');
+        setPending('session');
+        setNotice('session');
+        return;
+      }
+      const latest = storage.readCreatePending();
+      if (latest.status === 'valid') {
+        setPending(latest.value);
+        setNotice('unknown');
+      } else if (latest.status === 'corrupt') {
+        setPending('corrupt');
+        setNotice('corrupt');
+      }
+    };
+    window.addEventListener('storage', syncCrossTabState);
     setHydrated(true);
     void load(true);
     return () => {
       if (lifecycle.current === generation) lifecycle.current += 1;
       requestVersion.current += 1;
+      window.removeEventListener('storage', syncCrossTabState);
     };
     // The initial load must run exactly once; later loads are explicit.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -174,7 +216,10 @@ export default function SupportCenter({
   useEffect(() => {
     if (!hydrated) return;
     if (!subject && !body) {
-      storage.removeCreateDraft();
+      if (persistedRevision.current) {
+        storage.removeCreateDraftIfRevision(persistedRevision.current);
+        persistedRevision.current = null;
+      }
       return;
     }
     const saved = storage.saveCreateDraft({
@@ -184,7 +229,7 @@ export default function SupportCenter({
     if (!saved) {
       setStorageAvailable(false);
       setNotice('storage');
-    }
+    } else persistedRevision.current = draftRevision.current;
   }, [body, category, hydrated, storage, subject]);
 
   function reviseDraft() {
@@ -193,7 +238,18 @@ export default function SupportCenter({
 
   async function submit(event: React.FormEvent) {
     event.preventDefault();
-    if (submittingRef.current || pending || !storageAvailable) {
+    if (
+      submittingRef.current ||
+      pending ||
+      !storageAvailable ||
+      !isSupportSessionCurrent(userId, sessionEpoch.current)
+    ) {
+      if (!isSupportSessionCurrent(userId, sessionEpoch.current)) {
+        setSubject('');
+        setBody('');
+        setPending('session');
+        setNotice('session');
+      }
       if (!storageAvailable) setNotice('storage');
       return;
     }
@@ -208,30 +264,59 @@ export default function SupportCenter({
       },
       baselineIds: tickets.map((ticket) => ticket.id),
     };
-    // A durable marker is required before the request can leave the browser.
-    if (!storage.saveCreatePending(snapshot)) {
-      setStorageAvailable(false);
-      setNotice('storage');
-      return;
-    }
-    const generation = lifecycle.current;
     submittingRef.current = true;
     setSubmitting(true);
     setNotice(null);
+    const generation = lifecycle.current;
+    const acquired = await storage.acquireCreatePending(snapshot);
+    if (generation !== lifecycle.current) {
+      if (acquired === 'acquired')
+        storage.removeCreatePendingIfOperation(snapshot.operationId);
+      return;
+    }
+    if (acquired !== 'acquired') {
+      submittingRef.current = false;
+      setSubmitting(false);
+      if (acquired === 'occupied') {
+        const latest = storage.readCreatePending();
+        setPending(latest.status === 'valid' ? latest.value : 'corrupt');
+        setNotice(latest.status === 'corrupt' ? 'corrupt' : 'unknown');
+      } else {
+        setStorageAvailable(false);
+        setNotice('storage');
+      }
+      return;
+    }
+    if (!isSupportSessionCurrent(userId, sessionEpoch.current)) {
+      storage.removeCreatePendingIfOperation(snapshot.operationId);
+      submittingRef.current = false;
+      setSubmitting(false);
+      setSubject('');
+      setBody('');
+      setPending('session');
+      setNotice('session');
+      return;
+    }
+    // A durable, exclusively acquired marker exists before the request leaves.
     setPending(snapshot);
 
     try {
       await apiFetch<TicketCreated>('tickets', {
         method: 'POST',
+        headers: { 'X-Support-Owner': userId },
         body: JSON.stringify({
           category: snapshot.payload.category,
           subject: snapshot.payload.subject,
           body: snapshot.payload.body,
         }),
       });
+      if (
+        generation !== lifecycle.current ||
+        !isSupportSessionCurrent(userId, sessionEpoch.current)
+      )
+        return;
       storage.removeCreatePendingIfOperation(snapshot.operationId);
       storage.removeCreateDraftIfRevision(snapshot.draftRevision);
-      if (generation !== lifecycle.current) return;
       setPending(null);
       if (draftRevision.current === snapshot.draftRevision) {
         draftRevision.current = newSupportId();
@@ -242,6 +327,24 @@ export default function SupportCenter({
       void load(false);
     } catch (error) {
       if (generation !== lifecycle.current) return;
+      if (
+        error instanceof ApiError &&
+        error.code === 'SUPPORT_SESSION_CHANGED'
+      ) {
+        storage.removeCreatePendingIfOperation(snapshot.operationId);
+        setSubject('');
+        setBody('');
+        setPending('session');
+        setNotice('session');
+        return;
+      }
+      if (!isSupportSessionCurrent(userId, sessionEpoch.current)) {
+        setSubject('');
+        setBody('');
+        setPending('session');
+        setNotice('session');
+        return;
+      }
       const definitelyRejected =
         error instanceof ApiError && error.status >= 400 && error.status < 500;
       if (definitelyRejected) {
@@ -460,6 +563,11 @@ export default function SupportCenter({
           {notice === 'corrupt' && (
             <p role="alert" className="text-sm font-semibold text-amber-800">
               {copy.pendingCorrupt}
+            </p>
+          )}
+          {notice === 'session' && (
+            <p role="alert" className="text-sm font-semibold text-amber-800">
+              {copy.sessionChanged}
             </p>
           )}
 

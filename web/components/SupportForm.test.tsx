@@ -113,7 +113,7 @@ describe('SupportForm', () => {
     ).toContain('Вопрос');
   });
 
-  it('не начинает POST, если pending-маркер нельзя сохранить', () => {
+  it('не начинает POST, если pending-маркер нельзя сохранить', async () => {
     const submit = jest.spyOn(api, 'submitTicket');
     renderForm();
     fireEvent.change(screen.getByLabelText(ru.support.nameField), {
@@ -132,6 +132,8 @@ describe('SupportForm', () => {
     fireEvent.click(screen.getByRole('button', { name: ru.support.submit }));
 
     expect(submit).not.toHaveBeenCalled();
-    expect(screen.getByText(ru.support.errorStorage)).toBeInTheDocument();
+    expect(
+      await screen.findByText(ru.support.errorStorage),
+    ).toBeInTheDocument();
   });
 });

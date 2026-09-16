@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { API_BASE_URL } from '@/lib/api/public';
 import { guardOrigin } from '@/lib/auth/proxy';
 import { readAccessToken } from '@/lib/auth/cookies';
+import { decodeToken } from '@/lib/auth/decode-token';
 
 // Белый список первых сегментов. Без него прокси — открытый
 // ретранслятор ко ВСЕМУ API от имени вошедшего человека, включая
@@ -73,6 +74,17 @@ async function handle(request: Request, ctx: Ctx): Promise<NextResponse> {
   const token = await readAccessToken();
   if (!token)
     return NextResponse.json({ code: 'UNAUTHORIZED' }, { status: 401 });
+
+  if (path[0] === 'tickets' && request.method === 'POST') {
+    const expectedOwner = request.headers.get('x-support-owner');
+    const currentUser = decodeToken(token);
+    if (!expectedOwner || !currentUser || expectedOwner !== currentUser.id) {
+      return NextResponse.json(
+        { code: 'SUPPORT_SESSION_CHANGED' },
+        { status: 409 },
+      );
+    }
+  }
 
   const search = new URL(request.url).search;
   const body = MUTATING.has(request.method) ? await request.text() : undefined;

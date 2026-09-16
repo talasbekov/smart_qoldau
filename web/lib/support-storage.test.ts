@@ -1,8 +1,10 @@
 import {
+  activateSupportOwner,
   clearAllSupportStorage,
   clearOtherSupportStorage,
   createSupportStorage,
   purgeLegacySupportStorage,
+  supportSessionEpochKey,
 } from './support-storage';
 
 const createPayload = {
@@ -161,7 +163,11 @@ describe('support storage', () => {
 
     expect(clearAllSupportStorage()).toBe(true);
     expect(localStorage.getItem('unrelated')).toBe('keep');
-    expect(localStorage.length).toBe(1);
+    expect(
+      Array.from({ length: localStorage.length }, (_, index) =>
+        localStorage.key(index),
+      ).filter((key) => key?.endsWith(':draft')),
+    ).toEqual([]);
   });
 
   it('clears another account and legacy data when an owner becomes active', () => {
@@ -182,5 +188,116 @@ describe('support storage', () => {
     expect(createSupportStorage('user-b').readCreateDraft().status).toBe(
       'valid',
     );
+  });
+
+  it('redacts pending payloads on logout while preserving unknown blocking', () => {
+    const storage = createSupportStorage('user-a');
+    storage.saveCreateDraft({ revision: 'a-1', payload: createPayload });
+    storage.saveCreatePending({
+      operationId: 'operation-a',
+      draftRevision: 'a-1',
+      payload: createPayload,
+      baselineIds: ['old'],
+    });
+
+    expect(clearAllSupportStorage()).toBe(true);
+    expect(storage.readCreateDraft()).toEqual({ status: 'missing' });
+    expect(storage.readCreatePending()).toEqual({
+      status: 'valid',
+      value: { operationId: 'operation-a', unknown: true },
+    });
+    expect(localStorage.getItem(storage.keys.createPending)).not.toContain(
+      createPayload.body,
+    );
+  });
+
+  it('migrates a legacy pending to a global conservative marker', () => {
+    localStorage.setItem(
+      'smartqoldau:support:create:pending',
+      JSON.stringify({ subject: 'private legacy text' }),
+    );
+
+    expect(purgeLegacySupportStorage()).toBe(true);
+    expect(createSupportStorage('user-a').readCreatePending().status).toBe(
+      'valid',
+    );
+    expect(
+      localStorage.getItem('smartqoldau:support:create:pending'),
+    ).toBeNull();
+  });
+
+  it('acquires each pending slot without overwriting an existing operation', async () => {
+    const storage = createSupportStorage('user-a');
+    expect(
+      await storage.acquireCreatePending({
+        operationId: 'create-1',
+        draftRevision: 'draft-1',
+        payload: createPayload,
+        baselineIds: [],
+      }),
+    ).toBe('acquired');
+    expect(
+      await storage.acquireCreatePending({
+        operationId: 'create-2',
+        draftRevision: 'draft-2',
+        payload: createPayload,
+        baselineIds: [],
+      }),
+    ).toBe('occupied');
+
+    expect(
+      await storage.acquireReplyPending('ticket-1', {
+        operationId: 'reply-1',
+        draftRevision: 'reply-draft',
+        payload: { body: 'reply' },
+        baselineIds: [],
+      }),
+    ).toBe('acquired');
+    expect(
+      await storage.acquireReplyPending('ticket-1', {
+        operationId: 'reply-2',
+        draftRevision: 'reply-draft-2',
+        payload: { body: 'reply 2' },
+        baselineIds: [],
+      }),
+    ).toBe('occupied');
+
+    const guest = createSupportStorage('guest');
+    expect(
+      await guest.acquireGuestPending({
+        operationId: 'guest-1',
+        draftRevision: 'guest-draft',
+        payload: {
+          name: 'Guest',
+          contact: 'g@example.com',
+          message: 'message',
+        },
+      }),
+    ).toBe('acquired');
+    expect(
+      await guest.acquireGuestPending({
+        operationId: 'guest-2',
+        draftRevision: 'guest-draft-2',
+        payload: {
+          name: 'Guest',
+          contact: 'g@example.com',
+          message: 'message',
+        },
+      }),
+    ).toBe('occupied');
+  });
+
+  it('changes the session epoch only when the active owner changes', () => {
+    const first = activateSupportOwner('user-a');
+    const same = activateSupportOwner('user-a');
+    const switched = activateSupportOwner('user-b');
+
+    expect(first.status).toBe('valid');
+    expect(same).toEqual(first);
+    expect(switched.status).toBe('valid');
+    if (first.status === 'valid' && switched.status === 'valid') {
+      expect(switched.epoch).not.toBe(first.epoch);
+    }
+    expect(localStorage.getItem(supportSessionEpochKey)).not.toBeNull();
   });
 });

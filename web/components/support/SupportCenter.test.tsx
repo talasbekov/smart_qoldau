@@ -155,6 +155,13 @@ describe('SupportCenter', () => {
     fireEvent.click(submit);
     fireEvent.click(submit);
 
+    await waitFor(() =>
+      expect(
+        fetchMock.mock.calls.filter(
+          ([path, init]) => path === 'tickets' && init?.method === 'POST',
+        ),
+      ).toHaveLength(1),
+    );
     const createCalls = fetchMock.mock.calls.filter(
       ([path, init]) => path === 'tickets' && init?.method === 'POST',
     );

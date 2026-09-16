@@ -27,6 +27,7 @@ export default function SupportForm() {
   const [hydrated, setHydrated] = useState(false);
   const [storageAvailable, setStorageAvailable] = useState(true);
   const draftRevision = useRef(newSupportId());
+  const persistedRevision = useRef<string | null>(null);
   const lifecycle = useRef(0);
 
   useEffect(() => {
@@ -36,11 +37,13 @@ export default function SupportForm() {
     const draft = storage.readGuestDraft();
     if (draft.status === 'valid') {
       draftRevision.current = draft.value.revision;
+      persistedRevision.current = draft.value.revision;
       setName(draft.value.payload.name);
       setContact(draft.value.payload.contact);
       setMessage(draft.value.payload.message);
     } else {
       draftRevision.current = newSupportId();
+      persistedRevision.current = null;
       if (draft.status === 'unavailable') {
         setStorageAvailable(false);
         setStatus('error');
@@ -49,7 +52,7 @@ export default function SupportForm() {
     }
     const pending = storage.readGuestPending();
     if (pending.status === 'valid') {
-      if (draft.status !== 'valid') {
+      if (draft.status !== 'valid' && !('unknown' in pending.value)) {
         draftRevision.current = pending.value.draftRevision;
         setName(pending.value.payload.name);
         setContact(pending.value.payload.contact);
@@ -65,16 +68,37 @@ export default function SupportForm() {
       setStatus('error');
       setErrorCode('STORAGE');
     }
+    const syncPending = (event: StorageEvent) => {
+      if (event.key !== null && event.key !== storage.keys.guestPending) return;
+      const latest = storage.readGuestPending();
+      if (latest.status === 'valid') {
+        if ('unknown' in latest.value) {
+          setName('');
+          setContact('');
+          setMessage('');
+        }
+        setStatus('unknown');
+        setErrorCode('UNKNOWN');
+      } else if (latest.status === 'corrupt') {
+        setStatus('unknown');
+        setErrorCode('UNKNOWN');
+      }
+    };
+    window.addEventListener('storage', syncPending);
     setHydrated(true);
     return () => {
       if (lifecycle.current === generation) lifecycle.current += 1;
+      window.removeEventListener('storage', syncPending);
     };
   }, []);
 
   useEffect(() => {
     if (!hydrated) return;
     if (!name && !contact && !message) {
-      storage.removeGuestDraft();
+      if (persistedRevision.current) {
+        storage.removeGuestDraftIfRevision(persistedRevision.current);
+        persistedRevision.current = null;
+      }
       return;
     }
     const saved = storage.saveGuestDraft({
@@ -85,7 +109,7 @@ export default function SupportForm() {
       setStorageAvailable(false);
       setStatus('error');
       setErrorCode('STORAGE');
-    }
+    } else persistedRevision.current = draftRevision.current;
   }, [contact, hydrated, message, name]);
 
   function reviseDraft() {
@@ -100,16 +124,28 @@ export default function SupportForm() {
       draftRevision: draftRevision.current,
       payload: { name, contact, message },
     };
-    if (!storage.saveGuestPending(snapshot)) {
-      setStorageAvailable(false);
-      setStatus('error');
-      setErrorCode('STORAGE');
-      return;
-    }
-    const generation = lifecycle.current;
     submitting.current = true;
     setStatus('submitting');
     setErrorCode(null);
+    const generation = lifecycle.current;
+    const acquired = await storage.acquireGuestPending(snapshot);
+    if (generation !== lifecycle.current) {
+      if (acquired === 'acquired')
+        storage.removeGuestPendingIfOperation(snapshot.operationId);
+      return;
+    }
+    if (acquired !== 'acquired') {
+      submitting.current = false;
+      if (acquired === 'occupied') {
+        setStatus('unknown');
+        setErrorCode('UNKNOWN');
+      } else {
+        setStorageAvailable(false);
+        setStatus('error');
+        setErrorCode('STORAGE');
+      }
+      return;
+    }
     const result = await submitTicket(buildTicketPayload(snapshot.payload));
     if (generation !== lifecycle.current) return;
     if (result.ok) {

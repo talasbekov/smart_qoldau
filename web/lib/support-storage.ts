@@ -3,6 +3,9 @@ import type { TicketCategory } from './support';
 const PREFIX = 'smartqoldau:support:';
 const VERSIONED_PREFIX = `${PREFIX}v1:`;
 const VERSION = 1 as const;
+const ACTIVE_OWNER_KEY = `${VERSIONED_PREFIX}session:owner`;
+const SESSION_EPOCH_KEY = `${VERSIONED_PREFIX}session:epoch`;
+const LEGACY_UNKNOWN_KEY = `${VERSIONED_PREFIX}unknown:pending`;
 
 const CATEGORIES = new Set<string>([
   'CONSULTATIONS',
@@ -59,13 +62,22 @@ export interface PendingGuest {
   payload: GuestPayload;
 }
 
+export interface PendingUnknown {
+  operationId: string;
+  unknown: true;
+}
+
+export type PendingState<T> = T | PendingUnknown;
+export type PendingAcquire = 'acquired' | 'occupied' | 'unavailable';
+
 type Kind =
   | 'create-draft'
   | 'create-pending'
   | 'reply-draft'
   | 'reply-pending'
   | 'guest-draft'
-  | 'guest-pending';
+  | 'guest-pending'
+  | 'unknown-pending';
 
 type RecordEnvelope = {
   version: typeof VERSION;
@@ -203,6 +215,56 @@ function validPending<T>(
   );
 }
 
+function isPendingUnknown(value: RecordEnvelope): boolean {
+  return value.unknown === true && typeof value.operationId === 'string';
+}
+
+function readGlobalUnknown(): StorageRead<PendingUnknown> {
+  return readRecord<PendingUnknown>(
+    LEGACY_UNKNOWN_KEY,
+    'unknown',
+    'unknown-pending',
+    (value): value is RecordEnvelope & PendingUnknown =>
+      isPendingUnknown(value),
+  );
+}
+
+function readPending<P>(
+  key: string,
+  ownerId: string,
+  kind: Kind,
+  validateFull: (value: RecordEnvelope) => boolean,
+): StorageRead<PendingState<P>> {
+  const globalUnknown = readGlobalUnknown();
+  if (globalUnknown.status !== 'missing') return globalUnknown;
+  return readRecord(
+    key,
+    ownerId,
+    kind,
+    (value): value is RecordEnvelope & PendingState<P> =>
+      isPendingUnknown(value) || validateFull(value),
+  );
+}
+
+async function acquire(
+  lockName: string,
+  read: () => StorageRead<unknown>,
+  save: () => boolean,
+): Promise<PendingAcquire> {
+  if (typeof navigator === 'undefined' || !navigator.locks?.request)
+    return 'unavailable';
+  return navigator.locks.request(
+    `smartqoldau-support:${lockName}`,
+    { mode: 'exclusive' },
+    () => {
+      const current = read();
+      if (current.status === 'unavailable') return 'unavailable';
+      if (current.status !== 'missing') return 'occupied';
+      return save() ? 'acquired' : 'unavailable';
+    },
+  );
+}
+
 export function newSupportId(): string {
   try {
     return crypto.randomUUID();
@@ -245,17 +307,21 @@ export function createSupportStorage(ownerId: string) {
         : false;
     },
     readCreatePending: () =>
-      readRecord<PendingCreate>(
+      readPending<PendingCreate>(
         keys.createPending,
         ownerId,
         'create-pending',
-        (value): value is RecordEnvelope & PendingCreate =>
-          validPending(value, isCreatePayload, true),
+        (value) => validPending(value, isCreatePayload, true),
       ),
     saveCreatePending: (pending: PendingCreate) =>
       writeRecord(keys.createPending, ownerId, 'create-pending', {
         ...pending,
       }),
+    acquireCreatePending(pending: PendingCreate) {
+      return acquire(keys.createPending, this.readCreatePending, () =>
+        this.saveCreatePending(pending),
+      );
+    },
     removeCreatePending: () => remove(keys.createPending),
     removeCreatePendingIfOperation(operationId: string) {
       const current = this.readCreatePending();
@@ -284,17 +350,23 @@ export function createSupportStorage(ownerId: string) {
         : false;
     },
     readReplyPending: (ticketId: string) =>
-      readRecord<PendingReply>(
+      readPending<PendingReply>(
         keys.replyPending(ticketId),
         ownerId,
         'reply-pending',
-        (value): value is RecordEnvelope & PendingReply =>
-          validPending(value, isReplyPayload, true),
+        (value) => validPending(value, isReplyPayload, true),
       ),
     saveReplyPending: (ticketId: string, pending: PendingReply) =>
       writeRecord(keys.replyPending(ticketId), ownerId, 'reply-pending', {
         ...pending,
       }),
+    acquireReplyPending(ticketId: string, pending: PendingReply) {
+      return acquire(
+        keys.replyPending(ticketId),
+        () => this.readReplyPending(ticketId),
+        () => this.saveReplyPending(ticketId, pending),
+      );
+    },
     removeReplyPending: (ticketId: string) =>
       remove(keys.replyPending(ticketId)),
     removeReplyPendingIfOperation(ticketId: string, operationId: string) {
@@ -322,15 +394,19 @@ export function createSupportStorage(ownerId: string) {
         : false;
     },
     readGuestPending: () =>
-      readRecord<PendingGuest>(
+      readPending<PendingGuest>(
         keys.guestPending,
         ownerId,
         'guest-pending',
-        (value): value is RecordEnvelope & PendingGuest =>
-          validPending(value, isGuestPayload, false),
+        (value) => validPending(value, isGuestPayload, false),
       ),
     saveGuestPending: (pending: PendingGuest) =>
       writeRecord(keys.guestPending, ownerId, 'guest-pending', { ...pending }),
+    acquireGuestPending(pending: PendingGuest) {
+      return acquire(keys.guestPending, this.readGuestPending, () =>
+        this.saveGuestPending(pending),
+      );
+    },
     removeGuestPending: () => remove(keys.guestPending),
     removeGuestPendingIfOperation(operationId: string) {
       const current = this.readGuestPending();
@@ -342,16 +418,97 @@ export function createSupportStorage(ownerId: string) {
   };
 }
 
-function removeMatching(predicate: (key: string) => boolean): boolean {
+function storageKeys(storage: Storage): string[] {
+  const keys: string[] = [];
+  for (let index = 0; index < storage.length; index += 1) {
+    const key = storage.key(index);
+    if (key) keys.push(key);
+  }
+  return keys;
+}
+
+function pendingIdentity(key: string): { ownerId: string; kind: Kind } | null {
+  const match = key.match(
+    /^smartqoldau:support:v1:([^:]+):(?:(create|guest):pending|reply:[^:]+:pending)$/,
+  );
+  if (!match) return null;
+  try {
+    return {
+      ownerId: decodeURIComponent(match[1]),
+      kind:
+        match[2] === 'create'
+          ? 'create-pending'
+          : match[2] === 'guest'
+            ? 'guest-pending'
+            : 'reply-pending',
+    };
+  } catch {
+    return null;
+  }
+}
+
+function redactPending(storage: Storage, key: string): boolean {
+  const identity = pendingIdentity(key);
+  if (!identity) return false;
+  let operationId = newSupportId();
+  try {
+    const parsed: unknown = JSON.parse(storage.getItem(key) ?? 'null');
+    if (isObject(parsed) && typeof parsed.operationId === 'string') {
+      operationId = parsed.operationId;
+    }
+  } catch {
+    // A malformed pending is still an unresolved operation.
+  }
+  storage.setItem(
+    key,
+    JSON.stringify({
+      version: VERSION,
+      ownerId: identity.ownerId,
+      kind: identity.kind,
+      operationId,
+      unknown: true,
+    }),
+  );
+  return true;
+}
+
+function preserveLegacyPending(storage: Storage, key: string): void {
+  storage.setItem(
+    LEGACY_UNKNOWN_KEY,
+    JSON.stringify({
+      version: VERSION,
+      ownerId: 'unknown',
+      kind: 'unknown-pending',
+      operationId: newSupportId(),
+      unknown: true,
+    }),
+  );
+  storage.removeItem(key);
+}
+
+function redactSupportStorage(keepOwnerId?: string): boolean {
   const storage = browserStorage();
   if (!storage) return false;
   try {
-    const keys: string[] = [];
-    for (let index = 0; index < storage.length; index += 1) {
-      const key = storage.key(index);
-      if (key && predicate(key)) keys.push(key);
+    const keepPrefix = keepOwnerId
+      ? `${VERSIONED_PREFIX}${encodeURIComponent(keepOwnerId)}:`
+      : null;
+    for (const key of storageKeys(storage)) {
+      if (!key.startsWith(PREFIX)) continue;
+      if (
+        key === ACTIVE_OWNER_KEY ||
+        key === SESSION_EPOCH_KEY ||
+        key === LEGACY_UNKNOWN_KEY
+      )
+        continue;
+      if (!key.startsWith(VERSIONED_PREFIX)) {
+        if (key.endsWith(':pending')) preserveLegacyPending(storage, key);
+        else storage.removeItem(key);
+        continue;
+      }
+      if (keepPrefix && key.startsWith(keepPrefix)) continue;
+      if (!redactPending(storage, key)) storage.removeItem(key);
     }
-    keys.forEach((key) => storage.removeItem(key));
     return true;
   } catch {
     return false;
@@ -359,18 +516,74 @@ function removeMatching(predicate: (key: string) => boolean): boolean {
 }
 
 export function purgeLegacySupportStorage(): boolean {
-  return removeMatching(
-    (key) => key.startsWith(PREFIX) && !key.startsWith(VERSIONED_PREFIX),
-  );
+  const storage = browserStorage();
+  if (!storage) return false;
+  try {
+    for (const key of storageKeys(storage)) {
+      if (!key.startsWith(PREFIX) || key.startsWith(VERSIONED_PREFIX)) continue;
+      if (key.endsWith(':pending')) preserveLegacyPending(storage, key);
+      else storage.removeItem(key);
+    }
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 export function clearOtherSupportStorage(ownerId: string): boolean {
-  const currentPrefix = `${VERSIONED_PREFIX}${encodeURIComponent(ownerId)}:`;
-  return removeMatching(
-    (key) => key.startsWith(PREFIX) && !key.startsWith(currentPrefix),
-  );
+  return redactSupportStorage(ownerId);
 }
 
 export function clearAllSupportStorage(): boolean {
-  return removeMatching((key) => key.startsWith(PREFIX));
+  const storage = browserStorage();
+  if (!storage || !redactSupportStorage()) return false;
+  try {
+    storage.removeItem(ACTIVE_OWNER_KEY);
+    storage.setItem(SESSION_EPOCH_KEY, newSupportId());
+    return true;
+  } catch {
+    return false;
+  }
 }
+
+export type SupportSession =
+  { status: 'valid'; epoch: string } | { status: 'unavailable' };
+
+export function activateSupportOwner(ownerId: string): SupportSession {
+  const storage = browserStorage();
+  if (!storage) return { status: 'unavailable' };
+  try {
+    const currentOwner = storage.getItem(ACTIVE_OWNER_KEY);
+    let epoch = storage.getItem(SESSION_EPOCH_KEY);
+    if (currentOwner !== ownerId) {
+      if (!redactSupportStorage(ownerId)) return { status: 'unavailable' };
+      epoch = newSupportId();
+      storage.setItem(ACTIVE_OWNER_KEY, ownerId);
+      storage.setItem(SESSION_EPOCH_KEY, epoch);
+    } else if (!epoch) {
+      epoch = newSupportId();
+      storage.setItem(SESSION_EPOCH_KEY, epoch);
+    }
+    return { status: 'valid', epoch };
+  } catch {
+    return { status: 'unavailable' };
+  }
+}
+
+export function isSupportSessionCurrent(
+  ownerId: string,
+  epoch: string,
+): boolean {
+  const storage = browserStorage();
+  if (!storage) return false;
+  try {
+    return (
+      storage.getItem(ACTIVE_OWNER_KEY) === ownerId &&
+      storage.getItem(SESSION_EPOCH_KEY) === epoch
+    );
+  } catch {
+    return false;
+  }
+}
+
+export const supportSessionEpochKey = SESSION_EPOCH_KEY;
