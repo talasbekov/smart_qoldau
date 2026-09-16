@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { getTranslations } from 'next-intl/server';
 import SupportForm from '@/components/SupportForm';
+import { Link } from '@/lib/i18n/navigation';
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations('support');
@@ -19,15 +20,14 @@ export default async function SupportPage() {
         {t('emergencyNotice')}
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-9">
-        <div className="rounded-2xl border border-border p-5">
-          <div className="text-faint text-xs font-bold mb-1">{t('emailLabel')}</div>
-          <div className="font-bold text-ink text-sm">support@smartqoldau.kz</div>
-        </div>
-        <div className="rounded-2xl border border-border p-5">
-          <div className="text-faint text-xs font-bold mb-1">{t('phoneLabel')}</div>
-          <div className="font-bold text-ink text-sm">+7 700 000 00 00</div>
-        </div>
+      <div className="mb-9 flex flex-col items-start gap-2 rounded-2xl border border-border p-5">
+        <Link
+          href="/support/requests"
+          className="inline-flex min-h-11 items-center font-bold text-primary underline underline-offset-4 focus:outline-none focus:ring-2 focus:ring-primary"
+        >
+          {t('myRequests')}
+        </Link>
+        <p className="text-sm text-body">{t('guestLimit')}</p>
       </div>
 
       <h2 className="font-extrabold text-ink mb-4">{t('formTitle')}</h2>

@@ -10,6 +10,7 @@ const SECTIONS = [
   { href: '/favorites', label: 'favorites' },
   { href: '/notifications', label: 'notifications' },
   { href: '/profile', label: 'profile' },
+  { href: '/support/requests', label: 'support' },
 ] as const;
 
 const ITEM =

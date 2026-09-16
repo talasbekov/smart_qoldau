@@ -35,6 +35,7 @@ describe('CabinetNav', () => {
       'Избранное',
       'Уведомления',
       'Профиль',
+      'Поддержка',
     ]) {
       expect(screen.getByRole('link', { name })).toBeInTheDocument();
     }
@@ -83,6 +84,7 @@ describe('CabinetNav', () => {
       'Таңдаулылар',
       'Хабарландырулар',
       'Профиль',
+      'Қолдау',
     ]) {
       expect(screen.getByRole('link', { name })).toBeInTheDocument();
     }

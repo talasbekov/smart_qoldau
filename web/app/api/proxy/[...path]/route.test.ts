@@ -7,7 +7,7 @@ jest.mock('next/headers', () => ({
 }));
 
 // eslint-disable-next-line import/first
-import { GET, POST } from './route';
+import { DELETE, GET, POST } from './route';
 
 const originalFetch = global.fetch;
 afterEach(() => {
@@ -119,6 +119,47 @@ describe('прокси кабинета', () => {
 
     expect(response.status).toBe(200);
     expect(fetchMock).toHaveBeenCalled();
+  });
+
+  it('пропускает только пользовательский tickets API с cookie-авторством', async () => {
+    cookie.value = 'access-value';
+    const fetchMock = upstream(201, { id: 'ticket-1' });
+
+    const response = await POST(req('tickets', 'POST'), ctx('tickets'));
+
+    expect(response.status).toBe(201);
+    expect(fetchMock).toHaveBeenCalledWith(
+      expect.stringContaining('/tickets'),
+      expect.objectContaining({
+        method: 'POST',
+        headers: expect.objectContaining({
+          Authorization: 'Bearer access-value',
+        }),
+      }),
+    );
+  });
+
+  it('пропускает ответ автора, но не открывает служебные или будущие ticket-действия', async () => {
+    cookie.value = 'access-value';
+    const fetchMock = upstream(204, null);
+
+    const reply = await POST(
+      req('tickets/00000000-0000-0000-0000-000000000001/reply', 'POST'),
+      ctx('tickets/00000000-0000-0000-0000-000000000001/reply'),
+    );
+    const resolve = await POST(
+      req('tickets/00000000-0000-0000-0000-000000000001/resolve', 'POST'),
+      ctx('tickets/00000000-0000-0000-0000-000000000001/resolve'),
+    );
+    const remove = await DELETE(
+      req('tickets/00000000-0000-0000-0000-000000000001', 'DELETE'),
+      ctx('tickets/00000000-0000-0000-0000-000000000001'),
+    );
+
+    expect(reply.status).toBe(204);
+    expect(resolve.status).toBe(404);
+    expect(remove.status).toBe(404);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
   it('пропускает создание брони, но только через origin guard и пользовательскую сессию', async () => {

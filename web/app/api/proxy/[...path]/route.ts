@@ -20,6 +20,7 @@ const ALLOWED = new Set([
   'topics',
   'experts',
   'bookings',
+  'tickets',
 ]);
 
 const MUTATING = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
@@ -36,6 +37,18 @@ function resolvePath(segments: string[]): string | null {
   return segments.join('/');
 }
 
+function isAllowedTicketRoute(segments: string[], method: string): boolean {
+  if (segments[0] !== 'tickets') return true;
+  if (method === 'GET') return segments.length === 1 || segments.length === 2;
+  if (method === 'POST') {
+    return (
+      segments.length === 1 ||
+      (segments.length === 3 && segments[2] === 'reply')
+    );
+  }
+  return false;
+}
+
 async function handle(request: Request, ctx: Ctx): Promise<NextResponse> {
   if (MUTATING.has(request.method)) {
     const blocked = guardOrigin(request);
@@ -50,7 +63,11 @@ async function handle(request: Request, ctx: Ctx): Promise<NextResponse> {
   // POST с PAN и DELETE карты лишь потому, что у сегмента общий controller.
   const readOnlyPaymentMethods =
     resolved?.split('/')[0] === 'payment-methods' && request.method !== 'GET';
-  if (!resolved || readOnlyPaymentMethods)
+  if (
+    !resolved ||
+    readOnlyPaymentMethods ||
+    !isAllowedTicketRoute(path, request.method)
+  )
     return NextResponse.json({ code: 'NOT_FOUND' }, { status: 404 });
 
   const token = await readAccessToken();

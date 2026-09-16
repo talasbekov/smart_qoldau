@@ -21,6 +21,7 @@ export default function ExpertNav({ locale = 'ru' }: { locale?: string }) {
     { href: '/expert/schedule', label: copy.navSchedule },
     { href: '/expert/earnings', label: copy.navEarnings },
     { href: '/expert/reviews', label: copy.navRating },
+    { href: '/support/requests', label: copy.navSupport },
   ] as const;
   const pathname = usePathname();
   const withoutLocale = pathname.replace(/^\/[^/]+/, '') || '/';

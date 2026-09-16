@@ -36,13 +36,17 @@ describe('fetchPublicExperts', () => {
   });
 
   it('возвращает пустой список при сбое сети, не бросает', async () => {
-    global.fetch = jest.fn().mockRejectedValue(new Error('network')) as unknown as typeof fetch;
+    global.fetch = jest
+      .fn()
+      .mockRejectedValue(new Error('network')) as unknown as typeof fetch;
 
     await expect(fetchPublicExperts(4)).resolves.toEqual([]);
   });
 
   it('возвращает пустой список при не-200 ответе', async () => {
-    global.fetch = jest.fn().mockResolvedValue({ ok: false, status: 500 }) as unknown as typeof fetch;
+    global.fetch = jest
+      .fn()
+      .mockResolvedValue({ ok: false, status: 500 }) as unknown as typeof fetch;
 
     await expect(fetchPublicExperts(4)).resolves.toEqual([]);
   });
@@ -62,22 +66,49 @@ describe('submitTicket', () => {
   };
 
   it('возвращает ok при 201', async () => {
-    global.fetch = jest.fn().mockResolvedValue({ ok: true, status: 201 }) as unknown as typeof fetch;
+    global.fetch = jest
+      .fn()
+      .mockResolvedValue({ ok: true, status: 201 }) as unknown as typeof fetch;
     await expect(submitTicket(payload)).resolves.toEqual({ ok: true });
   });
 
   it('возвращает RATE_LIMITED при 429', async () => {
-    global.fetch = jest.fn().mockResolvedValue({ ok: false, status: 429 }) as unknown as typeof fetch;
-    await expect(submitTicket(payload)).resolves.toEqual({ ok: false, error: 'RATE_LIMITED' });
+    global.fetch = jest
+      .fn()
+      .mockResolvedValue({ ok: false, status: 429 }) as unknown as typeof fetch;
+    await expect(submitTicket(payload)).resolves.toEqual({
+      ok: false,
+      error: 'RATE_LIMITED',
+    });
   });
 
   it('возвращает VALIDATION при 400', async () => {
-    global.fetch = jest.fn().mockResolvedValue({ ok: false, status: 400 }) as unknown as typeof fetch;
-    await expect(submitTicket(payload)).resolves.toEqual({ ok: false, error: 'VALIDATION' });
+    global.fetch = jest
+      .fn()
+      .mockResolvedValue({ ok: false, status: 400 }) as unknown as typeof fetch;
+    await expect(submitTicket(payload)).resolves.toEqual({
+      ok: false,
+      error: 'VALIDATION',
+    });
   });
 
-  it('возвращает NETWORK при сбое сети', async () => {
-    global.fetch = jest.fn().mockRejectedValue(new Error('network')) as unknown as typeof fetch;
-    await expect(submitTicket(payload)).resolves.toEqual({ ok: false, error: 'NETWORK' });
+  it('не называет потерянный ответ неуспехом', async () => {
+    global.fetch = jest
+      .fn()
+      .mockRejectedValue(new Error('network')) as unknown as typeof fetch;
+    await expect(submitTicket(payload)).resolves.toEqual({
+      ok: false,
+      error: 'UNKNOWN',
+    });
+  });
+
+  it('считает 5xx неизвестным исходом: запись могла сохраниться до ошибки', async () => {
+    global.fetch = jest
+      .fn()
+      .mockResolvedValue({ ok: false, status: 500 }) as unknown as typeof fetch;
+    await expect(submitTicket(payload)).resolves.toEqual({
+      ok: false,
+      error: 'UNKNOWN',
+    });
   });
 });
