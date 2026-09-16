@@ -157,6 +157,37 @@ describe('ReviewPanel', () => {
     await screen.findByRole('heading', { name: 'Спасибо за отзыв' });
   });
 
+  it('блокирует оба текста во время запроса и сохраняет исходный черновик после ошибки', async () => {
+    let finish!: (response: Response) => void;
+    const pending = new Promise<Response>((resolve) => {
+      finish = resolve;
+    });
+    fetchMock(() => pending);
+    render(<ReviewPanel consultation={CONSULTATION} locale="ru" />);
+
+    fireEvent.click(screen.getByRole('button', { name: /4 из 5.*Хорошо/ }));
+    const publicText = screen.getByLabelText('Публичный отзыв');
+    const privateText = screen.getByLabelText('Приватно команде качества');
+    fireEvent.change(publicText, { target: { value: 'Публичный черновик' } });
+    fireEvent.change(privateText, { target: { value: 'Приватный черновик' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Отправить отзыв' }));
+
+    expect(publicText).toBeDisabled();
+    expect(privateText).toBeDisabled();
+
+    finish(
+      await response(400, {
+        error: { code: 'REVIEW_TAG_NOT_ALLOWED', message: 'Неверный тег' },
+      }),
+    );
+
+    await screen.findByText(/не удалось сохранить отзыв/i);
+    expect(publicText).toBeEnabled();
+    expect(privateText).toBeEnabled();
+    expect(publicText).toHaveValue('Публичный черновик');
+    expect(privateText).toHaveValue('Приватный черновик');
+  });
+
   it('показывает already-submitted из consultation и из REVIEW_EXISTS', async () => {
     const first = render(
       <ReviewPanel

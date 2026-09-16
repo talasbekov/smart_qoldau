@@ -354,6 +354,7 @@ export default function ReviewPanel({
           <textarea
             id="review-public"
             value={publicText}
+            disabled={phase === 'submitting'}
             maxLength={MAX_TEXT_LENGTH}
             rows={4}
             aria-describedby="review-public-hint review-public-count"
@@ -381,6 +382,7 @@ export default function ReviewPanel({
           <textarea
             id="review-private"
             value={privateText}
+            disabled={phase === 'submitting'}
             maxLength={MAX_TEXT_LENGTH}
             rows={4}
             aria-describedby="review-private-hint review-private-count"
