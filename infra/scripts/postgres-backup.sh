@@ -98,6 +98,7 @@ done
 command -v docker >/dev/null 2>&1 || die 'docker is required'
 command -v sha256sum >/dev/null 2>&1 || die 'sha256sum is required'
 command -v mktemp >/dev/null 2>&1 || die 'mktemp is required'
+command -v timeout >/dev/null 2>&1 || die 'timeout is required'
 
 [[ -f "$password_file" && ! -L "$password_file" ]] || die 'password file must be a regular file, not a symlink'
 [[ -r "$password_file" ]] || die 'password file is not readable'
@@ -123,6 +124,63 @@ container_running="$(docker container inspect --format '{{.State.Running}}' "$co
 temporary_directory="$(mktemp -d "$output_parent/.${output_name}.tmp.XXXXXX")" \
   || die 'cannot create temporary backup directory'
 published=0
+active_child_pid=''
+readonly RUN_ID="$(date -u +%Y%m%dT%H%M%SZ)-$$-$RANDOM"
+readonly BACKUP_APPLICATION_NAME="smartqoldau_backup_${RUN_ID//[^a-zA-Z0-9_]/_}"
+
+wait_for_child_exit() {
+  local process_id="$1"
+  local deadline=$((SECONDS + 5))
+  while kill -0 "$process_id" 2>/dev/null; do
+    (( SECONDS < deadline )) || return 1
+    sleep 0.1
+  done
+  return 0
+}
+
+cancel_backup_backend() {
+  local cancel_sql
+  cancel_sql="SELECT pg_cancel_backend(pid) FROM pg_stat_activity WHERE application_name = current_setting('application_name') AND pid <> pg_backend_pid() AND datname = current_database() AND usename = current_user"
+
+  timeout --signal=KILL 3 docker exec --interactive "$container" sh -ceu '
+    escape_pgpass() {
+      printf "%s" "$1" | sed -e "s/\\\\/\\\\\\\\/g" -e "s/:/\\\\:/g"
+    }
+
+    umask 077
+    pgpass_file="$(mktemp /tmp/smartqoldau-cancel-pgpass.XXXXXX)"
+    cleanup_pgpass() {
+      rm -f -- "$pgpass_file"
+    }
+    trap cleanup_pgpass EXIT
+    trap "exit 129" HUP
+    trap "exit 130" INT
+    trap "exit 143" TERM
+
+    IFS= read -r password
+    [ -n "$password" ] || exit 65
+    printf "%s:%s:%s:%s:%s\n" \
+      "$(escape_pgpass "$1")" \
+      "$(escape_pgpass "$2")" \
+      "$(escape_pgpass "$3")" \
+      "$(escape_pgpass "$4")" \
+      "$(escape_pgpass "$password")" \
+      >"$pgpass_file"
+
+    PGAPPNAME="$5" PGPASSFILE="$pgpass_file" psql \
+      --no-psqlrc \
+      --quiet \
+      --tuples-only \
+      --no-align \
+      --no-password \
+      --host="$1" \
+      --port="$2" \
+      --dbname="$3" \
+      --username="$4" \
+      --command="$6"
+  ' sh "$host" "$port" "$database" "$database_user" "$BACKUP_APPLICATION_NAME" "$cancel_sql" \
+    <"$password_file" >/dev/null
+}
 
 cleanup() {
   local status=$?
@@ -131,15 +189,34 @@ cleanup() {
   fi
   exit "$status"
 }
+
+handle_signal() {
+  local signal_status="$1"
+  trap '' HUP INT TERM
+
+  if [[ -n "$active_child_pid" ]] && kill -0 "$active_child_pid" 2>/dev/null; then
+    if ! cancel_backup_backend; then
+      printf 'postgres-backup: could not confirm cancellation of the owned pg_dump backend\n' >&2
+    fi
+    if ! wait_for_child_exit "$active_child_pid"; then
+      kill -TERM "$active_child_pid" 2>/dev/null || true
+      sleep 0.2
+      kill -KILL "$active_child_pid" 2>/dev/null || true
+    fi
+    wait "$active_child_pid" 2>/dev/null || true
+    active_child_pid=''
+  fi
+  exit "$signal_status"
+}
 trap cleanup EXIT
-trap 'exit 129' HUP
-trap 'exit 130' INT
-trap 'exit 143' TERM
+trap 'handle_signal 129' HUP
+trap 'handle_signal 130' INT
+trap 'handle_signal 143' TERM
 
 chmod 700 "$temporary_directory"
 dump_file="$temporary_directory/database.dump"
 
-if ! docker exec --interactive "$container" sh -ceu '
+docker exec --interactive "$container" sh -ceu '
   escape_pgpass() {
     printf "%s" "$1" | sed -e "s/\\\\/\\\\\\\\/g" -e "s/:/\\\\:/g"
   }
@@ -164,7 +241,7 @@ if ! docker exec --interactive "$container" sh -ceu '
     "$(escape_pgpass "$password")" \
     >"$pgpass_file"
 
-  PGPASSFILE="$pgpass_file" pg_dump \
+  PGAPPNAME="$5" PGPASSFILE="$pgpass_file" pg_dump \
     --format=custom \
     --serializable-deferrable \
     --no-password \
@@ -172,8 +249,15 @@ if ! docker exec --interactive "$container" sh -ceu '
     --port="$2" \
     --dbname="$3" \
     --username="$4"
-' sh "$host" "$port" "$database" "$database_user" \
-  <"$password_file" >"$dump_file"; then
+' sh "$host" "$port" "$database" "$database_user" "$BACKUP_APPLICATION_NAME" \
+  <"$password_file" >"$dump_file" &
+active_child_pid=$!
+set +e
+wait "$active_child_pid"
+dump_status=$?
+set -e
+active_child_pid=''
+if (( dump_status != 0 )); then
   die 'pg_dump failed; no final backup was published'
 fi
 

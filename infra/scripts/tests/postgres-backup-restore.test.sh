@@ -17,6 +17,12 @@ readonly PASSWORD_FILE="$WORK_DIR/postgres-password"
 readonly BACKUP_DIR="$WORK_DIR/verified-backup"
 
 SOURCE_CONTAINER_ID=''
+LOCK_EXEC_PID=''
+BACKUP_PROCESS_PID=''
+VALIDATION_PROCESS_PID=''
+VALIDATION_CONTAINER_ID=''
+CONCURRENT_PID_ONE=''
+CONCURRENT_PID_TWO=''
 
 fail() {
   printf 'FAIL: %s\n' "$*" >&2
@@ -24,7 +30,20 @@ fail() {
 }
 
 cleanup() {
-  local container_owner volume_owner
+  local container_owner validation_sha volume_owner
+
+  for process_id in "$BACKUP_PROCESS_PID" "$VALIDATION_PROCESS_PID" "$LOCK_EXEC_PID" "$CONCURRENT_PID_ONE" "$CONCURRENT_PID_TWO"; do
+    if [[ -n "$process_id" ]] && kill -0 "$process_id" 2>/dev/null; then
+      kill -TERM "$process_id" 2>/dev/null || true
+    fi
+  done
+
+  if [[ -n "$VALIDATION_CONTAINER_ID" ]] && docker container inspect "$VALIDATION_CONTAINER_ID" >/dev/null 2>&1; then
+    validation_sha="$(docker container inspect --format "{{ index .Config.Labels \"com.smartqoldau.restore-validation.backup-sha\" }}" "$VALIDATION_CONTAINER_ID")"
+    if [[ -n "${BACKUP_SHA:-}" && "$validation_sha" == "$BACKUP_SHA" ]]; then
+      docker container rm --force "$VALIDATION_CONTAINER_ID" >/dev/null
+    fi
+  fi
 
   if [[ -n "$SOURCE_CONTAINER_ID" ]] && docker container inspect "$SOURCE_CONTAINER_ID" >/dev/null 2>&1; then
     container_owner="$(docker container inspect --format "{{ index .Config.Labels \"com.smartqoldau.backup-test.run\" }}" "$SOURCE_CONTAINER_ID")"
@@ -40,6 +59,12 @@ cleanup() {
     fi
   fi
 
+  for process_id in "$BACKUP_PROCESS_PID" "$VALIDATION_PROCESS_PID" "$LOCK_EXEC_PID" "$CONCURRENT_PID_ONE" "$CONCURRENT_PID_TWO"; do
+    if [[ -n "$process_id" ]]; then
+      wait "$process_id" 2>/dev/null || true
+    fi
+  done
+
   rm -rf -- "$WORK_DIR"
 }
 trap cleanup EXIT
@@ -47,12 +72,46 @@ trap cleanup EXIT
 wait_for_postgres() {
   local attempt
   for attempt in $(seq 1 60); do
-    if docker exec "$SOURCE_CONTAINER_ID" pg_isready --quiet --username fixture_user --dbname fixture_db; then
+    if docker exec "$SOURCE_CONTAINER_ID" \
+      psql --no-psqlrc --quiet --tuples-only --no-align \
+        --host 127.0.0.1 --port 5432 \
+        --username fixture_user --dbname fixture_db --command 'SELECT 1' \
+      >/dev/null 2>&1; then
       return 0
     fi
     sleep 1
   done
   fail 'fixture PostgreSQL did not become ready'
+}
+
+wait_for_query_count() {
+  local container_id="$1"
+  local query="$2"
+  local attempt count
+  for attempt in $(seq 1 100); do
+    count="$(
+      docker exec "$container_id" \
+        psql --no-psqlrc --quiet --tuples-only --no-align \
+          --username fixture_user --dbname fixture_db --command "$query" \
+        2>/dev/null || true
+    )"
+    if [[ "$count" =~ ^[1-9][0-9]*$ ]]; then
+      return 0
+    fi
+    sleep 0.1
+  done
+  return 1
+}
+
+wait_for_process_exit() {
+  local process_id="$1"
+  local timeout_seconds="$2"
+  local deadline=$((SECONDS + timeout_seconds))
+  while kill -0 "$process_id" 2>/dev/null; do
+    (( SECONDS < deadline )) || return 1
+    sleep 0.1
+  done
+  return 0
 }
 
 assert_no_validation_container() {
@@ -109,7 +168,7 @@ INSERT INTO backup_child (id, parent_id, label) VALUES
   (12, 2, 'third');
 SQL
 
-"$BACKUP_SCRIPT" \
+if ! "$BACKUP_SCRIPT" \
   --container "$SOURCE_CONTAINER_ID" \
   --host 127.0.0.1 \
   --port 5432 \
@@ -117,7 +176,10 @@ SQL
   --user fixture_user \
   --password-file "$PASSWORD_FILE" \
   --output "$BACKUP_DIR" \
-  >"$WORK_DIR/backup.log" 2>&1
+  >"$WORK_DIR/backup.log" 2>&1; then
+  sed -n '1,120p' "$WORK_DIR/backup.log" >&2
+  fail 'initial backup failed'
+fi
 
 [[ -f "$BACKUP_DIR/database.dump" ]] || fail 'backup dump was not created'
 [[ -f "$BACKUP_DIR/SHA256SUMS" ]] || fail 'backup checksum was not created'
@@ -126,6 +188,7 @@ SQL
 if grep --fixed-strings --quiet "$PASSWORD" "$WORK_DIR/backup.log"; then
   fail 'backup log exposed the database password'
 fi
+printf 'PASS: custom backup artifact\n'
 
 readonly ORIGINAL_SHA="$(sha256sum "$BACKUP_DIR/database.dump")"
 if "$BACKUP_SCRIPT" \
@@ -157,6 +220,40 @@ fi
 if find "$WORK_DIR" -maxdepth 1 -name '.failed-backup.tmp.*' -print -quit | grep -q .; then
   fail 'failed dump left a temporary backup directory'
 fi
+printf 'PASS: no-clobber and failed-dump cleanup\n'
+
+readonly CONCURRENT_BACKUP="$WORK_DIR/concurrent-backup"
+"$BACKUP_SCRIPT" \
+  --container "$SOURCE_CONTAINER_ID" --host 127.0.0.1 --port 5432 \
+  --database fixture_db --user fixture_user --password-file "$PASSWORD_FILE" \
+  --output "$CONCURRENT_BACKUP" >"$WORK_DIR/concurrent-one.log" 2>&1 &
+CONCURRENT_PID_ONE=$!
+"$BACKUP_SCRIPT" \
+  --container "$SOURCE_CONTAINER_ID" --host 127.0.0.1 --port 5432 \
+  --database fixture_db --user fixture_user --password-file "$PASSWORD_FILE" \
+  --output "$CONCURRENT_BACKUP" >"$WORK_DIR/concurrent-two.log" 2>&1 &
+CONCURRENT_PID_TWO=$!
+set +e
+wait "$CONCURRENT_PID_ONE"
+concurrent_status_one=$?
+wait "$CONCURRENT_PID_TWO"
+concurrent_status_two=$?
+set -e
+CONCURRENT_PID_ONE=''
+CONCURRENT_PID_TWO=''
+if ! { [[ "$concurrent_status_one" == '0' && "$concurrent_status_two" != '0' ]] \
+  || [[ "$concurrent_status_one" != '0' && "$concurrent_status_two" == '0' ]]; }; then
+  fail "concurrent publication statuses were $concurrent_status_one/$concurrent_status_two, expected one success"
+fi
+(cd -- "$CONCURRENT_BACKUP" && sha256sum --check --strict SHA256SUMS) >/dev/null \
+  || fail 'concurrent publication did not leave one valid backup'
+if find "$WORK_DIR" -maxdepth 1 -name '.concurrent-backup.tmp.*' -print -quit | grep -q .; then
+  fail 'concurrent publication left a temporary directory'
+fi
+if grep --fixed-strings --quiet "$PASSWORD" "$WORK_DIR/concurrent-one.log" "$WORK_DIR/concurrent-two.log"; then
+  fail 'concurrent backup logs exposed the database password'
+fi
+printf 'PASS: atomic concurrent no-clobber publication\n'
 
 readonly CHECK_SQL="$WORK_DIR/check.sql"
 cat >"$CHECK_SQL" <<'SQL'
@@ -178,12 +275,136 @@ END
 $$;
 SQL
 
-"$VALIDATE_SCRIPT" \
+if ! "$VALIDATE_SCRIPT" \
   --backup "$BACKUP_DIR" \
   --check-sql "$CHECK_SQL" \
-  >"$WORK_DIR/restore-success.log" 2>&1
+  >"$WORK_DIR/restore-success.log" 2>&1; then
+  sed -n '1,160p' "$WORK_DIR/restore-success.log" >&2
+  fail 'initial isolated restore validation failed'
+fi
 readonly BACKUP_SHA="$(cut -d ' ' -f 1 "$BACKUP_DIR/SHA256SUMS")"
 assert_no_validation_container "$BACKUP_SHA"
+printf 'PASS: isolated restore and invariant check\n'
+
+readonly LOCK_APPLICATION_NAME="smartqoldau_test_lock_${RUN_ID//-/_}"
+docker exec --env "PGAPPNAME=$LOCK_APPLICATION_NAME" "$SOURCE_CONTAINER_ID" \
+  psql --no-psqlrc --set ON_ERROR_STOP=1 --username fixture_user --dbname fixture_db \
+    --command 'BEGIN; LOCK TABLE backup_parent IN ACCESS EXCLUSIVE MODE; SELECT pg_sleep(30);' \
+  >"$WORK_DIR/lock.log" 2>&1 &
+LOCK_EXEC_PID=$!
+wait_for_query_count "$SOURCE_CONTAINER_ID" \
+  "SELECT count(*) FROM pg_stat_activity WHERE application_name = '$LOCK_APPLICATION_NAME' AND wait_event = 'PgSleep'" \
+  || fail 'test lock query did not become active'
+
+readonly INTERRUPTED_BACKUP="$WORK_DIR/interrupted-backup"
+"$BACKUP_SCRIPT" \
+  --container "$SOURCE_CONTAINER_ID" \
+  --host 127.0.0.1 \
+  --port 5432 \
+  --database fixture_db \
+  --user fixture_user \
+  --password-file "$PASSWORD_FILE" \
+  --output "$INTERRUPTED_BACKUP" \
+  >"$WORK_DIR/interrupted-backup.log" 2>&1 &
+BACKUP_PROCESS_PID=$!
+wait_for_query_count "$SOURCE_CONTAINER_ID" \
+  "SELECT count(*) FROM pg_stat_activity WHERE application_name = 'pg_dump' OR application_name LIKE 'smartqoldau_backup_%'" \
+  || fail 'blocked pg_dump did not become visible'
+host_backup_argv="$(tr '\0' ' ' <"/proc/$BACKUP_PROCESS_PID/cmdline")"
+if grep --fixed-strings --quiet "$PASSWORD" <<<"$host_backup_argv"; then
+  fail 'host backup argv exposed the database password'
+fi
+container_process_argv="$(docker exec "$SOURCE_CONTAINER_ID" sh -ceu '
+  for command_line in /proc/[0-9]*/cmdline; do
+    tr "\0" " " <"$command_line" 2>/dev/null || true
+    printf "\n"
+  done
+')"
+if grep --fixed-strings --quiet "$PASSWORD" <<<"$container_process_argv"; then
+  fail 'container process argv exposed the database password'
+fi
+
+kill -TERM "$BACKUP_PROCESS_PID"
+wait_for_process_exit "$BACKUP_PROCESS_PID" 10 \
+  || fail 'backup did not exit within 10 seconds after TERM'
+set +e
+wait "$BACKUP_PROCESS_PID"
+backup_signal_status=$?
+set -e
+BACKUP_PROCESS_PID=''
+[[ "$backup_signal_status" == '143' ]] || fail "backup TERM status was $backup_signal_status, expected 143"
+[[ "$(docker container inspect --format '{{.State.Running}}' "$SOURCE_CONTAINER_ID")" == 'true' ]] \
+  || fail 'backup cancellation stopped the source container'
+wait_for_query_count "$SOURCE_CONTAINER_ID" \
+  "SELECT count(*) FROM pg_stat_activity WHERE application_name = '$LOCK_APPLICATION_NAME' AND wait_event = 'PgSleep'" \
+  || fail 'backup cancellation stopped an unrelated source query'
+[[ ! -e "$INTERRUPTED_BACKUP" ]] || fail 'interrupted backup published a final artifact'
+if find "$WORK_DIR" -maxdepth 1 -name '.interrupted-backup.tmp.*' -print -quit | grep -q .; then
+  fail 'interrupted backup left a temporary directory'
+fi
+if grep --fixed-strings --quiet "$PASSWORD" "$WORK_DIR/interrupted-backup.log"; then
+  fail 'interrupted backup log exposed the database password'
+fi
+pgpass_leftovers="$(
+  docker exec "$SOURCE_CONTAINER_ID" \
+    find /tmp -maxdepth 1 \( -name 'smartqoldau-pgpass.*' -o -name 'smartqoldau-cancel-pgpass.*' \) -print
+)"
+[[ -z "$pgpass_leftovers" ]] || fail "interrupted backup left password files: $pgpass_leftovers"
+owned_dump_count="$(
+  docker exec "$SOURCE_CONTAINER_ID" \
+    psql --no-psqlrc --quiet --tuples-only --no-align \
+      --username fixture_user --dbname fixture_db \
+      --command "SELECT count(*) FROM pg_stat_activity WHERE application_name LIKE 'smartqoldau_backup_%'"
+)"
+[[ "$owned_dump_count" == '0' ]] || fail 'interrupted backup left its PostgreSQL backend running'
+docker exec "$SOURCE_CONTAINER_ID" \
+  psql --no-psqlrc --quiet --tuples-only --no-align \
+    --username fixture_user --dbname fixture_db \
+    --command "SELECT pg_cancel_backend(pid) FROM pg_stat_activity WHERE application_name = '$LOCK_APPLICATION_NAME'" \
+  >/dev/null
+wait "$LOCK_EXEC_PID" 2>/dev/null || true
+LOCK_EXEC_PID=''
+printf 'PASS: bounded backup TERM preserves unrelated source query\n'
+
+readonly LONG_CHECK_SQL="$WORK_DIR/long-check.sql"
+printf 'SELECT pg_sleep(30);\n' >"$LONG_CHECK_SQL"
+"$VALIDATE_SCRIPT" --backup "$BACKUP_DIR" --check-sql "$LONG_CHECK_SQL" \
+  >"$WORK_DIR/interrupted-validation.log" 2>&1 &
+VALIDATION_PROCESS_PID=$!
+for _attempt in $(seq 1 100); do
+  VALIDATION_CONTAINER_ID="$(
+    docker ps --quiet --filter "label=com.smartqoldau.restore-validation.backup-sha=$BACKUP_SHA" | head -n 1
+  )"
+  [[ -n "$VALIDATION_CONTAINER_ID" ]] && break
+  sleep 0.1
+done
+[[ -n "$VALIDATION_CONTAINER_ID" ]] || fail 'validation container did not start'
+for _attempt in $(seq 1 100); do
+  long_query_count="$(
+    docker exec "$VALIDATION_CONTAINER_ID" \
+      psql --no-psqlrc --quiet --tuples-only --no-align \
+        --username restore_validator --dbname restore_validation \
+        --command "SELECT count(*) FROM pg_stat_activity WHERE query = 'SELECT pg_sleep(30);' AND state = 'active'" \
+      2>/dev/null || true
+  )"
+  [[ "$long_query_count" =~ ^[1-9][0-9]*$ ]] && break
+  sleep 0.1
+done
+[[ "$long_query_count" =~ ^[1-9][0-9]*$ ]] || fail 'long validation SQL did not become active'
+
+kill -TERM "$VALIDATION_PROCESS_PID"
+wait_for_process_exit "$VALIDATION_PROCESS_PID" 10 \
+  || fail 'restore validation did not exit within 10 seconds after TERM'
+set +e
+wait "$VALIDATION_PROCESS_PID"
+validation_signal_status=$?
+set -e
+VALIDATION_PROCESS_PID=''
+[[ "$validation_signal_status" == '143' ]] \
+  || fail "restore validation TERM status was $validation_signal_status, expected 143"
+assert_no_validation_container "$BACKUP_SHA"
+VALIDATION_CONTAINER_ID=''
+printf 'PASS: bounded restore-validation TERM cleanup\n'
 
 readonly FAILING_CHECK_SQL="$WORK_DIR/failing-check.sql"
 cat >"$FAILING_CHECK_SQL" <<'SQL'

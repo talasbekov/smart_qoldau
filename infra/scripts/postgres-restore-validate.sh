@@ -64,6 +64,8 @@ done
 
 command -v docker >/dev/null 2>&1 || die 'docker is required'
 command -v sha256sum >/dev/null 2>&1 || die 'sha256sum is required'
+command -v mktemp >/dev/null 2>&1 || die 'mktemp is required'
+command -v timeout >/dev/null 2>&1 || die 'timeout is required'
 
 mapfile -t checksum_lines <"$backup_directory/SHA256SUMS"
 (( ${#checksum_lines[@]} == 1 )) || die 'SHA256SUMS must contain exactly one entry'
@@ -80,29 +82,143 @@ readonly POSTGRES_IMAGE="${POSTGRES_IMAGE:-postgres:16-alpine}"
 readonly RUN_ID="$(date -u +%Y%m%dT%H%M%SZ)-$$-$RANDOM"
 readonly CONTAINER_NAME="smartqoldau-restore-validation-$RUN_ID"
 container_id=''
+active_child_pid=''
+readiness_output="$(mktemp "${TMPDIR:-/tmp}/smartqoldau-restore-readiness.XXXXXX")" \
+  || die 'cannot create readiness output file'
+
+docker_control() {
+  timeout --signal=KILL 3 docker "$@"
+}
+
+container_ownership_state() {
+  local details listed actual_id owner candidate
+
+  if details="$(
+    docker_control container inspect \
+      --format '{{.Id}}|{{ index .Config.Labels "com.smartqoldau.restore-validation.run" }}' \
+      "$container_id" 2>/dev/null
+  )"; then
+    actual_id="${details%%|*}"
+    owner="${details#*|}"
+    [[ "$actual_id" == "$container_id" && "$owner" == "$RUN_ID" ]] || return 5
+    return 0
+  fi
+
+  if ! listed="$(
+    docker_control container ls --all --no-trunc --quiet --filter "id=$container_id" 2>/dev/null
+  )"; then
+    return 4
+  fi
+  while IFS= read -r candidate; do
+    [[ "$candidate" == "$container_id" ]] && return 4
+  done <<<"$listed"
+  return 3
+}
+
+remove_validation_container() {
+  local state
+  [[ -n "$container_id" ]] || return 0
+
+  if container_ownership_state; then
+    state=0
+  else
+    state=$?
+  fi
+
+  if (( state == 0 )); then
+    if ! docker_control container rm --force "$container_id" >/dev/null; then
+      printf 'postgres-restore-validate: failed to remove validation container %s\n' "$container_id" >&2
+      return 1
+    fi
+    container_id=''
+    return 0
+  fi
+
+  case "$state" in
+    3)
+      container_id=''
+      return 0
+      ;;
+    5)
+      printf 'postgres-restore-validate: refusing to remove a container without exact ID and run-label ownership\n' >&2
+      ;;
+    *)
+      printf 'postgres-restore-validate: could not confirm validation container cleanup because Docker inspection failed\n' >&2
+      ;;
+  esac
+  return 1
+}
+
+wait_for_child_exit() {
+  local process_id="$1"
+  local deadline=$((SECONDS + 5))
+  while kill -0 "$process_id" 2>/dev/null; do
+    (( SECONDS < deadline )) || return 1
+    sleep 0.1
+  done
+  return 0
+}
+
+run_managed() {
+  local status
+  "$@" &
+  active_child_pid=$!
+  set +e
+  wait "$active_child_pid"
+  status=$?
+  set -e
+  active_child_pid=''
+  return "$status"
+}
+
+run_managed_with_input() {
+  local input_file="$1"
+  local status
+  shift
+  "$@" <"$input_file" &
+  active_child_pid=$!
+  set +e
+  wait "$active_child_pid"
+  status=$?
+  set -e
+  active_child_pid=''
+  return "$status"
+}
 
 cleanup() {
   local status=$?
-  local owner=''
   trap - EXIT HUP INT TERM
 
-  if [[ -n "$container_id" ]] && docker container inspect "$container_id" >/dev/null 2>&1; then
-    owner="$(docker container inspect --format "{{ index .Config.Labels \"com.smartqoldau.restore-validation.run\" }}" "$container_id" 2>/dev/null || true)"
-    if [[ "$owner" != "$RUN_ID" ]]; then
-      printf 'postgres-restore-validate: refusing to remove a container not owned by this run\n' >&2
-      status=1
-    elif ! docker container rm --force "$container_id" >/dev/null; then
-      printf 'postgres-restore-validate: failed to remove validation container %s\n' "$container_id" >&2
-      status=1
-    fi
+  if ! remove_validation_container; then
+    status=1
   fi
+  rm -f -- "$readiness_output"
 
   exit "$status"
 }
+
+handle_signal() {
+  local signal_status="$1"
+  trap '' HUP INT TERM
+
+  if ! remove_validation_container; then
+    signal_status=1
+  fi
+  if [[ -n "$active_child_pid" ]] && kill -0 "$active_child_pid" 2>/dev/null; then
+    if ! wait_for_child_exit "$active_child_pid"; then
+      kill -TERM "$active_child_pid" 2>/dev/null || true
+      sleep 0.2
+      kill -KILL "$active_child_pid" 2>/dev/null || true
+    fi
+    wait "$active_child_pid" 2>/dev/null || true
+    active_child_pid=''
+  fi
+  exit "$signal_status"
+}
 trap cleanup EXIT
-trap 'exit 129' HUP
-trap 'exit 130' INT
-trap 'exit 143' TERM
+trap 'handle_signal 129' HUP
+trap 'handle_signal 130' INT
+trap 'handle_signal 143' TERM
 
 container_id="$(
   docker run --detach \
@@ -117,26 +233,27 @@ container_id="$(
     "$POSTGRES_IMAGE"
 )" || die 'could not start isolated PostgreSQL validation container'
 
-ready=0
+server_version_num=''
 for _attempt in $(seq 1 60); do
-  if docker exec "$container_id" pg_isready --quiet --username restore_validator --dbname restore_validation; then
-    ready=1
-    break
+  : >"$readiness_output"
+  if run_managed docker exec "$container_id" \
+    psql --no-psqlrc --tuples-only --no-align \
+      --host 127.0.0.1 --port 5432 \
+      --username restore_validator --dbname restore_validation \
+      --command 'SHOW server_version_num' \
+    >"$readiness_output" 2>/dev/null; then
+    server_version_num="$(tr -d '[:space:]' <"$readiness_output")"
+    if [[ "$server_version_num" =~ ^16[0-9]{4}$ ]]; then
+      break
+    fi
   fi
   sleep 1
 done
-(( ready == 1 )) || die 'isolated PostgreSQL did not become ready'
-
-server_version_num="$(
-  docker exec "$container_id" \
-    psql --no-psqlrc --tuples-only --no-align \
-      --username restore_validator --dbname restore_validation \
-      --command 'SHOW server_version_num'
-)" || die 'could not determine validation PostgreSQL version'
 [[ "$server_version_num" =~ ^16[0-9]{4}$ ]] \
-  || die "validation requires PostgreSQL 16, got server_version_num=$server_version_num"
+  || die 'isolated PostgreSQL 16 database did not become query-ready'
 
-docker exec --interactive "$container_id" \
+run_managed_with_input "$backup_directory/database.dump" \
+  docker exec --interactive "$container_id" \
   pg_restore \
     --exit-on-error \
     --single-transaction \
@@ -144,16 +261,17 @@ docker exec --interactive "$container_id" \
     --no-privileges \
     --username restore_validator \
     --dbname restore_validation \
-  <"$backup_directory/database.dump" \
   || die 'pg_restore failed in the isolated validation database'
 
-docker exec --interactive "$container_id" \
+run_managed_with_input "$check_sql" \
+  docker exec --interactive "$container_id" \
   psql \
     --no-psqlrc \
     --set ON_ERROR_STOP=1 \
     --username restore_validator \
     --dbname restore_validation \
-  <"$check_sql" \
   || die 'restored data invariant check failed'
 
+remove_validation_container \
+  || die 'restore completed but validation container cleanup could not be confirmed'
 printf 'PostgreSQL restore validation succeeded for %s\n' "$backup_directory"
