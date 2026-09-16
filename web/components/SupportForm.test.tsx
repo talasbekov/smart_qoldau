@@ -17,7 +17,11 @@ function renderForm() {
 }
 
 describe('SupportForm', () => {
-  beforeEach(() => localStorage.clear());
+  beforeEach(() => {
+    localStorage.clear();
+    jest.clearAllMocks();
+  });
+  afterEach(() => jest.restoreAllMocks());
 
   it('has visible labels instead of relying on placeholders', () => {
     renderForm();
@@ -101,11 +105,33 @@ describe('SupportForm', () => {
     expect(
       screen.getByRole('button', { name: ru.support.submit }),
     ).toBeDisabled();
-    expect(localStorage.getItem('smartqoldau:support:guest:pending')).toBe(
-      'true',
-    );
-    expect(localStorage.getItem('smartqoldau:support:guest:draft')).toContain(
-      'Вопрос',
-    );
+    expect(
+      localStorage.getItem('smartqoldau:support:v1:guest:guest:pending'),
+    ).toContain('Вопрос');
+    expect(
+      localStorage.getItem('smartqoldau:support:v1:guest:guest:draft'),
+    ).toContain('Вопрос');
+  });
+
+  it('не начинает POST, если pending-маркер нельзя сохранить', () => {
+    const submit = jest.spyOn(api, 'submitTicket');
+    renderForm();
+    fireEvent.change(screen.getByLabelText(ru.support.nameField), {
+      target: { value: 'Иван' },
+    });
+    fireEvent.change(screen.getByLabelText(ru.support.contactField), {
+      target: { value: 'ivan@example.com' },
+    });
+    fireEvent.change(screen.getByLabelText(ru.support.messageField), {
+      target: { value: 'Вопрос' },
+    });
+    jest.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+      throw new DOMException('full', 'QuotaExceededError');
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: ru.support.submit }));
+
+    expect(submit).not.toHaveBeenCalled();
+    expect(screen.getByText(ru.support.errorStorage)).toBeInTheDocument();
   });
 });

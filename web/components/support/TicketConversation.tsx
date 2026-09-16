@@ -1,13 +1,15 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ApiError, apiFetch } from '@/lib/api/client';
 import { Link } from '@/lib/i18n/navigation';
+import type { TicketDetail } from '@/lib/support';
 import {
-  reconcileReply,
-  type PendingTicketReply,
-  type TicketDetail,
-} from '@/lib/support';
+  createSupportStorage,
+  clearOtherSupportStorage,
+  newSupportId,
+  type PendingReply,
+} from '@/lib/support-storage';
 import ru from '@/messages/ru.json';
 import kz from '@/messages/kz.json';
 
@@ -15,93 +17,122 @@ const BUTTON =
   'min-h-12 rounded-2xl bg-primary px-5 py-3 text-sm font-bold text-white focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60';
 
 type Phase = 'loading' | 'ready' | 'missing' | 'error';
-type Notice = 'sent' | 'unknown' | 'error' | null;
-
-function stored<T>(key: string): T | null {
-  try {
-    const raw = localStorage.getItem(key);
-    return raw ? (JSON.parse(raw) as T) : null;
-  } catch {
-    return null;
-  }
-}
+type Notice = 'sent' | 'unknown' | 'error' | 'storage' | 'corrupt' | null;
 
 export default function TicketConversation({
   ticketId,
   locale,
+  userId,
 }: {
   ticketId: string;
   locale: string;
+  userId: string;
 }) {
   const copy = locale === 'kz' ? kz.supportPortal : ru.supportPortal;
-  const draftKey = `smartqoldau:support:reply:${ticketId}:draft`;
-  const pendingKey = `smartqoldau:support:reply:${ticketId}:pending`;
+  const storage = useMemo(() => createSupportStorage(userId), [userId]);
   const [phase, setPhase] = useState<Phase>('loading');
   const [ticket, setTicket] = useState<TicketDetail | null>(null);
   const [body, setBody] = useState('');
-  const [pending, setPending] = useState<PendingTicketReply | null>(null);
+  const [pending, setPending] = useState<PendingReply | 'corrupt' | null>(null);
   const [notice, setNotice] = useState<Notice>(null);
   const [sending, setSending] = useState(false);
   const [hydrated, setHydrated] = useState(false);
-  const mounted = useRef(true);
+  const [storageAvailable, setStorageAvailable] = useState(true);
+  const lifecycle = useRef(0);
   const requestVersion = useRef(0);
   const sendingRef = useRef(false);
-
-  const confirmReply = useCallback(() => {
-    localStorage.removeItem(draftKey);
-    localStorage.removeItem(pendingKey);
-    setBody('');
-    setPending(null);
-    setNotice('sent');
-  }, [draftKey, pendingKey]);
-
-  const applyDetail = useCallback(
-    (next: TicketDetail, pendingReply: PendingTicketReply | null) => {
-      setTicket(next);
-      if (pendingReply && reconcileReply(next.messages, pendingReply)) {
-        confirmReply();
-      }
-    },
-    [confirmReply],
-  );
+  const draftRevision = useRef(newSupportId());
 
   const load = useCallback(async () => {
     const version = ++requestVersion.current;
+    const generation = lifecycle.current;
     setPhase('loading');
     try {
-      const pendingReply = stored<PendingTicketReply>(pendingKey);
       const result = await apiFetch<TicketDetail>(`tickets/${ticketId}`);
       if (!result) throw new Error('empty ticket');
-      if (!mounted.current || version !== requestVersion.current) return;
-      setPending(pendingReply);
-      applyDetail(result, pendingReply);
-      if (pendingReply && !reconcileReply(result.messages, pendingReply)) {
-        setNotice('unknown');
-      }
+      if (
+        generation !== lifecycle.current ||
+        version !== requestVersion.current
+      )
+        return;
+      setTicket(result);
       setPhase('ready');
     } catch (error) {
-      if (!mounted.current || version !== requestVersion.current) return;
+      if (
+        generation !== lifecycle.current ||
+        version !== requestVersion.current
+      )
+        return;
       setPhase(
         error instanceof ApiError && error.status === 404 ? 'missing' : 'error',
       );
     }
-  }, [applyDetail, pendingKey, ticketId]);
+  }, [ticketId]);
 
   useEffect(() => {
-    mounted.current = true;
-    setBody(localStorage.getItem(draftKey) ?? '');
+    const generation = lifecycle.current + 1;
+    lifecycle.current = generation;
+    requestVersion.current += 1;
+    sendingRef.current = false;
+    setPhase('loading');
+    setTicket(null);
+    setBody('');
+    setPending(null);
+    setNotice(null);
+    setSending(false);
+    setHydrated(false);
+    setStorageAvailable(true);
+    clearOtherSupportStorage(userId);
+
+    const draft = storage.readReplyDraft(ticketId);
+    if (draft.status === 'valid') {
+      draftRevision.current = draft.value.revision;
+      setBody(draft.value.payload.body);
+    } else {
+      draftRevision.current = newSupportId();
+      if (draft.status === 'unavailable') {
+        setStorageAvailable(false);
+        setNotice('storage');
+      }
+    }
+    const storedPending = storage.readReplyPending(ticketId);
+    if (storedPending.status === 'valid') {
+      if (draft.status !== 'valid') {
+        draftRevision.current = storedPending.value.draftRevision;
+        setBody(storedPending.value.payload.body);
+      }
+      setPending(storedPending.value);
+      setNotice('unknown');
+    } else if (storedPending.status === 'corrupt') {
+      setPending('corrupt');
+      setNotice('corrupt');
+    } else if (storedPending.status === 'unavailable') {
+      setStorageAvailable(false);
+      setNotice('storage');
+    }
     setHydrated(true);
     void load();
     return () => {
-      mounted.current = false;
+      if (lifecycle.current === generation) lifecycle.current += 1;
       requestVersion.current += 1;
     };
-  }, [draftKey, load]);
+  }, [load, storage, ticketId, userId]);
 
   useEffect(() => {
-    if (!hydrated || !body) return;
-    localStorage.setItem(draftKey, body);
-  }, [body, draftKey, hydrated]);
+    if (!hydrated) return;
+    if (!body) {
+      storage.removeReplyDraft(ticketId);
+      return;
+    }
+    const saved = storage.saveReplyDraft(ticketId, {
+      revision: draftRevision.current,
+      payload: { body },
+    });
+    if (!saved) {
+      setStorageAvailable(false);
+      setNotice('storage');
+    }
+  }, [body, hydrated, storage, ticketId]);
 
   async function submit(event: React.FormEvent) {
     event.preventDefault();
@@ -109,50 +140,67 @@ export default function TicketConversation({
       !ticket ||
       ticket.status === 'RESOLVED' ||
       pending ||
+      !storageAvailable ||
       sendingRef.current
     )
       return;
 
-    const snapshot: PendingTicketReply = {
-      body: body.trim(),
+    const snapshot: PendingReply = {
+      operationId: newSupportId(),
+      draftRevision: draftRevision.current,
+      payload: { body: body.trim() },
       baselineIds: ticket.messages.map((message) => message.id),
     };
+    if (!storage.saveReplyPending(ticketId, snapshot)) {
+      setStorageAvailable(false);
+      setNotice('storage');
+      return;
+    }
+    const generation = lifecycle.current;
     sendingRef.current = true;
     setSending(true);
     setNotice(null);
     setPending(snapshot);
-    localStorage.setItem(pendingKey, JSON.stringify(snapshot));
 
     try {
       await apiFetch(`tickets/${ticketId}/reply`, {
         method: 'POST',
-        body: JSON.stringify({ body: snapshot.body }),
+        body: JSON.stringify({ body: snapshot.payload.body }),
       });
-      if (!mounted.current) return;
-      confirmReply();
+      storage.removeReplyPendingIfOperation(ticketId, snapshot.operationId);
+      storage.removeReplyDraftIfRevision(ticketId, snapshot.draftRevision);
+      if (generation !== lifecycle.current) return;
+      setPending(null);
+      if (draftRevision.current === snapshot.draftRevision) {
+        draftRevision.current = newSupportId();
+        setBody('');
+      }
+      setNotice('sent');
       void load();
     } catch (error) {
-      if (!mounted.current) return;
+      if (generation !== lifecycle.current) return;
       const definitelyRejected =
         error instanceof ApiError && error.status >= 400 && error.status < 500;
       if (definitelyRejected) {
-        localStorage.removeItem(pendingKey);
+        storage.removeReplyPendingIfOperation(ticketId, snapshot.operationId);
         setPending(null);
         setNotice('error');
         if (error.status === 409) void load();
       } else {
         try {
           const current = await apiFetch<TicketDetail>(`tickets/${ticketId}`);
-          if (!mounted.current || !current) return;
-          applyDetail(current, snapshot);
-          if (!reconcileReply(current.messages, snapshot)) setNotice('unknown');
+          if (generation !== lifecycle.current || !current) return;
+          setTicket(current);
+          setNotice('unknown');
         } catch {
-          if (mounted.current) setNotice('unknown');
+          if (generation === lifecycle.current) setNotice('unknown');
         }
       }
     } finally {
-      sendingRef.current = false;
-      if (mounted.current) setSending(false);
+      if (generation === lifecycle.current) {
+        sendingRef.current = false;
+        setSending(false);
+      }
     }
   }
 
@@ -255,7 +303,10 @@ export default function TicketConversation({
             maxLength={4000}
             required
             disabled={Boolean(pending)}
-            onChange={(event) => setBody(event.target.value)}
+            onChange={(event) => {
+              draftRevision.current = newSupportId();
+              setBody(event.target.value);
+            }}
             className="min-h-32 w-full resize-y rounded-2xl border border-border px-4 py-3 text-base text-ink focus:outline-none focus:ring-2 focus:ring-primary"
           />
           {notice === 'sent' && (
@@ -273,9 +324,19 @@ export default function TicketConversation({
               {copy.replyError}
             </p>
           )}
+          {notice === 'storage' && (
+            <p role="alert" className="text-sm font-semibold text-red-700">
+              {copy.storageUnavailable}
+            </p>
+          )}
+          {notice === 'corrupt' && (
+            <p role="alert" className="text-sm font-semibold text-amber-800">
+              {copy.pendingCorrupt}
+            </p>
+          )}
           <button
             type="submit"
-            disabled={sending || Boolean(pending)}
+            disabled={sending || Boolean(pending) || !storageAvailable}
             className={`${BUTTON} self-start`}
           >
             {sending ? copy.replying : copy.reply}

@@ -58,7 +58,9 @@ describe('TicketConversation', () => {
 
   it('renders the thread and makes a resolved ticket read-only', async () => {
     fetchMock.mockResolvedValue(detail('RESOLVED'));
-    render(<TicketConversation ticketId="ticket-1" locale="ru" />);
+    render(
+      <TicketConversation ticketId="ticket-1" locale="ru" userId="user-1" />,
+    );
 
     expect(screen.getByText('Загружаем обращение…')).toBeInTheDocument();
     expect(await screen.findByText('Камера не работает')).toBeInTheDocument();
@@ -78,7 +80,9 @@ describe('TicketConversation', () => {
       if (init?.method === 'POST') return pendingReply;
       return detail();
     });
-    render(<TicketConversation ticketId="ticket-1" locale="ru" />);
+    render(
+      <TicketConversation ticketId="ticket-1" locale="ru" userId="user-1" />,
+    );
     await screen.findByLabelText('Ваш ответ');
 
     fireEvent.change(screen.getByLabelText('Ваш ответ'), {
@@ -107,10 +111,12 @@ describe('TicketConversation', () => {
       return { ...detail(), id: 'ticket-2', subject: 'Второе обращение' };
     });
     const { rerender } = render(
-      <TicketConversation ticketId="ticket-1" locale="ru" />,
+      <TicketConversation ticketId="ticket-1" locale="ru" userId="user-1" />,
     );
 
-    rerender(<TicketConversation ticketId="ticket-2" locale="ru" />);
+    rerender(
+      <TicketConversation ticketId="ticket-2" locale="ru" userId="user-1" />,
+    );
     expect(await screen.findByText('Второе обращение')).toBeInTheDocument();
     await act(async () => {
       resolveFirst(detail());
@@ -125,7 +131,9 @@ describe('TicketConversation', () => {
       if (init?.method === 'POST') throw new TypeError('response lost');
       return detail();
     });
-    render(<TicketConversation ticketId="ticket-1" locale="ru" />);
+    render(
+      <TicketConversation ticketId="ticket-1" locale="ru" userId="user-1" />,
+    );
     await screen.findByLabelText('Ваш ответ');
 
     fireEvent.change(screen.getByLabelText('Ваш ответ'), {

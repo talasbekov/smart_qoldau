@@ -60,7 +60,7 @@ describe('SupportCenter', () => {
 
   it('shows an honest loading state, then localized own tickets', async () => {
     clientApi([ticket]);
-    render(<SupportCenter locale="ru" />);
+    render(<SupportCenter locale="ru" userId="user-1" />);
 
     expect(screen.getByText('Загружаем обращения…')).toBeInTheDocument();
     expect(await screen.findByText('Камера не работает')).toBeInTheDocument();
@@ -72,7 +72,7 @@ describe('SupportCenter', () => {
 
   it('offers only client categories after the server-backed role probe', async () => {
     clientApi();
-    render(<SupportCenter locale="ru" />);
+    render(<SupportCenter locale="ru" userId="user-1" />);
 
     const category = await screen.findByLabelText('Категория');
     expect(category).toHaveTextContent('Данные аккаунта');
@@ -99,7 +99,7 @@ describe('SupportCenter', () => {
       }
       return null;
     });
-    render(<SupportCenter locale="ru" />);
+    render(<SupportCenter locale="ru" userId="user-1" />);
     await screen.findByText('Камера не работает');
     const refresh = screen.getByRole('button', { name: 'Обновить список' });
 
@@ -123,7 +123,7 @@ describe('SupportCenter', () => {
       if (path === 'experts/me') throw new ApiError(503, 'UNAVAILABLE');
       return [];
     });
-    render(<SupportCenter locale="ru" />);
+    render(<SupportCenter locale="ru" userId="user-1" />);
 
     expect(await screen.findByRole('alert')).toHaveTextContent(
       'Не удалось загрузить обращения',
@@ -142,7 +142,7 @@ describe('SupportCenter', () => {
       if (path.startsWith('tickets')) return [];
       return null;
     });
-    render(<SupportCenter locale="ru" />);
+    render(<SupportCenter locale="ru" userId="user-1" />);
     await screen.findByLabelText('Категория');
 
     fireEvent.change(screen.getByLabelText('Тема'), {
@@ -186,7 +186,7 @@ describe('SupportCenter', () => {
       if (path.startsWith('tickets')) return [];
       return null;
     });
-    render(<SupportCenter locale="ru" />);
+    render(<SupportCenter locale="ru" userId="user-1" />);
     await screen.findByLabelText('Категория');
 
     fireEvent.change(screen.getByLabelText('Тема'), {
@@ -205,7 +205,7 @@ describe('SupportCenter', () => {
       screen.getByRole('button', { name: 'Создать обращение' }),
     ).toBeDisabled();
     expect(
-      localStorage.getItem('smartqoldau:support:create:pending'),
+      localStorage.getItem('smartqoldau:support:v1:user-1:create:pending'),
     ).toContain('Не работает камера');
   });
 });

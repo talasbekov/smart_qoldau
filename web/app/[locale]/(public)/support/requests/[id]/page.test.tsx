@@ -6,9 +6,17 @@ jest.mock('@/lib/auth/require-user', () => ({
 }));
 jest.mock('@/components/support/TicketConversation', () => ({
   __esModule: true,
-  default: ({ ticketId, locale }: { ticketId: string; locale: string }) => (
+  default: ({
+    ticketId,
+    locale,
+    userId,
+  }: {
+    ticketId: string;
+    locale: string;
+    userId: string;
+  }) => (
     <div>
-      {ticketId}-{locale}
+      {ticketId}-{locale}-{userId}
     </div>
   ),
 }));
@@ -26,5 +34,5 @@ it('requires a session and passes the route id to the conversation', async () =>
   );
 
   expect(requireUser).toHaveBeenCalledWith('ru');
-  expect(screen.getByText('ticket-1-ru')).toBeInTheDocument();
+  expect(screen.getByText('ticket-1-ru-user-1')).toBeInTheDocument();
 });

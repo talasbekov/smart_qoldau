@@ -6,7 +6,11 @@ jest.mock('@/lib/auth/require-user', () => ({
 }));
 jest.mock('@/components/support/SupportCenter', () => ({
   __esModule: true,
-  default: ({ locale }: { locale: string }) => <div>center-{locale}</div>,
+  default: ({ locale, userId }: { locale: string; userId: string }) => (
+    <div>
+      center-{locale}-{userId}
+    </div>
+  ),
 }));
 
 // eslint-disable-next-line import/first
@@ -20,5 +24,5 @@ it('requires a session before rendering the localized support center', async () 
   );
 
   expect(requireUser).toHaveBeenCalledWith('kz');
-  expect(screen.getByText('center-kz')).toBeInTheDocument();
+  expect(screen.getByText('center-kz-user-1')).toBeInTheDocument();
 });

@@ -1,22 +1,23 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ApiError, apiFetch } from '@/lib/api/client';
 import { Link } from '@/lib/i18n/navigation';
 import {
   categoriesForAuthor,
-  reconcileCreatedTicket,
-  type PendingTicketCreate,
   type SupportAuthor,
   type TicketCategory,
   type TicketCreated,
   type TicketSummary,
 } from '@/lib/support';
+import {
+  createSupportStorage,
+  clearOtherSupportStorage,
+  newSupportId,
+  type PendingCreate,
+} from '@/lib/support-storage';
 import ru from '@/messages/ru.json';
 import kz from '@/messages/kz.json';
-
-const DRAFT_KEY = 'smartqoldau:support:create:draft';
-const PENDING_KEY = 'smartqoldau:support:create:pending';
 
 const FIELD =
   'min-h-12 w-full rounded-2xl border border-border bg-white px-4 py-3 text-base text-ink focus:outline-none focus:ring-2 focus:ring-primary';
@@ -24,65 +25,44 @@ const BUTTON =
   'min-h-12 rounded-2xl bg-primary px-5 py-3 text-sm font-bold text-white focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60';
 
 type Phase = 'loading' | 'ready' | 'error';
-type Notice = 'created' | 'unknown' | 'error' | null;
+type Notice = 'created' | 'unknown' | 'error' | 'storage' | 'corrupt' | null;
 type ExpertProbe = { id?: string };
 
-function readStored<T>(key: string): T | null {
-  try {
-    const raw = localStorage.getItem(key);
-    return raw ? (JSON.parse(raw) as T) : null;
-  } catch {
-    return null;
-  }
-}
-
-function saveStored(key: string, value: unknown): void {
-  localStorage.setItem(key, JSON.stringify(value));
-}
-
-export default function SupportCenter({ locale }: { locale: string }) {
+export default function SupportCenter({
+  locale,
+  userId,
+}: {
+  locale: string;
+  userId: string;
+}) {
   const copy = locale === 'kz' ? kz.supportPortal : ru.supportPortal;
+  const storage = useMemo(() => createSupportStorage(userId), [userId]);
   const [phase, setPhase] = useState<Phase>('loading');
   const [author, setAuthor] = useState<SupportAuthor | null>(null);
   const [tickets, setTickets] = useState<TicketSummary[]>([]);
   const [category, setCategory] = useState<TicketCategory>('CONSULTATIONS');
   const [subject, setSubject] = useState('');
   const [body, setBody] = useState('');
-  const [pending, setPending] = useState<PendingTicketCreate | null>(null);
+  const [pending, setPending] = useState<PendingCreate | 'corrupt' | null>(
+    null,
+  );
   const [notice, setNotice] = useState<Notice>(null);
   const [submitting, setSubmitting] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [hydrated, setHydrated] = useState(false);
+  const [storageAvailable, setStorageAvailable] = useState(true);
   const requestVersion = useRef(0);
-  const mounted = useRef(true);
+  const lifecycle = useRef(0);
   const submittingRef = useRef(false);
-
-  const clearConfirmedCreate = useCallback(() => {
-    localStorage.removeItem(DRAFT_KEY);
-    localStorage.removeItem(PENDING_KEY);
-    setPending(null);
-    setSubject('');
-    setBody('');
-    setNotice('created');
-  }, []);
-
-  const applyTickets = useCallback(
-    (items: TicketSummary[], pendingCreate: PendingTicketCreate | null) => {
-      setTickets(items);
-      if (pendingCreate && reconcileCreatedTicket(items, pendingCreate)) {
-        clearConfirmedCreate();
-      }
-    },
-    [clearConfirmedCreate],
-  );
+  const draftRevision = useRef(newSupportId());
 
   const load = useCallback(
     async (withRoleProbe: boolean) => {
       const version = ++requestVersion.current;
+      const generation = lifecycle.current;
       if (withRoleProbe) setPhase('loading');
       else setRefreshing(true);
       try {
-        const pendingCreate = readStored<PendingTicketCreate>(PENDING_KEY);
         const listPromise = apiFetch<TicketSummary[]>('tickets?take=100');
         let resolvedAuthor = author;
 
@@ -104,7 +84,11 @@ export default function SupportCenter({ locale }: { locale: string }) {
         }
 
         const items = (await listPromise) ?? [];
-        if (!mounted.current || version !== requestVersion.current) return;
+        if (
+          generation !== lifecycle.current ||
+          version !== requestVersion.current
+        )
+          return;
         setAuthor(resolvedAuthor);
         if (resolvedAuthor) {
           const allowed = categoriesForAuthor(resolvedAuthor);
@@ -112,96 +96,174 @@ export default function SupportCenter({ locale }: { locale: string }) {
             allowed.includes(current) ? current : allowed[0],
           );
         }
-        setPending(pendingCreate);
-        applyTickets(items, pendingCreate);
-        if (pendingCreate && !reconcileCreatedTicket(items, pendingCreate)) {
-          setNotice('unknown');
-        }
+        setTickets(items);
         setRefreshing(false);
         setPhase('ready');
       } catch {
-        if (!mounted.current || version !== requestVersion.current) return;
+        if (
+          generation !== lifecycle.current ||
+          version !== requestVersion.current
+        )
+          return;
         setRefreshing(false);
         setPhase('error');
       }
     },
-    [applyTickets, author],
+    [author],
   );
 
   useEffect(() => {
-    mounted.current = true;
-    const draft = readStored<{
-      category?: TicketCategory;
-      subject?: string;
-      body?: string;
-    }>(DRAFT_KEY);
-    if (draft?.category) setCategory(draft.category);
-    if (draft?.subject) setSubject(draft.subject);
-    if (draft?.body) setBody(draft.body);
+    const generation = lifecycle.current + 1;
+    lifecycle.current = generation;
+    requestVersion.current += 1;
+    submittingRef.current = false;
+    setPhase('loading');
+    setAuthor(null);
+    setTickets([]);
+    setCategory('CONSULTATIONS');
+    setSubject('');
+    setBody('');
+    setPending(null);
+    setNotice(null);
+    setSubmitting(false);
+    setRefreshing(false);
+    setHydrated(false);
+    setStorageAvailable(true);
+    clearOtherSupportStorage(userId);
+
+    const draft = storage.readCreateDraft();
+    if (draft.status === 'valid') {
+      draftRevision.current = draft.value.revision;
+      setCategory(draft.value.payload.category);
+      setSubject(draft.value.payload.subject);
+      setBody(draft.value.payload.body);
+    } else {
+      draftRevision.current = newSupportId();
+      if (draft.status === 'unavailable') {
+        setStorageAvailable(false);
+        setNotice('storage');
+      }
+    }
+    const storedPending = storage.readCreatePending();
+    if (storedPending.status === 'valid') {
+      if (draft.status !== 'valid') {
+        draftRevision.current = storedPending.value.draftRevision;
+        setCategory(storedPending.value.payload.category);
+        setSubject(storedPending.value.payload.subject);
+        setBody(storedPending.value.payload.body);
+      }
+      setPending(storedPending.value);
+      setNotice('unknown');
+    } else if (storedPending.status === 'corrupt') {
+      setPending('corrupt');
+      setNotice('corrupt');
+    } else if (storedPending.status === 'unavailable') {
+      setStorageAvailable(false);
+      setNotice('storage');
+    }
     setHydrated(true);
     void load(true);
     return () => {
-      mounted.current = false;
+      if (lifecycle.current === generation) lifecycle.current += 1;
       requestVersion.current += 1;
     };
     // The initial load must run exactly once; later loads are explicit.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [storage, userId]);
 
   useEffect(() => {
-    if (!hydrated || (!subject && !body)) return;
-    saveStored(DRAFT_KEY, { category, subject, body });
-  }, [body, category, hydrated, subject]);
+    if (!hydrated) return;
+    if (!subject && !body) {
+      storage.removeCreateDraft();
+      return;
+    }
+    const saved = storage.saveCreateDraft({
+      revision: draftRevision.current,
+      payload: { category, subject, body },
+    });
+    if (!saved) {
+      setStorageAvailable(false);
+      setNotice('storage');
+    }
+  }, [body, category, hydrated, storage, subject]);
+
+  function reviseDraft() {
+    draftRevision.current = newSupportId();
+  }
 
   async function submit(event: React.FormEvent) {
     event.preventDefault();
-    if (submittingRef.current || pending) return;
+    if (submittingRef.current || pending || !storageAvailable) {
+      if (!storageAvailable) setNotice('storage');
+      return;
+    }
 
-    const snapshot: PendingTicketCreate = {
-      category,
-      subject: subject.trim(),
+    const snapshot: PendingCreate = {
+      operationId: newSupportId(),
+      draftRevision: draftRevision.current,
+      payload: {
+        category,
+        subject: subject.trim(),
+        body: body.trim(),
+      },
       baselineIds: tickets.map((ticket) => ticket.id),
     };
+    // A durable marker is required before the request can leave the browser.
+    if (!storage.saveCreatePending(snapshot)) {
+      setStorageAvailable(false);
+      setNotice('storage');
+      return;
+    }
+    const generation = lifecycle.current;
     submittingRef.current = true;
     setSubmitting(true);
     setNotice(null);
     setPending(snapshot);
-    saveStored(PENDING_KEY, snapshot);
 
     try {
       await apiFetch<TicketCreated>('tickets', {
         method: 'POST',
         body: JSON.stringify({
-          category: snapshot.category,
-          subject: snapshot.subject,
-          body: body.trim(),
+          category: snapshot.payload.category,
+          subject: snapshot.payload.subject,
+          body: snapshot.payload.body,
         }),
       });
-      if (!mounted.current) return;
-      clearConfirmedCreate();
+      storage.removeCreatePendingIfOperation(snapshot.operationId);
+      storage.removeCreateDraftIfRevision(snapshot.draftRevision);
+      if (generation !== lifecycle.current) return;
+      setPending(null);
+      if (draftRevision.current === snapshot.draftRevision) {
+        draftRevision.current = newSupportId();
+        setSubject('');
+        setBody('');
+      }
+      setNotice('created');
       void load(false);
     } catch (error) {
-      if (!mounted.current) return;
+      if (generation !== lifecycle.current) return;
       const definitelyRejected =
         error instanceof ApiError && error.status >= 400 && error.status < 500;
       if (definitelyRejected) {
-        localStorage.removeItem(PENDING_KEY);
+        storage.removeCreatePendingIfOperation(snapshot.operationId);
         setPending(null);
         setNotice('error');
       } else {
         try {
           const items =
             (await apiFetch<TicketSummary[]>('tickets?take=100')) ?? [];
-          if (!mounted.current) return;
-          applyTickets(items, snapshot);
-          if (!reconcileCreatedTicket(items, snapshot)) setNotice('unknown');
+          if (generation !== lifecycle.current) return;
+          setTickets(items);
+          setNotice('unknown');
         } catch {
-          if (mounted.current) setNotice('unknown');
+          if (generation === lifecycle.current) setNotice('unknown');
         }
       }
     } finally {
-      submittingRef.current = false;
-      if (mounted.current) setSubmitting(false);
+      if (generation === lifecycle.current) {
+        submittingRef.current = false;
+        setSubmitting(false);
+      }
     }
   }
 
@@ -320,9 +382,10 @@ export default function SupportCenter({ locale }: { locale: string }) {
               id="support-category"
               value={category}
               disabled={Boolean(pending)}
-              onChange={(event) =>
-                setCategory(event.target.value as TicketCategory)
-              }
+              onChange={(event) => {
+                reviseDraft();
+                setCategory(event.target.value as TicketCategory);
+              }}
               className={FIELD}
             >
               {categories.map((value) => (
@@ -345,7 +408,10 @@ export default function SupportCenter({ locale }: { locale: string }) {
               maxLength={200}
               required
               disabled={Boolean(pending)}
-              onChange={(event) => setSubject(event.target.value)}
+              onChange={(event) => {
+                reviseDraft();
+                setSubject(event.target.value);
+              }}
               className={FIELD}
             />
           </div>
@@ -363,7 +429,10 @@ export default function SupportCenter({ locale }: { locale: string }) {
               rows={6}
               required
               disabled={Boolean(pending)}
-              onChange={(event) => setBody(event.target.value)}
+              onChange={(event) => {
+                reviseDraft();
+                setBody(event.target.value);
+              }}
               className={`${FIELD} resize-y`}
             />
           </div>
@@ -383,10 +452,20 @@ export default function SupportCenter({ locale }: { locale: string }) {
               {copy.createError}
             </p>
           )}
+          {notice === 'storage' && (
+            <p role="alert" className="text-sm font-semibold text-red-700">
+              {copy.storageUnavailable}
+            </p>
+          )}
+          {notice === 'corrupt' && (
+            <p role="alert" className="text-sm font-semibold text-amber-800">
+              {copy.pendingCorrupt}
+            </p>
+          )}
 
           <button
             type="submit"
-            disabled={submitting || Boolean(pending)}
+            disabled={submitting || Boolean(pending) || !storageAvailable}
             className={BUTTON}
           >
             {submitting ? copy.creating : copy.create}

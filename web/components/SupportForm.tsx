@@ -4,11 +4,15 @@ import { useEffect, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { submitTicket } from '@/lib/api';
 import { buildTicketPayload } from '@/lib/ticket';
+import {
+  createSupportStorage,
+  newSupportId,
+  purgeLegacySupportStorage,
+  type PendingGuest,
+} from '@/lib/support-storage';
 
 type Status = 'idle' | 'submitting' | 'sent' | 'error' | 'unknown';
-
-const DRAFT_KEY = 'smartqoldau:support:guest:draft';
-const PENDING_KEY = 'smartqoldau:support:guest:pending';
+const storage = createSupportStorage('guest');
 
 export default function SupportForm() {
   const t = useTranslations('support');
@@ -17,58 +21,107 @@ export default function SupportForm() {
   const [message, setMessage] = useState('');
   const [status, setStatus] = useState<Status>('idle');
   const [errorCode, setErrorCode] = useState<
-    'RATE_LIMITED' | 'VALIDATION' | 'UNKNOWN' | null
+    'RATE_LIMITED' | 'VALIDATION' | 'UNKNOWN' | 'STORAGE' | null
   >(null);
   const submitting = useRef(false);
   const [hydrated, setHydrated] = useState(false);
+  const [storageAvailable, setStorageAvailable] = useState(true);
+  const draftRevision = useRef(newSupportId());
+  const lifecycle = useRef(0);
 
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem(DRAFT_KEY);
-      if (raw) {
-        const draft = JSON.parse(raw) as {
-          name?: string;
-          contact?: string;
-          message?: string;
-        };
-        setName(draft.name ?? '');
-        setContact(draft.contact ?? '');
-        setMessage(draft.message ?? '');
+    const generation = lifecycle.current + 1;
+    lifecycle.current = generation;
+    purgeLegacySupportStorage();
+    const draft = storage.readGuestDraft();
+    if (draft.status === 'valid') {
+      draftRevision.current = draft.value.revision;
+      setName(draft.value.payload.name);
+      setContact(draft.value.payload.contact);
+      setMessage(draft.value.payload.message);
+    } else {
+      draftRevision.current = newSupportId();
+      if (draft.status === 'unavailable') {
+        setStorageAvailable(false);
+        setStatus('error');
+        setErrorCode('STORAGE');
       }
-      if (localStorage.getItem(PENDING_KEY) === 'true') {
-        setStatus('unknown');
-        setErrorCode('UNKNOWN');
+    }
+    const pending = storage.readGuestPending();
+    if (pending.status === 'valid') {
+      if (draft.status !== 'valid') {
+        draftRevision.current = pending.value.draftRevision;
+        setName(pending.value.payload.name);
+        setContact(pending.value.payload.contact);
+        setMessage(pending.value.payload.message);
       }
-    } catch {
-      // Недоступное хранилище не должно блокировать саму форму.
+      setStatus('unknown');
+      setErrorCode('UNKNOWN');
+    } else if (pending.status === 'corrupt') {
+      setStatus('unknown');
+      setErrorCode('UNKNOWN');
+    } else if (pending.status === 'unavailable') {
+      setStorageAvailable(false);
+      setStatus('error');
+      setErrorCode('STORAGE');
     }
     setHydrated(true);
+    return () => {
+      if (lifecycle.current === generation) lifecycle.current += 1;
+    };
   }, []);
 
   useEffect(() => {
-    if (!hydrated || (!name && !contact && !message)) return;
-    localStorage.setItem(DRAFT_KEY, JSON.stringify({ name, contact, message }));
+    if (!hydrated) return;
+    if (!name && !contact && !message) {
+      storage.removeGuestDraft();
+      return;
+    }
+    const saved = storage.saveGuestDraft({
+      revision: draftRevision.current,
+      payload: { name, contact, message },
+    });
+    if (!saved) {
+      setStorageAvailable(false);
+      setStatus('error');
+      setErrorCode('STORAGE');
+    }
   }, [contact, hydrated, message, name]);
+
+  function reviseDraft() {
+    draftRevision.current = newSupportId();
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (submitting.current || status === 'unknown') return;
+    if (submitting.current || status === 'unknown' || !storageAvailable) return;
+    const snapshot: PendingGuest = {
+      operationId: newSupportId(),
+      draftRevision: draftRevision.current,
+      payload: { name, contact, message },
+    };
+    if (!storage.saveGuestPending(snapshot)) {
+      setStorageAvailable(false);
+      setStatus('error');
+      setErrorCode('STORAGE');
+      return;
+    }
+    const generation = lifecycle.current;
     submitting.current = true;
     setStatus('submitting');
     setErrorCode(null);
-    const result = await submitTicket(
-      buildTicketPayload({ name, contact, message }),
-    );
+    const result = await submitTicket(buildTicketPayload(snapshot.payload));
+    if (generation !== lifecycle.current) return;
     if (result.ok) {
       setStatus('sent');
-      localStorage.removeItem(DRAFT_KEY);
-      localStorage.removeItem(PENDING_KEY);
+      storage.removeGuestPendingIfOperation(snapshot.operationId);
+      storage.removeGuestDraftIfRevision(snapshot.draftRevision);
     } else {
       setErrorCode(result.error);
       if (result.error === 'UNKNOWN') {
-        localStorage.setItem(PENDING_KEY, 'true');
         setStatus('unknown');
       } else {
+        storage.removeGuestPendingIfOperation(snapshot.operationId);
         setStatus('error');
       }
     }
@@ -89,7 +142,10 @@ export default function SupportForm() {
           placeholder={t('nameField')}
           value={name}
           disabled={status === 'unknown'}
-          onChange={(e) => setName(e.target.value)}
+          onChange={(e) => {
+            reviseDraft();
+            setName(e.target.value);
+          }}
           className="h-12 w-full rounded-2xl border border-border px-4 text-base text-ink focus:outline-none focus:ring-2 focus:ring-primary"
           required
         />
@@ -106,7 +162,10 @@ export default function SupportForm() {
           placeholder={t('contactField')}
           value={contact}
           disabled={status === 'unknown'}
-          onChange={(e) => setContact(e.target.value)}
+          onChange={(e) => {
+            reviseDraft();
+            setContact(e.target.value);
+          }}
           className="h-12 w-full rounded-2xl border border-border px-4 text-base text-ink focus:outline-none focus:ring-2 focus:ring-primary"
           required
         />
@@ -123,7 +182,10 @@ export default function SupportForm() {
           placeholder={t('messageField')}
           value={message}
           disabled={status === 'unknown'}
-          onChange={(e) => setMessage(e.target.value)}
+          onChange={(e) => {
+            reviseDraft();
+            setMessage(e.target.value);
+          }}
           rows={4}
           maxLength={4000}
           className="w-full resize-y rounded-2xl border border-border px-4 py-3 text-base text-ink focus:outline-none focus:ring-2 focus:ring-primary"
@@ -133,7 +195,10 @@ export default function SupportForm() {
       <button
         type="submit"
         disabled={
-          status === 'submitting' || status === 'sent' || status === 'unknown'
+          status === 'submitting' ||
+          status === 'sent' ||
+          status === 'unknown' ||
+          !storageAvailable
         }
         className="min-h-12 rounded-full bg-primary px-5 text-sm font-bold text-white focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
       >
@@ -145,9 +210,11 @@ export default function SupportForm() {
       </button>
       {status === 'error' && errorCode && (
         <p role="alert" className="text-sm font-semibold text-red-700">
-          {errorCode === 'RATE_LIMITED'
-            ? t('errorRateLimited')
-            : t('errorGeneric')}
+          {errorCode === 'STORAGE'
+            ? t('errorStorage')
+            : errorCode === 'RATE_LIMITED'
+              ? t('errorRateLimited')
+              : t('errorGeneric')}
         </p>
       )}
       {status === 'unknown' && (
