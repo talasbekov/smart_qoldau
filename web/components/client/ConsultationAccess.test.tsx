@@ -20,6 +20,14 @@ jest.mock('./Chat', () => ({
     </div>
   ),
 }));
+jest.mock('./ReviewPanel', () => ({
+  __esModule: true,
+  default: ({ locale }: { locale?: string }) => (
+    <div data-testid="review-panel" data-locale={locale}>
+      review
+    </div>
+  ),
+}));
 
 // eslint-disable-next-line import/first
 import ConsultationAccess from './ConsultationAccess';
@@ -155,6 +163,7 @@ describe('ConsultationAccess', () => {
       <ConsultationAccess
         consultation={consultation({
           status: 'COMPLETED',
+          outcome: 'COMPLETED',
           paymentStatus: 'CAPTURED',
           format: 'chat',
         })}
@@ -167,5 +176,24 @@ describe('ConsultationAccess', () => {
       'true',
     );
     expect(screen.getByTestId('chat')).toHaveAttribute('data-locale', 'kz');
+    expect(screen.getByTestId('review-panel')).toHaveAttribute(
+      'data-locale',
+      'kz',
+    );
+  });
+
+  it('не показывает отзыв для несостоявшейся завершённой консультации', () => {
+    render(
+      <ConsultationAccess
+        consultation={consultation({
+          status: 'COMPLETED',
+          outcome: 'CLIENT_NO_SHOW',
+          paymentStatus: 'VOIDED',
+        })}
+        locale="ru"
+      />,
+    );
+
+    expect(screen.queryByTestId('review-panel')).toBeNull();
   });
 });

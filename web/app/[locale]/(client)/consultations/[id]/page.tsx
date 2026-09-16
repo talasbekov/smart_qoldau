@@ -2,13 +2,8 @@ import { notFound } from 'next/navigation';
 import { authorizedFetch } from '@/lib/api/authorized';
 import type { Consultation } from '@/components/client/ConsultationList';
 import ConsultationAccess from '@/components/client/ConsultationAccess';
-
-const STATUS_LABELS: Record<string, string> = {
-  SCHEDULED: 'Запланирована',
-  ACTIVE: 'Идёт сейчас',
-  COMPLETED: 'Завершена',
-  CANCELLED: 'Отменена',
-};
+import ru from '@/messages/ru.json';
+import kz from '@/messages/kz.json';
 
 export default async function ConsultationPage({
   params,
@@ -20,14 +15,21 @@ export default async function ConsultationPage({
     `consultations/${id}`,
   );
   if (!consultation) notFound();
+  const copy = locale === 'kz' ? kz.consultations : ru.consultations;
+  const statusLabels: Record<string, string> = {
+    SCHEDULED: copy.statusScheduled,
+    ACTIVE: copy.statusActive,
+    COMPLETED: copy.statusCompleted,
+    CANCELLED: copy.statusCancelled,
+  };
 
   return (
     <>
       <h1 className="mb-1 text-2xl font-extrabold text-ink">
-        Консультация с {consultation.expert.displayName}
+        {copy.detailTitle.replace('{expert}', consultation.expert.displayName)}
       </h1>
       <p className="mb-6 text-sm text-muted">
-        {STATUS_LABELS[consultation.status] ?? consultation.status}
+        {statusLabels[consultation.status] ?? consultation.status}
       </p>
 
       <ConsultationAccess consultation={consultation} locale={locale} />

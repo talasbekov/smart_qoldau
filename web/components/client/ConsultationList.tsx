@@ -6,26 +6,13 @@ import kz from '@/messages/kz.json';
 
 export type Consultation = components['schemas']['ConsultationClientDto'];
 
-const FORMAT_LABELS: Record<string, string> = {
-  chat: 'Чат',
-  audio: 'Аудио',
-  video: 'Видео',
-};
-
-const STATUS_LABELS: Record<string, string> = {
-  SCHEDULED: 'Запланирована',
-  ACTIVE: 'Идёт сейчас',
-  COMPLETED: 'Завершена',
-  CANCELLED: 'Отменена',
-};
-
-function tenge(priceTiyn: number): string {
-  return `${new Intl.NumberFormat('ru-KZ').format(Math.round(priceTiyn / 100))} ₸`;
+function tenge(priceTiyn: number, locale: string): string {
+  return `${new Intl.NumberFormat(locale === 'kz' ? 'kk-KZ' : 'ru-KZ').format(Math.round(priceTiyn / 100))} ₸`;
 }
 
-function when(iso: string | null): string {
+function when(iso: string | null, locale: string): string {
   if (!iso) return '';
-  return new Date(iso).toLocaleString('ru-KZ', {
+  return new Date(iso).toLocaleString(locale === 'kz' ? 'kk-KZ' : 'ru-KZ', {
     day: 'numeric',
     month: 'long',
     hour: '2-digit',
@@ -43,6 +30,18 @@ function Card({ item, locale }: { item: Consultation; locale: string }) {
     !cancelled &&
     (item.paymentStatus === 'UNPAID' || item.paymentStatus === 'FAILED');
   const checkout = locale === 'kz' ? kz.checkout : ru.checkout;
+  const copy = locale === 'kz' ? kz.consultations : ru.consultations;
+  const formatLabels: Record<string, string> = {
+    chat: copy.formatChat,
+    audio: copy.formatAudio,
+    video: copy.formatVideo,
+  };
+  const statusLabels: Record<string, string> = {
+    SCHEDULED: copy.statusScheduled,
+    ACTIVE: copy.statusActive,
+    COMPLETED: copy.statusCompleted,
+    CANCELLED: copy.statusCancelled,
+  };
   const payLabel =
     item.paymentStatus === 'FAILED' ? checkout.retryPayment : checkout.pay;
 
@@ -55,21 +54,22 @@ function Card({ item, locale }: { item: Consultation; locale: string }) {
             {item.expert.displayName}
           </p>
           <p className="text-xs text-faint">
-            {FORMAT_LABELS[item.format] ?? item.format} · {when(item.startedAt)}
+            {formatLabels[item.format] ?? item.format} ·{' '}
+            {when(item.startedAt, locale)}
           </p>
         </div>
       </div>
 
       <div className="mb-3 flex flex-wrap items-center gap-2 text-xs font-semibold">
         <span className="rounded-full bg-chip px-3 py-1 text-ink">
-          {STATUS_LABELS[item.status] ?? item.status}
+          {statusLabels[item.status] ?? item.status}
         </span>
         {item.isEmergency && (
           <span className="rounded-full bg-chip px-3 py-1 text-ink">
-            Срочная
+            {copy.urgent}
           </span>
         )}
-        <span className="text-muted">{tenge(item.priceTiyn)}</span>
+        <span className="text-muted">{tenge(item.priceTiyn, locale)}</span>
       </div>
 
       <div className="flex flex-wrap gap-3">
@@ -77,7 +77,7 @@ function Card({ item, locale }: { item: Consultation; locale: string }) {
           href={`/${locale}/consultations/${item.id}`}
           className="rounded-xl px-3 py-2 text-sm font-bold text-primary focus:outline-none focus:ring-2 focus:ring-primary"
         >
-          Открыть
+          {copy.open}
         </Link>
         {needsPayment && (
           <Link
@@ -87,12 +87,12 @@ function Card({ item, locale }: { item: Consultation; locale: string }) {
             {payLabel}
           </Link>
         )}
-        {finished && !item.reviewId && (
+        {finished && item.outcome === 'COMPLETED' && !item.reviewId && (
           <Link
             href={`/${locale}/consultations/${item.id}#review`}
             className="rounded-xl px-3 py-2 text-sm font-bold text-primary focus:outline-none focus:ring-2 focus:ring-primary"
           >
-            Оценить
+            {copy.review}
           </Link>
         )}
       </div>
@@ -107,15 +107,16 @@ export default function ConsultationList({
   items: Consultation[];
   locale: string;
 }) {
+  const copy = locale === 'kz' ? kz.consultations : ru.consultations;
   if (items.length === 0) {
     return (
       <div className="py-12">
-        <p className="mb-4 text-body">У вас пока нет консультаций</p>
+        <p className="mb-4 text-body">{copy.empty}</p>
         <Link
           href={`/${locale}/requests/new`}
           className="inline-block rounded-2xl bg-primary px-5 py-3 text-sm font-bold text-white focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
         >
-          Найти специалиста
+          {copy.findExpert}
         </Link>
       </div>
     );
@@ -132,7 +133,9 @@ export default function ConsultationList({
     <div className="flex flex-col gap-8">
       {upcoming.length > 0 && (
         <section>
-          <h2 className="mb-3 text-lg font-extrabold text-ink">Предстоящие</h2>
+          <h2 className="mb-3 text-lg font-extrabold text-ink">
+            {copy.upcoming}
+          </h2>
           <ul className="flex flex-col gap-3">
             {upcoming.map((item) => (
               <Card key={item.id} item={item} locale={locale} />
@@ -142,7 +145,7 @@ export default function ConsultationList({
       )}
       {past.length > 0 && (
         <section>
-          <h2 className="mb-3 text-lg font-extrabold text-ink">Прошедшие</h2>
+          <h2 className="mb-3 text-lg font-extrabold text-ink">{copy.past}</h2>
           <ul className="flex flex-col gap-3">
             {past.map((item) => (
               <Card key={item.id} item={item} locale={locale} />

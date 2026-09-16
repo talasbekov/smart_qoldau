@@ -67,12 +67,58 @@ describe('ConsultationList', () => {
   it('у прошедшей без отзыва зовёт оценить', () => {
     render(
       <ConsultationList
-        items={[consultation({ status: 'COMPLETED', reviewId: null })]}
+        items={[
+          consultation({
+            status: 'COMPLETED',
+            outcome: 'COMPLETED',
+            reviewId: null,
+          }),
+        ]}
         locale="ru"
       />,
     );
 
-    expect(screen.getByRole('link', { name: /Оценить/ })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /Оценить/ })).toHaveAttribute(
+      'href',
+      '/ru/consultations/c1#review',
+    );
+  });
+
+  it('не зовёт оценить консультацию с несостоявшимся исходом', () => {
+    render(
+      <ConsultationList
+        items={[
+          consultation({
+            status: 'COMPLETED',
+            outcome: 'CLIENT_NO_SHOW',
+            reviewId: null,
+          }),
+        ]}
+        locale="ru"
+      />,
+    );
+
+    expect(screen.queryByRole('link', { name: /Оценить/ })).toBeNull();
+  });
+
+  it('локализует призыв оценить для казахского маршрута', () => {
+    render(
+      <ConsultationList
+        items={[
+          consultation({
+            status: 'COMPLETED',
+            outcome: 'COMPLETED',
+            reviewId: null,
+          }),
+        ]}
+        locale="kz"
+      />,
+    );
+
+    expect(screen.getByRole('link', { name: 'Бағалау' })).toHaveAttribute(
+      'href',
+      '/kz/consultations/c1#review',
+    );
   });
 
   it('у оценённой не зовёт оценить второй раз', () => {

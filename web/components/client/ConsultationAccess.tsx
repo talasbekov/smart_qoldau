@@ -2,6 +2,7 @@ import Link from 'next/link';
 import type { Consultation } from './ConsultationList';
 import Session from './Session';
 import Chat from './Chat';
+import ReviewPanel from './ReviewPanel';
 import ru from '@/messages/ru.json';
 import kz from '@/messages/kz.json';
 
@@ -104,8 +105,14 @@ export default function ConsultationAccess({
   // История завершённой консультации остаётся читаемой; сервер отдельно
   // запрещает новые сообщения для неактивной консультации.
   return (
-    <div className="rounded-[20px] border border-border bg-white p-4">
-      <Chat consultationId={consultation.id} readOnly locale={locale} />
+    <div className="flex flex-col gap-6">
+      <div className="rounded-[20px] border border-border bg-white p-4">
+        <Chat consultationId={consultation.id} readOnly locale={locale} />
+      </div>
+      {consultation.status === 'COMPLETED' &&
+      consultation.outcome === 'COMPLETED' ? (
+        <ReviewPanel consultation={consultation} locale={locale} />
+      ) : null}
     </div>
   );
 }

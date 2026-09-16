@@ -16,11 +16,20 @@ export default async () => {
   const resolved = await baseConfig();
   return {
     ...resolved,
-    transformIgnorePatterns: ['/node_modules/(?!(next-intl|use-intl|intl-messageformat|@formatjs)/)'],
+    transformIgnorePatterns: [
+      '/node_modules/(?!(next-intl|use-intl|intl-messageformat|@formatjs)/)',
+    ],
     // e2e/ принадлежит Playwright: его .spec-файлы Jest выполнить не может
     // (там свой раннер и свои фикстуры), и подхватывал он их только потому,
     // что имена совпадают по маске.
-    testPathIgnorePatterns: ['<rootDir>/node_modules/', '<rootDir>/e2e/', '<rootDir>/.next/'],
+    testPathIgnorePatterns: [
+      '<rootDir>/node_modules/',
+      '<rootDir>/e2e/',
+      '<rootDir>/.next/',
+    ],
+    // После production build standalone содержит копию package.json.
+    // Haste не должен считать её вторым модулем `web` и шуметь collision.
+    modulePathIgnorePatterns: ['<rootDir>/.next/'],
     moduleNameMapper: {
       ...resolved.moduleNameMapper,
       '^@/(.*)$': '<rootDir>/$1',

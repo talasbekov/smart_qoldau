@@ -27,9 +27,26 @@ describe('apiFetch', () => {
   it('на ошибку бросает ApiError с кодом бэкенда', async () => {
     mock(409, { code: 'CONSULTATION_ALREADY_PAID' });
 
-    await expect(apiFetch('consultations/c1/pay', { method: 'POST' })).rejects.toThrow(ApiError);
-    await expect(apiFetch('consultations/c1/pay', { method: 'POST' })).rejects.toMatchObject({
+    await expect(
+      apiFetch('consultations/c1/pay', { method: 'POST' }),
+    ).rejects.toThrow(ApiError);
+    await expect(
+      apiFetch('consultations/c1/pay', { method: 'POST' }),
+    ).rejects.toMatchObject({
       code: 'CONSULTATION_ALREADY_PAID',
+      status: 409,
+    });
+  });
+
+  it('читает код из канонического error envelope бэкенда', async () => {
+    mock(409, {
+      error: { code: 'REVIEW_EXISTS', message: 'Отзыв уже оставлен' },
+    });
+
+    await expect(
+      apiFetch('consultations/c1/review', { method: 'POST' }),
+    ).rejects.toMatchObject({
+      code: 'REVIEW_EXISTS',
       status: 409,
     });
   });
@@ -37,7 +54,9 @@ describe('apiFetch', () => {
   it('на 401 даёт понять, что сессия кончилась, а не «что-то пошло не так»', async () => {
     mock(401, { code: 'UNAUTHORIZED' });
 
-    await expect(apiFetch('consultations')).rejects.toMatchObject({ status: 401 });
+    await expect(apiFetch('consultations')).rejects.toMatchObject({
+      status: 401,
+    });
   });
 
   it('переживает пустое тело у 204', async () => {
@@ -49,6 +68,8 @@ describe('apiFetch', () => {
       },
     }) as unknown as typeof fetch;
 
-    await expect(apiFetch('notifications/read', { method: 'POST' })).resolves.toBeNull();
+    await expect(
+      apiFetch('notifications/read', { method: 'POST' }),
+    ).resolves.toBeNull();
   });
 });
