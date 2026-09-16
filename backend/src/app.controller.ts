@@ -1,7 +1,12 @@
-import { Controller, Get } from '@nestjs/common';
+import { Controller, Get, HttpStatus, Res } from '@nestjs/common';
+import { Response } from 'express';
 import { AppService } from './app.service';
 import { PrismaService } from './prisma/prisma.service';
 import { RedisService } from './redis/redis.service';
+
+type HealthDependencyStatus = 'ok' | 'fail';
+
+const HEALTH_CHECK_TIMEOUT_MS = 1_000;
 
 @Controller()
 export class AppController {
@@ -17,27 +22,42 @@ export class AppController {
   }
 
   @Get('health')
-  async health() {
-    const db = await this.checkDb();
-    const redis = await this.checkRedis();
+  async health(@Res({ passthrough: true }) response: Response) {
+    const [db, redis] = await Promise.all([this.checkDb(), this.checkRedis()]);
+    if (db === 'fail' || redis === 'fail') {
+      response.status(HttpStatus.SERVICE_UNAVAILABLE);
+      return { status: 'unhealthy', db, redis };
+    }
+
     return { status: 'ok', db, redis };
   }
 
-  private async checkDb(): Promise<'ok' | 'fail'> {
-    try {
-      await this.prisma.$queryRaw`SELECT 1`;
-      return 'ok';
-    } catch {
-      return 'fail';
-    }
+  private checkDb(): Promise<HealthDependencyStatus> {
+    return this.checkWithTimeout(() => this.prisma.$queryRaw`SELECT 1`);
   }
 
-  private async checkRedis(): Promise<'ok' | 'fail'> {
+  private checkRedis(): Promise<HealthDependencyStatus> {
+    return this.checkWithTimeout(() => this.redis.ping());
+  }
+
+  private async checkWithTimeout(
+    check: () => Promise<unknown>,
+  ): Promise<HealthDependencyStatus> {
+    let timeout: ReturnType<typeof setTimeout> | undefined;
+    const timeoutResult = new Promise<HealthDependencyStatus>((resolve) => {
+      timeout = setTimeout(() => resolve('fail'), HEALTH_CHECK_TIMEOUT_MS);
+    });
+    const checkResult = Promise.resolve()
+      .then(check)
+      .then<HealthDependencyStatus, HealthDependencyStatus>(
+        () => 'ok',
+        () => 'fail',
+      );
+
     try {
-      await this.redis.ping();
-      return 'ok';
-    } catch {
-      return 'fail';
+      return await Promise.race([checkResult, timeoutResult]);
+    } finally {
+      if (timeout) clearTimeout(timeout);
     }
   }
 }
