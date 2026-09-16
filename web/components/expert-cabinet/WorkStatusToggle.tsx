@@ -184,10 +184,14 @@ export default function WorkStatusToggle({
   }, [enqueueStatus, reflectCanonical, stopHeartbeat]);
 
   const readCanonical = useCallback(
-    async (adoptIntent = false): Promise<WorkStatus> => {
+    async (
+      adoptIntent = false,
+      expectedGeneration = transition.current.generation,
+    ): Promise<WorkStatus | null> => {
       const requestedAtRevision = transition.current.canonicalRevision;
       const actual = await apiFetch<ExpertMe>('experts/me');
       if (!actual) throw new Error('status unavailable');
+      if (transition.current.generation !== expectedGeneration) return null;
       if (
         transition.current.canonicalRevision !== requestedAtRevision &&
         (transition.current.canonical === 'BUSY' ||
@@ -211,14 +215,23 @@ export default function WorkStatusToggle({
 
   const applyVisibleIntent = useCallback(
     async (reconcileFirst = false) => {
+      const operationGeneration = transition.current.generation;
       setPhase('saving');
       try {
         const adoptRestoredManagedStatus =
           transition.current.canonical === 'BUSY' ||
           transition.current.canonical === 'UNAVAILABLE';
         const actual = reconcileFirst
-          ? await readCanonical(adoptRestoredManagedStatus)
+          ? await readCanonical(
+              adoptRestoredManagedStatus,
+              operationGeneration,
+            )
           : transition.current.canonical;
+        if (
+          actual === null ||
+          transition.current.generation !== operationGeneration
+        )
+          return;
         if (
           actual === 'BUSY' ||
           actual === 'UNAVAILABLE' ||
@@ -235,6 +248,7 @@ export default function WorkStatusToggle({
         const requestedAtRevision = transition.current.canonicalRevision;
         transition.current.unknownAccepting = true;
         const confirmed = await enqueueStatus('ACCEPTING');
+        if (transition.current.generation !== operationGeneration) return;
         if (
           transition.current.canonicalRevision !== requestedAtRevision &&
           (transition.current.canonical === 'BUSY' ||
@@ -260,6 +274,7 @@ export default function WorkStatusToggle({
         setPhase('idle');
         startHeartbeat();
       } catch {
+        if (transition.current.generation !== operationGeneration) return;
         if (!mounted.current || document.visibilityState !== 'visible') {
           if (
             transition.current.intentAccepting ||
@@ -269,7 +284,12 @@ export default function WorkStatusToggle({
           return;
         }
         try {
-          const actual = await readCanonical();
+          const actual = await readCanonical(false, operationGeneration);
+          if (
+            actual === null ||
+            transition.current.generation !== operationGeneration
+          )
+            return;
           if (actual === 'ACCEPTING' && transition.current.intentAccepting) {
             setConfirmedOnline(true);
             setPhase('idle');
@@ -401,6 +421,7 @@ export default function WorkStatusToggle({
     if (canonicalStatus === 'BUSY' || canonicalStatus === 'UNAVAILABLE') return;
     actionLock.current = true;
     transition.current.generation += 1;
+    const operationGeneration = transition.current.generation;
     const next = !transition.current.intentAccepting;
     transition.current.intentAccepting = next;
     if (next) transition.current.unknownAccepting = true;
@@ -414,6 +435,7 @@ export default function WorkStatusToggle({
         next ? 'ACCEPTING' : 'NOT_ACCEPTING',
       );
       if (!mounted.current) return;
+      if (transition.current.generation !== operationGeneration) return;
       if (
         transition.current.canonicalRevision !== requestedAtRevision &&
         (transition.current.canonical === 'BUSY' ||
@@ -444,8 +466,14 @@ export default function WorkStatusToggle({
         queueUnavailable();
         return;
       }
+      if (transition.current.generation !== operationGeneration) return;
       try {
-        const actual = await readCanonical(true);
+        const actual = await readCanonical(true, operationGeneration);
+        if (
+          actual === null ||
+          transition.current.generation !== operationGeneration
+        )
+          return;
         if (!mounted.current) return;
         const actualAccepting = actual === 'ACCEPTING';
         setAccepting(actualAccepting);

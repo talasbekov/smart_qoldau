@@ -457,6 +457,52 @@ describe('WorkStatusToggle', () => {
     expect(screen.getByRole('switch')).toBeDisabled();
   });
 
+  it('старый managed GET не отменяет подтверждённый user OFF', async () => {
+    const oldRead = deferred<{ workStatus: string }>();
+    let serverStatus = 'BUSY';
+    let reads = 0;
+    apiFetch.mockImplementation((path: string, init?: RequestInit) => {
+      if (path === 'experts/me') {
+        reads += 1;
+        if (reads === 1) return oldRead.promise;
+        return Promise.resolve({ workStatus: serverStatus });
+      }
+      if (init?.body) {
+        serverStatus = JSON.parse(String(init.body)).workStatus;
+      }
+      return Promise.resolve({ workStatus: serverStatus });
+    });
+    render(<WorkStatusToggle initial="BUSY" />);
+    await waitFor(() => expect(reads).toBe(1));
+
+    serverStatus = 'ACCEPTING';
+    await act(async () => {
+      window.dispatchEvent(new Event('sq:expert-work-status-sync'));
+    });
+    await waitFor(() => expect(screen.getByRole('switch')).toBeEnabled());
+    fireEvent.click(screen.getByRole('switch'));
+    await waitFor(() => expect(serverStatus).toBe('NOT_ACCEPTING'));
+    await waitFor(() =>
+      expect(screen.getByRole('switch')).toHaveAttribute(
+        'aria-checked',
+        'false',
+      ),
+    );
+    apiFetch.mockClear();
+
+    await act(async () => oldRead.resolve({ workStatus: 'ACCEPTING' }));
+
+    await waitFor(() => expect(screen.getByRole('switch')).toBeEnabled());
+    expect(serverStatus).toBe('NOT_ACCEPTING');
+    expect(screen.getByRole('switch')).toHaveAttribute('aria-checked', 'false');
+    expect(apiFetch).not.toHaveBeenCalledWith(
+      'experts/me/work-status',
+      expect.objectContaining({
+        body: JSON.stringify({ workStatus: 'ACCEPTING' }),
+      }),
+    );
+  });
+
   it('не показывает переключение успешным, когда сервер его отклонил', async () => {
     apiFetch
       .mockRejectedValueOnce(new Error('offline'))
