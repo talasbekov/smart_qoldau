@@ -1,4 +1,4 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 // senderRole 'client'|'expert' — НИКАКОГО userId (PII-инвариант чата, как
 // clientCode/ExpertPublicDto в консультациях).
@@ -11,6 +11,9 @@ export class MessageDto {
 
   @ApiProperty({ enum: ['client', 'expert'] })
   senderRole: 'client' | 'expert';
+
+  @ApiPropertyOptional({ format: 'uuid' })
+  clientMessageId?: string;
 
   @ApiProperty()
   text: string;

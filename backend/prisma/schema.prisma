@@ -411,13 +411,19 @@ model Consultation {
 }
 
 model ChatMessage {
-  id             String       @id @default(uuid())
-  consultationId String       @map("consultation_id")
-  consultation   Consultation @relation(fields: [consultationId], references: [id])
-  senderRole     String       @map("sender_role") // 'client' | 'expert'
-  ciphertext     Bytes // AES-256-GCM: iv(12) + tag(16) + data
-  createdAt      DateTime     @default(now()) @map("created_at")
+  id              String       @id @default(uuid())
+  consultationId  String       @map("consultation_id")
+  consultation    Consultation @relation(fields: [consultationId], references: [id])
+  senderRole      String       @map("sender_role") // 'client' | 'expert'
+  // Optional for backward compatibility with mobile clients that predate
+  // correlated chat sends. New clients scope the idempotency key to the
+  // authenticated actor and consultation; plaintext is still encrypted only.
+  senderUserId    String?      @map("sender_user_id")
+  clientMessageId String?      @map("client_message_id") @db.Uuid
+  ciphertext      Bytes // AES-256-GCM: iv(12) + tag(16) + data
+  createdAt       DateTime     @default(now()) @map("created_at")
 
+  @@unique([consultationId, senderUserId, clientMessageId], map: "chat_messages_client_message_scope_uq")
   @@index([consultationId, createdAt])
   @@map("chat_messages")
 }

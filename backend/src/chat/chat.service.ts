@@ -1,5 +1,7 @@
 import { Injectable } from '@nestjs/common';
-import { Consultation } from '@prisma/client';
+import { ChatMessage, Consultation } from '@prisma/client';
+import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
+import { isUUID } from 'class-validator';
 import { PrismaService } from '../prisma/prisma.service';
 import {
   ConsultationsService,
@@ -16,6 +18,11 @@ const DEFAULT_LIMIT = 50;
 const MAX_LIMIT = 100;
 
 export type SenderRole = ParticipantRole;
+
+export type SendMessageResult = {
+  message: MessageDto;
+  created: boolean;
+};
 
 @Injectable()
 export class ChatService {
@@ -44,12 +51,21 @@ export class ChatService {
     consultationId: string,
     senderUserId: string,
     text: string,
+    clientMessageId?: string,
   ): Promise<MessageDto> {
     const resolved = await this.resolveParticipant(
       consultationId,
       senderUserId,
     );
-    return this.sendResolved(resolved.consultation, resolved.role, text);
+    return (
+      await this.sendResolved(
+        resolved.consultation,
+        resolved.role,
+        senderUserId,
+        text,
+        clientMessageId,
+      )
+    ).message;
   }
 
   // Вариант send() для вызывающих, которые уже резолвили участника (WS
@@ -58,31 +74,112 @@ export class ChatService {
   async sendResolved(
     consultation: Consultation,
     role: SenderRole,
+    senderUserId: string,
     text: string,
-  ): Promise<MessageDto> {
-    await this.assertLiveAccess(consultation);
-
+    clientMessageId?: string,
+  ): Promise<SendMessageResult> {
     const trimmed = text?.trim() ?? '';
     if (trimmed.length < 1 || trimmed.length > MAX_TEXT_LENGTH) {
       apiError('VALIDATION_FAILED', 'Некорректный текст сообщения', 400);
     }
+    if (clientMessageId !== undefined && !isUUID(clientMessageId, '4')) {
+      apiError('VALIDATION_FAILED', 'Некорректный clientMessageId', 400);
+    }
+
+    if (clientMessageId) {
+      const existing = await this.findCorrelated(
+        consultation.id,
+        senderUserId,
+        clientMessageId,
+      );
+      if (existing) {
+        return {
+          message: this.correlatedReplay(existing, role, trimmed),
+          created: false,
+        };
+      }
+    }
+
+    // Historical replay is resolved above. Only a genuinely new command must
+    // satisfy current ACTIVE + confirmed-hold gates.
+    await this.assertLiveAccess(consultation);
 
     const ciphertext = this.cipher.encrypt(trimmed);
-    const message = await this.prisma.chatMessage.create({
-      data: {
-        consultationId: consultation.id,
-        senderRole: role,
-        // Prisma Bytes ожидает Uint8Array<ArrayBuffer>; Buffer — рантайм
-        // Uint8Array-совместим, но TS-типы SharedArrayBuffer-инвариантны.
-        ciphertext: ciphertext as unknown as Uint8Array<ArrayBuffer>,
+    try {
+      const message = await this.prisma.chatMessage.create({
+        data: {
+          consultationId: consultation.id,
+          senderRole: role,
+          senderUserId: clientMessageId ? senderUserId : null,
+          clientMessageId: clientMessageId ?? null,
+          // Prisma Bytes ожидает Uint8Array<ArrayBuffer>; Buffer — рантайм
+          // Uint8Array-совместим, но TS-типы SharedArrayBuffer-инвариантны.
+          ciphertext: ciphertext as unknown as Uint8Array<ArrayBuffer>,
+        },
+      });
+      return { message: this.toDto(message, trimmed), created: true };
+    } catch (error) {
+      if (
+        !clientMessageId ||
+        !(error instanceof PrismaClientKnownRequestError) ||
+        error.code !== 'P2002'
+      ) {
+        throw error;
+      }
+      const existing = await this.findCorrelated(
+        consultation.id,
+        senderUserId,
+        clientMessageId,
+      );
+      if (!existing) throw error;
+      return {
+        message: this.correlatedReplay(existing, role, trimmed),
+        created: false,
+      };
+    }
+  }
+
+  private findCorrelated(
+    consultationId: string,
+    senderUserId: string,
+    clientMessageId: string,
+  ): Promise<ChatMessage | null> {
+    return this.prisma.chatMessage.findUnique({
+      where: {
+        consultationId_senderUserId_clientMessageId: {
+          consultationId,
+          senderUserId,
+          clientMessageId,
+        },
       },
     });
+  }
 
+  private correlatedReplay(
+    message: ChatMessage,
+    role: SenderRole,
+    trimmed: string,
+  ): MessageDto {
+    const storedText = this.cipher.decrypt(message.ciphertext as Buffer);
+    if (message.senderRole !== role || storedText !== trimmed) {
+      apiError(
+        'CLIENT_MESSAGE_ID_REUSED',
+        'clientMessageId уже использован для другого сообщения',
+        409,
+      );
+    }
+    return this.toDto(message, storedText);
+  }
+
+  private toDto(message: ChatMessage, text: string): MessageDto {
     return {
       id: message.id,
       consultationId: message.consultationId,
-      senderRole: role,
-      text: trimmed,
+      senderRole: message.senderRole as SenderRole,
+      ...(message.clientMessageId
+        ? { clientMessageId: message.clientMessageId }
+        : {}),
+      text,
       createdAt: message.createdAt,
     };
   }
@@ -147,6 +244,9 @@ export class ChatService {
         id: row.id,
         consultationId: row.consultationId,
         senderRole: row.senderRole as SenderRole,
+        ...(row.clientMessageId
+          ? { clientMessageId: row.clientMessageId }
+          : {}),
         text: this.cipher.decrypt(row.ciphertext as Buffer),
         createdAt: row.createdAt,
       })),

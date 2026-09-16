@@ -319,6 +319,34 @@ describe('E29 current account access (HTTP + WS)', () => {
     },
   );
 
+  it.each(['expert', 'client'] as const)(
+    '%s denial blocks historical clientMessageId replay without a new side effect',
+    async (kind) => {
+      const index = kind === 'expert' ? 1 : 0;
+      const socket = await ready(tokens[index]);
+      const clientMessageId = randomUUID();
+      const payload = {
+        consultationId,
+        text: `historical-${kind}`,
+        clientMessageId,
+      };
+      const first = event(socket, 'chat.message');
+      socket.emit('chat.send', payload);
+      expect(await first).toMatchObject({ clientMessageId });
+      await denyAccount(kind);
+
+      const denied = outcome([
+        [socket, 'disconnect'],
+        [socket, 'chat.message'],
+      ]);
+      socket.emit('chat.send', payload);
+      expect(await denied).toBe('disconnect');
+      expect(
+        await prisma.chatMessage.count({ where: { consultationId } }),
+      ).toBe(1);
+    },
+  );
+
   // The denied socket is passive: only the other participant sends after
   // the DB mutation completes. A local-only disconnect misses remoteIdle.
   it.each([

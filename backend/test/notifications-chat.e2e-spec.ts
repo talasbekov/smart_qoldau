@@ -6,6 +6,7 @@ import { Test } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import { AddressInfo } from 'node:net';
+import { randomUUID } from 'node:crypto';
 import { io, Socket } from 'socket.io-client';
 import { AppModule } from '../src/app.module';
 import { PrismaService } from '../src/prisma/prisma.service';
@@ -328,6 +329,53 @@ describe('Чат-пуш офлайн-получателю, без текста �
     // PII §5.8: текста сообщения нет НИГДЕ в пуше (ни title/body, ни data).
     expect(JSON.stringify(push)).not.toContain(MESSAGE_TEXT);
     expect(push.data.text).toBeUndefined();
+  });
+
+  it('retry с тем же clientMessageId не создаёт второе уведомление/outbox', async () => {
+    const exp = await acceptingExpert(PH_E1);
+    const expertUserId = await userIdByExpertId(exp.expertId);
+    const cli = await clientUser(PH_C1);
+    const { consultationId } = await matchClientToExpert(cli, exp);
+    const clientSocket = connect(cli.accessToken);
+    await waitForEvent(clientSocket, 'ready');
+
+    const clientMessageId = randomUUID();
+    const payload = {
+      consultationId,
+      text: 'Повтор после потерянного ack',
+      clientMessageId,
+    };
+    const firstEcho = waitForEvent(clientSocket, 'chat.message');
+    clientSocket.emit('chat.send', payload);
+    const first = await firstEcho;
+    const notification = await waitForNotification(
+      expertUserId,
+      'chat.message',
+    );
+
+    const retryEcho = waitForEvent(clientSocket, 'chat.message');
+    clientSocket.emit('chat.send', payload);
+    const retry = await retryEcho;
+    expect(retry).toMatchObject({
+      id: first.id,
+      consultationId,
+      clientMessageId,
+    });
+    await new Promise((resolve) => setTimeout(resolve, 200));
+
+    expect(await prisma.chatMessage.count({ where: { consultationId } })).toBe(
+      1,
+    );
+    expect(
+      await prisma.notification.count({
+        where: { userId: expertUserId, type: 'chat.message' },
+      }),
+    ).toBe(1);
+    expect(
+      await prisma.notificationOutbox.count({
+        where: { notificationId: notification.id },
+      }),
+    ).toBe(1);
   });
 
   it('онлайн-получатель (эксперт подключён): push НЕ шлётся, in-app запись не создаётся — центр не дублирует живой чат', async () => {

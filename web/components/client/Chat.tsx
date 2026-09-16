@@ -11,15 +11,13 @@ type Message = components['schemas']['MessageDto'];
 
 type PendingMessage = {
   attemptId: number;
+  clientMessageId: string;
   text: string;
-  baselineIds: Set<string>;
-  observed: boolean;
 };
 
 const ACK_TIMEOUT_MS = 5_000;
 
-type DeliveryStatus =
-  'idle' | 'pending' | 'checking' | 'unknown' | 'observed' | 'failed';
+type DeliveryStatus = 'idle' | 'pending' | 'checking' | 'unknown' | 'failed';
 type ConnectionStatus = 'connecting' | 'recovering' | 'ready' | 'offline';
 type HistoryStatus = 'loading' | 'ready' | 'error';
 
@@ -70,37 +68,30 @@ export default function Chat({
       .catch(() => undefined);
   }, [markReadyAfterHistory]);
 
-  const observePending = useCallback(
+  const acknowledgePending = useCallback(
     (message: Message) => {
       const pending = pendingRef.current;
       if (
         !pending ||
         message.consultationId !== consultationId ||
         message.senderRole !== senderRole ||
-        message.text !== pending.text ||
-        pending.baselineIds.has(message.id)
+        message.clientMessageId !== pending.clientMessageId
       ) {
         return false;
       }
 
       if (pendingTimerRef.current) clearTimeout(pendingTimerRef.current);
       pendingTimerRef.current = null;
-      pending.observed = true;
-      setError(copy.deliveryObserved);
-      setDeliveryStatus('observed');
+      pendingRef.current = null;
+      setError(null);
+      setDeliveryStatus('idle');
+      // Exact ack may arrive after the user started the next draft. Only the
+      // unchanged text belonging to this command is cleared.
+      setDraft((current) => (current.trim() === pending.text ? '' : current));
       return true;
     },
-    [consultationId, copy.deliveryObserved, senderRole],
+    [consultationId, senderRole],
   );
-
-  const clearObservedDraft = useCallback(() => {
-    const pending = pendingRef.current;
-    if (!pending) return;
-    pendingRef.current = null;
-    setError(null);
-    setDeliveryStatus('idle');
-    setDraft((current) => (current.trim() === pending.text ? '' : current));
-  }, []);
 
   const reconcilePending = useCallback(
     async (attemptId: number) => {
@@ -109,11 +100,11 @@ export default function Chat({
       if (!mountedRef.current) return;
       const pending = pendingRef.current;
       if (!pending || pending.attemptId !== attemptId) return;
-      if (fetched?.some((message) => observePending(message))) return;
+      if (fetched?.some((message) => acknowledgePending(message))) return;
       setDeliveryStatus('unknown');
       setError(copy.deliveryUnknown);
     },
-    [copy.deliveryUnknown, observePending],
+    [acknowledgePending, copy.deliveryUnknown],
   );
 
   // Добавление через Map по id: одно и то же сообщение приходит и
@@ -238,8 +229,9 @@ export default function Chat({
             setConnectionStatus('recovering');
             void syncHistory(true)
               .then((fetched) => {
+                if (dropped) return;
                 markReadyAfterHistory();
-                fetched.some((message) => observePending(message));
+                fetched.some((message) => acknowledgePending(message));
               })
               .catch(() => {
                 if (!dropped) setConnectionStatus('offline');
@@ -269,23 +261,34 @@ export default function Chat({
             // консультация, чужие сообщения сюда попадать не должны.
             if (message.consultationId === consultationId) {
               add([message]);
-              observePending(message);
+              acknowledgePending(message);
             }
           });
           socket.on('chat.error', (payload) => {
             if (dropped) return;
             const pending = pendingRef.current;
             if (!pending) return;
-            if (pending.observed) return;
+            const correlated = payload as {
+              code?: string;
+              consultationId?: string;
+              clientMessageId?: string;
+            };
+            if (
+              correlated.consultationId !== consultationId ||
+              correlated.clientMessageId !== pending.clientMessageId
+            ) {
+              return;
+            }
             pendingRef.current = null;
             if (pendingTimerRef.current) clearTimeout(pendingTimerRef.current);
             pendingTimerRef.current = null;
-            const code = (payload as { code?: string }).code;
+            const code = correlated.code;
             const errors: Record<string, string> = {
               CONSULTATION_NOT_ACTIVE: copy.inactive,
               VALIDATION_FAILED: copy.tooLong,
               MESSAGE_TOO_LONG: copy.tooLong,
               CHAT_RATE_LIMITED: copy.rateLimited,
+              CLIENT_MESSAGE_ID_REUSED: copy.idReused,
             };
             setDeliveryStatus('failed');
             setError((code && errors[code]) || copy.sendFailed);
@@ -314,7 +317,7 @@ export default function Chat({
     conversationKey,
     copy,
     markReadyAfterHistory,
-    observePending,
+    acknowledgePending,
     readOnly,
     reconnectNonce,
     reconcilePending,
@@ -340,12 +343,15 @@ export default function Chat({
     }
     const pending: PendingMessage = {
       attemptId: ++attemptRef.current,
+      clientMessageId: crypto.randomUUID(),
       text,
-      baselineIds: new Set(messagesRef.current.map((message) => message.id)),
-      observed: false,
     };
     pendingRef.current = pending;
-    const sent = socketRef.current.send('chat.send', { consultationId, text });
+    const sent = socketRef.current.send('chat.send', {
+      consultationId,
+      text,
+      clientMessageId: pending.clientMessageId,
+    });
     if (!sent) {
       pendingRef.current = null;
       socketReadyRef.current = false;
@@ -359,6 +365,35 @@ export default function Chat({
         void reconcilePending(pending.attemptId);
       }, ACK_TIMEOUT_MS);
     }
+  }
+
+  function retryPending() {
+    const pending = pendingRef.current;
+    if (!pending) return;
+    if (!socketRef.current || !socketReadyRef.current) {
+      setDeliveryStatus('unknown');
+      setError(copy.retryNeedsConnection);
+      return;
+    }
+
+    if (pendingTimerRef.current) clearTimeout(pendingTimerRef.current);
+    pending.attemptId = ++attemptRef.current;
+    setError(null);
+    const sent = socketRef.current.send('chat.send', {
+      consultationId,
+      text: pending.text,
+      clientMessageId: pending.clientMessageId,
+    });
+    if (!sent) {
+      socketReadyRef.current = false;
+      setDeliveryStatus('unknown');
+      setError(copy.retryNeedsConnection);
+      return;
+    }
+    setDeliveryStatus('pending');
+    pendingTimerRef.current = setTimeout(() => {
+      void reconcilePending(pending.attemptId);
+    }, ACK_TIMEOUT_MS);
   }
 
   return (
@@ -434,29 +469,31 @@ export default function Chat({
       )}
 
       {deliveryStatus === 'unknown' || deliveryStatus === 'checking' ? (
-        <button
-          type="button"
-          disabled={deliveryStatus === 'checking'}
-          onClick={() => {
-            const pending = pendingRef.current;
-            if (pending) void reconcilePending(pending.attemptId);
-          }}
-          className="mx-1 min-h-11 self-start rounded-xl bg-chip px-4 py-2 text-sm font-bold text-ink disabled:cursor-not-allowed disabled:opacity-60 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
-        >
-          {deliveryStatus === 'checking'
-            ? copy.checkingDelivery
-            : copy.checkDelivery}
-        </button>
-      ) : null}
-
-      {deliveryStatus === 'observed' ? (
-        <button
-          type="button"
-          onClick={clearObservedDraft}
-          className="mx-1 min-h-11 self-start rounded-xl bg-chip px-4 py-2 text-sm font-bold text-ink focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
-        >
-          {copy.clearObserved}
-        </button>
+        <div className="mx-1 flex flex-wrap gap-2">
+          <button
+            type="button"
+            disabled={deliveryStatus === 'checking'}
+            onClick={() => {
+              const pending = pendingRef.current;
+              if (pending) void reconcilePending(pending.attemptId);
+            }}
+            className="min-h-11 rounded-xl bg-chip px-4 py-2 text-sm font-bold text-ink disabled:cursor-not-allowed disabled:opacity-60 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+          >
+            {deliveryStatus === 'checking'
+              ? copy.checkingDelivery
+              : copy.checkDelivery}
+          </button>
+          <button
+            type="button"
+            disabled={
+              deliveryStatus === 'checking' || connectionStatus !== 'ready'
+            }
+            onClick={retryPending}
+            className="min-h-11 rounded-xl bg-primary px-4 py-2 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-60 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+          >
+            {copy.retrySend}
+          </button>
+        </div>
       ) : null}
 
       {!readOnly ? (
@@ -476,8 +513,7 @@ export default function Chat({
             disabled={
               deliveryStatus === 'pending' ||
               deliveryStatus === 'checking' ||
-              deliveryStatus === 'unknown' ||
-              deliveryStatus === 'observed'
+              deliveryStatus === 'unknown'
             }
             className="h-12 rounded-2xl bg-primary px-5 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-60 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
           >

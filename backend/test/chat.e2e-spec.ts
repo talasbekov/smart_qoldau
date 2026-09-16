@@ -6,6 +6,7 @@ import { Test } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import { AddressInfo } from 'node:net';
+import { randomUUID } from 'node:crypto';
 import { io, Socket } from 'socket.io-client';
 import { AppModule } from '../src/app.module';
 import { PrismaService } from '../src/prisma/prisma.service';
@@ -59,6 +60,33 @@ function waitForEvent(
       clearTimeout(timer);
       resolve(payload);
     });
+  });
+}
+
+function waitForEvents(
+  socket: Socket,
+  event: string,
+  count: number,
+  timeoutMs = 15_000,
+): Promise<any[]> {
+  return new Promise((resolve, reject) => {
+    const values: any[] = [];
+    const timer = setTimeout(() => {
+      socket.off(event, listener);
+      reject(
+        new Error(
+          `Timed out waiting for ${count} events "${event}"; received ${values.length}`,
+        ),
+      );
+    }, timeoutMs);
+    const listener = (payload: unknown) => {
+      values.push(payload);
+      if (values.length !== count) return;
+      clearTimeout(timer);
+      socket.off(event, listener);
+      resolve(values);
+    };
+    socket.on(event, listener);
   });
 }
 
@@ -248,6 +276,7 @@ describe('Шифрованный чат консультаций (e2e)', () => {
     expect(clientPayload.id).toBeDefined();
     expect(clientPayload.createdAt).toBeDefined();
     expect(clientPayload.userId).toBeUndefined();
+    expect(clientPayload.clientMessageId).toBeUndefined();
     expect(expertPayload).toMatchObject(clientPayload);
 
     // Второе сообщение от эксперта.
@@ -281,6 +310,208 @@ describe('Шифрованный чат консультаций (e2e)', () => {
       const plaintextBuf = Buffer.from('Здравствуйте, у меня вопрос.', 'utf8');
       expect(Buffer.from(row.ciphertext).includes(plaintextBuf)).toBe(false);
     }
+  });
+
+  it('concurrent retry с одним clientMessageId создаёт одну запись и коррелированный echo', async () => {
+    const exp = await acceptingExpert(PH_E1);
+    const cli = await clientUser(PH_C1);
+    const { consultationId } = await matchClientToExpert(cli, exp);
+    const clientSocket = connect(cli.accessToken);
+    const expertSocket = connect(exp.accessToken);
+    await waitForEvent(clientSocket, 'ready');
+    await waitForEvent(expertSocket, 'ready');
+
+    const clientMessageId = randomUUID();
+    const clientEchoes = waitForEvents(clientSocket, 'chat.message', 2);
+    const expertMessages: any[] = [];
+    expertSocket.on('chat.message', (payload) => expertMessages.push(payload));
+    const payload = {
+      consultationId,
+      text: 'Одна намеренная отправка',
+      clientMessageId,
+    };
+    clientSocket.emit('chat.send', payload);
+    clientSocket.emit('chat.send', payload);
+
+    const echoes = await clientEchoes;
+    expect(echoes).toHaveLength(2);
+    expect(new Set(echoes.map((message) => message.id)).size).toBe(1);
+    for (const echo of echoes) {
+      expect(echo).toMatchObject({
+        consultationId,
+        senderRole: 'client',
+        text: payload.text,
+        clientMessageId,
+      });
+    }
+    await new Promise((resolve) => setTimeout(resolve, 200));
+    expect(expertMessages).toHaveLength(1);
+    expect(expertMessages[0].id).toBe(echoes[0].id);
+    expect(await prisma.chatMessage.count({ where: { consultationId } })).toBe(
+      1,
+    );
+
+    const history = await get(
+      cli.accessToken,
+      `/v1/consultations/${consultationId}/messages`,
+    ).expect(200);
+    expect(history.body.items).toEqual([
+      expect.objectContaining({
+        id: echoes[0].id,
+        clientMessageId,
+        text: payload.text,
+      }),
+    ]);
+  });
+
+  it('не подтверждает тот же clientMessageId для другого payload, actor или consultation', async () => {
+    const exp = await acceptingExpert(PH_E1);
+    const cli = await clientUser(PH_C1);
+    const { consultationId } = await matchClientToExpert(cli, exp);
+    const clientSocket = connect(cli.accessToken);
+    const expertSocket = connect(exp.accessToken);
+    await waitForEvent(clientSocket, 'ready');
+    await waitForEvent(expertSocket, 'ready');
+
+    const clientMessageId = randomUUID();
+    const first = waitForEvent(clientSocket, 'chat.message');
+    clientSocket.emit('chat.send', {
+      consultationId,
+      text: 'Исходный payload',
+      clientMessageId,
+    });
+    const stored = await first;
+
+    const mismatch = waitForEvent(clientSocket, 'chat.error');
+    clientSocket.emit('chat.send', {
+      consultationId,
+      text: 'Изменённый payload',
+      clientMessageId,
+    });
+    expect(await mismatch).toEqual({
+      code: 'CLIENT_MESSAGE_ID_REUSED',
+      consultationId,
+      clientMessageId,
+    });
+
+    const expertOwn = waitForEvent(expertSocket, 'chat.message');
+    expertSocket.emit('chat.send', {
+      consultationId,
+      text: 'Другой actor — отдельная команда',
+      clientMessageId,
+    });
+    const expertStored = await expertOwn;
+    expect(expertStored).toMatchObject({
+      senderRole: 'expert',
+      clientMessageId,
+    });
+    expect(expertStored.id).not.toBe(stored.id);
+
+    await prisma.consultation.update({
+      where: { id: consultationId },
+      data: { status: 'COMPLETED' },
+    });
+    const original = await prisma.consultation.findUniqueOrThrow({
+      where: { id: consultationId },
+    });
+    const another = await prisma.consultation.create({
+      data: {
+        requestId: randomUUID(),
+        clientUserId: original.clientUserId,
+        clientCode: original.clientCode,
+        expertId: original.expertId,
+        topicId: original.topicId,
+        format: 'chat',
+        priceTiyn: original.priceTiyn,
+        startedAt: new Date(),
+      },
+    });
+    await holdConsultation(app, another.id);
+    const crossConsultation = waitForEvent(clientSocket, 'chat.message');
+    clientSocket.emit('chat.send', {
+      consultationId: another.id,
+      text: 'Другой scope consultation',
+      clientMessageId,
+    });
+    const crossStored = await crossConsultation;
+    expect(crossStored).toMatchObject({
+      consultationId: another.id,
+      clientMessageId,
+    });
+    expect(crossStored.id).not.toBe(stored.id);
+  });
+
+  it('historical retry подтверждает запись после COMPLETED/утраты hold, но не создаёт новую', async () => {
+    const exp = await acceptingExpert(PH_E1);
+    const cli = await clientUser(PH_C1);
+    const { consultationId } = await matchClientToExpert(cli, exp);
+    const clientSocket = connect(cli.accessToken);
+    await waitForEvent(clientSocket, 'ready');
+
+    const clientMessageId = randomUUID();
+    const first = waitForEvent(clientSocket, 'chat.message');
+    clientSocket.emit('chat.send', {
+      consultationId,
+      text: 'Подтвердить после завершения',
+      clientMessageId,
+    });
+    const stored = await first;
+    await prisma.consultation.update({
+      where: { id: consultationId },
+      data: { status: 'COMPLETED', paymentStatus: 'UNPAID' },
+    });
+    await prisma.payment.delete({ where: { consultationId } });
+
+    const historicalAck = waitForEvent(clientSocket, 'chat.message');
+    clientSocket.emit('chat.send', {
+      consultationId,
+      text: 'Подтвердить после завершения',
+      clientMessageId,
+    });
+    expect(await historicalAck).toMatchObject({
+      id: stored.id,
+      consultationId,
+      clientMessageId,
+    });
+    expect(await prisma.chatMessage.count({ where: { consultationId } })).toBe(
+      1,
+    );
+
+    const rejected = waitForEvent(clientSocket, 'chat.error');
+    const newClientMessageId = randomUUID();
+    clientSocket.emit('chat.send', {
+      consultationId,
+      text: 'Новое после завершения',
+      clientMessageId: newClientMessageId,
+    });
+    expect(await rejected).toEqual({
+      code: 'CONSULTATION_NOT_ACTIVE',
+      consultationId,
+      clientMessageId: newClientMessageId,
+    });
+  });
+
+  it('отклоняет malformed clientMessageId коррелированной ошибкой без записи', async () => {
+    const exp = await acceptingExpert(PH_E1);
+    const cli = await clientUser(PH_C1);
+    const { consultationId } = await matchClientToExpert(cli, exp);
+    const clientSocket = connect(cli.accessToken);
+    await waitForEvent(clientSocket, 'ready');
+
+    const error = waitForEvent(clientSocket, 'chat.error', 2_000);
+    clientSocket.emit('chat.send', {
+      consultationId,
+      text: 'Не сохранять',
+      clientMessageId: 'not-a-uuid',
+    });
+    expect(await error).toEqual({
+      code: 'VALIDATION_FAILED',
+      consultationId,
+      clientMessageId: 'not-a-uuid',
+    });
+    expect(await prisma.chatMessage.count({ where: { consultationId } })).toBe(
+      0,
+    );
   });
 
   it('chat.typing ретранслируется только второй стороне', async () => {
@@ -371,9 +602,14 @@ describe('Шифрованный чат консультаций (e2e)', () => {
     strangerSocket.emit('chat.send', {
       consultationId,
       text: 'я не участник',
+      clientMessageId: '00000000-0000-4000-8000-000000000001',
     });
     const errorPayload = await errorPromise;
-    expect(errorPayload.code).toBe('CONSULTATION_NOT_FOUND');
+    expect(errorPayload).toEqual({
+      code: 'CONSULTATION_NOT_FOUND',
+      consultationId,
+      clientMessageId: '00000000-0000-4000-8000-000000000001',
+    });
   });
 
   it('сообщение в завершённую консультацию -> 409 (REST) и chat.error (WS)', async () => {

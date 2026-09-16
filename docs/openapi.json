@@ -6396,6 +6396,10 @@
               "expert"
             ]
           },
+          "clientMessageId": {
+            "type": "string",
+            "format": "uuid"
+          },
           "text": {
             "type": "string"
           },

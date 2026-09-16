@@ -7,7 +7,7 @@ import {
 } from '@testing-library/react';
 
 const handlers: Record<string, (payload: unknown) => void> = {};
-const send = jest.fn(() => true);
+const send = jest.fn((_event: string, _payload: unknown) => true);
 const close = jest.fn();
 const connectRealtime = jest.fn();
 jest.mock('@/lib/realtime/socket', () => ({
@@ -66,6 +66,16 @@ const message = (over: Record<string, unknown> = {}) => ({
   createdAt: '2026-09-02T10:00:00.000Z',
   ...over,
 });
+
+const UUID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+function sentClientMessageId(call = 0): string {
+  const payload = send.mock.calls[call]?.[1] as
+    { clientMessageId?: string } | undefined;
+  expect(payload?.clientMessageId).toMatch(UUID_PATTERN);
+  return payload!.clientMessageId!;
+}
 
 async function serverReady() {
   await waitFor(() => expect(handlers.ready).toBeDefined());
@@ -181,6 +191,7 @@ describe('Chat', () => {
     expect(send).toHaveBeenCalledWith('chat.send', {
       consultationId: 'c1',
       text: 'Спасибо',
+      clientMessageId: expect.stringMatching(UUID_PATTERN),
     });
   });
 
@@ -196,7 +207,7 @@ describe('Chat', () => {
     expect(send).not.toHaveBeenCalled();
   });
 
-  it('не считает неоднозначный server echo ack и очищает draft только по решению пользователя', async () => {
+  it('очищает неизменённый draft только по коррелированному server echo', async () => {
     render(<Chat consultationId="c1" />);
     await serverReady();
 
@@ -204,26 +215,24 @@ describe('Chat', () => {
       target: { value: 'Спасибо' },
     });
     fireEvent.click(screen.getByRole('button', { name: 'Отправить' }));
+    const clientMessageId = sentClientMessageId();
 
     expect(screen.getByLabelText('Сообщение')).toHaveValue('Спасибо');
 
     await act(async () => {
       handlers['chat.message'](
-        message({ id: 'own-1', senderRole: 'client', text: 'Спасибо' }),
+        message({
+          id: 'own-1',
+          senderRole: 'client',
+          text: 'Спасибо',
+          clientMessageId,
+        }),
       );
     });
 
-    expect(screen.getByLabelText('Сообщение')).toHaveValue('Спасибо');
-    expect(screen.getByRole('alert')).toHaveTextContent(
-      /похожее|clientMessageId/i,
-    );
-
-    fireEvent.click(
-      screen.getByRole('button', {
-        name: /сообщение видно.*очистить черновик/i,
-      }),
-    );
     expect(screen.getByLabelText('Сообщение')).toHaveValue('');
+    expect(screen.queryByRole('alert')).toBeNull();
+    expect(screen.getByRole('button', { name: 'Отправить' })).toBeEnabled();
   });
 
   it('не стирает новые правки draft, когда echo подтверждает предыдущий текст', async () => {
@@ -233,17 +242,25 @@ describe('Chat', () => {
       target: { value: 'Первый текст' },
     });
     fireEvent.click(screen.getByRole('button', { name: 'Отправить' }));
+    const clientMessageId = sentClientMessageId();
     fireEvent.change(screen.getByLabelText('Сообщение'), {
       target: { value: 'Следующий текст' },
     });
 
     await act(async () => {
       handlers['chat.message'](
-        message({ id: 'own-2', senderRole: 'client', text: 'Первый текст' }),
+        message({
+          id: 'own-2',
+          senderRole: 'client',
+          text: 'Первый текст',
+          clientMessageId,
+        }),
       );
     });
 
     expect(screen.getByLabelText('Сообщение')).toHaveValue('Следующий текст');
+    expect(screen.queryByRole('alert')).toBeNull();
+    expect(screen.getByRole('button', { name: 'Отправить' })).toBeEnabled();
   });
 
   it('показывает ошибку отправки, а не молчит', async () => {
@@ -253,9 +270,14 @@ describe('Chat', () => {
       target: { value: 'Поздно' },
     });
     fireEvent.click(screen.getByRole('button', { name: 'Отправить' }));
+    const clientMessageId = sentClientMessageId();
 
     await act(async () => {
-      handlers['chat.error']({ code: 'CONSULTATION_NOT_ACTIVE' });
+      handlers['chat.error']({
+        code: 'CONSULTATION_NOT_ACTIVE',
+        consultationId: 'c1',
+        clientMessageId,
+      });
     });
 
     expect(screen.getByRole('alert')).toHaveTextContent(
@@ -270,16 +292,51 @@ describe('Chat', () => {
       target: { value: 'Повторить безопасно' },
     });
     fireEvent.click(screen.getByRole('button', { name: 'Отправить' }));
+    const clientMessageId = sentClientMessageId();
 
     await act(async () => {
-      handlers['chat.error']({ code: 'CHAT_RATE_LIMITED' });
+      handlers['chat.error']({
+        code: 'CHAT_RATE_LIMITED',
+        consultationId: 'c1',
+        clientMessageId,
+      });
     });
     expect(screen.getByLabelText('Сообщение')).toHaveValue(
       'Повторить безопасно',
     );
 
     fireEvent.click(screen.getByRole('button', { name: 'Отправить' }));
-    expect(send).toHaveBeenCalledTimes(2);
+    const retriedId = sentClientMessageId(1);
+    expect(retriedId).not.toBe(clientMessageId);
+  });
+
+  it('игнорирует chat.error с другим clientMessageId или consultationId', async () => {
+    render(<Chat consultationId="c1" />);
+    await serverReady();
+    fireEvent.change(screen.getByLabelText('Сообщение'), {
+      target: { value: 'Не моя ошибка' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Отправить' }));
+    const clientMessageId = sentClientMessageId();
+
+    await act(async () => {
+      handlers['chat.error']({
+        code: 'CONSULTATION_NOT_ACTIVE',
+        consultationId: 'c2',
+        clientMessageId,
+      });
+      handlers['chat.error']({
+        code: 'CONSULTATION_NOT_ACTIVE',
+        consultationId: 'c1',
+        clientMessageId: '00000000-0000-4000-8000-000000000000',
+      });
+    });
+
+    expect(screen.queryByRole('alert')).toBeNull();
+    expect(
+      screen.getByRole('button', { name: 'Отправляем…' }),
+    ).toBeDisabled();
+    expect(screen.getByLabelText('Сообщение')).toHaveValue('Не моя ошибка');
   });
 
   it('игнорирует stale chat.error после уже подтверждённого echo', async () => {
@@ -289,22 +346,23 @@ describe('Chat', () => {
       target: { value: 'Уже сохранено' },
     });
     fireEvent.click(screen.getByRole('button', { name: 'Отправить' }));
+    const clientMessageId = sentClientMessageId();
     await act(async () => {
       handlers['chat.message'](
         message({
           id: 'own-confirmed',
           senderRole: 'client',
           text: 'Уже сохранено',
+          clientMessageId,
         }),
       );
     });
-    fireEvent.click(
-      screen.getByRole('button', {
-        name: /сообщение видно.*очистить черновик/i,
-      }),
-    );
     await act(async () => {
-      handlers['chat.error']({ code: 'INTERNAL' });
+      handlers['chat.error']({
+        code: 'INTERNAL',
+        consultationId: 'c1',
+        clientMessageId,
+      });
     });
 
     expect(screen.queryByRole('alert')).toBeNull();
@@ -378,21 +436,22 @@ describe('Chat', () => {
       await Promise.resolve();
       await Promise.resolve();
     });
+    fireEvent.change(screen.getByLabelText('Сообщение'), {
+      target: { value: 'Проверить доставку' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Отправить' }));
+    const clientMessageId = sentClientMessageId();
     apiFetch.mockResolvedValueOnce({
       items: [
         message({
           id: 'persisted-own',
           senderRole: 'client',
           text: 'Проверить доставку',
+          clientMessageId,
         }),
       ],
       nextCursor: null,
     });
-
-    fireEvent.change(screen.getByLabelText('Сообщение'), {
-      target: { value: 'Проверить доставку' },
-    });
-    fireEvent.click(screen.getByRole('button', { name: 'Отправить' }));
     expect(screen.getByLabelText('Сообщение')).toHaveValue(
       'Проверить доставку',
     );
@@ -403,19 +462,14 @@ describe('Chat', () => {
       await Promise.resolve();
     });
 
-    expect(screen.getByLabelText('Сообщение')).toHaveValue(
-      'Проверить доставку',
-    );
-    expect(screen.getByText('Проверить доставку')).toBeInTheDocument();
-    fireEvent.click(
-      screen.getByRole('button', {
-        name: /сообщение видно.*очистить черновик/i,
-      }),
-    );
     expect(screen.getByLabelText('Сообщение')).toHaveValue('');
+    expect(screen.getByText('Проверить доставку')).toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: /очистить черновик/i }),
+    ).toBeNull();
   });
 
-  it('после timeout без подтверждения не делает повторный emit и предлагает только REST-проверку', async () => {
+  it('после timeout даёт явно повторить тот же payload с тем же clientMessageId', async () => {
     jest.useFakeTimers();
     render(<Chat consultationId="c1" />);
     await serverReady();
@@ -428,6 +482,7 @@ describe('Chat', () => {
       target: { value: 'Не дублировать' },
     });
     fireEvent.click(screen.getByRole('button', { name: 'Отправить' }));
+    const clientMessageId = sentClientMessageId();
 
     await act(async () => {
       jest.advanceTimersByTime(5_000);
@@ -437,19 +492,24 @@ describe('Chat', () => {
 
     expect(screen.getByRole('alert')).toHaveTextContent(/неизвестно|провер/i);
     expect(
-      screen.getByRole('button', { name: /проверить доставку/i }),
+      screen.getByRole('button', { name: /повторить отправку/i }),
     ).toBeEnabled();
     expect(screen.getByRole('button', { name: 'Отправить' })).toBeDisabled();
     expect(screen.getByLabelText('Сообщение')).toHaveValue('Не дублировать');
 
     fireEvent.click(
-      screen.getByRole('button', { name: /проверить доставку/i }),
+      screen.getByRole('button', { name: /повторить отправку/i }),
     );
     await act(async () => {
       await Promise.resolve();
       await Promise.resolve();
     });
-    expect(send).toHaveBeenCalledTimes(1);
+    expect(send).toHaveBeenCalledTimes(2);
+    expect(sentClientMessageId(1)).toBe(clientMessageId);
+    expect(send.mock.calls[1]?.[1]).toMatchObject({
+      consultationId: 'c1',
+      text: 'Не дублировать',
+    });
   });
 
   it('не принимает старое сообщение с тем же текстом за ack новой попытки', async () => {
@@ -473,6 +533,7 @@ describe('Chat', () => {
       target: { value: 'Одинаковый текст' },
     });
     fireEvent.click(screen.getByRole('button', { name: 'Отправить' }));
+    sentClientMessageId();
     await act(async () => {
       jest.advanceTimersByTime(5_000);
       await Promise.resolve();
@@ -481,7 +542,7 @@ describe('Chat', () => {
 
     expect(screen.getByLabelText('Сообщение')).toHaveValue('Одинаковый текст');
     expect(
-      screen.getByRole('button', { name: /проверить доставку/i }),
+      screen.getByRole('button', { name: /повторить отправку/i }),
     ).toBeEnabled();
   });
 
@@ -599,6 +660,7 @@ describe('Chat', () => {
     expect(send).toHaveBeenCalledWith('chat.send', {
       consultationId: 'c1',
       text: 'Сохранённый черновик',
+      clientMessageId: expect.stringMatching(UUID_PATTERN),
     });
   });
 
@@ -613,6 +675,7 @@ describe('Chat', () => {
       target: { value: 'Пережить reconnect' },
     });
     fireEvent.click(screen.getByRole('button', { name: 'Отправить' }));
+    const clientMessageId = sentClientMessageId();
 
     await act(async () => {
       handlers.disconnect('transport close');
@@ -625,6 +688,7 @@ describe('Chat', () => {
           id: 'after-reconnect',
           senderRole: 'client',
           text: 'Пережить reconnect',
+          clientMessageId,
         }),
       ],
       nextCursor: null,
@@ -636,16 +700,39 @@ describe('Chat', () => {
       await Promise.resolve();
     });
 
-    expect(screen.getByLabelText('Сообщение')).toHaveValue(
-      'Пережить reconnect',
-    );
-    fireEvent.click(
-      screen.getByRole('button', {
-        name: /сообщение видно.*очистить черновик/i,
-      }),
-    );
     expect(screen.getByLabelText('Сообщение')).toHaveValue('');
     expect(send).toHaveBeenCalledTimes(1);
+  });
+
+  it('late echo старой консультации не очищает draft новой консультации', async () => {
+    const { rerender } = render(<Chat consultationId="c1" />);
+    await serverReady();
+    fireEvent.change(screen.getByLabelText('Сообщение'), {
+      target: { value: 'Старая попытка' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Отправить' }));
+    const clientMessageId = sentClientMessageId();
+    const oldMessageHandler = handlers['chat.message'];
+
+    rerender(<Chat consultationId="c2" />);
+    await serverReady();
+    fireEvent.change(screen.getByLabelText('Сообщение'), {
+      target: { value: 'Новый черновик' },
+    });
+    await act(async () => {
+      oldMessageHandler(
+        message({
+          id: 'late-c1',
+          consultationId: 'c1',
+          senderRole: 'client',
+          text: 'Старая попытка',
+          clientMessageId,
+        }),
+      );
+    });
+
+    expect(screen.getByLabelText('Сообщение')).toHaveValue('Новый черновик');
+    expect(screen.queryByText('Старая попытка')).toBeNull();
   });
 
   it('лента объявлена живой областью: новые сообщения читаются вслух', async () => {

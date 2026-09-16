@@ -2255,6 +2255,8 @@ export interface components {
             consultationId: string;
             /** @enum {string} */
             senderRole: "client" | "expert";
+            /** Format: uuid */
+            clientMessageId?: string;
             text: string;
             /** Format: date-time */
             createdAt: string;
@@ -4517,6 +4519,13 @@ export interface operations {
                     "application/json": components["schemas"]["ConsultationExpertDto"];
                 };
             };
+            /** @description PAYMENT_HOLD_REQUIRED — исход COMPLETED требует подтверждённого hold */
+            402: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
             /** @description FORBIDDEN — не эксперт-участник */
             403: {
                 headers: {
@@ -6033,8 +6042,22 @@ export interface operations {
                     "application/json": components["schemas"]["MediaTokenResponseDto"];
                 };
             };
+            /** @description PAYMENT_HOLD_REQUIRED — подтверждённый hold обязателен */
+            402: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
             /** @description CONSULTATION_NOT_FOUND */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description CONSULTATION_NOT_ACTIVE */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };

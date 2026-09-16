@@ -29,6 +29,7 @@ interface SocketData {
 interface ChatSendPayload {
   consultationId: string;
   text: string;
+  clientMessageId?: string;
 }
 
 interface ChatTypingPayload {
@@ -132,33 +133,50 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection {
         payload?.consultationId,
         data.userId,
       );
-      const message = await this.chat.sendResolved(
+      const result = await this.chat.sendResolved(
         resolved.consultation,
         resolved.role,
+        data.userId,
         payload?.text,
+        payload?.clientMessageId,
       );
-      this.events.emitToUser(
-        resolved.consultation.clientUserId,
-        'chat.message',
-        message,
-      );
-      this.events.emitToExpert(
-        resolved.consultation.expertId,
-        'chat.message',
-        message,
-      );
+      if (result.created) {
+        this.events.emitToUser(
+          resolved.consultation.clientUserId,
+          'chat.message',
+          result.message,
+        );
+        this.events.emitToExpert(
+          resolved.consultation.expertId,
+          'chat.message',
+          result.message,
+        );
+      } else {
+        // Replay is an ack for this exact socket only. The recipient already
+        // received (or can REST-resync) the original persisted message.
+        client.emit('chat.message', result.message);
+      }
 
       // Чат-пуш офлайн-получателю (E9, задача 7): сообщение уже сохранено и
       // разослано выше — pushOfflineRecipient сама глотает свои ошибки
       // (как dispatch()), сбой push-логики никогда не всплывёт в
       // client.emit('chat.error') отправителю.
-      await this.pushOfflineRecipient(resolved.consultation, resolved.role);
+      if (result.created) {
+        await this.pushOfflineRecipient(resolved.consultation, resolved.role);
+      }
     } catch (e) {
       const code =
         e instanceof HttpException
           ? ((e.getResponse() as { code?: string })?.code ?? 'INTERNAL')
           : 'INTERNAL';
-      client.emit('chat.error', { code });
+      const correlation =
+        typeof payload?.clientMessageId === 'string'
+          ? {
+              consultationId: payload?.consultationId,
+              clientMessageId: payload.clientMessageId,
+            }
+          : {};
+      client.emit('chat.error', { code, ...correlation });
     }
   }
 
