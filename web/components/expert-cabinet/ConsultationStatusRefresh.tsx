@@ -34,7 +34,14 @@ export default function ConsultationStatusRefresh({
         `consultations/${consultationId}`,
       );
       if (!mounted.current) return;
-      if (current?.status && current.status !== initialStatus) router.refresh();
+      if (current?.status && current.status !== initialStatus) {
+        if (current.status === 'ACTIVE') {
+          window.dispatchEvent(
+            new CustomEvent('sq:expert-work-status', { detail: 'BUSY' }),
+          );
+        }
+        router.refresh();
+      }
     } catch {
       if (mounted.current) setFailed(true);
     } finally {

@@ -105,6 +105,25 @@ describe('OfferList', () => {
     );
   });
 
+  it('подтверждённый accept сообщает оболочке канонический BUSY', async () => {
+    const status = jest.fn();
+    window.addEventListener('sq:expert-work-status', status);
+    apiFetch.mockResolvedValue({
+      requestId: 'r1',
+      status: 'MATCHED',
+      consultationId: 'c1',
+    });
+    render(<OfferList initial={[offer()]} topics={TOPICS} locale="ru" />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Принять' }));
+
+    await waitFor(() => expect(push).toHaveBeenCalled());
+    expect(status).toHaveBeenCalledWith(
+      expect.objectContaining({ detail: 'BUSY' }),
+    );
+    window.removeEventListener('sq:expert-work-status', status);
+  });
+
   it('отклонение убирает заявку из списка', async () => {
     apiFetch.mockResolvedValue(null);
     render(<OfferList initial={[offer()]} topics={TOPICS} locale="ru" />);
@@ -165,6 +184,19 @@ describe('OfferList', () => {
     expect(await screen.findByText(/7777/)).toBeInTheDocument();
   });
 
+  it('после ready/reconnect просит оболочку пересверить work status', async () => {
+    const sync = jest.fn();
+    window.addEventListener('sq:expert-work-status-sync', sync);
+    apiFetch.mockResolvedValue([]);
+    render(<OfferList initial={[]} topics={TOPICS} locale="ru" />);
+    await waitFor(() => expect(readyHandler).toBeDefined());
+
+    await act(async () => readyHandler?.({}));
+
+    await waitFor(() => expect(sync).toHaveBeenCalledTimes(1));
+    window.removeEventListener('sq:expert-work-status-sync', sync);
+  });
+
   it('не затирает realtime-оффер устаревшим REST snapshot', async () => {
     let resolveSnapshot!: (value: unknown) => void;
     apiFetch
@@ -184,6 +216,29 @@ describe('OfferList', () => {
 
     await waitFor(() => expect(apiFetch).toHaveBeenCalledTimes(2));
     expect(screen.getByText(/7777/)).toBeInTheDocument();
+  });
+
+  it('snapshot до accept не снимает блокировку неизвестного результата', async () => {
+    let resolveSnapshot!: (value: unknown) => void;
+    const snapshot = new Promise((resolve) => {
+      resolveSnapshot = resolve;
+    });
+    apiFetch.mockImplementation((path: string) =>
+      path === 'experts/me/offers'
+        ? snapshot
+        : Promise.reject(new TypeError('response lost')),
+    );
+    render(<OfferList initial={[offer()]} topics={TOPICS} locale="ru" />);
+    await waitFor(() => expect(readyHandler).toBeDefined());
+
+    await act(async () => readyHandler?.({}));
+    fireEvent.click(screen.getByRole('button', { name: 'Принять' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent(/неизвестен/i);
+    expect(screen.getByRole('button', { name: 'Принять' })).toBeDisabled();
+    await act(async () => resolveSnapshot([offer()]));
+
+    expect(screen.getByRole('button', { name: 'Принять' })).toBeDisabled();
+    expect(screen.getByRole('alert')).toHaveTextContent(/неизвестен/i);
   });
 
   it('при неизвестном результате приёма не удаляет оффер и запрещает слепой retry', async () => {

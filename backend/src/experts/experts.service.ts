@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import {
+  ConsultationStatus,
   Expert,
   ExperienceLevel,
   Prisma,
@@ -178,11 +179,23 @@ export class ExpertsService {
       await this.presence.setUnavailable(expert.id);
     }
 
+    let updated: number;
     try {
-      await this.prisma.expert.update({
-        where: { id: expert.id },
-        data: { workStatus: dto.workStatus },
-      });
+      // One SQL statement closes both races with consultation activation:
+      // no stale self-request may overwrite BUSY after ACTIVE commits. If
+      // this update wins first, activation's post-commit side effect writes
+      // BUSY afterwards. A separate count()+update would leave a gap.
+      updated = await this.prisma.$executeRaw`
+        UPDATE "experts"
+        SET "work_status" = CAST(${dto.workStatus} AS "WorkStatus")
+        WHERE "id" = ${expert.id}
+          AND NOT EXISTS (
+            SELECT 1
+            FROM "consultations"
+            WHERE "expert_id" = ${expert.id}
+              AND "status" = CAST(${ConsultationStatus.ACTIVE} AS "ConsultationStatus")
+          )
+      `;
     } catch (e) {
       try {
         if (becomesAvailable) {
@@ -201,6 +214,28 @@ export class ExpertsService {
         );
       }
       throw e;
+    }
+
+    if (updated === 0) {
+      // ACTIVE means the expert must not be discoverable, regardless of the
+      // stale status supplied by the browser that lost the race.
+      try {
+        await this.presence.setUnavailable(expert.id);
+      } catch (presenceError) {
+        this.logger.error(
+          `Failed to enforce unavailable presence for busy expert ${expert.id}: ${
+            presenceError instanceof Error
+              ? presenceError.message
+              : String(presenceError)
+          }`,
+          presenceError instanceof Error ? presenceError.stack : '',
+        );
+      }
+      apiError(
+        'EXPERT_BUSY',
+        'Нельзя менять рабочий статус во время активной консультации',
+        409,
+      );
     }
 
     await this.audit.log({

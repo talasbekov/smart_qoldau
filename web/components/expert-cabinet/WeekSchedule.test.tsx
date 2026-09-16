@@ -9,7 +9,7 @@ import {
 const apiFetch = jest.fn();
 jest.mock('@/lib/api/client', () => ({
   apiFetch: (...a: unknown[]) => apiFetch(...a),
-  ApiError: class extends Error {},
+  ApiError: jest.requireActual('@/lib/api/client').ApiError,
 }));
 
 // eslint-disable-next-line import/first
@@ -115,6 +115,21 @@ describe('WeekSchedule', () => {
     const submittedWeek = fullWeek();
     apiFetch
       .mockRejectedValueOnce(new TypeError('response lost'))
+      .mockResolvedValueOnce({ days: submittedWeek });
+    render(<WeekSchedule initial={submittedWeek} />);
+
+    fireEvent.click(screen.getByRole('button', { name: /Сохранить/ }));
+
+    expect(await screen.findByRole('status')).toHaveTextContent(/сохранено/i);
+    expect(apiFetch).toHaveBeenCalledWith('experts/me/schedule');
+  });
+
+  it('сверяет HTTP 5xx после PUT через GET как неизвестный результат', async () => {
+    const submittedWeek = fullWeek();
+    apiFetch
+      .mockRejectedValueOnce(
+        new (jest.requireActual('@/lib/api/client').ApiError)(500, null),
+      )
       .mockResolvedValueOnce({ days: submittedWeek });
     render(<WeekSchedule initial={submittedWeek} />);
 

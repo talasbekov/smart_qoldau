@@ -138,7 +138,10 @@ export default function WeekSchedule({
       }
     } catch (caught) {
       if (!mounted.current) return;
-      if (caught instanceof ApiError) {
+      // A 4xx response definitively rejects this payload. A 5xx may be the
+      // backend's final read failing after its transaction already committed,
+      // so it has the same unknown outcome as a lost transport response.
+      if (caught instanceof ApiError && caught.status < 500) {
         setPhase('error');
         return;
       }

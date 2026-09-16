@@ -6,6 +6,7 @@ import { PrismaService } from '../src/prisma/prisma.service';
 import { RedisService } from '../src/redis/redis.service';
 import { SMS_PROVIDER_TOKEN, SmsProvider } from '../src/auth/sms/sms.provider';
 import { AdminRole } from '@prisma/client';
+import { randomUUID } from 'node:crypto';
 import { createApp } from './utils/create-app';
 import { AdminAuth, adminUser } from './utils/admin-helpers';
 
@@ -17,7 +18,8 @@ const ADMIN_EMAIL_PREFIX = 'experts-status-e2e-operator-';
 const PHONE_S1 = '+77074000001';
 const PHONE_S2 = '+77074000002';
 const PHONE_S3 = '+77074000003';
-const ALL_PHONES = [PHONE_S1, PHONE_S2, PHONE_S3];
+const PHONE_S4 = '+77074000004';
+const ALL_PHONES = [PHONE_S1, PHONE_S2, PHONE_S3, PHONE_S4];
 
 let lastCode = '';
 
@@ -61,6 +63,14 @@ describe('Experts work-status + presence (e2e)', () => {
     const expertIds = experts.map((e) => e.id);
     if (registeredExpertIds.length)
       await redis.srem('experts:available', ...registeredExpertIds);
+    await prisma.consultation.deleteMany({
+      where: {
+        OR: [
+          { expertId: { in: expertIds } },
+          { clientUserId: { in: userIds } },
+        ],
+      },
+    });
     await prisma.expertDocument.deleteMany({
       where: { expertId: { in: expertIds } },
     });
@@ -211,6 +221,50 @@ describe('Experts work-status + presence (e2e)', () => {
       .set('Authorization', `Bearer ${accessToken}`)
       .send({ workStatus: 'NOT_ACCEPTING' })
       .expect(200);
+    expect(await redis.sismember('experts:available', expertId)).toBe(0);
+  });
+
+  it('ACTIVE консультация атомарно запрещает self-переходы', async () => {
+    const { accessToken, expertId } = await verifiedExpert(PHONE_S3);
+    const client = await registeredUser(PHONE_S4);
+    const topic = await prisma.topic.findFirstOrThrow();
+    await prisma.expert.update({
+      where: { id: expertId },
+      data: { workStatus: 'BUSY' },
+    });
+    await prisma.consultation.create({
+      data: {
+        requestId: randomUUID(),
+        clientUserId: client.user.id,
+        clientCode: 4172,
+        expertId,
+        topicId: topic.id,
+        format: 'chat',
+        priceTiyn: 399000,
+        status: 'ACTIVE',
+        startedAt: new Date(),
+      },
+    });
+
+    const response = await request(app.getHttpServer())
+      .patch('/v1/experts/me/work-status')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({ workStatus: 'ACCEPTING' })
+      .expect(409);
+
+    expect(response.body.error.code).toBe('EXPERT_BUSY');
+
+    const offlineResponse = await request(app.getHttpServer())
+      .patch('/v1/experts/me/work-status')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({ workStatus: 'NOT_ACCEPTING' })
+      .expect(409);
+
+    expect(offlineResponse.body.error.code).toBe('EXPERT_BUSY');
+    expect(
+      (await prisma.expert.findUniqueOrThrow({ where: { id: expertId } }))
+        .workStatus,
+    ).toBe('BUSY');
     expect(await redis.sismember('experts:available', expertId)).toBe(0);
   });
 

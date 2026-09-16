@@ -21,7 +21,10 @@ function makeExpert(workStatus: WorkStatus): Expert {
 describe('ExpertsService.updateWorkStatus — компенсация presence при сбое БД', () => {
   let redis: RedisService;
   let presence: PresenceService;
-  let prisma: { expert: { update: jest.Mock } };
+  let prisma: {
+    $executeRaw: jest.Mock;
+    expert: { update: jest.Mock; findUnique: jest.Mock };
+  };
   let service: ExpertsService;
 
   beforeAll(() => {
@@ -32,7 +35,16 @@ describe('ExpertsService.updateWorkStatus — компенсация presence п
   });
 
   beforeEach(() => {
-    prisma = { expert: { update: jest.fn() } };
+    prisma = {
+      $executeRaw: jest.fn(),
+      expert: {
+        update: jest.fn(),
+        findUnique: jest.fn().mockResolvedValue({
+          ...makeExpert(WorkStatus.ACCEPTING),
+          topics: [],
+        }),
+      },
+    };
     service = new ExpertsService(
       prisma as unknown as PrismaService,
       { log: jest.fn() } as unknown as AuditService,
@@ -48,7 +60,7 @@ describe('ExpertsService.updateWorkStatus — компенсация presence п
 
   it('сбой БД при ACCEPTING: presence откатывается (эксперт удалён), ошибка проброшена', async () => {
     const dbError = new Error('db down');
-    prisma.expert.update.mockRejectedValue(dbError);
+    prisma.$executeRaw.mockRejectedValue(dbError);
 
     await expect(
       service.updateWorkStatus(makeExpert(WorkStatus.NOT_ACCEPTING), {
@@ -59,10 +71,42 @@ describe('ExpertsService.updateWorkStatus — компенсация presence п
     expect(await presence.isAvailable(EXPERT_ID)).toBe(false);
   });
 
+  it('не переводит эксперта в ACCEPTING при активной консультации', async () => {
+    prisma.$executeRaw.mockResolvedValue(0);
+
+    await expect(
+      service.updateWorkStatus(makeExpert(WorkStatus.BUSY), {
+        workStatus: WorkStatus.ACCEPTING,
+      }),
+    ).rejects.toMatchObject({
+      response: expect.objectContaining({ code: 'EXPERT_BUSY' }),
+      status: 409,
+    });
+
+    expect(prisma.expert.update).not.toHaveBeenCalled();
+    expect(await presence.isAvailable(EXPERT_ID)).toBe(false);
+  });
+
+  it('не перезаписывает BUSY в NOT_ACCEPTING при активной консультации', async () => {
+    prisma.$executeRaw.mockResolvedValue(0);
+
+    await expect(
+      service.updateWorkStatus(makeExpert(WorkStatus.BUSY), {
+        workStatus: WorkStatus.NOT_ACCEPTING,
+      }),
+    ).rejects.toMatchObject({
+      response: expect.objectContaining({ code: 'EXPERT_BUSY' }),
+      status: 409,
+    });
+
+    expect(prisma.expert.update).not.toHaveBeenCalled();
+    expect(await presence.isAvailable(EXPERT_ID)).toBe(false);
+  });
+
   it('сбой БД при уходе из ACCEPTING: эксперт возвращён в presence, ошибка проброшена', async () => {
     await presence.setAvailable(EXPERT_ID);
     const dbError = new Error('db down');
-    prisma.expert.update.mockRejectedValue(dbError);
+    prisma.$executeRaw.mockRejectedValue(dbError);
 
     await expect(
       service.updateWorkStatus(makeExpert(WorkStatus.ACCEPTING), {

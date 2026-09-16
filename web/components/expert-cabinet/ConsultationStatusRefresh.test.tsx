@@ -23,6 +23,8 @@ afterEach(() => {
 });
 
 it('refreshes the scheduled page when the API reports that the session is active', async () => {
+  const status = jest.fn();
+  window.addEventListener('sq:expert-work-status', status);
   apiFetch.mockResolvedValue({ status: 'ACTIVE' });
   render(
     <ConsultationStatusRefresh
@@ -35,7 +37,11 @@ it('refreshes the scheduled page when the API reports that the session is active
   await act(async () => jest.advanceTimersByTime(15_000));
 
   expect(apiFetch).toHaveBeenCalledWith('consultations/c1');
+  expect(status).toHaveBeenCalledWith(
+    expect.objectContaining({ detail: 'BUSY' }),
+  );
   expect(refresh).toHaveBeenCalledTimes(1);
+  window.removeEventListener('sq:expert-work-status', status);
 });
 
 it('shows a recoverable error and retries without a second mutation', async () => {

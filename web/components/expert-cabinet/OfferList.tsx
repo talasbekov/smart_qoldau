@@ -66,8 +66,8 @@ export default function OfferList({
           if (!mounted.current) return;
           if (eventRevision.current === revision && fresh) {
             setOffers(fresh);
-            setBlocked(new Set());
             setNotice(null);
+            window.dispatchEvent(new Event('sq:expert-work-status-sync'));
           } else if (eventRevision.current !== revision) {
             // An event raced with REST. Run one more snapshot after the
             // event so a stale response can neither resurrect nor drop it.
@@ -141,6 +141,11 @@ export default function OfferList({
     setOffers((current) =>
       current.filter((offer) => offer.offerId !== offerId),
     );
+    setBlocked((current) => {
+      const next = new Set(current);
+      next.delete(offerId);
+      return next;
+    });
   }
 
   function isDefinitive(caught: unknown): boolean {
@@ -154,6 +159,10 @@ export default function OfferList({
   async function accept(offerId: string) {
     if (actionLock.current || blocked.has(offerId)) return;
     actionLock.current = true;
+    // Any REST snapshot already in flight predates this mutation. It may be
+    // applied only after a fresh follow-up snapshot, and it must never clear
+    // an unknown outcome.
+    eventRevision.current += 1;
     setBusy({ id: offerId, action: 'accept' });
     setNotice(null);
     try {
@@ -162,6 +171,9 @@ export default function OfferList({
       });
       if (!result?.consultationId) throw new TypeError('accept result missing');
       if (mounted.current) {
+        window.dispatchEvent(
+          new CustomEvent('sq:expert-work-status', { detail: 'BUSY' }),
+        );
         router.push(`/${locale}/expert/consultations/${result.consultationId}`);
       }
     } catch (caught) {
@@ -171,7 +183,6 @@ export default function OfferList({
         setNotice({ kind: 'status', text: copy.offerUnavailable });
       } else {
         setBlocked((current) => new Set(current).add(offerId));
-        setNotice({ kind: 'alert', text: copy.offerUnknown });
       }
     } finally {
       actionLock.current = false;
@@ -182,6 +193,7 @@ export default function OfferList({
   async function decline(offerId: string) {
     if (actionLock.current || blocked.has(offerId)) return;
     actionLock.current = true;
+    eventRevision.current += 1;
     setBusy({ id: offerId, action: 'decline' });
     setNotice(null);
     try {
@@ -194,7 +206,6 @@ export default function OfferList({
         setNotice({ kind: 'status', text: copy.offerUnavailable });
       } else {
         setBlocked((current) => new Set(current).add(offerId));
-        setNotice({ kind: 'alert', text: copy.offerUnknown });
       }
     } finally {
       actionLock.current = false;
@@ -204,6 +215,21 @@ export default function OfferList({
 
   return (
     <div className="flex flex-col gap-4">
+      {blocked.size > 0 ? (
+        <div
+          role="alert"
+          className="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-ink"
+        >
+          <p>{copy.offerUnknown}</p>
+          <Link
+            href={`/${locale}/expert/consultations`}
+            className="mt-2 inline-flex min-h-11 items-center font-bold text-primary focus:outline-none focus:ring-2 focus:ring-primary"
+          >
+            {copy.navConsultations}
+          </Link>
+        </div>
+      ) : null}
+
       {notice ? (
         <div
           role={notice.kind}

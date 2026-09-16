@@ -111,6 +111,9 @@ export class ExpertsController {
   @ApiForbiddenResponse({
     description: 'EXPERT_BLOCKED — эксперт заблокирован',
   })
+  @ApiConflictResponse({
+    description: 'EXPERT_BUSY — есть активная консультация',
+  })
   async updateWorkStatus(
     @CurrentExpert() expert: Expert,
     @Body() dto: WorkStatusDto,

@@ -15,6 +15,16 @@ jest.mock('@/lib/api/client', () => ({
 // eslint-disable-next-line import/first
 import WorkStatusToggle from './WorkStatusToggle';
 
+function deferred<T>() {
+  let resolve!: (value: T) => void;
+  let reject!: (reason: unknown) => void;
+  const promise = new Promise<T>((onResolve, onReject) => {
+    resolve = onResolve;
+    reject = onReject;
+  });
+  return { promise, resolve, reject };
+}
+
 beforeEach(() => {
   jest.useFakeTimers();
   Object.defineProperty(document, 'visibilityState', {
@@ -194,6 +204,156 @@ describe('WorkStatusToggle', () => {
       'experts/me/heartbeat',
       expect.anything(),
     );
+  });
+
+  it('компенсирует включение, если вкладку скрыли до ответа PATCH', async () => {
+    const patch = deferred<{ workStatus: string }>();
+    let serverStatus = 'NOT_ACCEPTING';
+    apiFetch.mockImplementation((path: string, init?: RequestInit) => {
+      const requested = init?.body
+        ? JSON.parse(String(init.body)).workStatus
+        : null;
+      if (path === 'experts/me/work-status' && requested === 'ACCEPTING') {
+        return patch.promise.then(() => {
+          serverStatus = requested;
+          return { workStatus: requested };
+        });
+      }
+      if (path === 'experts/me/work-status' && requested) {
+        serverStatus = requested;
+      }
+      return Promise.resolve({ workStatus: serverStatus });
+    });
+    render(<WorkStatusToggle initial="NOT_ACCEPTING" />);
+
+    fireEvent.click(screen.getByRole('switch'));
+    await waitFor(() => expect(apiFetch).toHaveBeenCalledTimes(1));
+    await setHidden(true);
+    await act(async () => patch.resolve({ workStatus: 'ACCEPTING' }));
+
+    await waitFor(() => expect(serverStatus).toBe('NOT_ACCEPTING'));
+  });
+
+  it('компенсирует включение, если компонент размонтирован до ответа PATCH', async () => {
+    const patch = deferred<{ workStatus: string }>();
+    let serverStatus = 'NOT_ACCEPTING';
+    apiFetch.mockImplementation((path: string, init?: RequestInit) => {
+      const requested = init?.body
+        ? JSON.parse(String(init.body)).workStatus
+        : null;
+      if (path === 'experts/me/work-status' && requested === 'ACCEPTING') {
+        return patch.promise.then(() => {
+          serverStatus = requested;
+          return { workStatus: requested };
+        });
+      }
+      if (path === 'experts/me/work-status' && requested) {
+        serverStatus = requested;
+      }
+      return Promise.resolve({ workStatus: serverStatus });
+    });
+    const view = render(<WorkStatusToggle initial="NOT_ACCEPTING" />);
+
+    fireEvent.click(screen.getByRole('switch'));
+    await waitFor(() => expect(apiFetch).toHaveBeenCalledTimes(1));
+    view.unmount();
+    await act(async () => patch.resolve({ workStatus: 'ACCEPTING' }));
+
+    await waitFor(() => expect(serverStatus).toBe('NOT_ACCEPTING'));
+  });
+
+  it('после lost PATCH и lost GET скрытие всё равно снимает поздний ACCEPTING', async () => {
+    const get = deferred<{ workStatus: string }>();
+    let serverStatus = 'NOT_ACCEPTING';
+    apiFetch.mockImplementation((path: string, init?: RequestInit) => {
+      const requested = init?.body
+        ? JSON.parse(String(init.body)).workStatus
+        : null;
+      if (path === 'experts/me/work-status' && requested === 'ACCEPTING') {
+        serverStatus = 'ACCEPTING';
+        return Promise.reject(new TypeError('PATCH response lost'));
+      }
+      if (path === 'experts/me') return get.promise;
+      if (path === 'experts/me/work-status' && requested) {
+        serverStatus = requested;
+      }
+      return Promise.resolve({ workStatus: serverStatus });
+    });
+    render(<WorkStatusToggle initial="NOT_ACCEPTING" />);
+
+    fireEvent.click(screen.getByRole('switch'));
+    await waitFor(() => expect(apiFetch).toHaveBeenCalledWith('experts/me'));
+    await setHidden(true);
+    await act(async () => get.reject(new TypeError('GET response lost')));
+
+    await waitFor(() => expect(serverStatus).toBe('NOT_ACCEPTING'));
+  });
+
+  it('не перезаписывает канонический BUSY при hide/show', async () => {
+    let serverStatus = 'ACCEPTING';
+    apiFetch.mockImplementation(async (_path: string, init?: RequestInit) => {
+      if (init?.body) {
+        serverStatus = JSON.parse(String(init.body)).workStatus;
+      }
+      return { workStatus: serverStatus };
+    });
+    const view = render(<WorkStatusToggle initial="ACCEPTING" />);
+    await waitFor(() => expect(screen.getByRole('switch')).toBeEnabled());
+
+    serverStatus = 'BUSY';
+    view.rerender(<WorkStatusToggle initial="BUSY" />);
+    await setHidden(true);
+    await setHidden(false);
+
+    expect(serverStatus).toBe('BUSY');
+  });
+
+  it('REST-resync сверяет канонический статус до следующего resume', async () => {
+    let serverStatus = 'ACCEPTING';
+    apiFetch.mockImplementation(async (path: string, init?: RequestInit) => {
+      if (init?.body) {
+        serverStatus = JSON.parse(String(init.body)).workStatus;
+      }
+      if (path === 'experts/me') return { workStatus: serverStatus };
+      return { workStatus: serverStatus };
+    });
+    render(<WorkStatusToggle initial="ACCEPTING" />);
+    await waitFor(() => expect(screen.getByRole('switch')).toBeEnabled());
+    serverStatus = 'BUSY';
+    apiFetch.mockClear();
+
+    await act(async () => {
+      window.dispatchEvent(new Event('sq:expert-work-status-sync'));
+    });
+
+    await waitFor(() => expect(apiFetch).toHaveBeenCalledWith('experts/me'));
+    await waitFor(() =>
+      expect(screen.getByRole('switch')).toHaveAttribute(
+        'aria-checked',
+        'false',
+      ),
+    );
+    await setHidden(true);
+    await setHidden(false);
+    expect(serverStatus).toBe('BUSY');
+  });
+
+  it('поздний ответ ACCEPTING не отменяет более новый канонический BUSY', async () => {
+    const patch = deferred<{ workStatus: string }>();
+    apiFetch.mockImplementationOnce(() => patch.promise);
+    render(<WorkStatusToggle initial="NOT_ACCEPTING" />);
+
+    fireEvent.click(screen.getByRole('switch'));
+    await waitFor(() => expect(apiFetch).toHaveBeenCalledTimes(1));
+    await act(async () => {
+      window.dispatchEvent(
+        new CustomEvent('sq:expert-work-status', { detail: 'BUSY' }),
+      );
+    });
+    await act(async () => patch.resolve({ workStatus: 'ACCEPTING' }));
+
+    expect(screen.getByRole('switch')).toHaveAttribute('aria-checked', 'false');
+    expect(screen.getByRole('switch')).toBeDisabled();
   });
 
   it('не показывает переключение успешным, когда сервер его отклонил', async () => {
