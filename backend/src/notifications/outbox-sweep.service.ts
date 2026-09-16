@@ -20,6 +20,10 @@ const MAX_ATTEMPTS = 5;
 // Экспоненциальная задержка: 2с, 4с, 8с, 16с. Провайдер, лежащий минуту,
 // не должен получать один и тот же запрос каждую секунду.
 const BACKOFF_BASE_MS = 2000;
+// Каждый transport call ограничен по времени. Вместе с renew перед каждым
+// устройством это гарантирует, что активный fanout не переживёт lease молча,
+// а зависший provider не удержит worker promise навсегда.
+const PUSH_TIMEOUT_MS = 10_000;
 // Crash после claim не оставляет строку занятой навсегда. Если процесс
 // исчезнет, другой worker повторно заберёт job после истечения lease.
 // Crash после внешнего send, но до DB ack, неизбежно даёт повторную отправку:
@@ -139,10 +143,16 @@ export class OutboxSweepService {
     const critical = CRITICAL_TYPES.has(row.type as NotificationType);
     const data = row.payload as Record<string, string>;
 
+    let transportFailed = false;
     let lastError: string | undefined;
     for (const device of devices) {
+      // Batch claim мог истечь, пока предыдущий chunk обрабатывался. Перед
+      // КАЖДЫМ внешним side effect продлеваем только ещё действующий lease.
+      // Если другой worker уже reclaim/ack строки, старый token не проходит
+      // compare-and-set и provider больше не вызывается.
+      if (!(await this.renewLease(row.id, leaseToken))) return false;
       try {
-        await this.push.send({
+        await this.sendWithTimeout({
           token: device.token,
           title: notification.title,
           body: notification.body,
@@ -150,7 +160,9 @@ export class OutboxSweepService {
           critical,
         });
       } catch (e) {
-        lastError = e instanceof Error ? e.message : String(e);
+        transportFailed = true;
+        const message = e instanceof Error ? e.message : String(e);
+        lastError = message || 'push transport failed without an error message';
       }
     }
 
@@ -175,7 +187,7 @@ export class OutboxSweepService {
     // когда один transport call упал, нельзя: следующая попытка повторит весь
     // веер. Уже успешное устройство может получить дубль; это осознанная
     // at-least-once граница, клиент дедуплицирует по notificationId.
-    if (!lastError) {
+    if (!transportFailed) {
       return this.prisma.$transaction(async (tx) => {
         const settled = await tx.notificationOutbox.updateMany({
           where: { id: row.id, leaseToken, sentAt: null, deadAt: null },
@@ -230,5 +242,45 @@ export class OutboxSweepService {
       },
     });
     return settled.count === 1;
+  }
+
+  private async renewLease(id: string, leaseToken: string): Promise<boolean> {
+    const now = this.clock.now();
+    const renewed = await this.prisma.notificationOutbox.updateMany({
+      where: {
+        id,
+        leaseToken,
+        leaseExpiresAt: { gt: now },
+        sentAt: null,
+        deadAt: null,
+      },
+      data: { leaseExpiresAt: new Date(now.getTime() + LEASE_MS) },
+    });
+    return renewed.count === 1;
+  }
+
+  private async sendWithTimeout(
+    input: Parameters<PushProviderPort['send']>[0],
+  ): Promise<void> {
+    // Текущий port не принимает AbortSignal: таймаут ограничивает worker,
+    // но не обещает отмену уже переданного провайдеру запроса. Его позднее
+    // завершение остаётся допустимым дублем на границе at-least-once.
+    let timeout: NodeJS.Timeout | undefined;
+    try {
+      await Promise.race([
+        this.push.send(input),
+        new Promise<never>((_, reject) => {
+          timeout = setTimeout(
+            () =>
+              reject(
+                new Error(`push transport timeout after ${PUSH_TIMEOUT_MS}ms`),
+              ),
+            PUSH_TIMEOUT_MS,
+          );
+        }),
+      ]);
+    } finally {
+      if (timeout) clearTimeout(timeout);
+    }
   }
 }

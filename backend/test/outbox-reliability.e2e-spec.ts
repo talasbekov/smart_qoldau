@@ -29,6 +29,7 @@ class RecordingPushProvider extends PushProviderPort {
     data: Record<string, string>;
   }> = [];
   readonly failedTokens = new Set<string>();
+  readonly emptyErrorTokens = new Set<string>();
   delayMs = 0;
 
   async send(input: {
@@ -45,7 +46,53 @@ class RecordingPushProvider extends PushProviderPort {
     if (this.failedTokens.has(input.token)) {
       throw new Error(`transport failed for ${input.token}`);
     }
+    if (this.emptyErrorTokens.has(input.token)) {
+      throw new Error();
+    }
     return { providerMessageId: `push-${this.calls.length}` };
+  }
+}
+
+class BlockingFirstWavePushProvider extends PushProviderPort {
+  readonly calls: string[] = [];
+  private readonly firstWaveStartedPromise: Promise<void>;
+  private resolveFirstWaveStarted!: () => void;
+  private readonly releasePromise: Promise<void>;
+  private resolveRelease!: () => void;
+
+  constructor(private readonly firstWaveSize: number) {
+    super();
+    this.firstWaveStartedPromise = new Promise((resolve) => {
+      this.resolveFirstWaveStarted = resolve;
+    });
+    this.releasePromise = new Promise((resolve) => {
+      this.resolveRelease = resolve;
+    });
+  }
+
+  waitForFirstWave(): Promise<void> {
+    return this.firstWaveStartedPromise;
+  }
+
+  release(): void {
+    this.resolveRelease();
+  }
+
+  async send(input: {
+    token: string;
+    title: string;
+    body: string;
+    data: Record<string, string>;
+    critical: boolean;
+  }): Promise<{ providerMessageId: string }> {
+    this.calls.push(input.token);
+    if (this.calls.length <= this.firstWaveSize) {
+      if (this.calls.length === this.firstWaveSize) {
+        this.resolveFirstWaveStarted();
+      }
+      await this.releasePromise;
+    }
+    return { providerMessageId: `blocked-push-${this.calls.length}` };
   }
 }
 
@@ -94,7 +141,10 @@ describe('Notification outbox reliability (e2e)', () => {
     });
   }
 
-  async function seedJob(suffix: string): Promise<{
+  async function seedJob(
+    suffix: string,
+    nextAttemptAt = clock.now(),
+  ): Promise<{
     notificationId: string;
     outboxId: string;
     userId: string;
@@ -123,7 +173,7 @@ describe('Notification outbox reliability (e2e)', () => {
           notificationId,
           type: 'earning.credited',
         },
-        nextAttemptAt: clock.now(),
+        nextAttemptAt,
       },
     });
     return { notificationId, outboxId, userId };
@@ -218,6 +268,78 @@ describe('Notification outbox reliability (e2e)', () => {
     expect(new Set(push.calls.map((call) => call.data.notificationId))).toEqual(
       new Set([notificationId]),
     );
+  });
+
+  it('does not acknowledge a provider rejection whose Error message is empty', async () => {
+    const { outboxId, userId } = await seedJob('empty-error');
+    await prisma.device.create({
+      data: { userId, platform: 'android', token: 'e28-empty-error' },
+    });
+    const push = new RecordingPushProvider();
+    push.emptyErrorTokens.add('e28-empty-error');
+    const worker = new OutboxSweepService(prisma, clock, push);
+
+    await worker.tick();
+
+    const failed = await prisma.notificationOutbox.findUniqueOrThrow({
+      where: { id: outboxId },
+    });
+    expect(failed.sentAt).toBeNull();
+    expect(failed.attempts).toBe(1);
+    expect(failed.nextAttemptAt).toEqual(
+      new Date(clock.now().getTime() + 2_000),
+    );
+  });
+
+  it('does not send a queued job after another worker reclaimed and completed its expired lease', async () => {
+    const oldDueAt = new Date('2000-01-01T00:00:00.000Z');
+    const jobs = await Promise.all(
+      Array.from({ length: 11 }, (_, index) =>
+        seedJob(`stale-owner-${String(index).padStart(2, '0')}`, oldDueAt),
+      ),
+    );
+    await prisma.device.createMany({
+      data: jobs.map(({ userId }, index) => ({
+        userId,
+        platform: 'android',
+        token: `e28-stale-owner-${index}`,
+      })),
+    });
+    const slowPush = new BlockingFirstWavePushProvider(10);
+    const staleWorker = new OutboxSweepService(prisma, clock, slowPush);
+    const staleTick = staleWorker.tick();
+    await slowPush.waitForFirstWave();
+    const allTokens = jobs.map((_, index) => `e28-stale-owner-${index}`);
+    const queuedToken = allTokens.find(
+      (token) => !slowPush.calls.includes(token),
+    );
+    if (!queuedToken) throw new Error('expected one queued outbox job');
+    const queuedJobIndex = allTokens.indexOf(queuedToken);
+
+    clock.advance(60_001);
+    const recoveryPush = new RecordingPushProvider();
+    const recoveryWorker = new OutboxSweepService(prisma, clock, recoveryPush);
+    await recoveryWorker.tick();
+    expect(
+      recoveryPush.calls.filter((call) => call.token === queuedToken),
+    ).toHaveLength(1);
+    const recoveredBeforeRelease =
+      await prisma.notificationOutbox.findUniqueOrThrow({
+        where: { id: jobs[queuedJobIndex].outboxId },
+      });
+    expect(recoveredBeforeRelease.sentAt).toEqual(clock.now());
+
+    slowPush.release();
+    await staleTick;
+
+    expect(
+      slowPush.calls.filter((token) => token === queuedToken),
+    ).toHaveLength(0);
+    const queuedJob = await prisma.notificationOutbox.findUniqueOrThrow({
+      where: { id: jobs[queuedJobIndex].outboxId },
+    });
+    expect(queuedJob.sentAt).toEqual(clock.now());
+    expect(queuedJob.attempts).toBe(1);
   });
 
   it('skips an active lease and recovers the job after a crashed worker lease expires', async () => {

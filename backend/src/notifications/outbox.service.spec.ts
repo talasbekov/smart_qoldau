@@ -24,6 +24,7 @@ describe('OutboxSweepService', () => {
   let inFlight: number;
   let maxInFlight: number;
   let pushFails: boolean;
+  let pushHangs: boolean;
   let now: Date;
 
   const prisma = {
@@ -56,6 +57,7 @@ describe('OutboxSweepService', () => {
       pushCalls++;
       inFlight++;
       maxInFlight = Math.max(maxInFlight, inFlight);
+      if (pushHangs) return new Promise<void>(() => undefined);
       await new Promise((resolve) => setTimeout(resolve, 1));
       inFlight--;
       if (pushFails) throw new Error('провайдер недоступен');
@@ -69,6 +71,7 @@ describe('OutboxSweepService', () => {
     inFlight = 0;
     maxInFlight = 0;
     pushFails = false;
+    pushHangs = false;
     now = new Date('2026-08-23T05:00:00.000Z');
 
     const moduleRef = await Test.createTestingModule({
@@ -93,6 +96,10 @@ describe('OutboxSweepService', () => {
     };
   }
 
+  function finalUpdate(): Record<string, unknown> {
+    return updates[updates.length - 1].data;
+  }
+
   it('успешная отправка закрывает запись', async () => {
     rows = [row('o1')];
 
@@ -100,7 +107,7 @@ describe('OutboxSweepService', () => {
 
     expect(processed).toBe(1);
     expect(pushCalls).toBe(1);
-    expect(updates[0].data.sentAt).toEqual(now);
+    expect(finalUpdate().sentAt).toEqual(now);
   });
 
   it('сбой провайдера не теряет запись: попытка растёт, отправка отодвигается', async () => {
@@ -109,13 +116,11 @@ describe('OutboxSweepService', () => {
 
     await service.tick();
 
-    expect(updates[0].data.attempts).toBe(1);
-    expect(updates[0].data.sentAt).toBeUndefined();
+    expect(finalUpdate().attempts).toBe(1);
+    expect(finalUpdate().sentAt).toBeUndefined();
     // Первая задержка — 2 секунды; провайдер, лежащий минуту, не должен
     // получать один и тот же запрос каждую секунду.
-    expect(updates[0].data.nextAttemptAt).toEqual(
-      new Date(now.getTime() + 2000),
-    );
+    expect(finalUpdate().nextAttemptAt).toEqual(new Date(now.getTime() + 2000));
   });
 
   it('задержка растёт экспоненциально', async () => {
@@ -124,9 +129,7 @@ describe('OutboxSweepService', () => {
 
     await service.tick();
 
-    expect(updates[0].data.nextAttemptAt).toEqual(
-      new Date(now.getTime() + 8000),
-    );
+    expect(finalUpdate().nextAttemptAt).toEqual(new Date(now.getTime() + 8000));
   });
 
   it('после пяти неудач запись помечается мёртвой и больше не берётся', async () => {
@@ -135,9 +138,27 @@ describe('OutboxSweepService', () => {
 
     await service.tick();
 
-    expect(updates[0].data.deadAt).toEqual(now);
-    expect(updates[0].data.nextAttemptAt).toBeUndefined();
-    expect(updates[0].data.lastError).toContain('провайдер недоступен');
+    expect(finalUpdate().deadAt).toEqual(now);
+    expect(finalUpdate().nextAttemptAt).toBeUndefined();
+    expect(finalUpdate().lastError).toContain('провайдер недоступен');
+  });
+
+  it('зависший provider ограничен таймаутом и оставляет job для retry', async () => {
+    jest.useFakeTimers();
+    try {
+      pushHangs = true;
+      rows = [row('o1')];
+
+      const tick = service.tick();
+      await jest.advanceTimersByTimeAsync(10_000);
+      await tick;
+
+      expect(finalUpdate().attempts).toBe(1);
+      expect(finalUpdate().sentAt).toBeUndefined();
+      expect(finalUpdate().lastError).toContain('timeout');
+    } finally {
+      jest.useRealTimers();
+    }
   });
 
   it('сто записей не дают больше десяти одновременных вызовов провайдера', async () => {
