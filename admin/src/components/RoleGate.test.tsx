@@ -5,8 +5,12 @@ import { tokenStore } from '@/lib/tokenStore';
 describe('RoleGate', () => {
   beforeEach(() => localStorage.clear());
 
-  it('не рендерит children без нужной роли', () => {
-    tokenStore.set({ accessToken: 'a', refreshToken: 'r', admin: { id: '1', email: 'x', roles: ['SUPPORT_OPERATOR'] } });
+  it('не рендерит children без нужной роли', async () => {
+    await tokenStore.set({
+      accessToken: 'a',
+      refreshToken: 'r',
+      admin: { id: '1', email: 'x', roles: ['SUPPORT_OPERATOR'] },
+    });
     render(
       <RoleGate roles={['FINANCE_CONTROL']}>
         <div>Секрет</div>
@@ -15,8 +19,12 @@ describe('RoleGate', () => {
     expect(screen.queryByText('Секрет')).not.toBeInTheDocument();
   });
 
-  it('рендерит children, если роль есть', () => {
-    tokenStore.set({ accessToken: 'a', refreshToken: 'r', admin: { id: '1', email: 'x', roles: ['FINANCE_CONTROL'] } });
+  it('рендерит children, если роль есть', async () => {
+    await tokenStore.set({
+      accessToken: 'a',
+      refreshToken: 'r',
+      admin: { id: '1', email: 'x', roles: ['FINANCE_CONTROL'] },
+    });
     render(
       <RoleGate roles={['FINANCE_CONTROL']}>
         <div>Секрет</div>
@@ -25,8 +33,12 @@ describe('RoleGate', () => {
     expect(screen.getByText('Секрет')).toBeInTheDocument();
   });
 
-  it('SUPERADMIN видит всё', () => {
-    tokenStore.set({ accessToken: 'a', refreshToken: 'r', admin: { id: '1', email: 'x', roles: ['SUPERADMIN'] } });
+  it('SUPERADMIN видит всё', async () => {
+    await tokenStore.set({
+      accessToken: 'a',
+      refreshToken: 'r',
+      admin: { id: '1', email: 'x', roles: ['SUPERADMIN'] },
+    });
     render(
       <RoleGate roles={['FINANCE_CONTROL']}>
         <div>Секрет</div>

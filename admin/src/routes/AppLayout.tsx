@@ -10,20 +10,23 @@ const linkClass = ({ isActive }: { isActive: boolean }) =>
     isActive ? 'bg-white/10 text-white' : 'text-white/70 hover:bg-white/5'
   }`;
 
-export default function AppLayout() {
+export default function AppLayout({
+  onLogout,
+}: {
+  onLogout: () => Promise<void>;
+}) {
   const session = tokenStore.get();
-
-  function handleLogout() {
-    tokenStore.clear();
-    window.location.href = '/login';
-  }
 
   return (
     <div className="flex min-h-screen bg-sq-background">
       <aside className="w-[260px] shrink-0 bg-sq-primary-dark p-5 flex flex-col gap-0.5">
         <div className="mb-6">
-          <div className="text-sm font-extrabold text-white leading-tight">SmartQoldau</div>
-          <div className="text-[11px] font-bold tracking-wide text-[#7FD6C2]">ADMIN</div>
+          <div className="text-sm font-extrabold text-white leading-tight">
+            SmartQoldau
+          </div>
+          <div className="text-[11px] font-bold tracking-wide text-[#7FD6C2]">
+            ADMIN
+          </div>
         </div>
         <NavLink to="/verification" className={linkClass}>
           Верификация
@@ -61,8 +64,13 @@ export default function AppLayout() {
           Настройки
         </NavLink>
         <div className="mt-auto pt-4 border-t border-white/10">
-          <div className="text-xs text-white/55 mb-2">{session?.admin.email}</div>
-          <button onClick={handleLogout} className="text-sm text-white/80 hover:text-white">
+          <div className="text-xs text-white/55 mb-2">
+            {session?.admin.email}
+          </div>
+          <button
+            onClick={() => void onLogout()}
+            className="text-sm text-white/80 hover:text-white"
+          >
             Выйти
           </button>
         </div>
