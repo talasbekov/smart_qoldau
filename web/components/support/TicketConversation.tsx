@@ -244,13 +244,13 @@ export default function TicketConversation({
         headers: { 'X-Support-Owner': userId },
         body: JSON.stringify({ body: snapshot.payload.body }),
       });
+      storage.removeReplyPendingIfOperation(ticketId, snapshot.operationId);
+      storage.removeReplyDraftIfRevision(ticketId, snapshot.draftRevision);
       if (
         generation !== lifecycle.current ||
         !isSupportSessionCurrent(userId, sessionEpoch.current)
       )
         return;
-      storage.removeReplyPendingIfOperation(ticketId, snapshot.operationId);
-      storage.removeReplyDraftIfRevision(ticketId, snapshot.draftRevision);
       setPending(null);
       if (draftRevision.current === snapshot.draftRevision) {
         draftRevision.current = newSupportId();
@@ -259,12 +259,16 @@ export default function TicketConversation({
       setNotice('sent');
       void load();
     } catch (error) {
+      const definitelyRejected =
+        error instanceof ApiError && error.status >= 400 && error.status < 500;
+      if (definitelyRejected) {
+        storage.removeReplyPendingIfOperation(ticketId, snapshot.operationId);
+      }
       if (generation !== lifecycle.current) return;
       if (
         error instanceof ApiError &&
         error.code === 'SUPPORT_SESSION_CHANGED'
       ) {
-        storage.removeReplyPendingIfOperation(ticketId, snapshot.operationId);
         setBody('');
         setPending('session');
         setNotice('session');
@@ -276,10 +280,7 @@ export default function TicketConversation({
         setNotice('session');
         return;
       }
-      const definitelyRejected =
-        error instanceof ApiError && error.status >= 400 && error.status < 500;
       if (definitelyRejected) {
-        storage.removeReplyPendingIfOperation(ticketId, snapshot.operationId);
         setPending(null);
         setNotice('error');
         if (error.status === 409) void load();

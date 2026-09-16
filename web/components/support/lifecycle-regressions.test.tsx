@@ -4,6 +4,7 @@ import {
   fireEvent,
   render,
   screen,
+  waitFor,
 } from '@testing-library/react';
 import { ApiError, apiFetch } from '@/lib/api/client';
 import {
@@ -57,6 +58,16 @@ const detail = {
   relatedConsultationId: null,
   relatedPayoutId: null,
 };
+
+function deferred<T>() {
+  let resolve!: (value: T) => void;
+  let reject!: (reason: unknown) => void;
+  const promise = new Promise<T>((resolvePromise, rejectPromise) => {
+    resolve = resolvePromise;
+    reject = rejectPromise;
+  });
+  return { promise, resolve, reject };
+}
 
 function clientApi() {
   fetchMock.mockImplementation(async (path, init) => {
@@ -259,4 +270,211 @@ it('an older successful POST cannot delete another tab newer draft', async () =>
       },
     },
   });
+});
+
+it('finalizes a confirmed create after navigation unmounts the UI', async () => {
+  const post = deferred<unknown>();
+  fetchMock.mockImplementation(async (path, init) => {
+    if (path === 'experts/me') throw new ApiError(404, 'EXPERT_NOT_FOUND');
+    if (init?.method === 'POST') return post.promise;
+    return [];
+  });
+  const view = render(<SupportCenter locale="ru" userId="user-a" />);
+  await screen.findByLabelText('Тема');
+  fill();
+  fireEvent.click(screen.getByRole('button', { name: 'Создать обращение' }));
+  await waitFor(() =>
+    expect(
+      fetchMock.mock.calls.filter(([, init]) => init?.method === 'POST'),
+    ).toHaveLength(1),
+  );
+  expect(ownerStorage.readCreatePending().status).toBe('valid');
+
+  view.unmount();
+  await act(async () => post.resolve({ id: 'created' }));
+
+  expect(ownerStorage.readCreatePending().status).toBe('missing');
+  expect(ownerStorage.readCreateDraft().status).toBe('missing');
+});
+
+it('finalizes a confirmed reply after navigation unmounts the UI', async () => {
+  const post = deferred<unknown>();
+  fetchMock.mockImplementation(async (_path, init) =>
+    init?.method === 'POST' ? post.promise : detail,
+  );
+  const storage = createSupportStorage('user-a');
+  const view = render(
+    <TicketConversation ticketId="ticket-a" locale="ru" userId="user-a" />,
+  );
+  await screen.findByLabelText('Ваш ответ');
+  fireEvent.change(screen.getByLabelText('Ваш ответ'), {
+    target: { value: 'Ответ после перехода' },
+  });
+  fireEvent.click(screen.getByRole('button', { name: 'Отправить ответ' }));
+  await waitFor(() =>
+    expect(
+      fetchMock.mock.calls.filter(([, init]) => init?.method === 'POST'),
+    ).toHaveLength(1),
+  );
+  expect(storage.readReplyPending('ticket-a').status).toBe('valid');
+
+  view.unmount();
+  await act(async () => post.resolve(null));
+
+  expect(storage.readReplyPending('ticket-a').status).toBe('missing');
+  expect(storage.readReplyDraft('ticket-a').status).toBe('missing');
+});
+
+it('finalizes the same redacted create marker after an account switch', async () => {
+  const post = deferred<unknown>();
+  fetchMock.mockImplementation(async (path, init) => {
+    if (path === 'experts/me') throw new ApiError(404, 'EXPERT_NOT_FOUND');
+    if (init?.method === 'POST') return post.promise;
+    return [];
+  });
+  render(<SupportCenter locale="ru" userId="user-a" />);
+  await screen.findByLabelText('Тема');
+  fill();
+  fireEvent.click(screen.getByRole('button', { name: 'Создать обращение' }));
+  await waitFor(() =>
+    expect(ownerStorage.readCreatePending().status).toBe('valid'),
+  );
+  const original = ownerStorage.readCreatePending();
+  expect(original.status).toBe('valid');
+  if (original.status !== 'valid') throw new Error('pending marker missing');
+  expect('unknown' in original.value).toBe(false);
+
+  activateSupportOwner('user-b');
+  expect(ownerStorage.readCreatePending()).toEqual({
+    status: 'valid',
+    value: {
+      operationId: original.value.operationId,
+      unknown: true,
+    },
+  });
+  await act(async () => post.resolve({ id: 'created' }));
+
+  expect(ownerStorage.readCreatePending().status).toBe('missing');
+});
+
+it('preserves a newer create marker and draft after an older success', async () => {
+  const post = deferred<unknown>();
+  fetchMock.mockImplementation(async (path, init) => {
+    if (path === 'experts/me') throw new ApiError(404, 'EXPERT_NOT_FOUND');
+    if (init?.method === 'POST') return post.promise;
+    return [];
+  });
+  const view = render(<SupportCenter locale="ru" userId="user-a" />);
+  await screen.findByLabelText('Тема');
+  fill();
+  fireEvent.click(screen.getByRole('button', { name: 'Создать обращение' }));
+  await waitFor(() =>
+    expect(ownerStorage.readCreatePending().status).toBe('valid'),
+  );
+  const newerPending = {
+    operationId: 'newer-operation',
+    draftRevision: 'newer-revision',
+    payload: {
+      category: 'CONSULTATIONS' as const,
+      subject: 'Новая тема',
+      body: 'Новый текст',
+    },
+    baselineIds: [] as string[],
+  };
+  ownerStorage.saveCreatePending(newerPending);
+  ownerStorage.saveCreateDraft({
+    revision: newerPending.draftRevision,
+    payload: newerPending.payload,
+  });
+
+  view.unmount();
+  await act(async () => post.resolve({ id: 'created' }));
+
+  expect(ownerStorage.readCreatePending()).toEqual({
+    status: 'valid',
+    value: newerPending,
+  });
+  expect(ownerStorage.readCreateDraft()).toEqual({
+    status: 'valid',
+    value: {
+      revision: newerPending.draftRevision,
+      payload: newerPending.payload,
+    },
+  });
+});
+
+it('finalizes a definite create rejection after navigation but keeps its draft', async () => {
+  const post = deferred<unknown>();
+  fetchMock.mockImplementation(async (path, init) => {
+    if (path === 'experts/me') throw new ApiError(404, 'EXPERT_NOT_FOUND');
+    if (init?.method === 'POST') return post.promise;
+    return [];
+  });
+  const view = render(<SupportCenter locale="ru" userId="user-a" />);
+  await screen.findByLabelText('Тема');
+  fill();
+  fireEvent.click(screen.getByRole('button', { name: 'Создать обращение' }));
+  await waitFor(() =>
+    expect(ownerStorage.readCreatePending().status).toBe('valid'),
+  );
+  expect(ownerStorage.readCreateDraft().status).toBe('valid');
+
+  view.unmount();
+  await act(async () => post.reject(new ApiError(422, 'VALIDATION')));
+
+  expect(ownerStorage.readCreatePending().status).toBe('missing');
+  expect(ownerStorage.readCreateDraft().status).toBe('valid');
+});
+
+it('keeps an unresolved create marker after a network failure and navigation', async () => {
+  const post = deferred<unknown>();
+  fetchMock.mockImplementation(async (path, init) => {
+    if (path === 'experts/me') throw new ApiError(404, 'EXPERT_NOT_FOUND');
+    if (init?.method === 'POST') return post.promise;
+    return [];
+  });
+  const view = render(<SupportCenter locale="ru" userId="user-a" />);
+  await screen.findByLabelText('Тема');
+  fill();
+  fireEvent.click(screen.getByRole('button', { name: 'Создать обращение' }));
+  await waitFor(() =>
+    expect(ownerStorage.readCreatePending().status).toBe('valid'),
+  );
+
+  view.unmount();
+  await act(async () => post.reject(new TypeError('response lost')));
+
+  expect(ownerStorage.readCreatePending().status).toBe('valid');
+  expect(ownerStorage.readCreateDraft().status).toBe('valid');
+});
+
+it('finalizes a definite redacted reply rejection after an account switch', async () => {
+  const post = deferred<unknown>();
+  fetchMock.mockImplementation(async (_path, init) =>
+    init?.method === 'POST' ? post.promise : detail,
+  );
+  const storage = createSupportStorage('user-a');
+  render(
+    <TicketConversation ticketId="ticket-a" locale="ru" userId="user-a" />,
+  );
+  await screen.findByLabelText('Ваш ответ');
+  fireEvent.change(screen.getByLabelText('Ваш ответ'), {
+    target: { value: 'Ответ до смены аккаунта' },
+  });
+  fireEvent.click(screen.getByRole('button', { name: 'Отправить ответ' }));
+  await waitFor(() =>
+    expect(storage.readReplyPending('ticket-a').status).toBe('valid'),
+  );
+
+  activateSupportOwner('user-b');
+  const redacted = storage.readReplyPending('ticket-a');
+  expect(redacted).toMatchObject({
+    status: 'valid',
+    value: { unknown: true },
+  });
+  await act(async () =>
+    post.reject(new ApiError(409, 'SUPPORT_SESSION_CHANGED')),
+  );
+
+  expect(storage.readReplyPending('ticket-a').status).toBe('missing');
 });

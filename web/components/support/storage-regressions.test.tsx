@@ -83,6 +83,18 @@ function renderGuest() {
   );
 }
 
+function fillGuest() {
+  fireEvent.change(screen.getByLabelText(ru.support.nameField), {
+    target: { value: 'Гость' },
+  });
+  fireEvent.change(screen.getByLabelText(ru.support.contactField), {
+    target: { value: 'guest@example.com' },
+  });
+  fireEvent.change(screen.getByLabelText(ru.support.messageField), {
+    target: { value: 'Приватное сообщение' },
+  });
+}
+
 beforeEach(() => {
   localStorage.clear();
   fetchMock.mockReset();
@@ -135,24 +147,91 @@ it('persists the guest pending marker before awaiting the POST', async () => {
   const post = deferred<{ ok: false; error: 'UNKNOWN' }>();
   guestMock.mockReturnValue(post.promise);
   const first = renderGuest();
-  fireEvent.change(screen.getByLabelText(ru.support.nameField), {
-    target: { value: 'Гость' },
-  });
-  fireEvent.change(screen.getByLabelText(ru.support.contactField), {
-    target: { value: 'guest@example.com' },
-  });
-  fireEvent.change(screen.getByLabelText(ru.support.messageField), {
-    target: { value: 'Приватное сообщение' },
-  });
+  fillGuest();
   fireEvent.click(screen.getByRole('button', { name: ru.support.submit }));
   expect(createSupportStorage('guest').readGuestPending().status).toBe('valid');
+  await waitFor(() => expect(guestMock).toHaveBeenCalledTimes(1));
 
   first.unmount();
   renderGuest();
   expect(
     screen.getByRole('button', { name: ru.support.submit }),
   ).toBeDisabled();
-  post.resolve({ ok: false, error: 'UNKNOWN' });
+  await act(async () => post.resolve({ ok: false, error: 'UNKNOWN' }));
+  expect(createSupportStorage('guest').readGuestPending().status).toBe('valid');
+});
+
+it('finalizes a confirmed guest submission after navigation unmounts the UI', async () => {
+  const post = deferred<{ ok: true }>();
+  guestMock.mockReturnValue(post.promise);
+  const storage = createSupportStorage('guest');
+  const view = renderGuest();
+  fillGuest();
+  fireEvent.click(screen.getByRole('button', { name: ru.support.submit }));
+  await waitFor(() => expect(guestMock).toHaveBeenCalledTimes(1));
+  expect(storage.readGuestPending().status).toBe('valid');
+  expect(storage.readGuestDraft().status).toBe('valid');
+
+  view.unmount();
+  await act(async () => post.resolve({ ok: true }));
+
+  expect(storage.readGuestPending().status).toBe('missing');
+  expect(storage.readGuestDraft().status).toBe('missing');
+});
+
+it('finalizes a definite guest rejection after navigation but keeps its draft', async () => {
+  const post = deferred<{ ok: false; error: 'RATE_LIMITED' }>();
+  guestMock.mockReturnValue(post.promise);
+  const storage = createSupportStorage('guest');
+  const view = renderGuest();
+  fillGuest();
+  fireEvent.click(screen.getByRole('button', { name: ru.support.submit }));
+  await waitFor(() => expect(guestMock).toHaveBeenCalledTimes(1));
+
+  view.unmount();
+  await act(async () => post.resolve({ ok: false, error: 'RATE_LIMITED' }));
+
+  expect(storage.readGuestPending().status).toBe('missing');
+  expect(storage.readGuestDraft().status).toBe('valid');
+});
+
+it('preserves a newer guest marker and draft after an older success', async () => {
+  const post = deferred<{ ok: true }>();
+  guestMock.mockReturnValue(post.promise);
+  const storage = createSupportStorage('guest');
+  const view = renderGuest();
+  fillGuest();
+  fireEvent.click(screen.getByRole('button', { name: ru.support.submit }));
+  await waitFor(() => expect(guestMock).toHaveBeenCalledTimes(1));
+  const newerPending = {
+    operationId: 'newer-guest-operation',
+    draftRevision: 'newer-guest-revision',
+    payload: {
+      name: 'Новый гость',
+      contact: 'new@example.com',
+      message: 'Новый вопрос',
+    },
+  };
+  storage.saveGuestPending(newerPending);
+  storage.saveGuestDraft({
+    revision: newerPending.draftRevision,
+    payload: newerPending.payload,
+  });
+
+  view.unmount();
+  await act(async () => post.resolve({ ok: true }));
+
+  expect(storage.readGuestPending()).toEqual({
+    status: 'valid',
+    value: newerPending,
+  });
+  expect(storage.readGuestDraft()).toEqual({
+    status: 'valid',
+    value: {
+      revision: newerPending.draftRevision,
+      payload: newerPending.payload,
+    },
+  });
 });
 
 it('contains unavailable and quota-exhausted storage without crashing', async () => {

@@ -147,17 +147,20 @@ export default function SupportForm() {
       return;
     }
     const result = await submitTicket(buildTicketPayload(snapshot.payload));
+    if (result.ok) {
+      storage.removeGuestPendingIfOperation(snapshot.operationId);
+      storage.removeGuestDraftIfRevision(snapshot.draftRevision);
+    } else if (result.error !== 'UNKNOWN') {
+      storage.removeGuestPendingIfOperation(snapshot.operationId);
+    }
     if (generation !== lifecycle.current) return;
     if (result.ok) {
       setStatus('sent');
-      storage.removeGuestPendingIfOperation(snapshot.operationId);
-      storage.removeGuestDraftIfRevision(snapshot.draftRevision);
     } else {
       setErrorCode(result.error);
       if (result.error === 'UNKNOWN') {
         setStatus('unknown');
       } else {
-        storage.removeGuestPendingIfOperation(snapshot.operationId);
         setStatus('error');
       }
     }

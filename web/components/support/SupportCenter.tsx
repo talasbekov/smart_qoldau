@@ -310,13 +310,13 @@ export default function SupportCenter({
           body: snapshot.payload.body,
         }),
       });
+      storage.removeCreatePendingIfOperation(snapshot.operationId);
+      storage.removeCreateDraftIfRevision(snapshot.draftRevision);
       if (
         generation !== lifecycle.current ||
         !isSupportSessionCurrent(userId, sessionEpoch.current)
       )
         return;
-      storage.removeCreatePendingIfOperation(snapshot.operationId);
-      storage.removeCreateDraftIfRevision(snapshot.draftRevision);
       setPending(null);
       if (draftRevision.current === snapshot.draftRevision) {
         draftRevision.current = newSupportId();
@@ -326,12 +326,16 @@ export default function SupportCenter({
       setNotice('created');
       void load(false);
     } catch (error) {
+      const definitelyRejected =
+        error instanceof ApiError && error.status >= 400 && error.status < 500;
+      if (definitelyRejected) {
+        storage.removeCreatePendingIfOperation(snapshot.operationId);
+      }
       if (generation !== lifecycle.current) return;
       if (
         error instanceof ApiError &&
         error.code === 'SUPPORT_SESSION_CHANGED'
       ) {
-        storage.removeCreatePendingIfOperation(snapshot.operationId);
         setSubject('');
         setBody('');
         setPending('session');
@@ -345,10 +349,7 @@ export default function SupportCenter({
         setNotice('session');
         return;
       }
-      const definitelyRejected =
-        error instanceof ApiError && error.status >= 400 && error.status < 500;
       if (definitelyRejected) {
-        storage.removeCreatePendingIfOperation(snapshot.operationId);
         setPending(null);
         setNotice('error');
       } else {
