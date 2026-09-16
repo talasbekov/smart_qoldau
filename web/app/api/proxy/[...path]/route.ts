@@ -19,6 +19,7 @@ const ALLOWED = new Set([
   'me',
   'topics',
   'experts',
+  'bookings',
 ]);
 
 const MUTATING = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);

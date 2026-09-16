@@ -195,4 +195,54 @@ describe('ConsultationList', () => {
 
     expect(screen.getByText(/Срочная/)).toBeInTheDocument();
   });
+
+  it('у запланированной консультации есть прямой вход в перенос', () => {
+    render(<ConsultationList items={[consultation()]} locale="ru" />);
+
+    expect(screen.getByRole('link', { name: 'Перенести' })).toHaveAttribute(
+      'href',
+      '/ru/consultations/c1/reschedule',
+    );
+  });
+
+  it('не предлагает перенос активной или завершённой консультации', () => {
+    render(
+      <ConsultationList
+        items={[
+          consultation({ id: 'active', status: 'ACTIVE' }),
+          consultation({ id: 'done', status: 'COMPLETED' }),
+        ]}
+        locale="ru"
+      />,
+    );
+
+    expect(screen.queryByRole('link', { name: 'Перенести' })).toBeNull();
+  });
+
+  it('показывает плановое время по Алматы с явной пометкой зоны', () => {
+    render(
+      <ConsultationList
+        items={[consultation({ startedAt: '2026-09-17T04:00:00.000Z' })]}
+        locale="ru"
+      />,
+    );
+
+    expect(screen.getByText(/09:00.*Алматы/)).toBeInTheDocument();
+  });
+
+  it('сортирует предстоящие консультации от ближайшей к дальней', () => {
+    render(
+      <ConsultationList
+        items={[
+          consultation({ id: 'later', startedAt: '2026-09-20T04:00:00.000Z' }),
+          consultation({ id: 'near', startedAt: '2026-09-18T04:00:00.000Z' }),
+        ]}
+        locale="ru"
+      />,
+    );
+
+    const cards = screen.getAllByRole('listitem');
+    expect(cards[0]).toHaveTextContent('18 сентября');
+    expect(cards[1]).toHaveTextContent('20 сентября');
+  });
 });

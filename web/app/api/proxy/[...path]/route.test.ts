@@ -121,6 +121,24 @@ describe('прокси кабинета', () => {
     expect(fetchMock).toHaveBeenCalled();
   });
 
+  it('пропускает создание брони, но только через origin guard и пользовательскую сессию', async () => {
+    cookie.value = 'access-value';
+    const fetchMock = upstream(201, { consultationId: 'c1' });
+
+    const response = await POST(req('bookings', 'POST'), ctx('bookings'));
+
+    expect(response.status).toBe(201);
+    expect(fetchMock).toHaveBeenCalledWith(
+      expect.stringContaining('/bookings'),
+      expect.objectContaining({
+        method: 'POST',
+        headers: expect.objectContaining({
+          Authorization: 'Bearer access-value',
+        }),
+      }),
+    );
+  });
+
   it('пропускает сохранённые способы оплаты для checkout', async () => {
     cookie.value = 'access-value';
     const fetchMock = upstream(200, []);

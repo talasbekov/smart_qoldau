@@ -14,6 +14,8 @@ export default function ConsultationAccess({
   locale: string;
 }) {
   const copy = locale === 'kz' ? kz.checkout : ru.checkout;
+  const consultationCopy =
+    locale === 'kz' ? kz.consultations : ru.consultations;
   const paymentHref = `/${locale}/consultations/${consultation.id}/payment`;
   const payable =
     consultation.status === 'ACTIVE' || consultation.status === 'SCHEDULED';
@@ -84,20 +86,25 @@ export default function ConsultationAccess({
 
   if (consultation.status === 'SCHEDULED') {
     return (
-      <section
-        role="status"
-        className="rounded-[20px] border border-border bg-white p-6"
-      >
-        <h2 className="font-extrabold text-ink">
-          {consultation.paymentStatus === 'HELD'
-            ? copy.scheduledHeldTitle
-            : copy.accessUnavailableTitle}
-        </h2>
-        <p className="mt-2 text-sm leading-6 text-body">
-          {consultation.paymentStatus === 'HELD'
-            ? copy.scheduledHeldBody
-            : copy.accessHoldRequired}
-        </p>
+      <section className="rounded-[20px] border border-border bg-white p-6">
+        <div role="status">
+          <h2 className="font-extrabold text-ink">
+            {consultation.paymentStatus === 'HELD'
+              ? copy.scheduledHeldTitle
+              : copy.accessUnavailableTitle}
+          </h2>
+          <p className="mt-2 text-sm leading-6 text-body">
+            {consultation.paymentStatus === 'HELD'
+              ? copy.scheduledHeldBody
+              : copy.accessHoldRequired}
+          </p>
+        </div>
+        <Link
+          href={`/${locale}/consultations/${consultation.id}/reschedule`}
+          className="mt-5 inline-flex min-h-11 items-center rounded-xl border border-border px-4 text-sm font-bold text-primary focus:outline-none focus:ring-2 focus:ring-primary"
+        >
+          {consultationCopy.reschedule}
+        </Link>
       </section>
     );
   }

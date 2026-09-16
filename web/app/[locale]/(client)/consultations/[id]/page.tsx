@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation';
 import { authorizedFetch } from '@/lib/api/authorized';
 import type { Consultation } from '@/components/client/ConsultationList';
 import ConsultationAccess from '@/components/client/ConsultationAccess';
+import { formatAlmatyDateTime } from '@/lib/format-almaty';
 import ru from '@/messages/ru.json';
 import kz from '@/messages/kz.json';
 
@@ -30,6 +31,10 @@ export default async function ConsultationPage({
       </h1>
       <p className="mb-6 text-sm text-muted">
         {statusLabels[consultation.status] ?? consultation.status}
+      </p>
+      <p className="mb-6 text-sm font-semibold text-body">
+        {formatAlmatyDateTime(consultation.startedAt, locale, true)} ·{' '}
+        {copy.timezoneAlmaty}
       </p>
 
       <ConsultationAccess consultation={consultation} locale={locale} />

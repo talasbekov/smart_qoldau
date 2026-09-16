@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import type { components } from '@/lib/api/generated';
 import ExpertAvatar from '@/components/expert/ExpertAvatar';
+import { formatAlmatyDateTime } from '@/lib/format-almaty';
 import ru from '@/messages/ru.json';
 import kz from '@/messages/kz.json';
 
@@ -8,16 +9,6 @@ export type Consultation = components['schemas']['ConsultationClientDto'];
 
 function tenge(priceTiyn: number, locale: string): string {
   return `${new Intl.NumberFormat(locale === 'kz' ? 'kk-KZ' : 'ru-KZ').format(Math.round(priceTiyn / 100))} ₸`;
-}
-
-function when(iso: string | null, locale: string): string {
-  if (!iso) return '';
-  return new Date(iso).toLocaleString(locale === 'kz' ? 'kk-KZ' : 'ru-KZ', {
-    day: 'numeric',
-    month: 'long',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
 }
 
 function Card({ item, locale }: { item: Consultation; locale: string }) {
@@ -55,7 +46,8 @@ function Card({ item, locale }: { item: Consultation; locale: string }) {
           </p>
           <p className="text-xs text-faint">
             {formatLabels[item.format] ?? item.format} ·{' '}
-            {when(item.startedAt, locale)}
+            {formatAlmatyDateTime(item.startedAt, locale)} ·{' '}
+            {copy.timezoneShort}
           </p>
         </div>
       </div>
@@ -75,22 +67,30 @@ function Card({ item, locale }: { item: Consultation; locale: string }) {
       <div className="flex flex-wrap gap-3">
         <Link
           href={`/${locale}/consultations/${item.id}`}
-          className="rounded-xl px-3 py-2 text-sm font-bold text-primary focus:outline-none focus:ring-2 focus:ring-primary"
+          className="inline-flex min-h-11 items-center rounded-xl px-3 text-sm font-bold text-primary focus:outline-none focus:ring-2 focus:ring-primary"
         >
           {copy.open}
         </Link>
         {needsPayment && (
           <Link
             href={`/${locale}/consultations/${item.id}/payment`}
-            className="rounded-xl px-3 py-2 text-sm font-bold text-primary focus:outline-none focus:ring-2 focus:ring-primary"
+            className="inline-flex min-h-11 items-center rounded-xl px-3 text-sm font-bold text-primary focus:outline-none focus:ring-2 focus:ring-primary"
           >
             {payLabel}
+          </Link>
+        )}
+        {item.status === 'SCHEDULED' && (
+          <Link
+            href={`/${locale}/consultations/${item.id}/reschedule`}
+            className="inline-flex min-h-11 items-center rounded-xl px-3 text-sm font-bold text-primary focus:outline-none focus:ring-2 focus:ring-primary"
+          >
+            {copy.reschedule}
           </Link>
         )}
         {finished && item.outcome === 'COMPLETED' && !item.reviewId && (
           <Link
             href={`/${locale}/consultations/${item.id}#review`}
-            className="rounded-xl px-3 py-2 text-sm font-bold text-primary focus:outline-none focus:ring-2 focus:ring-primary"
+            className="inline-flex min-h-11 items-center rounded-xl px-3 text-sm font-bold text-primary focus:outline-none focus:ring-2 focus:ring-primary"
           >
             {copy.review}
           </Link>
@@ -122,9 +122,13 @@ export default function ConsultationList({
     );
   }
 
-  const upcoming = items.filter(
-    (i) => i.status === 'SCHEDULED' || i.status === 'ACTIVE',
-  );
+  const upcoming = items
+    .filter((i) => i.status === 'SCHEDULED' || i.status === 'ACTIVE')
+    .sort(
+      (left, right) =>
+        new Date(left.startedAt).getTime() -
+        new Date(right.startedAt).getTime(),
+    );
   const past = items.filter(
     (i) => i.status === 'COMPLETED' || i.status === 'CANCELLED',
   );

@@ -137,6 +137,10 @@ describe('ConsultationAccess', () => {
       /холд подтверждён.*начала консультации/i,
     );
     expect(screen.queryByTestId('session')).toBeNull();
+    expect(screen.getByRole('link', { name: 'Перенести' })).toHaveAttribute(
+      'href',
+      '/ru/consultations/c1/reschedule',
+    );
   });
 
   it('казахская CTA ведёт в локализованный checkout', () => {
