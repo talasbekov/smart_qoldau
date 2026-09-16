@@ -142,13 +142,20 @@ export default function BookingFlow({
 
   useEffect(() => {
     let cancelled = false;
+    if (pendingMutation.current) {
+      return () => {
+        cancelled = true;
+      };
+    }
     setPhase('loading');
     setTopicSlug(relevantTopics[0]?.slug ?? '');
     setFormat(
       expert.formats.includes('video') ? 'video' : (expert.formats[0] ?? ''),
     );
     void Promise.all([loadSlots(), loadMethods()]).finally(() => {
-      if (mounted.current && !cancelled) setPhase('idle');
+      if (mounted.current && !cancelled && !pendingMutation.current) {
+        setPhase('idle');
+      }
     });
     return () => {
       cancelled = true;

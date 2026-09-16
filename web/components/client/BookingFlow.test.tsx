@@ -713,6 +713,107 @@ describe('BookingFlow', () => {
     expect(screen.queryByRole('radio', { name: '09:00' })).toBeNull();
   });
 
+  it.each([false, true])(
+    'эквивалентный props refresh сохраняет unknown UI, reschedule=%s',
+    async (reschedule) => {
+      initialData(async (url) => {
+        if (url.endsWith('/bookings')) throw new TypeError('response lost');
+        if (url.endsWith(`/consultations/${CONSULTATION.id}/reschedule`)) {
+          throw new TypeError('response lost');
+        }
+        if (url.endsWith(`/consultations/${CONSULTATION.id}`)) {
+          return response(200, { ...CONSULTATION, startedAt: SLOT });
+        }
+        if (url.endsWith('/consultations?status=SCHEDULED&take=100')) {
+          return response(200, [
+            { ...CONSULTATION, startedAt: SLOT, expert: EXPERT },
+          ]);
+        }
+        return undefined;
+      });
+      const view = renderFlow(
+        'ru',
+        reschedule ? CONSULTATION : undefined,
+      );
+      await screen.findByRole('radio', { name: '09:00' });
+      fireEvent.click(
+        screen.getByRole('button', {
+          name: reschedule ? 'Подтвердить перенос' : 'Подтвердить запись',
+        }),
+      );
+      await screen.findByRole('button', { name: 'Проверить результат' });
+
+      view.rerender(
+        <NextIntlClientProvider locale="ru" messages={ru}>
+          <BookingFlow
+            expert={{
+              ...EXPERT,
+              formats: [...EXPERT.formats],
+              topicSlugs: [...EXPERT.topicSlugs],
+            }}
+            topics={[...TOPICS]}
+            locale="ru"
+            consultation={reschedule ? CONSULTATION : undefined}
+          />
+        </NextIntlClientProvider>,
+      );
+
+      expect(
+        screen.getByRole('button', {
+          name: reschedule ? 'Подтвердить перенос' : 'Подтвердить запись',
+        }),
+      ).toBeDisabled();
+      fireEvent.click(
+        screen.getByRole('button', { name: 'Проверить результат' }),
+      );
+      await waitFor(() =>
+        expect(replace).toHaveBeenCalledWith(
+          `/ru/consultations/${CONSULTATION.id}`,
+        ),
+      );
+    },
+  );
+
+  it('props refresh не снимает checking во время pending reconciliation', async () => {
+    let finishCheck!: (value: Response) => void;
+    const pendingCheck = new Promise<Response>((resolve) => {
+      finishCheck = resolve;
+    });
+    initialData(async (url) => {
+      if (url.endsWith('/bookings')) throw new TypeError('response lost');
+      if (url.endsWith('/consultations?status=SCHEDULED&take=100')) {
+        return pendingCheck;
+      }
+      return undefined;
+    });
+    const view = renderFlow();
+    await screen.findByRole('radio', { name: '09:00' });
+    fireEvent.click(screen.getByRole('button', { name: 'Подтвердить запись' }));
+    const check = await screen.findByRole('button', {
+      name: 'Проверить результат',
+    });
+    fireEvent.click(check);
+
+    view.rerender(
+      <NextIntlClientProvider locale="ru" messages={ru}>
+        <BookingFlow
+          expert={EXPERT}
+          topics={[...TOPICS]}
+          locale="ru"
+        />
+      </NextIntlClientProvider>,
+    );
+
+    expect(screen.getByRole('radio', { name: '09:00' })).toBeDisabled();
+    expect(
+      screen.getByRole('button', { name: 'Проверить результат' }),
+    ).toBeDisabled();
+    view.unmount();
+    await act(async () => {
+      finishCheck(await response(200, []));
+    });
+  });
+
   it('перенос не запрашивает карту и отправляет только новый слот', async () => {
     const fetchMock = initialData(async (url) => {
       if (url.endsWith(`/consultations/${CONSULTATION.id}/reschedule`)) {
