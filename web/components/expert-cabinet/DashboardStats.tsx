@@ -1,4 +1,6 @@
 import type { components } from '@/lib/api/generated';
+import ru from '@/messages/ru.json';
+import kz from '@/messages/kz.json';
 
 type ExpertConsultation = components['schemas']['ConsultationExpertDto'];
 
@@ -14,7 +16,9 @@ function almatyDay(iso: string): string {
 
 export function todayStats(items: ExpertConsultation[], now: Date): TodayStats {
   const today = now.toLocaleDateString('en-CA', { timeZone: ALMATY });
-  const mine = items.filter((item) => item.startedAt && almatyDay(item.startedAt) === today);
+  const mine = items.filter(
+    (item) => item.startedAt && almatyDay(item.startedAt) === today,
+  );
 
   return {
     total: mine.length,
@@ -24,8 +28,8 @@ export function todayStats(items: ExpertConsultation[], now: Date): TodayStats {
   };
 }
 
-function tenge(tiyn: number): string {
-  return `${new Intl.NumberFormat('ru-KZ').format(Math.round(tiyn / 100))} ₸`;
+function tenge(tiyn: number, locale: string): string {
+  return `${new Intl.NumberFormat(locale === 'kz' ? 'kk-KZ' : 'ru-KZ').format(Math.round(tiyn / 100))} ₸`;
 }
 
 function Tile({ label, value }: { label: string; value: string }) {
@@ -43,33 +47,42 @@ export default function DashboardStats({
   balanceTiyn,
   rating,
   reviews,
+  locale = 'ru',
 }: {
   name: string;
   stats: TodayStats;
   balanceTiyn: number;
   rating: number;
   reviews: number;
+  locale?: string;
 }) {
+  const copy = locale === 'kz' ? kz.expertCabinet : ru.expertCabinet;
+  const firstName = name.split(' ')[0];
   return (
     <>
       {/* Только имя: «Здравствуйте, Айгуль Смагулова» звучит как
           обращение из банка, а не как кабинет своего рабочего места. */}
       <h1 className="mb-1 text-2xl font-extrabold text-ink">
-        Здравствуйте, {name.split(' ')[0]}
+        {copy.dashboardGreeting.replace('{name}', firstName)}
       </h1>
       <p className="mb-6 text-sm text-muted">
         {stats.total === 0
-          ? 'Сегодня консультаций нет'
-          : `Сегодня у вас ${stats.total} ${stats.total === 1 ? 'консультация' : 'консультации'}`}
+          ? copy.dashboardEmpty
+          : copy.dashboardToday.replace('{count}', String(stats.total))}
       </p>
 
       <div className="grid grid-cols-[repeat(auto-fit,minmax(180px,1fr))] gap-4">
-        <Tile label="Сегодня" value={String(stats.total)} />
-        <Tile label="Завершено" value={String(stats.completed)} />
-        <Tile label="Доступно к выводу" value={tenge(balanceTiyn)} />
+        <Tile label={copy.statToday} value={String(stats.total)} />
+        <Tile label={copy.statCompleted} value={String(stats.completed)} />
+        <Tile label={copy.statAvailable} value={tenge(balanceTiyn, locale)} />
         {/* Рейтинг без отзывов — не ноль, а его отсутствие: «0.0 ★»
             выглядит как плохая оценка, хотя оценок просто нет. */}
-        {reviews > 0 && <Tile label="Рейтинг" value={`${rating.toFixed(1)} ★ · ${reviews}`} />}
+        {reviews > 0 && (
+          <Tile
+            label={copy.statRating}
+            value={`${rating.toFixed(1)} ★ · ${reviews}`}
+          />
+        )}
       </div>
     </>
   );

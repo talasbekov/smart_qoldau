@@ -50,6 +50,10 @@ jest.mock('@/components/expert-cabinet/ExpertSessionActions', () => ({
     />
   ),
 }));
+jest.mock('@/components/expert-cabinet/ConsultationStatusRefresh', () => ({
+  __esModule: true,
+  default: () => <div data-testid="status-refresh" />,
+}));
 
 // eslint-disable-next-line import/first
 import ExpertConsultationPage from './page';
@@ -142,5 +146,15 @@ describe('ExpertConsultationPage', () => {
       'data-active',
       'false',
     );
+  });
+
+  it('запланированная консультация монтирует проверку перехода в ACTIVE', async () => {
+    authorizedFetch.mockResolvedValue(
+      consultation({ status: 'SCHEDULED', paymentStatus: 'HELD' }),
+    );
+
+    await renderPage();
+
+    expect(screen.getByTestId('status-refresh')).toBeInTheDocument();
   });
 });

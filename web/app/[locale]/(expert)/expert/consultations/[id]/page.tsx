@@ -3,6 +3,7 @@ import { authorizedFetch } from '@/lib/api/authorized';
 import Session from '@/components/client/Session';
 import Chat from '@/components/client/Chat';
 import ExpertSessionActions from '@/components/expert-cabinet/ExpertSessionActions';
+import ConsultationStatusRefresh from '@/components/expert-cabinet/ConsultationStatusRefresh';
 import type { components } from '@/lib/api/generated';
 import ru from '@/messages/ru.json';
 import kz from '@/messages/kz.json';
@@ -45,6 +46,11 @@ export default async function ExpertConsultationPage({
       <p className="mb-6 text-sm text-muted">
         {statusLabels[consultation.status] ?? consultation.status}
       </p>
+      <ConsultationStatusRefresh
+        consultationId={id}
+        initialStatus={consultation.status}
+        locale={locale}
+      />
 
       {paidLive && callFormat ? (
         // Тот же компонент, что у клиента: разговор устроен одинаково с

@@ -1,6 +1,8 @@
 import { authorizedFetch } from '@/lib/api/authorized';
 import WeekSchedule from '@/components/expert-cabinet/WeekSchedule';
 import type { components } from '@/lib/api/generated';
+import ru from '@/messages/ru.json';
+import kz from '@/messages/kz.json';
 
 type ScheduleResponse = components['schemas']['ScheduleResponseDto'];
 type Day = components['schemas']['ScheduleDayDto'];
@@ -25,16 +27,33 @@ function fillWeek(days: Day[]): Day[] {
   });
 }
 
-export default async function SchedulePage() {
-  const schedule = await authorizedFetch<ScheduleResponse>('experts/me/schedule');
+export default async function SchedulePage({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}) {
+  const { locale } = await params;
+  const copy = locale === 'kz' ? kz.expertCabinet : ru.expertCabinet;
+  const schedule = await authorizedFetch<ScheduleResponse>(
+    'experts/me/schedule',
+  );
 
   return (
     <>
-      <h1 className="mb-2 text-2xl font-extrabold text-ink">Расписание</h1>
-      <p className="mb-6 text-sm text-muted">
-        Заявки приходят только в рабочие часы — и только пока вкладка открыта.
-      </p>
-      <WeekSchedule initial={fillWeek(schedule?.days ?? [])} />
+      <h1 className="mb-2 text-2xl font-extrabold text-ink">
+        {copy.scheduleTitle}
+      </h1>
+      <p className="mb-6 text-sm text-muted">{copy.scheduleHint}</p>
+      {schedule ? (
+        <WeekSchedule initial={fillWeek(schedule.days)} locale={locale} />
+      ) : (
+        <p
+          role="alert"
+          className="rounded-2xl border border-border bg-white p-6 text-body"
+        >
+          {copy.scheduleLoadError}
+        </p>
+      )}
     </>
   );
 }
