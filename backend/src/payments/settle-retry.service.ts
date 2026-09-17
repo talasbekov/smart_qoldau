@@ -10,8 +10,8 @@ import { ClockService } from '../common/clock/clock.service';
 import { EventsService } from '../ws/events.service';
 import { PaymentsService } from './payments.service';
 import { PaymentProviderPort } from './provider/payment-provider.port';
+import { SETTLE_MAX_ATTEMPTS } from './settle.constants';
 
-const SETTLE_MAX_ATTEMPTS = 10;
 // Интервал между ретраями settle одной записи: sweep тикает каждую секунду,
 // и без интервала 10-секундный сбой провайдера навсегда исчерпал бы лимит
 // попыток (10 × 60с даёт ~10 минут терпимости к сбою).
