@@ -140,6 +140,13 @@ want_environment = {
 if environment != want_environment:
     raise SystemExit(f"operator hostnames were not propagated exactly: {environment!r}")
 
+web_build = services["web"].get("build", {})
+if web_build.get("args") != {"NEXT_PUBLIC_API_BASE_URL": "https://api.fixture.invalid/v1"}:
+    raise SystemExit(
+        "TLS web build did not receive the exact public API origin: "
+        f"{web_build.get('args')!r}"
+    )
+
 mounts = {
     (item["type"], item["target"], bool(item.get("read_only", False)))
     for item in proxy.get("volumes", [])
