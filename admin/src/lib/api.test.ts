@@ -10,7 +10,12 @@ describe('apiFetch', () => {
 
   it('добавляет Authorization из tokenStore', async () => {
     tokenStore.set({ accessToken: 'tok', refreshToken: 'r', admin: { id: '1', email: 'a', roles: [] } });
-    globalThis.fetch = vi.fn().mockResolvedValue({ ok: true, status: 200, json: async () => ({ ok: true }) }) as unknown as typeof fetch;
+    globalThis.fetch = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({ ok: true }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      }),
+    ) as unknown as typeof fetch;
 
     await apiFetch('/admin/staff');
 
@@ -38,6 +43,18 @@ describe('apiFetch', () => {
     ) as unknown as typeof fetch;
 
     await expect(apiFetch<{ ok: boolean }>('/admin/staff')).resolves.toEqual({ ok: true });
+  });
+
+  it('возвращает undefined на успешный 200 с пустым телом', async () => {
+    const response = new Response(null, {
+      status: 200,
+      headers: { 'Content-Length': '0' },
+    });
+    const jsonSpy = vi.spyOn(response, 'json');
+    globalThis.fetch = vi.fn().mockResolvedValue(response) as unknown as typeof fetch;
+
+    await expect(apiFetch<void>('/admin/tickets/1/resolve', { method: 'POST' })).resolves.toBeUndefined();
+    expect(jsonSpy).not.toHaveBeenCalled();
   });
 
   it('бросает ApiError с кодом бэкенда на ошибке', async () => {
@@ -75,7 +92,12 @@ describe('apiFetch', () => {
         });
       }
       if (call === 1) return Promise.resolve({ ok: false, status: 401, json: async () => ({ error: { code: 'UNAUTHORIZED', message: '' } }) });
-      return Promise.resolve({ ok: true, status: 200, json: async () => ({ ok: true }) });
+      return Promise.resolve(
+        new Response(JSON.stringify({ ok: true }), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        }),
+      );
     }) as unknown as typeof fetch;
 
     const result = await apiFetch<{ ok: boolean }>('/admin/staff');

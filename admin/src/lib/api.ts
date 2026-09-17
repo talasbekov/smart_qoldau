@@ -49,5 +49,7 @@ export async function apiFetch<T>(path: string, init: RequestInit = {}, isRetry 
   }
 
   if (response.status === 204) return undefined as T;
-  return (await response.json()) as T;
+  const body = await response.text();
+  if (body.length === 0) return undefined as T;
+  return JSON.parse(body) as T;
 }
