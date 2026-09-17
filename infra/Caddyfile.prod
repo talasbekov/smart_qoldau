@@ -1,5 +1,24 @@
 # Caddy obtains and renews public certificates automatically after all three
 # operator-supplied names resolve to this host and inbound 80/443 are open.
+{
+	# Reverse-proxy failures are runtime logs rather than access logs. Apply the
+	# same URI policy to the default logger so neither channel retains queries.
+	log default {
+		format filter {
+			request>uri regexp `\?.*$` ?REDACTED
+		}
+	}
+}
+
+(privacy-log) {
+	# Queries still reach upstreams unchanged; only the encoded log field is
+	# replaced. This avoids retaining tokens, codes, and sensitive searches.
+	log {
+		format filter {
+			request>uri regexp `\?.*$` ?REDACTED
+		}
+	}
+}
 
 {$WEB_HOSTNAME} {
 	# The browser opens Socket.IO on the web origin. `/ws` is the Socket.IO
@@ -8,7 +27,7 @@
 	reverse_proxy @realtime backend:3000
 
 	reverse_proxy web:3000
-	log
+	import privacy-log
 }
 
 {$API_HOSTNAME} {
@@ -16,10 +35,10 @@
 	# request-body ceiling here: the backend owns the 5 MiB photo and 10 MiB
 	# document limits and therefore keeps its established error semantics.
 	reverse_proxy backend:3000
-	log
+	import privacy-log
 }
 
 {$ADMIN_HOSTNAME} {
 	reverse_proxy admin:80
-	log
+	import privacy-log
 }

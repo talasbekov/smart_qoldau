@@ -7,6 +7,7 @@ readonly INFRA_DIR="$(cd -- "$TEST_DIR/../.." && pwd -P)"
 readonly BASE_COMPOSE="$INFRA_DIR/docker-compose.prod.yml"
 readonly TLS_COMPOSE="$INFRA_DIR/docker-compose.tls.yml"
 readonly CADDYFILE="$INFRA_DIR/Caddyfile.prod"
+readonly PREFLIGHT="$INFRA_DIR/scripts/tls-proxy-preflight.sh"
 readonly WORK_DIR="$(mktemp -d "${TMPDIR:-/tmp}/smartqoldau-tls-proxy.XXXXXX")"
 readonly PROJECT="sq-tls-fixture-$$"
 readonly FIXTURE_ENV="$WORK_DIR/fixture.env"
@@ -35,9 +36,37 @@ fail() {
   exit 1
 }
 
-for required in "$TLS_COMPOSE" "$CADDYFILE"; do
+for required in "$TLS_COMPOSE" "$CADDYFILE" "$PREFLIGHT"; do
   [[ -f "$required" ]] || fail "missing production TLS artifact: $required"
 done
+
+expect_preflight_rejection() {
+  local web_hostname="$1"
+  local api_hostname="$2"
+  local admin_hostname="$3"
+  if WEB_HOSTNAME="$web_hostname" API_HOSTNAME="$api_hostname" ADMIN_HOSTNAME="$admin_hostname" \
+    "$PREFLIGHT" >"$WORK_DIR/preflight.out" 2>"$WORK_DIR/preflight.err"; then
+    fail "preflight accepted invalid hostnames: $web_hostname, $api_hostname, $admin_hostname"
+  fi
+}
+
+expect_preflight_rejection 'https://web.fixture.invalid' 'api.fixture.invalid' 'admin.fixture.invalid'
+expect_preflight_rejection 'web.fixture.invalid:443' 'api.fixture.invalid' 'admin.fixture.invalid'
+expect_preflight_rejection 'web.fixture.invalid/private' 'api.fixture.invalid' 'admin.fixture.invalid'
+expect_preflight_rejection '*.fixture.invalid' 'api.fixture.invalid' 'admin.fixture.invalid'
+expect_preflight_rejection 'user@web.fixture.invalid' 'api.fixture.invalid' 'admin.fixture.invalid'
+expect_preflight_rejection '-web.fixture.invalid' 'api.fixture.invalid' 'admin.fixture.invalid'
+expect_preflight_rejection 'web_.fixture.invalid' 'api.fixture.invalid' 'admin.fixture.invalid'
+expect_preflight_rejection 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.fixture.invalid' 'api.fixture.invalid' 'admin.fixture.invalid'
+expect_preflight_rejection '127.0.0.1' 'api.fixture.invalid' 'admin.fixture.invalid'
+expect_preflight_rejection 'web.fixture.invalid' 'WEB.fixture.invalid' 'admin.fixture.invalid'
+
+# A valid call must provision the checked-in config with the pinned Caddy image,
+# not merely parse YAML or duplicate Caddy's parser in the test.
+WEB_HOSTNAME=web.fixture.invalid \
+API_HOSTNAME=api.fixture.invalid \
+ADMIN_HOSTNAME=admin.fixture.invalid \
+  "$PREFLIGHT"
 
 cat >"$FIXTURE_ENV" <<'ENV'
 POSTGRES_USER=fixture_user
@@ -154,12 +183,14 @@ server.on('upgrade', (request, socket) => {
     .createHash('sha1')
     .update(`${request.headers['sec-websocket-key']}258EAFA5-E914-47DA-95CA-C5AB0DC85B11`)
     .digest('base64');
+  const queryPreserved = request.url.includes('auth=ws_query_secret_');
   socket.write([
     'HTTP/1.1 101 Switching Protocols',
     'Connection: Upgrade',
     'Upgrade: websocket',
     `Sec-WebSocket-Accept: ${accept}`,
     'X-Fixture: backend',
+    `X-Upstream-Query-Preserved: ${queryPreserved}`,
     '',
     '',
   ].join('\r\n'));
@@ -249,23 +280,33 @@ assert_route() {
   [[ "$body" == "$expected" ]] || fail "$hostname$path routed as '$body', want '$expected'"
 }
 
-assert_route web.fixture.localhost '/hello?source=tls' 'web:/hello?source=tls'
-assert_route api.fixture.localhost '/v1/health?source=tls' 'backend:/v1/health?source=tls'
-assert_route admin.fixture.localhost '/verification?source=tls' 'admin:/verification?source=tls'
+readonly WEB_QUERY_SECRET="web_query_secret_$$"
+readonly API_QUERY_SECRET="api_query_secret_$$"
+readonly ADMIN_QUERY_SECRET="admin_query_secret_$$"
+readonly WS_QUERY_SECRET="ws_query_secret_$$"
+readonly ERROR_QUERY_SECRET="error_query_secret_$$"
 
-python3 - "$HTTPS_PORT" <<'PY'
+assert_route web.fixture.localhost "/hello?review_token=$WEB_QUERY_SECRET" \
+  "web:/hello?review_token=$WEB_QUERY_SECRET"
+assert_route api.fixture.localhost "/v1/health?access_token=$API_QUERY_SECRET" \
+  "backend:/v1/health?access_token=$API_QUERY_SECRET"
+assert_route admin.fixture.localhost "/verification?code=$ADMIN_QUERY_SECRET" \
+  "admin:/verification?code=$ADMIN_QUERY_SECRET"
+
+python3 - "$HTTPS_PORT" "$WS_QUERY_SECRET" <<'PY'
 import socket
 import ssl
 import sys
 
 port = int(sys.argv[1])
+secret = sys.argv[2]
 hostname = "web.fixture.localhost"
 context = ssl._create_unverified_context()
 with socket.create_connection(("127.0.0.1", port), timeout=5) as raw:
     with context.wrap_socket(raw, server_hostname=hostname) as stream:
         stream.sendall(
             (
-                "GET /socket.io/?EIO=4&transport=websocket HTTP/1.1\r\n"
+                f"GET /socket.io/?EIO=4&transport=websocket&auth={secret} HTTP/1.1\r\n"
                 f"Host: {hostname}\r\n"
                 "Connection: Upgrade\r\n"
                 "Upgrade: websocket\r\n"
@@ -280,6 +321,89 @@ if not response.startswith("HTTP/1.1 101 "):
     raise SystemExit(f"websocket upgrade was not proxied: {response!r}")
 if "\r\nX-Fixture: backend\r\n" not in response:
     raise SystemExit(f"websocket reached the wrong upstream: {response!r}")
+if "\r\nX-Upstream-Query-Preserved: true\r\n" not in response:
+    raise SystemExit(f"websocket query did not reach the upstream: {response!r}")
 PY
 
-printf 'PASS: TLS proxy topology, HTTPS routes, websocket upgrade, and isolation\n'
+# Exercise the reverse-proxy error logger as well as successful access logs.
+docker compose -p "$PROJECT" -f "$FIXTURE_COMPOSE" stop admin >/dev/null
+error_status="$(curl --silent --show-error --insecure --output /dev/null --write-out '%{http_code}' \
+  --resolve "admin.fixture.localhost:$HTTPS_PORT:127.0.0.1" \
+  "https://admin.fixture.localhost:$HTTPS_PORT/verification?code=$ERROR_QUERY_SECRET")"
+[[ "$error_status" == '502' ]] || fail "stopped admin upstream returned $error_status, want 502"
+
+docker compose -p "$PROJECT" -f "$FIXTURE_COMPOSE" logs --no-color --no-log-prefix proxy >"$WORK_DIR/proxy.log"
+for secret in \
+  "$WEB_QUERY_SECRET" \
+  "$API_QUERY_SECRET" \
+  "$ADMIN_QUERY_SECRET" \
+  "$WS_QUERY_SECRET" \
+  "$ERROR_QUERY_SECRET"; do
+  if grep -Fq -- "$secret" "$WORK_DIR/proxy.log"; then
+    fail "query secret leaked into Caddy logs: $secret"
+  fi
+done
+redacted_count="$(grep -Fo -- '?REDACTED' "$WORK_DIR/proxy.log" | wc -l)"
+(( redacted_count >= 5 )) || fail "expected at least five redacted request URIs, found $redacted_count"
+python3 - "$WORK_DIR/proxy.log" <<'PY'
+import json
+import sys
+
+with open(sys.argv[1], encoding="utf-8") as stream:
+    records = [json.loads(line) for line in stream if line.strip()]
+
+def is_redacted_failure(record, logger):
+    return (
+        record.get("logger", "").startswith(logger)
+        and record.get("status") == 502
+        and record.get("request", {}).get("uri") == "/verification?REDACTED"
+    )
+
+if not any(is_redacted_failure(record, "http.log.error") for record in records):
+    raise SystemExit("reverse-proxy runtime error log was not query-redacted")
+if not any(is_redacted_failure(record, "http.log.access") for record in records):
+    raise SystemExit("502 access log was not query-redacted")
+
+successful = {
+    (record.get("status"), record.get("request", {}).get("uri"))
+    for record in records
+    if record.get("logger", "").startswith("http.log.access")
+}
+for expected in {
+    (200, "/hello?REDACTED"),
+    (200, "/v1/health?REDACTED"),
+    (200, "/verification?REDACTED"),
+    (101, "/socket.io/?REDACTED"),
+}:
+    if expected not in successful:
+        raise SystemExit(f"missing redacted successful access log: {expected!r}")
+PY
+
+# The documented rollback stops and removes only proxy. Named certificate
+# state remains, the former host port stops accepting connections, and the
+# unrelated upstreams remain running.
+PROXY_CONTAINER="$(docker compose -p "$PROJECT" -f "$FIXTURE_COMPOSE" ps -q proxy)"
+CADDY_DATA_VOLUME="$(docker inspect --format '{{range .Mounts}}{{if eq .Destination "/data"}}{{.Name}}{{end}}{{end}}' "$PROXY_CONTAINER")"
+CADDY_CONFIG_VOLUME="$(docker inspect --format '{{range .Mounts}}{{if eq .Destination "/config"}}{{.Name}}{{end}}{{end}}' "$PROXY_CONTAINER")"
+[[ -n "$CADDY_DATA_VOLUME" && -n "$CADDY_CONFIG_VOLUME" ]] || fail 'could not capture Caddy volume names before rollback'
+docker compose -p "$PROJECT" -f "$FIXTURE_COMPOSE" stop proxy >/dev/null
+docker compose -p "$PROJECT" -f "$FIXTURE_COMPOSE" rm --force proxy >/dev/null
+[[ -z "$(docker compose -p "$PROJECT" -f "$FIXTURE_COMPOSE" ps -aq proxy)" ]] \
+  || fail 'proxy container remains after bounded rollback'
+docker volume inspect "$CADDY_DATA_VOLUME" "$CADDY_CONFIG_VOLUME" >/dev/null
+for survivor in backend web; do
+  [[ -n "$(docker compose -p "$PROJECT" -f "$FIXTURE_COMPOSE" ps -q --status running "$survivor")" ]] \
+    || fail "$survivor was affected by proxy-only rollback"
+done
+python3 - "$HTTPS_PORT" <<'PY'
+import socket
+import sys
+
+port = int(sys.argv[1])
+with socket.socket() as stream:
+    stream.settimeout(1)
+    if stream.connect_ex(("127.0.0.1", port)) == 0:
+        raise SystemExit(f"proxy rollback left HTTPS port {port} accepting connections")
+PY
+
+printf 'PASS: TLS routes, private logs, hostname preflight, isolation, and rollback\n'
