@@ -20,14 +20,46 @@ describe('apiFetch', () => {
     );
   });
 
+  it('возвращает undefined на 204 и не пытается читать JSON', async () => {
+    const response = new Response(null, { status: 204 });
+    const jsonSpy = vi.spyOn(response, 'json');
+    globalThis.fetch = vi.fn().mockResolvedValue(response) as unknown as typeof fetch;
+
+    await expect(apiFetch<void>('/admin/tickets/1/resolve', { method: 'POST' })).resolves.toBeUndefined();
+    expect(jsonSpy).not.toHaveBeenCalled();
+  });
+
+  it('возвращает JSON успешного 200-ответа', async () => {
+    globalThis.fetch = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({ ok: true }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      }),
+    ) as unknown as typeof fetch;
+
+    await expect(apiFetch<{ ok: boolean }>('/admin/staff')).resolves.toEqual({ ok: true });
+  });
+
   it('бросает ApiError с кодом бэкенда на ошибке', async () => {
-    globalThis.fetch = vi.fn().mockResolvedValue({
-      ok: false,
-      status: 403,
-      json: async () => ({ error: { code: 'ADMIN_FORBIDDEN', message: 'нет прав' } }),
-    }) as unknown as typeof fetch;
+    globalThis.fetch = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({ error: { code: 'ADMIN_FORBIDDEN', message: 'нет прав' } }), {
+        status: 403,
+        headers: { 'Content-Type': 'application/json' },
+      }),
+    ) as unknown as typeof fetch;
 
     await expect(apiFetch('/admin/staff')).rejects.toMatchObject({ code: 'ADMIN_FORBIDDEN', status: 403 });
+  });
+
+  it('не скрывает ошибку разбора malformed JSON успешного ответа', async () => {
+    globalThis.fetch = vi.fn().mockResolvedValue(
+      new Response('{not-json', {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      }),
+    ) as unknown as typeof fetch;
+
+    await expect(apiFetch('/admin/staff')).rejects.toBeInstanceOf(SyntaxError);
   });
 
   it('на 401 один раз обновляет токен через refresh и повторяет запрос', async () => {

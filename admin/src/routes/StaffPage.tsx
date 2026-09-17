@@ -3,6 +3,7 @@ import { listStaff, createStaff, updateStaff, type StaffCard } from '@/lib/staff
 import type { AdminRole } from '@/lib/types';
 
 const ALL_ROLES: AdminRole[] = [
+  'CONTENT_EDITOR',
   'VERIFICATION_OPERATOR',
   'SUPPORT_OPERATOR',
   'QUALITY_TEAM',
