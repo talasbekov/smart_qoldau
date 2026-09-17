@@ -35,6 +35,7 @@ describe('VerificationService.block — устойчивость к сбою Red
       {} as StorageService,
       presence,
       notifications as unknown as NotificationsService,
+      new ClockService(),
     );
 
     // Блокировка в БД сохранилась и вернулась админу несмотря на сбой Redis.

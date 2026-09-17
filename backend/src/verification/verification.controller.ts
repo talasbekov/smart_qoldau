@@ -35,6 +35,7 @@ import {
   FlaggedExpertsQueryDto,
 } from './dto/flagged-experts.dto';
 import { ExpertMeDto } from '../experts/dto/expert-me.dto';
+import { VerificationOperationalSignalDto } from './dto/operational-signal.dto';
 
 @ApiTags('admin-verification')
 @ApiBearerAuth()
@@ -50,6 +51,16 @@ export class VerificationController {
   @ApiOkResponse({ type: QueueEntryDto, isArray: true })
   async queue(): Promise<QueueEntryDto[]> {
     return this.verificationService.queue();
+  }
+
+  @Get('verification/operational-signal')
+  @Roles(AdminRole.VERIFICATION_OPERATOR)
+  @ApiOperation({
+    summary: 'Операционный сигнал просроченной очереди верификации',
+  })
+  @ApiOkResponse({ type: VerificationOperationalSignalDto })
+  async operationalSignal(): Promise<VerificationOperationalSignalDto> {
+    return this.verificationService.operationalSignal();
   }
 
   @Post('verification/documents/:documentId/decision')
