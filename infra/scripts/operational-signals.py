@@ -25,7 +25,6 @@ import urllib.parse
 
 
 SCHEMA = "qoldau-operational-signals/v1"
-CONFIG_ERROR_SCHEMA = "qoldau-operational-signals/config-error/v1"
 MAX_CREDENTIAL_BYTES = 8 * 1024
 MAX_RESPONSE_BYTES = 64 * 1024
 CONNECT_TIMEOUT_SECONDS = 2.0
@@ -234,17 +233,25 @@ def parse_origin(value, allow_http_loopback):
 def read_bearer_file(path):
     if not isinstance(path, str) or not path or "\x00" in path:
         raise ConfigurationError()
-    flags = os.O_RDONLY | getattr(os, "O_CLOEXEC", 0)
-    nofollow = getattr(os, "O_NOFOLLOW", None)
-    if nofollow is None:
+    try:
+        path_details = os.lstat(path)
+    except OSError as error:
+        raise ConfigurationError() from error
+    if not stat.S_ISREG(path_details.st_mode):
         raise ConfigurationError()
-    flags |= nofollow
+    nonblock = getattr(os, "O_NONBLOCK", None)
+    nofollow = getattr(os, "O_NOFOLLOW", None)
+    if nonblock is None or nofollow is None:
+        raise ConfigurationError()
+    flags = os.O_RDONLY | getattr(os, "O_CLOEXEC", 0) | nonblock | nofollow
     descriptor = None
     try:
         descriptor = os.open(path, flags)
         details = os.fstat(descriptor)
         if (
             not stat.S_ISREG(details.st_mode)
+            or (details.st_dev, details.st_ino)
+            != (path_details.st_dev, path_details.st_ino)
             or details.st_uid != os.geteuid()
             or stat.S_IMODE(details.st_mode) != 0o600
             or details.st_size > MAX_CREDENTIAL_BYTES
@@ -320,18 +327,37 @@ def wall_clock_deadline(seconds):
             signal.setitimer(signal.ITIMER_REAL, remaining, previous_interval)
 
 
+def verified_client_context():
+    # Do not use create_default_context(): it enables environment-directed TLS
+    # secret logging through SSLKEYLOGFILE.  This context retains certificate
+    # and hostname verification and still loads the operator/system trust store.
+    context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+    context.verify_mode = ssl.CERT_REQUIRED
+    context.check_hostname = True
+    if hasattr(context, "keylog_filename"):
+        context.keylog_filename = None
+    context.load_default_certs(ssl.Purpose.SERVER_AUTH)
+    return context
+
+
 def get_response(scheme, host, port, target, token, connect_timeout, total_timeout):
-    connection_type = http.client.HTTPSConnection if scheme == "https" else http.client.HTTPConnection
-    parameters = {"host": host, "port": port, "timeout": connect_timeout}
-    if scheme == "https":
-        # create_default_context verifies both the chain and hostname.  It may
-        # use SSL_CERT_FILE for an operator-managed trust store; no TLS bypass
-        # is provided.
-        parameters["context"] = ssl.create_default_context()
-    connection = connection_type(**parameters)
     started = time.monotonic()
+    connection = None
     with wall_clock_deadline(total_timeout):
         try:
+            connection_type = (
+                http.client.HTTPSConnection
+                if scheme == "https"
+                else http.client.HTTPConnection
+            )
+            parameters = {
+                "host": host,
+                "port": port,
+                "timeout": connect_timeout,
+            }
+            if scheme == "https":
+                parameters["context"] = verified_client_context()
+            connection = connection_type(**parameters)
             # Socket connect/TLS use the 2s socket timeout.  Python's blocking
             # resolver cannot enforce that sub-bound; DNS remains covered by
             # the 5s wall-clock source deadline.
@@ -359,7 +385,8 @@ def get_response(scheme, host, port, target, token, connect_timeout, total_timeo
                 too_large=len(body) > MAX_RESPONSE_BYTES,
             )
         finally:
-            connection.close()
+            if connection is not None:
+                connection.close()
 
 
 def reject_duplicate_members(pairs):
@@ -630,10 +657,13 @@ def emit(record):
 def configuration_failure(collected_at):
     emit(
         {
-            "schema": CONFIG_ERROR_SCHEMA,
+            "schema": SCHEMA,
             "collectedAt": format_utc(collected_at),
+            "window": None,
             "overall": "unknown",
-            "code": "configuration_error",
+            "sources": {
+                source: empty_source("error") for source in SOURCE_ORDER
+            },
         }
     )
     print("collector: configuration_error", file=sys.stderr)
@@ -642,19 +672,29 @@ def configuration_failure(collected_at):
 
 def main(argv=None):
     collector_now = utc_now()
-    try:
-        configuration = build_configuration(argv, collector_now)
-    except ConfigurationError:
-        return configuration_failure(collector_now)
-
+    whole_deadline = time.monotonic() + WHOLE_RUN_TIMEOUT_SECONDS
+    configuration = None
     sources = {}
     errors = []
-    whole_deadline = time.monotonic() + WHOLE_RUN_TIMEOUT_SECONDS
-    for source in SOURCE_ORDER:
-        result, error_code = collect_source(source, configuration, whole_deadline)
-        sources[source] = result
-        if error_code is not None:
-            errors.append((source, error_code))
+    try:
+        with wall_clock_deadline(WHOLE_RUN_TIMEOUT_SECONDS):
+            configuration = build_configuration(argv, collector_now)
+            for source in SOURCE_ORDER:
+                result, error_code = collect_source(
+                    source, configuration, whole_deadline
+                )
+                sources[source] = result
+                if error_code is not None:
+                    errors.append((source, error_code))
+    except ConfigurationError:
+        return configuration_failure(collector_now)
+    except RequestDeadlineExceeded:
+        if configuration is None:
+            return configuration_failure(collector_now)
+        for source in SOURCE_ORDER:
+            if source not in sources:
+                sources[source] = empty_source("error")
+                errors.append((source, "request_failed"))
 
     unknown = any(value["collection"] != "observed" for value in sources.values())
     unknown = unknown or sources["settle"]["state"] == "unknown"
