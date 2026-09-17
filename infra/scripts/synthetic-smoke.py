@@ -8,6 +8,7 @@ import os
 import re
 import signal
 import ssl
+import string
 import sys
 import time
 import urllib.parse
@@ -24,6 +25,8 @@ EXIT_WEB_MARKER = 8
 MAX_BODY_BYTES = 256 * 1024
 MAX_REQUEST_TIMEOUT_SECONDS = 5.0
 EXPECTED_HEALTH = {"status": "ok", "db": "ok", "redis": "ok"}
+URI_UNRESERVED = frozenset(string.ascii_letters + string.digits + "-._~")
+URI_SUB_DELIMITERS = frozenset("!$&'()*+,;=")
 
 
 class ConfigurationError(Exception):
@@ -73,12 +76,29 @@ def parse_args(argv):
     return parser.parse_args(argv)
 
 
+def valid_uri_component(value, extra_characters):
+    allowed = URI_UNRESERVED | URI_SUB_DELIMITERS | frozenset(extra_characters)
+    index = 0
+    while index < len(value):
+        if value[index] == "%":
+            if not re.fullmatch(r"[0-9A-Fa-f]{2}", value[index + 1 : index + 3]):
+                return False
+            index += 3
+            continue
+        if value[index] not in allowed:
+            return False
+        index += 1
+    return True
+
+
 def validate_url(value, *, origin_only):
     if (
         not value
         or len(value) > 2048
         or any(ord(character) <= 0x20 or ord(character) == 0x7F for character in value)
         or re.search(r"%(?![0-9A-Fa-f]{2})", value)
+        or "#" in value
+        or (origin_only and "?" in value)
     ):
         raise ConfigurationError("invalid URL")
     try:
@@ -95,8 +115,12 @@ def validate_url(value, *, origin_only):
         raise ConfigurationError("invalid URL")
     if parts.username is not None or parts.password is not None:
         raise ConfigurationError("URL credentials are forbidden")
-    if parts.fragment:
-        raise ConfigurationError("URL fragments are forbidden")
+    if not valid_uri_component(parts.netloc, ":[]"):
+        raise ConfigurationError("invalid URL authority")
+    if not valid_uri_component(parts.path, "/:@"):
+        raise ConfigurationError("invalid URL path")
+    if not valid_uri_component(parts.query, "/:@?"):
+        raise ConfigurationError("invalid URL query")
     if origin_only and (parts.path not in {"", "/"} or parts.query):
         raise ConfigurationError("base URL must contain only an origin")
     return parts

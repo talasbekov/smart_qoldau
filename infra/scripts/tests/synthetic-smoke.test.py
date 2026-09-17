@@ -324,7 +324,21 @@ class SyntheticSmokeTest(unittest.TestCase):
                 self.assertNotIn("super-secret", result.stdout + result.stderr)
 
     def test_malformed_web_urls_are_rejected_before_health_request(self):
-        malformed_paths = ["/%ZZ", "/literal space", "/control\x7f"]
+        malformed_paths = [
+            "/%ZZ",
+            "/literal space",
+            "/control\x7f",
+            "/bad\\path",
+            '/bad"quote',
+            "/bad<less",
+            "/bad>greater",
+            "/bad{open",
+            "/bad}close",
+            "/bad|pipe",
+            "/bad^caret",
+            "/bad`tick",
+            "/page#",
+        ]
         for path in malformed_paths:
             with self.subTest(path=repr(path)):
                 with fixture_server(
@@ -340,7 +354,62 @@ class SyntheticSmokeTest(unittest.TestCase):
 
                 self.assertEqual(result.returncode, 2)
                 self.assertIn("configuration_error", result.stderr)
+                self.assertNotIn(path, result.stdout + result.stderr)
                 self.assertEqual(requests, [])
+
+    def test_base_origin_with_empty_query_is_rejected_before_request(self):
+        with fixture_server(
+            {"/v1/health": (200, {"Content-Type": "application/json"}, HEALTHY, 0)}
+        ) as (origin, requests):
+            configured_origin = f"{origin}?"
+            result = run_smoke({"SMOKE_BASE_URL": configured_origin})
+
+        self.assertEqual(result.returncode, 2)
+        self.assertIn("configuration_error", result.stderr)
+        self.assertNotIn(configured_origin, result.stdout + result.stderr)
+        self.assertEqual(requests, [])
+
+    def test_percent_encoded_web_path_and_query_are_preserved(self):
+        target = (
+            "/caf%C3%A9/a%2Fb/%5C%22%3C%3E%7B%7D%7C%5E%60"
+            "?next=%2Fok&label=a%20b"
+        )
+        with fixture_server(
+            {
+                "/v1/health": (200, {"Content-Type": "application/json"}, HEALTHY, 0),
+                target: (200, {"Content-Type": "text/html"}, b"PUBLIC_MARKER", 0),
+            }
+        ) as (origin, requests):
+            result = run_smoke(
+                {
+                    "SMOKE_BASE_URL": origin,
+                    "SMOKE_WEB_URL": f"{origin}{target}",
+                    "SMOKE_WEB_MARKER": "PUBLIC_MARKER",
+                }
+            )
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(requests, ["/v1/health", target])
+
+    def test_bracketed_ipv6_origin_is_not_rejected_when_ipv6_is_available(self):
+        try:
+            sock = socket.socket(socket.AF_INET6)
+            sock.bind(("::1", 0))
+        except OSError as error:
+            self.skipTest(f"IPv6 loopback unavailable: {error}")
+        host, port, *_rest = sock.getsockname()
+        sock.close()
+
+        result = run_smoke(
+            {
+                "SMOKE_BASE_URL": f"http://[{host}]:{port}",
+                "SMOKE_CONNECT_TIMEOUT": "0.1",
+                "SMOKE_TOTAL_TIMEOUT": "0.2",
+            }
+        )
+
+        self.assertEqual(result.returncode, 3)
+        self.assertIn("health=request_failed", result.stderr)
 
     def test_non_utf8_web_marker_is_rejected_before_health_request(self):
         with fixture_server(
