@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import {
   DocumentStatus,
   Expert,
+  Prisma,
   VerificationStatus,
   WorkStatus,
 } from '@prisma/client';
@@ -23,10 +24,20 @@ import {
   FlaggedExpertsQueryDto,
 } from './dto/flagged-experts.dto';
 import { ExpertMeDto } from '../experts/dto/expert-me.dto';
+import { ClockService } from '../common/clock/clock.service';
+import { VerificationOperationalSignalDto } from './dto/operational-signal.dto';
 
 const REQUIRED_DOCUMENTS_COUNT = 4;
 const DEFAULT_TAKE = 20;
 const MAX_TAKE = 100;
+const VERIFICATION_QUEUE_THRESHOLD_HOURS = 24;
+const HOUR_MS = 60 * 60 * 1000;
+
+interface VerificationOperationalAggregate {
+  overdueCount: number;
+  missingSubmittedAtCount: number;
+  oldestPendingSubmittedAt: Date | null;
+}
 
 @Injectable()
 export class VerificationService {
@@ -38,7 +49,55 @@ export class VerificationService {
     private storage: StorageService,
     private presence: PresenceService,
     private notifications: NotificationsService,
+    private clock: ClockService,
   ) {}
+
+  async operationalSignal(): Promise<VerificationOperationalSignalDto> {
+    const observedAt = this.clock.now();
+    const cutoff = new Date(
+      observedAt.getTime() - VERIFICATION_QUEUE_THRESHOLD_HOURS * HOUR_MS,
+    );
+
+    const [aggregate] = await this.prisma.$queryRaw<
+      VerificationOperationalAggregate[]
+    >(Prisma.sql`
+      SELECT
+        COUNT(*) FILTER (
+          WHERE verification_submitted_at < ${cutoff}
+        )::int AS "overdueCount",
+        COUNT(*) FILTER (
+          WHERE verification_submitted_at IS NULL
+        )::int AS "missingSubmittedAtCount",
+        MIN(verification_submitted_at) FILTER (
+          WHERE verification_submitted_at IS NOT NULL
+        ) AS "oldestPendingSubmittedAt"
+      FROM experts
+      WHERE verification_status = CAST(
+        ${VerificationStatus.PENDING} AS "VerificationStatus"
+      )
+    `);
+
+    const oldestPendingAgeSeconds = aggregate.oldestPendingSubmittedAt
+      ? Math.max(
+          0,
+          Math.floor(
+            (observedAt.getTime() -
+              aggregate.oldestPendingSubmittedAt.getTime()) /
+              1000,
+          ),
+        )
+      : null;
+
+    return {
+      signal: 'verification.queue_over_24h',
+      state: aggregate.overdueCount > 0 ? 'alerting' : 'ok',
+      thresholdHours: VERIFICATION_QUEUE_THRESHOLD_HOURS,
+      overdueCount: aggregate.overdueCount,
+      oldestPendingAgeSeconds,
+      missingSubmittedAtCount: aggregate.missingSubmittedAtCount,
+      observedAt: observedAt.toISOString(),
+    };
+  }
 
   async queue(): Promise<QueueEntryDto[]> {
     const experts = await this.prisma.expert.findMany({
