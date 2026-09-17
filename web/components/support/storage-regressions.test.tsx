@@ -8,7 +8,7 @@ import {
 } from '@testing-library/react';
 import { NextIntlClientProvider } from 'next-intl';
 import { ApiError, apiFetch } from '@/lib/api/client';
-import { submitTicket } from '@/lib/api';
+import { submitTicket } from '@/lib/api/guest-ticket';
 import { createSupportStorage } from '@/lib/support-storage';
 import ru from '@/messages/ru.json';
 import SupportCenter from './SupportCenter';
@@ -19,7 +19,7 @@ jest.mock('@/lib/api/client', () => ({
   ...jest.requireActual('@/lib/api/client'),
   apiFetch: jest.fn(),
 }));
-jest.mock('@/lib/api', () => ({ submitTicket: jest.fn() }));
+jest.mock('@/lib/api/guest-ticket', () => ({ submitTicket: jest.fn() }));
 jest.mock('@/lib/i18n/navigation', () => ({
   Link: ({ children, ...props }: React.ComponentProps<'a'>) => (
     <a {...props}>{children}</a>

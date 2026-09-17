@@ -78,6 +78,13 @@ if services["migrate"].get("command") != ["npx", "prisma", "migrate", "deploy"]:
     raise SystemExit("migrate command changed")
 if services["backend"].get("depends_on", {}).get("migrate", {}).get("condition") != "service_completed_successfully":
     raise SystemExit("backend migration dependency changed")
+
+web_build = services["web"].get("build", {})
+if web_build.get("args") != {"NEXT_PUBLIC_API_BASE_URL": "https://api.fixture.invalid/v1"}:
+    raise SystemExit(
+        "web public API origin was not propagated to the build exactly: "
+        f"{web_build.get('args')!r}"
+    )
 if sorted(compose.get("volumes", {})) != ["miniodata", "pgdata", "redisdata"]:
     raise SystemExit(f"volumes changed: {compose.get('volumes')!r}")
 if compose.get("networks", {}).keys() != {"edge", "internal"}:

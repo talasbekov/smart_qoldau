@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { submitTicket } from '@/lib/api';
+import { submitTicket } from '@/lib/api/guest-ticket';
 import { buildTicketPayload } from '@/lib/ticket';
 import {
   createSupportStorage,

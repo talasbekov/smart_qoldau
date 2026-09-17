@@ -8,6 +8,10 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm ci
 COPY . .
+# Browser code can only see NEXT_PUBLIC_* values baked into the bundle.
+# API_BASE_URL remains a runtime-only address for server rendering and BFFs.
+ARG NEXT_PUBLIC_API_BASE_URL
+ENV NEXT_PUBLIC_API_BASE_URL=$NEXT_PUBLIC_API_BASE_URL
 # Каталога public в проекте нет (иконки и og-картинки отдаёт сам Next из
 # app/), но standalone-рантайм ожидает его существования. Пустая папка
 # дешевле условного копирования, которого в Dockerfile всё равно нет.

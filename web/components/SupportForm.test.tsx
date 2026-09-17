@@ -1,9 +1,9 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { NextIntlClientProvider } from 'next-intl';
 import ru from '../messages/ru.json';
-import * as api from '@/lib/api';
+import * as api from '@/lib/api/guest-ticket';
 
-jest.mock('@/lib/api');
+jest.mock('@/lib/api/guest-ticket');
 
 // eslint-disable-next-line import/first
 import SupportForm from './SupportForm';

@@ -23,6 +23,18 @@ describe('resolveApiBaseUrl', () => {
     ).toBe('http://backend:3000/v1');
   });
 
+  it('для browser bundle берёт только явно переданный public API origin', () => {
+    expect(
+      resolveApiBaseUrl(
+        {
+          API_BASE_URL: 'http://backend:3000/v1',
+          NEXT_PUBLIC_API_BASE_URL: 'https://api.example.kz/v1',
+        },
+        'browser',
+      ),
+    ).toBe('https://api.example.kz/v1');
+  });
+
   it('отвергает относительный адрес: запрос идёт с сервера, а не из браузера', () => {
     // `/v1` в контейнере означал бы обращение к самому себе — на такой
     // конфигурации каталог молча оказывался бы пустым.
