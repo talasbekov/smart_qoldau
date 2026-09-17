@@ -1,4 +1,7 @@
 import { Module, forwardRef } from '@nestjs/common';
+import { AdminModule } from '../admin/admin.module';
+import { PaymentsAdminController } from './payments-admin.controller';
+import { PaymentOperationalSignalService } from './payment-operational-signal.service';
 import { PrismaModule } from '../prisma/prisma.module';
 import { PremiumModule } from '../premium/premium.module';
 import { RedisModule } from '../redis/redis.module';
@@ -26,6 +29,8 @@ import { PaymentsWebhookController } from './payments-webhook.controller';
 // ws.module.ts).
 @Module({
   imports: [
+    // Admin -> Chat -> Consultations -> Payments: resolve the admin guard dependency lazily.
+    forwardRef(() => AdminModule),
     PrismaModule,
     RedisModule,
     AuditModule,
@@ -38,12 +43,14 @@ import { PaymentsWebhookController } from './payments-webhook.controller';
     forwardRef(() => PremiumModule),
   ],
   controllers: [
+    PaymentsAdminController,
     PaymentMethodsController,
     PaymentsController,
     EarningsController,
     PaymentsWebhookController,
   ],
   providers: [
+    PaymentOperationalSignalService,
     PaymentMethodsService,
     PaymentsService,
     { provide: PaymentProviderPort, useClass: MockPaymentProvider },
