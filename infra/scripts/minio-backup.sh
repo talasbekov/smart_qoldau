@@ -8,7 +8,7 @@ Usage: minio-backup.sh \
   --container CONTAINER --endpoint URL \
   --target-port PORT --target-console-port PORT \
   --minio-image IMAGE --output BACKUP_DIRECTORY \
-  [--limit-download RATE]
+  [--limit-download RATE] [--operation-timeout SECONDS]
 
 Create a logical, current-object MinIO backup from the explicitly selected
 running container. The source stays online and its data volume is never read
@@ -22,6 +22,8 @@ externally when a mutually consistent object set is required. Historical
 versions, delete markers, bucket policies/locking, encrypted-object recovery,
 IAM, KMS keys, lifecycle/replication configuration, and MinIO server
 configuration are outside this backup's verified guarantees.
+Each Docker/`mc` phase is a tracked child bounded by --operation-timeout
+(default 300 seconds).
 EOF
 }
 
@@ -43,6 +45,7 @@ target_console_port=''
 minio_image=''
 output=''
 limit_download=''
+operation_timeout=300
 
 while (( $# > 0 )); do
   case "$1" in
@@ -81,6 +84,11 @@ while (( $# > 0 )); do
       limit_download="$2"
       shift 2
       ;;
+    --operation-timeout)
+      require_value "$1" "$#"
+      operation_timeout="$2"
+      shift 2
+      ;;
     -h|--help)
       usage
       exit 0
@@ -91,8 +99,11 @@ done
 
 [[ -n "$container" ]] || die '--container is required; no source is selected implicitly'
 [[ -n "$endpoint" ]] || die '--endpoint is required'
-[[ "$endpoint" =~ ^https?://[^/@[:space:]]+/?$ ]] \
-  || die '--endpoint must be an http(s) URL without credentials or a path'
+[[ "$endpoint" =~ ^https?://(127\.0\.0\.1|localhost):([0-9]+)$ ]] \
+  || die '--endpoint must use explicit loopback host and port inside the selected container'
+source_port="${BASH_REMATCH[2]}"
+(( source_port >= 1 && source_port <= 65535 )) \
+  || die 'source endpoint port must be between 1 and 65535'
 [[ -n "$target_port" ]] || die '--target-port is required'
 [[ -n "$target_console_port" ]] || die '--target-console-port is required'
 for candidate in "$target_port" "$target_console_port"; do
@@ -106,6 +117,8 @@ if [[ -n "$limit_download" ]]; then
   [[ "$limit_download" =~ ^[1-9][0-9]*(KiB|MiB|GiB)$ ]] \
     || die '--limit-download must be a positive KiB, MiB, or GiB rate'
 fi
+[[ "$operation_timeout" =~ ^[1-9][0-9]*$ ]] && (( operation_timeout <= 86400 )) \
+  || die '--operation-timeout must be between 1 and 86400 seconds'
 
 for command_name in docker grep jq sha256sum mktemp tar timeout; do
   command -v "$command_name" >/dev/null 2>&1 || die "$command_name is required"
@@ -120,19 +133,20 @@ output_name="$(basename -- "$output")"
 [[ "$output_name" != '.' && "$output_name" != '..' && -n "$output_name" ]] \
   || die 'invalid output directory name'
 
-source_record="$(docker container inspect \
+source_record="$(timeout --signal=TERM --kill-after=2 15 docker container inspect \
   --format '{{.Id}}|{{.State.Running}}' "$container" 2>/dev/null)" \
   || die "source container does not exist: $container"
 source_id="${source_record%%|*}"
 source_running="${source_record#*|}"
 [[ "$source_running" == 'true' ]] || die "source container is not running: $container"
-docker exec "$source_id" sh -ceu '
+timeout --signal=TERM --kill-after=2 15 docker exec "$source_id" sh -ceu '
   [ -n "${MINIO_ROOT_USER:-}" ]
   [ -n "${MINIO_ROOT_PASSWORD:-}" ]
   command -v mc >/dev/null
 ' >/dev/null 2>&1 || die 'source must expose MINIO_ROOT_USER, MINIO_ROOT_PASSWORD, and mc'
 
-image_id="$(docker image inspect --format '{{.Id}}' "$minio_image" 2>/dev/null)" \
+image_id="$(timeout --signal=TERM --kill-after=2 15 docker image inspect \
+  --format '{{.Id}}' "$minio_image" 2>/dev/null)" \
   || die "MinIO image is not available locally: $minio_image"
 [[ "$image_id" =~ ^sha256:[[:xdigit:]]{64}$ ]] || die 'MinIO image has an unexpected image ID'
 
@@ -160,15 +174,39 @@ chmod 600 "$credential_env" "$credential_input"
 target_is_owned() {
   local ownership
   [[ -n "$target_container_id" ]] || return 1
-  ownership="$(docker container inspect \
+  ownership="$(timeout --signal=KILL 5 docker container inspect \
     --format '{{.Id}}|{{ index .Config.Labels "com.smartqoldau.minio-backup.run" }}' \
     "$target_container_id" 2>/dev/null)" || return 1
   [[ "$ownership" == "$target_container_id|$RUN_ID" ]]
 }
 
+target_uses_approved_image() {
+  local created_image
+  [[ -n "$target_container_id" ]] || return 1
+  created_image="$(timeout --signal=KILL 5 docker container inspect --format '{{.Image}}' \
+    "$target_container_id" 2>/dev/null)" || return 1
+  [[ "$created_image" == "$image_id" ]]
+}
+
+resolve_owned_target_by_name() {
+  local record resolved_id resolved_label
+  [[ -z "$target_container_id" ]] || return 0
+  if ! record="$(timeout --signal=KILL 5 docker container inspect \
+    --format '{{.Id}}|{{ index .Config.Labels "com.smartqoldau.minio-backup.run" }}' \
+    "$TARGET_NAME" 2>/dev/null)"; then
+    return 0
+  fi
+  resolved_id="${record%%|*}"
+  resolved_label="${record#*|}"
+  [[ "$resolved_id" =~ ^[[:xdigit:]]{64}$ && "$resolved_label" == "$RUN_ID" ]] \
+    || return 1
+  target_container_id="$resolved_id"
+}
+
 remove_owned_target() {
+  resolve_owned_target_by_name || return 1
   [[ -n "$target_container_id" ]] || return 0
-  if ! docker container inspect "$target_container_id" >/dev/null 2>&1; then
+  if ! timeout --signal=KILL 5 docker container inspect "$target_container_id" >/dev/null 2>&1; then
     target_container_id=''
     return 0
   fi
@@ -176,8 +214,8 @@ remove_owned_target() {
     printf 'minio-backup: refusing target cleanup without exact ID and run-label ownership\n' >&2
     return 1
   fi
-  docker rm --force "$target_container_id" >/dev/null || return 1
-  if docker container inspect "$target_container_id" >/dev/null 2>&1; then
+  timeout --signal=KILL 10 docker rm --force "$target_container_id" >/dev/null || return 1
+  if timeout --signal=KILL 5 docker container inspect "$target_container_id" >/dev/null 2>&1; then
     printf 'minio-backup: target container cleanup could not be confirmed\n' >&2
     return 1
   fi
@@ -186,8 +224,9 @@ remove_owned_target() {
 
 stop_owned_target() {
   target_is_owned || return 1
-  docker stop --time 5 "$target_container_id" >/dev/null
-  [[ "$(docker container inspect --format '{{.State.Running}}' "$target_container_id")" == 'false' ]]
+  run_managed "$operation_timeout" docker stop --time 5 "$target_container_id" >/dev/null
+  [[ "$(timeout --signal=KILL 5 docker container inspect \
+    --format '{{.State.Running}}' "$target_container_id")" == 'false' ]]
 }
 
 terminate_owned_mirror() {
@@ -271,10 +310,8 @@ verify_owned_mirror_cleanup() {
 cleanup() {
   local status=$?
   if [[ -n "$active_child_pid" ]] && kill -0 "$active_child_pid" 2>/dev/null; then
+    stop_active_child || status=1
     terminate_owned_mirror >/dev/null 2>&1 || status=1
-    kill -TERM "$active_child_pid" 2>/dev/null || true
-    wait "$active_child_pid" 2>/dev/null || true
-    active_child_pid=''
   fi
   if ! remove_owned_target; then
     status=1
@@ -289,13 +326,11 @@ handle_signal() {
   local signal_status="$1"
   local cleanup_ok=1
   trap '' HUP INT TERM
+  if [[ -n "$active_child_pid" ]]; then
+    stop_active_child || cleanup_ok=0
+  fi
   if ! terminate_owned_mirror; then
     cleanup_ok=0
-  fi
-  if [[ -n "$active_child_pid" ]]; then
-    kill -TERM "$active_child_pid" 2>/dev/null || true
-    wait "$active_child_pid" 2>/dev/null || true
-    active_child_pid=''
   fi
   if ! verify_owned_mirror_cleanup; then
     cleanup_ok=0
@@ -312,20 +347,56 @@ trap 'handle_signal 129' HUP
 trap 'handle_signal 130' INT
 trap 'handle_signal 143' TERM
 
-target_container_id="$(docker create \
+stop_active_child() {
+  local deadline
+  [[ -n "$active_child_pid" ]] || return 0
+  kill -TERM "$active_child_pid" 2>/dev/null || true
+  deadline=$((SECONDS + 5))
+  while kill -0 "$active_child_pid" 2>/dev/null; do
+    if (( SECONDS >= deadline )); then
+      kill -KILL "$active_child_pid" 2>/dev/null || true
+      break
+    fi
+    sleep 0.1
+  done
+  wait "$active_child_pid" 2>/dev/null || true
+  active_child_pid=''
+}
+
+run_managed() {
+  local timeout_seconds="$1"
+  shift
+  local status
+  timeout --signal=TERM --kill-after=2 "$timeout_seconds" "$@" <&0 &
+  active_child_pid=$!
+  if wait "$active_child_pid"; then
+    status=0
+  else
+    status=$?
+  fi
+  active_child_pid=''
+  return "$status"
+}
+
+target_id_file="$temporary_directory/.target.id"
+run_managed "$operation_timeout" docker create \
   --name "$TARGET_NAME" \
   --label "$TARGET_LABEL" \
   --network "container:$source_id" \
   --env-file "$credential_env" \
-  "$minio_image" server /data \
+  "$image_id" server /data \
     --address ":$target_port" \
-    --console-address ":$target_console_port")" \
+    --console-address ":$target_console_port" >"$target_id_file" \
   || die 'could not create owned backup target MinIO'
+IFS= read -r target_container_id <"$target_id_file"
+rm -f -- "$target_id_file"
 target_is_owned || die 'created backup target does not have expected ownership'
-docker start "$target_container_id" >/dev/null || die 'could not start owned backup target MinIO'
+target_uses_approved_image || die 'created backup target does not use the approved image ID'
+run_managed "$operation_timeout" docker start "$target_container_id" >/dev/null \
+  || die 'could not start owned backup target MinIO'
 
 run_logical_mirror() {
-  docker exec --interactive \
+  run_managed "$operation_timeout" docker exec --interactive \
     --env "SMARTQOLDAU_MINIO_BACKUP_TOKEN=$TOKEN" \
     "$source_id" sh -ceu '
       endpoint="$1"
@@ -391,18 +462,16 @@ run_logical_mirror() {
     ' sh "$endpoint" "$target_port" "$limit_download" <"$credential_input"
 }
 
-run_logical_mirror &
-active_child_pid=$!
-set +e
-wait "$active_child_pid"
-mirror_status=$?
-set -e
-active_child_pid=''
-(( mirror_status == 0 )) || die 'logical object mirror failed; no final backup was published'
+if run_logical_mirror; then
+  :
+else
+  mirror_status=$?
+  die "logical object mirror failed or timed out (status $mirror_status); no final backup was published"
+fi
 verify_owned_mirror_cleanup || die 'owned source-side mirror cleanup could not be confirmed'
 
 target_mc() {
-  docker exec --interactive "$source_id" sh -ceu '
+  run_managed "$operation_timeout" docker exec --interactive "$source_id" sh -ceu '
     target_port="$1"
     shift
     config_directory="$(mktemp -d /tmp/smartqoldau-minio-inventory.XXXXXX)"
@@ -416,14 +485,22 @@ target_mc() {
   ' sh "$target_port" "$@" <"$credential_input"
 }
 
-target_mc ls --json target \
-  | jq -cS 'if .status == "success" then {name, type} else error(.error.message // "mc ls failed") end' \
-  >"$temporary_directory/BUCKETS.jsonl" \
+target_mc ls --json target >"$temporary_directory/.buckets.raw.jsonl" \
+  2>"$temporary_directory/.inventory.error" \
   || die 'could not inventory mirrored buckets'
-target_mc stat --recursive --json target \
-  | jq -cS 'if .status == "success" then {checksum, etag, lastModified, metadata, name, size, type} else error(.error.message // "mc stat failed") end' \
-  >"$temporary_directory/OBJECTS.jsonl" \
+timeout --signal=KILL 15 jq -cS \
+  'if .status == "success" then {name, type} else error("mc ls failed") end' \
+  "$temporary_directory/.buckets.raw.jsonl" >"$temporary_directory/BUCKETS.jsonl" \
+  || die 'could not inventory mirrored buckets'
+target_mc stat --recursive --json target >"$temporary_directory/.objects.raw.jsonl" \
+  2>"$temporary_directory/.inventory.error" \
   || die 'could not inventory mirrored objects'
+timeout --signal=KILL 15 jq -cS \
+  'if .status == "success" then {checksum, etag, lastModified, metadata, name, size, type} else error("mc stat failed") end' \
+  "$temporary_directory/.objects.raw.jsonl" >"$temporary_directory/OBJECTS.jsonl" \
+  || die 'could not inventory mirrored objects'
+rm -f -- "$temporary_directory/.buckets.raw.jsonl" \
+  "$temporary_directory/.objects.raw.jsonl" "$temporary_directory/.inventory.error"
 
 jq -nS \
   --arg format 'smartqoldau-minio-backup-v1' \
@@ -437,8 +514,9 @@ chmod 600 "$temporary_directory/BUCKETS.jsonl" \
   "$temporary_directory/OBJECTS.jsonl" "$temporary_directory/manifest.json"
 
 stop_owned_target || die 'could not prove owned backup target was quiesced'
-docker cp "$target_container_id:/data/." - >"$temporary_directory/minio-data.tar" \
-  || die 'could not stream cold target data snapshot'
+run_managed "$operation_timeout" docker cp "$target_container_id:/data/." - \
+  >"$temporary_directory/minio-data.tar" \
+  || die 'could not stream cold target data snapshot before timeout'
 chmod 600 "$temporary_directory/minio-data.tar"
 tar --list --file "$temporary_directory/minio-data.tar" >/dev/null \
   || die 'cold target data snapshot is not a readable tar archive'

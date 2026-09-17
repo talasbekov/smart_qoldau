@@ -12,7 +12,8 @@ readonly SOURCE_CONTAINER="smartqoldau-minio-backup-source-$RUN_ID"
 readonly SOURCE_VOLUME="smartqoldau-minio-backup-source-$RUN_ID"
 readonly WORK_DIR="$(mktemp -d "${TMPDIR:-/tmp}/smartqoldau-minio-backup-test.XXXXXX")"
 readonly BACKUP_DIR="$WORK_DIR/verified-backup"
-readonly MINIO_IMAGE="minio/minio:latest"
+readonly MINIO_IMAGE_REF="minio/minio:latest"
+readonly MINIO_IMAGE_ID="$(docker image inspect --format '{{.Id}}' "$MINIO_IMAGE_REF")"
 readonly SOURCE_ENDPOINT="http://127.0.0.1:9000"
 readonly SOURCE_ACCESS='e30-access'
 readonly SOURCE_SECRET='e30:/@%secret+value'
@@ -84,6 +85,70 @@ assert_no_owned_runtime() {
   [[ -z "$found" ]] || fail "owned container leaked for $label: $found"
 }
 
+readonly ENDPOINT_PROBE_BIN="$WORK_DIR/endpoint-probe-bin"
+readonly ENDPOINT_PROBE_MARKER="$WORK_DIR/endpoint-probe-docker-called"
+mkdir -m 700 -- "$ENDPOINT_PROBE_BIN"
+printf '%s\n' \
+  '#!/bin/sh' \
+  'printf called >"$SMARTQOLDAU_ENDPOINT_PROBE_MARKER"' \
+  'exit 97' \
+  >"$ENDPOINT_PROBE_BIN/docker"
+chmod 700 "$ENDPOINT_PROBE_BIN/docker"
+for invalid_endpoint in \
+  'https://credentials-sink.invalid:9443' \
+  'http://minio:9000' \
+  'http://127.0.0.1'; do
+  if SMARTQOLDAU_ENDPOINT_PROBE_MARKER="$ENDPOINT_PROBE_MARKER" \
+    PATH="$ENDPOINT_PROBE_BIN:$PATH" \
+    "$BACKUP_SCRIPT" \
+      --container selected-source \
+      --endpoint "$invalid_endpoint" \
+      --target-port 9100 \
+      --target-console-port 9101 \
+      --minio-image unavailable-image \
+      --output "$WORK_DIR/rejected-endpoint" \
+      >"$WORK_DIR/rejected-endpoint.log" 2>&1; then
+    fail "backup accepted unrelated or implicit-port endpoint: $invalid_endpoint"
+  fi
+  [[ ! -e "$ENDPOINT_PROBE_MARKER" ]] \
+    || fail "backup used Docker before rejecting endpoint: $invalid_endpoint"
+done
+printf 'PASS: source endpoint is explicit loopback and rejected before Docker use\n'
+
+readonly IMAGE_PROBE_BIN="$WORK_DIR/image-probe-bin"
+readonly IMAGE_PROBE_MARKER="$WORK_DIR/image-probe-create-argv"
+mkdir -m 700 -- "$IMAGE_PROBE_BIN"
+printf '%s\n' \
+  '#!/bin/sh' \
+  'case "$1:$2" in' \
+  '  container:inspect) printf "%s\n" "probe-source-id|true" ;;' \
+  '  image:inspect) printf "%s\n" "$SMARTQOLDAU_APPROVED_IMAGE_ID" ;;' \
+  '  exec:*) exit 0 ;;' \
+  '  create:*) printf "%s\n" "$*" >"$SMARTQOLDAU_IMAGE_PROBE_MARKER"; exit 97 ;;' \
+  '  *) exit 97 ;;' \
+  'esac' \
+  >"$IMAGE_PROBE_BIN/docker"
+chmod 700 "$IMAGE_PROBE_BIN/docker"
+if SMARTQOLDAU_APPROVED_IMAGE_ID="$MINIO_IMAGE_ID" \
+  SMARTQOLDAU_IMAGE_PROBE_MARKER="$IMAGE_PROBE_MARKER" \
+  PATH="$IMAGE_PROBE_BIN:$PATH" \
+  "$BACKUP_SCRIPT" \
+    --container selected-source \
+    --endpoint "$SOURCE_ENDPOINT" \
+    --target-port 9100 \
+    --target-console-port 9101 \
+    --minio-image moving-tag \
+    --output "$WORK_DIR/image-probe-backup" \
+    >"$WORK_DIR/image-probe.log" 2>&1; then
+  fail 'image probe unexpectedly completed a backup'
+fi
+grep --fixed-strings --quiet "$MINIO_IMAGE_ID" "$IMAGE_PROBE_MARKER" \
+  || fail 'backup create did not use the inspected immutable image ID'
+if grep --fixed-strings --quiet 'moving-tag' "$IMAGE_PROBE_MARKER"; then
+  fail 'backup create used the mutable image reference after inspection'
+fi
+printf 'PASS: backup create uses the inspected immutable image ID\n'
+
 docker volume create --label "$OWNER_LABEL" "$SOURCE_VOLUME" >/dev/null
 source_container_id="$(docker run --detach --rm \
   --name "$SOURCE_CONTAINER" \
@@ -92,7 +157,7 @@ source_container_id="$(docker run --detach --rm \
   --env "MINIO_ROOT_USER=$SOURCE_ACCESS" \
   --env "MINIO_ROOT_PASSWORD=$SOURCE_SECRET" \
   --volume "$SOURCE_VOLUME:/data" \
-  "$MINIO_IMAGE" server /data)"
+  "$MINIO_IMAGE_ID" server /data)"
 wait_until 'source MinIO readiness' source_ready
 
 source_mc mb source/expert-documents source/sq-avatars >/dev/null
@@ -134,7 +199,7 @@ jq -n \
   --endpoint "$SOURCE_ENDPOINT" \
   --target-port 9100 \
   --target-console-port 9101 \
-  --minio-image "$MINIO_IMAGE" \
+  --minio-image "$MINIO_IMAGE_ID" \
   --output "$BACKUP_DIR" \
   >"$WORK_DIR/backup.log" 2>&1 \
   || { sed -n '1,180p' "$WORK_DIR/backup.log" >&2; fail 'initial logical backup failed'; }
@@ -146,18 +211,149 @@ jq -n \
 [[ -f "$BACKUP_DIR/SHA256SUMS" ]] || fail 'backup checksum file was not created'
 (cd -- "$BACKUP_DIR" && sha256sum --check SHA256SUMS) >/dev/null \
   || fail 'published backup checksum does not verify'
-if grep --fixed-strings --quiet "$SOURCE_SECRET" "$WORK_DIR/backup.log"; then
-  fail 'backup log exposed source credentials'
-fi
+for sensitive_value in \
+  "$SOURCE_ACCESS" \
+  "$SOURCE_SECRET" \
+  'expert-documents' \
+  'cases/2026/09/document.txt'; do
+  if grep --fixed-strings --quiet "$sensitive_value" "$WORK_DIR/backup.log"; then
+    fail 'backup log exposed credentials or object names'
+  fi
+done
 assert_no_owned_runtime 'com.smartqoldau.minio-backup.run'
 printf 'PASS: atomic logical MinIO backup artifact\n'
+
+rm -f -- "$IMAGE_PROBE_MARKER"
+if SMARTQOLDAU_APPROVED_IMAGE_ID="$MINIO_IMAGE_ID" \
+  SMARTQOLDAU_IMAGE_PROBE_MARKER="$IMAGE_PROBE_MARKER" \
+  PATH="$IMAGE_PROBE_BIN:$PATH" \
+  "$VALIDATE_SCRIPT" \
+    --backup "$BACKUP_DIR" \
+    --minio-image moving-tag \
+    --expectations "$WORK_DIR/expectations.json" \
+    >"$WORK_DIR/restore-image-probe.log" 2>&1; then
+  fail 'restore image probe unexpectedly completed validation'
+fi
+grep --fixed-strings --quiet "$MINIO_IMAGE_ID" "$IMAGE_PROBE_MARKER" \
+  || fail 'restore create did not use the inspected immutable image ID'
+if grep --fixed-strings --quiet 'moving-tag' "$IMAGE_PROBE_MARKER"; then
+  fail 'restore create used the mutable image reference after inspection'
+fi
+printf 'PASS: restore create uses the inspected immutable image ID\n'
+
+readonly HANG_DOCKER_BIN="$WORK_DIR/hang-docker-bin"
+mkdir -m 700 -- "$HANG_DOCKER_BIN"
+printf '%s\n' \
+  '#!/bin/sh' \
+  'if [ "$1" = cp ]; then' \
+  '  printf "%s\n" "$$" >"$SMARTQOLDAU_HANG_MARKER"' \
+  '  trap "exit 143" HUP INT TERM' \
+  '  while :; do sleep 1; done' \
+  'fi' \
+  'exec /usr/bin/docker "$@"' \
+  >"$HANG_DOCKER_BIN/docker"
+chmod 700 "$HANG_DOCKER_BIN/docker"
+
+wait_for_process_exit() {
+  local process_id="$1"
+  local deadline=$((SECONDS + 8))
+  while kill -0 "$process_id" 2>/dev/null; do
+    (( SECONDS < deadline )) || return 1
+    sleep 0.2
+  done
+}
+
+force_stop_hang_probe() {
+  local parent_pid="$1"
+  local marker="$2"
+  if [[ -s "$marker" ]]; then
+    local child_pid
+    child_pid="$(cat "$marker")"
+    [[ "$child_pid" =~ ^[0-9]+$ ]] && kill -KILL "$child_pid" 2>/dev/null || true
+  fi
+  kill -KILL "$parent_pid" 2>/dev/null || true
+  wait "$parent_pid" 2>/dev/null || true
+}
+
+readonly COLD_COPY_MARKER="$WORK_DIR/cold-copy-hang.pid"
+readonly COLD_COPY_BACKUP="$WORK_DIR/cold-copy-interrupted"
+SMARTQOLDAU_HANG_MARKER="$COLD_COPY_MARKER" \
+PATH="$HANG_DOCKER_BIN:$PATH" \
+"$BACKUP_SCRIPT" \
+  --container "$source_container_id" \
+  --endpoint "$SOURCE_ENDPOINT" \
+  --target-port 9700 \
+  --target-console-port 9701 \
+  --minio-image "$MINIO_IMAGE_ID" \
+  --output "$COLD_COPY_BACKUP" \
+  >"$WORK_DIR/cold-copy-interrupted.log" 2>&1 &
+cold_copy_pid=$!
+wait_until 'cold backup copy hang' test -s "$COLD_COPY_MARKER"
+kill -TERM "$cold_copy_pid"
+if ! wait_for_process_exit "$cold_copy_pid"; then
+  force_stop_hang_probe "$cold_copy_pid" "$COLD_COPY_MARKER"
+  fail 'backup TERM remained blocked during cold data copy'
+fi
+set +e
+wait "$cold_copy_pid"
+cold_copy_status=$?
+set -e
+[[ "$cold_copy_status" == '143' ]] \
+  || fail "cold-copy backup TERM status was $cold_copy_status, expected 143"
+[[ "$(docker container inspect --format '{{.State.Running}}' "$source_container_id")" == 'true' ]] \
+  || fail 'cold-copy interruption stopped the source MinIO container'
+[[ ! -e "$COLD_COPY_BACKUP" ]] || fail 'cold-copy interruption published an artifact'
+assert_no_owned_runtime 'com.smartqoldau.minio-backup.run'
+printf 'PASS: TERM during cold backup copy is bounded and owned-only\n'
+
+readonly RESTORE_COPY_MARKER="$WORK_DIR/restore-copy-hang.pid"
+SMARTQOLDAU_HANG_MARKER="$RESTORE_COPY_MARKER" \
+PATH="$HANG_DOCKER_BIN:$PATH" \
+"$VALIDATE_SCRIPT" \
+  --backup "$BACKUP_DIR" \
+  --minio-image "$MINIO_IMAGE_ID" \
+  --expectations "$WORK_DIR/expectations.json" \
+  >"$WORK_DIR/restore-copy-interrupted.log" 2>&1 &
+restore_copy_pid=$!
+wait_until 'restore copy hang' test -s "$RESTORE_COPY_MARKER"
+kill -TERM "$restore_copy_pid"
+if ! wait_for_process_exit "$restore_copy_pid"; then
+  force_stop_hang_probe "$restore_copy_pid" "$RESTORE_COPY_MARKER"
+  fail 'restore TERM remained blocked during snapshot copy'
+fi
+set +e
+wait "$restore_copy_pid"
+restore_copy_status=$?
+set -e
+[[ "$restore_copy_status" == '143' ]] \
+  || fail "restore-copy TERM status was $restore_copy_status, expected 143"
+assert_no_owned_runtime 'com.smartqoldau.minio-restore-validation.run'
+printf 'PASS: TERM during restore copy is bounded and owned-only\n'
+
+readonly RESTORE_TIMEOUT_MARKER="$WORK_DIR/restore-timeout-hang.pid"
+timeout_started=$SECONDS
+if SMARTQOLDAU_HANG_MARKER="$RESTORE_TIMEOUT_MARKER" \
+  PATH="$HANG_DOCKER_BIN:$PATH" \
+  "$VALIDATE_SCRIPT" \
+    --backup "$BACKUP_DIR" \
+    --minio-image "$MINIO_IMAGE_ID" \
+    --operation-timeout 1 \
+    --expectations "$WORK_DIR/expectations.json" \
+    >"$WORK_DIR/restore-timeout.log" 2>&1; then
+  fail 'restore copy ignored its operation timeout'
+fi
+(( SECONDS - timeout_started < 8 )) \
+  || fail 'restore copy operation timeout was not bounded'
+[[ -s "$RESTORE_TIMEOUT_MARKER" ]] || fail 'restore timeout probe did not reach snapshot copy'
+assert_no_owned_runtime 'com.smartqoldau.minio-restore-validation.run'
+printf 'PASS: restore copy operation timeout is enforced\n'
 
 if "$BACKUP_SCRIPT" \
   --container "$source_container_id" \
   --endpoint "$SOURCE_ENDPOINT" \
   --target-port 9100 \
   --target-console-port 9101 \
-  --minio-image "$MINIO_IMAGE" \
+  --minio-image "$MINIO_IMAGE_ID" \
   --output "$BACKUP_DIR" \
   >"$WORK_DIR/overwrite.log" 2>&1; then
   fail 'backup overwrote an existing completed artifact'
@@ -188,7 +384,7 @@ if PATH="$RACE_BIN:$PATH" "$BACKUP_SCRIPT" \
   --endpoint "$SOURCE_ENDPOINT" \
   --target-port 9600 \
   --target-console-port 9601 \
-  --minio-image "$MINIO_IMAGE" \
+  --minio-image "$MINIO_IMAGE_ID" \
   --output "$RACE_BACKUP" \
   >"$WORK_DIR/race.log" 2>&1; then
   fail 'backup accepted a destination created at publication time'
@@ -210,7 +406,7 @@ readonly CONCURRENT_BACKUP="$WORK_DIR/concurrent-backup"
   --endpoint "$SOURCE_ENDPOINT" \
   --target-port 9400 \
   --target-console-port 9401 \
-  --minio-image "$MINIO_IMAGE" \
+  --minio-image "$MINIO_IMAGE_ID" \
   --output "$CONCURRENT_BACKUP" \
   >"$WORK_DIR/concurrent-one.log" 2>&1 &
 concurrent_pid_one=$!
@@ -219,7 +415,7 @@ concurrent_pid_one=$!
   --endpoint "$SOURCE_ENDPOINT" \
   --target-port 9500 \
   --target-console-port 9501 \
-  --minio-image "$MINIO_IMAGE" \
+  --minio-image "$MINIO_IMAGE_ID" \
   --output "$CONCURRENT_BACKUP" \
   >"$WORK_DIR/concurrent-two.log" 2>&1 &
 concurrent_pid_two=$!
@@ -247,7 +443,7 @@ if "$BACKUP_SCRIPT" \
   --endpoint 'http://127.0.0.1:9999' \
   --target-port 9200 \
   --target-console-port 9201 \
-  --minio-image "$MINIO_IMAGE" \
+  --minio-image "$MINIO_IMAGE_ID" \
   --output "$FAILED_BACKUP" \
   >"$WORK_DIR/failed.log" 2>&1; then
   fail 'backup reported success for an unreachable source endpoint'
@@ -261,22 +457,51 @@ printf 'PASS: failed backup leaves no artifact or runtime\n'
 
 "$VALIDATE_SCRIPT" \
   --backup "$BACKUP_DIR" \
-  --minio-image "$MINIO_IMAGE" \
+  --minio-image "$MINIO_IMAGE_ID" \
   --expectations "$WORK_DIR/expectations.json" \
   >"$WORK_DIR/restore.log" 2>&1 \
   || { sed -n '1,180p' "$WORK_DIR/restore.log" >&2; fail 'isolated restore validation failed'; }
-if grep --fixed-strings --quiet "$SOURCE_SECRET" "$WORK_DIR/restore.log"; then
-  fail 'restore log exposed source credentials'
-fi
+for sensitive_value in \
+  "$SOURCE_ACCESS" \
+  "$SOURCE_SECRET" \
+  'expert-documents' \
+  'cases/2026/09/document.txt'; do
+  if grep --fixed-strings --quiet "$sensitive_value" "$WORK_DIR/restore.log"; then
+    fail 'restore log exposed credentials or object names'
+  fi
+done
 assert_no_owned_runtime 'com.smartqoldau.minio-restore-validation.run'
 printf 'PASS: isolated restore verifies nested, binary, content-type, and metadata invariants\n'
+
+readonly REDACTED_EXPECTATIONS="$WORK_DIR/redacted-expectations.json"
+readonly REDACTED_LOG="$WORK_DIR/redacted-expectation.log"
+readonly SENSITIVE_BUCKET='expert-documents'
+readonly SENSITIVE_KEY='cases/private/credential-like-secret.pdf'
+jq --arg key "$SENSITIVE_KEY" '.objects = [(.objects[0] | .key = $key)]' \
+  "$WORK_DIR/expectations.json" >"$REDACTED_EXPECTATIONS"
+if "$VALIDATE_SCRIPT" \
+  --backup "$BACKUP_DIR" \
+  --minio-image "$MINIO_IMAGE_ID" \
+  --expectations "$REDACTED_EXPECTATIONS" \
+  >"$REDACTED_LOG" 2>&1; then
+  fail 'restore validation accepted a missing sensitive expectation'
+fi
+for sensitive_value in "$SENSITIVE_BUCKET" "$SENSITIVE_KEY" "$SOURCE_SECRET"; do
+  if grep --fixed-strings --quiet "$sensitive_value" "$REDACTED_LOG"; then
+    fail 'restore validation failure disclosed a bucket, key, or credential'
+  fi
+done
+grep --fixed-strings --quiet 'expectation #1' "$REDACTED_LOG" \
+  || fail 'restore validation failure did not identify the stable expectation index'
+assert_no_owned_runtime 'com.smartqoldau.minio-restore-validation.run'
+printf 'PASS: failing expectations redact bucket, key, and credentials\n'
 
 readonly CORRUPT_BACKUP="$WORK_DIR/corrupt-backup"
 cp -a -- "$BACKUP_DIR" "$CORRUPT_BACKUP"
 printf 'corruption' >>"$CORRUPT_BACKUP/minio-data.tar"
 if "$VALIDATE_SCRIPT" \
   --backup "$CORRUPT_BACKUP" \
-  --minio-image "$MINIO_IMAGE" \
+  --minio-image "$MINIO_IMAGE_ID" \
   --expectations "$WORK_DIR/expectations.json" \
   >"$WORK_DIR/corrupt.log" 2>&1; then
   fail 'restore validation accepted checksum corruption'
@@ -293,7 +518,7 @@ readonly INTERRUPTED_BACKUP="$WORK_DIR/interrupted-backup"
   --endpoint "$SOURCE_ENDPOINT" \
   --target-port 9300 \
   --target-console-port 9301 \
-  --minio-image "$MINIO_IMAGE" \
+  --minio-image "$MINIO_IMAGE_ID" \
   --limit-download 1KiB \
   --output "$INTERRUPTED_BACKUP" \
   >"$WORK_DIR/interrupted.log" 2>&1 &
