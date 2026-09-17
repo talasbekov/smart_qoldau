@@ -8,6 +8,7 @@ import { RedisModule } from '../redis/redis.module';
 import { ChatModule } from '../chat/chat.module';
 import { PaymentsModule } from '../payments/payments.module';
 import { NotificationsModule } from '../notifications/notifications.module';
+import { AdminModule } from '../admin/admin.module';
 import { ConsultationsService } from './consultations.service';
 import { BookingModule } from '../booking/booking.module';
 import { BookingController } from '../booking/booking.controller';
@@ -16,6 +17,8 @@ import { ConsultationsController } from './consultations.controller';
 import { NotesController } from './notes.controller';
 import { NoShowService } from './no-show.service';
 import { ScheduledSweepService } from './scheduled-sweep.service';
+import { ConsultationsAdminController } from './consultations-admin.controller';
+import { ConsultationNoShowObservationService } from './consultation-no-show-observation.service';
 
 // Односторонняя зависимость: ConsultationsModule НЕ импортирует
 // RequestsModule (во избежание циклической зависимости) — RequestsModule
@@ -31,6 +34,9 @@ import { ScheduledSweepService } from './scheduled-sweep.service';
 // forwardRef с обеих сторон.
 @Module({
   imports: [
+    // Admin -> Chat -> Consultations: resolve the admin-guard dependency
+    // lazily without introducing an eager reverse edge.
+    forwardRef(() => AdminModule),
     PrismaModule,
     AuditModule,
     ClockModule,
@@ -45,9 +51,15 @@ import { ScheduledSweepService } from './scheduled-sweep.service';
     // forwardRef — третий участник цикла ломает разрешение зависимостей.
     BookingModule,
   ],
-  controllers: [ConsultationsController, NotesController, BookingController],
+  controllers: [
+    ConsultationsController,
+    ConsultationsAdminController,
+    NotesController,
+    BookingController,
+  ],
   providers: [
     ConsultationsService,
+    ConsultationNoShowObservationService,
     NoShowService,
     BookingService,
     ScheduledSweepService,
