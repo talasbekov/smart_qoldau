@@ -366,6 +366,118 @@ wait "$LOCK_EXEC_PID" 2>/dev/null || true
 LOCK_EXEC_PID=''
 printf 'PASS: bounded backup TERM preserves unrelated source query\n'
 
+readonly PSQL_PATH="$(docker exec "$SOURCE_CONTAINER_ID" sh -ceu 'command -v psql')"
+docker exec --interactive "$SOURCE_CONTAINER_ID" sh -s -- "$PSQL_PATH" <<'SH'
+set -eu
+psql_path="$1"
+mv -- "$psql_path" "${psql_path}.smartqoldau-real"
+cat >"$psql_path" <<'WRAPPER'
+#!/bin/sh
+for argument in "$@"; do
+  case "$argument" in
+    *pg_cancel_backend*)
+      printf 'refused\n' >>/tmp/smartqoldau-test-cancel-refused
+      exit 77
+      ;;
+  esac
+done
+exec "${0}.smartqoldau-real" "$@"
+WRAPPER
+chmod 755 "$psql_path"
+SH
+
+readonly REFUSAL_LOCK_APPLICATION_NAME="smartqoldau_test_refusal_lock_${RUN_ID//-/_}"
+docker exec --env "PGAPPNAME=$REFUSAL_LOCK_APPLICATION_NAME" "$SOURCE_CONTAINER_ID" \
+  psql --no-psqlrc --set ON_ERROR_STOP=1 --username fixture_user --dbname fixture_db \
+    --command 'BEGIN; LOCK TABLE backup_parent IN ACCESS EXCLUSIVE MODE; SELECT pg_sleep(30);' \
+  >"$WORK_DIR/refusal-lock.log" 2>&1 &
+LOCK_EXEC_PID=$!
+wait_for_query_count "$SOURCE_CONTAINER_ID" \
+  "SELECT count(*) FROM pg_stat_activity WHERE application_name = '$REFUSAL_LOCK_APPLICATION_NAME' AND wait_event = 'PgSleep'" \
+  || fail 'cancel-refusal lock query did not become active'
+
+readonly REFUSAL_BACKUP="$WORK_DIR/cancel-refusal-backup"
+"$BACKUP_SCRIPT" \
+  --container "$SOURCE_CONTAINER_ID" \
+  --host 127.0.0.1 \
+  --port 5432 \
+  --database fixture_db \
+  --user fixture_user \
+  --password-file "$PASSWORD_FILE" \
+  --output "$REFUSAL_BACKUP" \
+  >"$WORK_DIR/cancel-refusal.log" 2>&1 &
+BACKUP_PROCESS_PID=$!
+wait_for_query_count "$SOURCE_CONTAINER_ID" \
+  "SELECT count(*) FROM pg_stat_activity WHERE application_name LIKE 'smartqoldau_backup_%'" \
+  || fail 'cancel-refusal pg_dump did not become visible'
+
+kill -TERM "$BACKUP_PROCESS_PID"
+wait_for_process_exit "$BACKUP_PROCESS_PID" 10 \
+  || fail 'backup with refused SQL cancel did not exit within 10 seconds after TERM'
+set +e
+wait "$BACKUP_PROCESS_PID"
+refusal_signal_status=$?
+set -e
+BACKUP_PROCESS_PID=''
+if [[ "$refusal_signal_status" != '143' ]]; then
+  sed -n '1,160p' "$WORK_DIR/cancel-refusal.log" >&2
+  fail "cancel-refusal backup TERM status was $refusal_signal_status, expected 143"
+fi
+docker exec "$SOURCE_CONTAINER_ID" test -s /tmp/smartqoldau-test-cancel-refused \
+  || fail 'cancel-refusal fixture did not exercise the failed secondary psql path'
+docker exec "$SOURCE_CONTAINER_ID" rm -f -- /tmp/smartqoldau-test-cancel-refused
+[[ "$(docker container inspect --format '{{.State.Running}}' "$SOURCE_CONTAINER_ID")" == 'true' ]] \
+  || fail 'cancel-refusal fallback stopped the source container'
+wait_for_query_count "$SOURCE_CONTAINER_ID" \
+  "SELECT count(*) FROM pg_stat_activity WHERE application_name = '$REFUSAL_LOCK_APPLICATION_NAME' AND wait_event = 'PgSleep'" \
+  || fail 'cancel-refusal fallback stopped an unrelated source query'
+
+refusal_owned_backend_count="$(
+  docker exec "$SOURCE_CONTAINER_ID" \
+    psql --no-psqlrc --quiet --tuples-only --no-align \
+      --username fixture_user --dbname fixture_db \
+      --command "SELECT count(*) FROM pg_stat_activity WHERE application_name LIKE 'smartqoldau_backup_%'"
+)"
+[[ "$refusal_owned_backend_count" == '0' ]] \
+  || fail 'cancel-refusal fallback left its PostgreSQL backend running'
+refusal_owned_clients="$(docker exec "$SOURCE_CONTAINER_ID" sh -ceu '
+  for environment in /proc/[0-9]*/environ; do
+    token_environment=""
+    if token_environment="$(tr "\0" "\n" 2>/dev/null <"$environment")" \
+      && printf "%s\n" "$token_environment" | grep -q "^SMARTQOLDAU_BACKUP_TOKEN="; then
+      printf "%s\n" "$environment"
+    fi
+  done
+')"
+[[ -z "$refusal_owned_clients" ]] \
+  || fail "cancel-refusal fallback left owned client processes: $refusal_owned_clients"
+refusal_control_leftovers="$(
+  docker exec "$SOURCE_CONTAINER_ID" \
+    find /tmp -maxdepth 2 \
+      \( -name 'smartqoldau-pgpass.*' -o -name 'smartqoldau-cancel-pgpass.*' -o -name 'smartqoldau-backup-*' \) \
+      -print
+)"
+[[ -z "$refusal_control_leftovers" ]] \
+  || fail "cancel-refusal fallback left credential/control files: $refusal_control_leftovers"
+[[ ! -e "$REFUSAL_BACKUP" ]] || fail 'cancel-refusal backup published a final artifact'
+if find "$WORK_DIR" -maxdepth 1 -name '.cancel-refusal-backup.tmp.*' -print -quit | grep -q .; then
+  fail 'cancel-refusal backup left a temporary directory'
+fi
+
+docker exec "$SOURCE_CONTAINER_ID" "${PSQL_PATH}.smartqoldau-real" \
+  --no-psqlrc --quiet --tuples-only --no-align \
+  --username fixture_user --dbname fixture_db \
+  --command "SELECT pg_cancel_backend(pid) FROM pg_stat_activity WHERE application_name = '$REFUSAL_LOCK_APPLICATION_NAME'" \
+  >/dev/null
+wait "$LOCK_EXEC_PID" 2>/dev/null || true
+LOCK_EXEC_PID=''
+docker exec "$SOURCE_CONTAINER_ID" sh -ceu '
+  psql_path="$1"
+  rm -f -- "$psql_path"
+  mv -- "${psql_path}.smartqoldau-real" "$psql_path"
+' sh "$PSQL_PATH"
+printf 'PASS: exact-process fallback after refused SQL cancel\n'
+
 readonly LONG_CHECK_SQL="$WORK_DIR/long-check.sql"
 printf 'SELECT pg_sleep(30);\n' >"$LONG_CHECK_SQL"
 "$VALIDATE_SCRIPT" --backup "$BACKUP_DIR" --check-sql "$LONG_CHECK_SQL" \

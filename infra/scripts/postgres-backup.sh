@@ -126,7 +126,8 @@ temporary_directory="$(mktemp -d "$output_parent/.${output_name}.tmp.XXXXXX")" \
 published=0
 active_child_pid=''
 readonly RUN_ID="$(date -u +%Y%m%dT%H%M%SZ)-$$-$RANDOM"
-readonly BACKUP_APPLICATION_NAME="smartqoldau_backup_${RUN_ID//[^a-zA-Z0-9_]/_}"
+readonly BACKUP_TOKEN="${RUN_ID//[^a-zA-Z0-9_]/_}"
+readonly BACKUP_APPLICATION_NAME="smartqoldau_backup_$BACKUP_TOKEN"
 
 wait_for_child_exit() {
   local process_id="$1"
@@ -138,10 +139,9 @@ wait_for_child_exit() {
   return 0
 }
 
-cancel_backup_backend() {
-  local cancel_sql
-  cancel_sql="SELECT pg_cancel_backend(pid) FROM pg_stat_activity WHERE application_name = current_setting('application_name') AND pid <> pg_backend_pid() AND datname = current_database() AND usename = current_user"
-
+run_control_sql() {
+  local control_application_name="$1"
+  local sql="$2"
   timeout --signal=KILL 3 docker exec --interactive "$container" sh -ceu '
     escape_pgpass() {
       printf "%s" "$1" | sed -e "s/\\\\/\\\\\\\\/g" -e "s/:/\\\\:/g"
@@ -178,8 +178,135 @@ cancel_backup_backend() {
       --dbname="$3" \
       --username="$4" \
       --command="$6"
-  ' sh "$host" "$port" "$database" "$database_user" "$BACKUP_APPLICATION_NAME" "$cancel_sql" \
-    <"$password_file" >/dev/null
+  ' sh "$host" "$port" "$database" "$database_user" "$control_application_name" "$sql" \
+    <"$password_file"
+}
+
+cancel_backup_backend() {
+  local cancel_sql
+  cancel_sql="SELECT pg_cancel_backend(pid) FROM pg_stat_activity WHERE application_name = '$BACKUP_APPLICATION_NAME' AND datname = current_database() AND usename = current_user"
+  run_control_sql "smartqoldau_cancel_$BACKUP_TOKEN" "$cancel_sql" >/dev/null
+}
+
+terminate_owned_client() {
+  timeout --signal=KILL 4 docker exec "$container" sh -ceu '
+    token="$1"
+    expected_application="$2"
+    control_directory="/tmp/smartqoldau-backup-$token"
+    pid_file="$control_directory/pids"
+
+    case "$token" in
+      ""|*[!a-zA-Z0-9_]*) exit 64 ;;
+    esac
+
+    has_token() {
+      process_id="$1"
+      token_environment=""
+      [ -r "/proc/$process_id/environ" ] || return 1
+      token_environment="$(tr "\0" "\n" 2>/dev/null <"/proc/$process_id/environ")" \
+        || return 1
+      printf "%s\n" "$token_environment" \
+        | grep -Fqx "SMARTQOLDAU_BACKUP_TOKEN=$token"
+    }
+
+    token_process_exists() {
+      for environment in /proc/[0-9]*/environ; do
+        process_id="${environment#/proc/}"
+        process_id="${process_id%/environ}"
+        has_token "$process_id" && return 0
+      done
+      return 1
+    }
+
+    if [ ! -e "$control_directory" ]; then
+      token_process_exists && exit 70
+      exit 0
+    fi
+
+    [ -f "$pid_file" ] || exit 71
+    {
+      IFS= read -r wrapper_pid
+      IFS= read -r dump_pid
+      IFS= read -r recorded_application
+    } <"$pid_file"
+    case "$wrapper_pid:$dump_pid" in
+      *[!0-9:]*|:*|*:) exit 72 ;;
+    esac
+    [ "$recorded_application" = "$expected_application" ] || exit 73
+    has_token "$wrapper_pid" || exit 74
+    has_token "$dump_pid" || exit 75
+    [ "$(cat "/proc/$dump_pid/comm" 2>/dev/null)" = pg_dump ] || exit 76
+    parent_pid="$(grep "^PPid:" "/proc/$dump_pid/status" 2>/dev/null | tr -cd "0-9")"
+    [ "$parent_pid" = "$wrapper_pid" ] || exit 77
+
+    kill -TERM "$dump_pid"
+    attempts=0
+    while kill -0 "$dump_pid" 2>/dev/null && [ "$attempts" -lt 20 ]; do
+      attempts=$((attempts + 1))
+      sleep 0.1
+    done
+    if kill -0 "$dump_pid" 2>/dev/null; then
+      has_token "$dump_pid" || exit 78
+      kill -KILL "$dump_pid"
+    fi
+
+    attempts=0
+    while has_token "$wrapper_pid" && [ "$attempts" -lt 10 ]; do
+      attempts=$((attempts + 1))
+      sleep 0.1
+    done
+    if has_token "$wrapper_pid"; then
+      kill -TERM "$wrapper_pid"
+      attempts=0
+      while has_token "$wrapper_pid" && [ "$attempts" -lt 10 ]; do
+        attempts=$((attempts + 1))
+        sleep 0.1
+      done
+    fi
+    if has_token "$wrapper_pid"; then
+      kill -KILL "$wrapper_pid"
+      sleep 0.1
+    fi
+    token_process_exists && exit 79
+
+    if [ -e "$control_directory" ]; then
+      rm -f -- "$control_directory/pgpass" "$pid_file"
+      rmdir -- "$control_directory" 2>/dev/null || exit 80
+    fi
+  ' sh "$BACKUP_TOKEN" "$BACKUP_APPLICATION_NAME"
+}
+
+verify_owned_cleanup() {
+  local backend_count verify_sql
+
+  if ! timeout --signal=KILL 3 docker exec "$container" sh -ceu '
+    token="$1"
+    control_directory="/tmp/smartqoldau-backup-$token"
+    [ ! -e "$control_directory" ] || exit 81
+    for environment in /proc/[0-9]*/environ; do
+      token_environment=""
+      if token_environment="$(tr "\0" "\n" 2>/dev/null <"$environment")" \
+        && printf "%s\n" "$token_environment" \
+          | grep -Fqx "SMARTQOLDAU_BACKUP_TOKEN=$token"; then
+        exit 82
+      fi
+    done
+  ' sh "$BACKUP_TOKEN"; then
+    printf 'postgres-backup: owned client/control-file verification failed\n' >&2
+    return 1
+  fi
+
+  verify_sql="SELECT count(*) FROM pg_stat_activity WHERE application_name = '$BACKUP_APPLICATION_NAME' AND datname = current_database() AND usename = current_user"
+  if ! backend_count="$(run_control_sql "smartqoldau_verify_$BACKUP_TOKEN" "$verify_sql" 2>/dev/null)"; then
+    printf 'postgres-backup: owned backend verification query failed\n' >&2
+    return 1
+  fi
+  backend_count="$(tr -d '[:space:]' <<<"$backend_count")"
+  if [[ "$backend_count" != '0' ]]; then
+    printf 'postgres-backup: owned backend is still present\n' >&2
+    return 1
+  fi
+  return 0
 }
 
 cleanup() {
@@ -192,11 +319,15 @@ cleanup() {
 
 handle_signal() {
   local signal_status="$1"
+  local cleanup_confirmed=1
   trap '' HUP INT TERM
 
   if [[ -n "$active_child_pid" ]] && kill -0 "$active_child_pid" 2>/dev/null; then
     if ! cancel_backup_backend; then
-      printf 'postgres-backup: could not confirm cancellation of the owned pg_dump backend\n' >&2
+      cleanup_confirmed=0
+      if terminate_owned_client; then
+        cleanup_confirmed=1
+      fi
     fi
     if ! wait_for_child_exit "$active_child_pid"; then
       kill -TERM "$active_child_pid" 2>/dev/null || true
@@ -205,6 +336,16 @@ handle_signal() {
     fi
     wait "$active_child_pid" 2>/dev/null || true
     active_child_pid=''
+  fi
+  if verify_owned_cleanup; then
+    cleanup_confirmed=1
+  else
+    cleanup_confirmed=0
+  fi
+  if (( cleanup_confirmed == 0 )); then
+    printf 'postgres-backup: owned cleanup not confirmed; run=%s application=%s\n' \
+      "$RUN_ID" "$BACKUP_APPLICATION_NAME" >&2
+    signal_status=1
   fi
   exit "$signal_status"
 }
@@ -216,20 +357,41 @@ trap 'handle_signal 143' TERM
 chmod 700 "$temporary_directory"
 dump_file="$temporary_directory/database.dump"
 
-docker exec --interactive "$container" sh -ceu '
+docker exec --interactive \
+  --env "SMARTQOLDAU_BACKUP_TOKEN=$BACKUP_TOKEN" \
+  "$container" sh -ceu '
   escape_pgpass() {
     printf "%s" "$1" | sed -e "s/\\\\/\\\\\\\\/g" -e "s/:/\\\\:/g"
   }
 
+  token="${SMARTQOLDAU_BACKUP_TOKEN:-}"
+  case "$token" in
+    ""|*[!a-zA-Z0-9_]*) exit 64 ;;
+  esac
+  control_directory="/tmp/smartqoldau-backup-$token"
+
   umask 077
-  pgpass_file="$(mktemp /tmp/smartqoldau-pgpass.XXXXXX)"
+  mkdir -m 700 -- "$control_directory"
+  pgpass_file="$control_directory/pgpass"
+  pid_file="$control_directory/pids"
+  pid_file_temporary="$control_directory/pids.$$"
+  dump_pid=""
   cleanup_pgpass() {
-    rm -f -- "$pgpass_file"
+    rm -f -- "$pgpass_file" "$pid_file" "$pid_file_temporary"
+    rmdir -- "$control_directory" 2>/dev/null || true
+  }
+  forward_signal() {
+    signal_status="$1"
+    if [ -n "$dump_pid" ]; then
+      kill -TERM "$dump_pid" 2>/dev/null || true
+      wait "$dump_pid" 2>/dev/null || true
+    fi
+    exit "$signal_status"
   }
   trap cleanup_pgpass EXIT
-  trap "exit 129" HUP
-  trap "exit 130" INT
-  trap "exit 143" TERM
+  trap "forward_signal 129" HUP
+  trap "forward_signal 130" INT
+  trap "forward_signal 143" TERM
 
   IFS= read -r password
   [ -n "$password" ] || exit 65
@@ -248,7 +410,18 @@ docker exec --interactive "$container" sh -ceu '
     --host="$1" \
     --port="$2" \
     --dbname="$3" \
-    --username="$4"
+    --username="$4" &
+  dump_pid="$!"
+  printf "%s\n%s\n%s\n" "$$" "$dump_pid" "$5" >"$pid_file_temporary"
+  chmod 600 "$pid_file_temporary"
+  mv -- "$pid_file_temporary" "$pid_file"
+
+  if wait "$dump_pid"; then
+    dump_status=0
+  else
+    dump_status="$?"
+  fi
+  exit "$dump_status"
 ' sh "$host" "$port" "$database" "$database_user" "$BACKUP_APPLICATION_NAME" \
   <"$password_file" >"$dump_file" &
 active_child_pid=$!
