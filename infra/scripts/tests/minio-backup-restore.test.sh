@@ -85,6 +85,24 @@ assert_no_owned_runtime() {
   [[ -z "$found" ]] || fail "owned container leaked for $label: $found"
 }
 
+assert_no_source_backup_state() {
+  docker exec "$source_container_id" sh -ceu '
+    for control_directory in /tmp/smartqoldau-minio-backup-*; do
+      [ ! -e "$control_directory" ] || exit 71
+    done
+    newline="$(printf "\nX")"
+    newline="${newline%X}"
+    for environment in /proc/[0-9]*/environ; do
+      token_environment=""
+      if token_environment="$(tr "\0" "\n" <"$environment" 2>/dev/null)"; then
+        case "${newline}${token_environment}${newline}" in
+          *"${newline}SMARTQOLDAU_MINIO_BACKUP_TOKEN="*) exit 72 ;;
+        esac
+      fi
+    done
+  ' || fail 'source retained an owned mirror process, control directory, or credential config'
+}
+
 readonly ENDPOINT_PROBE_BIN="$WORK_DIR/endpoint-probe-bin"
 readonly ENDPOINT_PROBE_MARKER="$WORK_DIR/endpoint-probe-docker-called"
 mkdir -m 700 -- "$ENDPOINT_PROBE_BIN"
@@ -512,6 +530,37 @@ printf 'PASS: checksum corruption is rejected before restore\n'
 source_mc mb source/zz-slow >/dev/null
 dd if=/dev/zero of="$WORK_DIR/slow.bin" bs=1024 count=256 status=none
 source_mc pipe source/zz-slow/slow.bin <"$WORK_DIR/slow.bin" >/dev/null
+readonly TIMED_OUT_BACKUP="$WORK_DIR/timed-out-backup"
+timeout_started=$SECONDS
+if "$BACKUP_SCRIPT" \
+  --container "$source_container_id" \
+  --endpoint "$SOURCE_ENDPOINT" \
+  --target-port 9800 \
+  --target-console-port 9801 \
+  --minio-image "$MINIO_IMAGE_ID" \
+  --limit-download 1KiB \
+  --operation-timeout 2 \
+  --output "$TIMED_OUT_BACKUP" \
+  >"$WORK_DIR/timed-out-backup.log" 2>&1; then
+  fail 'slow logical mirror ignored its natural operation timeout'
+fi
+(( SECONDS - timeout_started < 15 )) \
+  || fail 'natural mirror timeout cleanup was not bounded'
+[[ "$(docker container inspect --format '{{.State.Running}}' "$source_container_id")" == 'true' ]] \
+  || fail 'natural mirror timeout stopped the source MinIO container'
+[[ ! -e "$TIMED_OUT_BACKUP" ]] || fail 'natural mirror timeout published an artifact'
+if find "$WORK_DIR" -maxdepth 1 -name '.timed-out-backup.tmp.*' -print -quit | grep -q .; then
+  fail 'natural mirror timeout left a host temporary directory'
+fi
+for sensitive_value in "$SOURCE_SECRET" 'zz-slow' 'slow.bin'; do
+  if grep --fixed-strings --quiet "$sensitive_value" "$WORK_DIR/timed-out-backup.log"; then
+    fail 'natural mirror timeout log exposed credentials or object names'
+  fi
+done
+assert_no_source_backup_state
+assert_no_owned_runtime 'com.smartqoldau.minio-backup.run'
+printf 'PASS: natural mirror timeout removes owned source state and target\n'
+
 readonly INTERRUPTED_BACKUP="$WORK_DIR/interrupted-backup"
 "$BACKUP_SCRIPT" \
   --container "$source_container_id" \

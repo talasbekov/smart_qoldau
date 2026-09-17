@@ -156,6 +156,7 @@ chmod 700 "$temporary_directory"
 published=0
 target_container_id=''
 active_child_pid=''
+mirror_cleanup_required=0
 readonly RUN_ID="$(date -u +%Y%m%dT%H%M%SZ)-$$-$RANDOM"
 readonly TOKEN="${RUN_ID//[^a-zA-Z0-9_]/_}"
 readonly TARGET_NAME="smartqoldau-minio-backup-$RUN_ID"
@@ -311,7 +312,10 @@ cleanup() {
   local status=$?
   if [[ -n "$active_child_pid" ]] && kill -0 "$active_child_pid" 2>/dev/null; then
     stop_active_child || status=1
+  fi
+  if (( mirror_cleanup_required == 1 )); then
     terminate_owned_mirror >/dev/null 2>&1 || status=1
+    verify_owned_mirror_cleanup >/dev/null 2>&1 || status=1
   fi
   if ! remove_owned_target; then
     status=1
@@ -462,13 +466,25 @@ run_logical_mirror() {
     ' sh "$endpoint" "$target_port" "$limit_download" <"$credential_input"
 }
 
+mirror_cleanup_required=1
 if run_logical_mirror; then
-  :
+  if verify_owned_mirror_cleanup; then
+    mirror_cleanup_required=0
+  else
+    die 'owned source-side mirror cleanup could not be confirmed'
+  fi
 else
   mirror_status=$?
+  mirror_cleanup_confirmed=1
+  terminate_owned_mirror || mirror_cleanup_confirmed=0
+  verify_owned_mirror_cleanup || mirror_cleanup_confirmed=0
+  if (( mirror_cleanup_confirmed == 1 )); then
+    mirror_cleanup_required=0
+  else
+    die "logical object mirror failed or timed out (status $mirror_status) and owned cleanup was not confirmed"
+  fi
   die "logical object mirror failed or timed out (status $mirror_status); no final backup was published"
 fi
-verify_owned_mirror_cleanup || die 'owned source-side mirror cleanup could not be confirmed'
 
 target_mc() {
   run_managed "$operation_timeout" docker exec --interactive "$source_id" sh -ceu '
