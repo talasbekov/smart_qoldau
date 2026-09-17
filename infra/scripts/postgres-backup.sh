@@ -183,9 +183,36 @@ run_control_sql() {
 }
 
 cancel_backup_backend() {
-  local cancel_sql
-  cancel_sql="SELECT pg_cancel_backend(pid) FROM pg_stat_activity WHERE application_name = '$BACKUP_APPLICATION_NAME' AND datname = current_database() AND usename = current_user"
-  run_control_sql "smartqoldau_cancel_$BACKUP_TOKEN" "$cancel_sql" >/dev/null
+  local cancel_result cancel_sql
+  cancel_sql="
+    WITH target AS MATERIALIZED (
+      SELECT pid
+      FROM pg_stat_activity
+      WHERE application_name = '$BACKUP_APPLICATION_NAME'
+        AND datname = current_database()
+        AND usename = current_user
+    ), cardinality AS (
+      SELECT count(*) AS target_count, min(pid) AS target_pid
+      FROM target
+    ), attempt AS (
+      SELECT
+        target_count,
+        CASE
+          WHEN target_count = 1 THEN pg_cancel_backend(target_pid)
+          ELSE false
+        END AS cancelled
+      FROM cardinality
+    )
+    SELECT CASE
+      WHEN target_count = 1 AND cancelled THEN 'SMARTQOLDAU_CANCELLED'
+      ELSE 'SMARTQOLDAU_CANCEL_NOT_CONFIRMED'
+    END
+    FROM attempt"
+
+  if ! cancel_result="$(run_control_sql "smartqoldau_cancel_$BACKUP_TOKEN" "$cancel_sql")"; then
+    return 1
+  fi
+  [[ "$cancel_result" == 'SMARTQOLDAU_CANCELLED' ]]
 }
 
 terminate_owned_client() {
