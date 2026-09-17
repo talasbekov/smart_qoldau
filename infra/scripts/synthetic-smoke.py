@@ -4,6 +4,8 @@
 import argparse
 import http.client
 import json
+import os
+import re
 import signal
 import ssl
 import sys
@@ -20,6 +22,7 @@ EXIT_WEB_REQUEST = 6
 EXIT_WEB_STATUS = 7
 EXIT_WEB_MARKER = 8
 MAX_BODY_BYTES = 256 * 1024
+MAX_REQUEST_TIMEOUT_SECONDS = 5.0
 EXPECTED_HEALTH = {"status": "ok", "db": "ok", "redis": "ok"}
 
 
@@ -28,6 +31,10 @@ class ConfigurationError(Exception):
 
 
 class RequestDeadlineExceeded(Exception):
+    pass
+
+
+class DuplicateJsonMember(ValueError):
     pass
 
 
@@ -47,29 +54,32 @@ def positive_timeout(value):
     try:
         parsed = float(value)
     except ValueError as error:
-        raise argparse.ArgumentTypeError("must be a number") from error
-    if not 0 < parsed <= 60:
-        raise argparse.ArgumentTypeError("must be greater than 0 and at most 60")
+        raise ConfigurationError("invalid timeout") from error
+    if not 0 < parsed <= MAX_REQUEST_TIMEOUT_SECONDS:
+        raise ConfigurationError("invalid timeout")
     return parsed
 
 
 def parse_args(argv):
     parser = SafeArgumentParser(
         description=(
-            "Read-only Smart Qoldau availability smoke. Exit codes: "
-            "0 success, 2 configuration, 3-5 health, 6-8 web."
+            "Read-only Smart Qoldau availability smoke. Configuration is read "
+            "from SMOKE_BASE_URL, optional SMOKE_WEB_URL/SMOKE_WEB_MARKER, and "
+            "optional SMOKE_CONNECT_TIMEOUT/SMOKE_TOTAL_TIMEOUT environment "
+            "variables. Exit codes: 0 success, 2 configuration, 3-5 health, "
+            "6-8 web."
         )
     )
-    parser.add_argument("--base-url", required=True, help="HTTP(S) origin; no path or credentials")
-    parser.add_argument("--web-url", help="optional explicit public page URL")
-    parser.add_argument("--web-marker", help="required static marker when --web-url is set")
-    parser.add_argument("--connect-timeout", type=positive_timeout, default=2.0)
-    parser.add_argument("--total-timeout", type=positive_timeout, default=5.0)
     return parser.parse_args(argv)
 
 
 def validate_url(value, *, origin_only):
-    if not value or len(value) > 2048 or any(ord(character) < 0x20 for character in value):
+    if (
+        not value
+        or len(value) > 2048
+        or any(ord(character) <= 0x20 or ord(character) == 0x7F for character in value)
+        or re.search(r"%(?![0-9A-Fa-f]{2})", value)
+    ):
         raise ConfigurationError("invalid URL")
     try:
         value.encode("ascii")
@@ -149,6 +159,15 @@ def fail(message, exit_code):
     return exit_code
 
 
+def reject_duplicate_json_members(pairs):
+    result = {}
+    for name, value in pairs:
+        if name in result:
+            raise DuplicateJsonMember()
+        result[name] = value
+    return result
+
+
 def check_health(url, connect_timeout, total_timeout):
     try:
         response = get(url, connect_timeout, total_timeout)
@@ -162,8 +181,8 @@ def check_health(url, connect_timeout, total_timeout):
     if response.body_too_large:
         return fail("health=contract_mismatch", EXIT_HEALTH_CONTRACT)
     try:
-        payload = json.loads(response.body)
-    except (json.JSONDecodeError, UnicodeDecodeError):
+        payload = json.loads(response.body, object_pairs_hook=reject_duplicate_json_members)
+    except (json.JSONDecodeError, UnicodeDecodeError, DuplicateJsonMember):
         return fail("health=contract_mismatch", EXIT_HEALTH_CONTRACT)
     if payload != EXPECTED_HEALTH:
         return fail("health=contract_mismatch", EXIT_HEALTH_CONTRACT)
@@ -180,39 +199,50 @@ def check_web(url, marker, connect_timeout, total_timeout):
             f"web=http_status expected=200 actual={response.status}",
             EXIT_WEB_STATUS,
         )
-    if response.body_too_large or marker.encode("utf-8") not in response.body:
+    if response.body_too_large or marker not in response.body:
         return fail("web=marker_missing", EXIT_WEB_MARKER)
     return 0
 
 
-def main(argv=None):
+def main(argv=None, environ=None):
+    environment = os.environ if environ is None else environ
     try:
-        args = parse_args(argv)
-        base_parts = validate_url(args.base_url, origin_only=True)
-        if (args.web_url is None) != (args.web_marker is None):
+        parse_args(argv)
+        base_url = environment.get("SMOKE_BASE_URL")
+        web_url = environment.get("SMOKE_WEB_URL")
+        web_marker = environment.get("SMOKE_WEB_MARKER")
+        connect_timeout = positive_timeout(environment.get("SMOKE_CONNECT_TIMEOUT", "2"))
+        total_timeout = positive_timeout(environment.get("SMOKE_TOTAL_TIMEOUT", "5"))
+        base_parts = validate_url(base_url, origin_only=True)
+        web_marker_bytes = None
+        if (web_url is None) != (web_marker is None):
             raise ConfigurationError("web URL and marker must be configured together")
-        if args.web_marker is not None:
-            if not args.web_marker or len(args.web_marker) > 256:
+        if web_marker is not None:
+            if not web_marker or len(web_marker) > 256:
                 raise ConfigurationError("invalid web marker")
-            validate_url(args.web_url, origin_only=False)
+            try:
+                web_marker_bytes = web_marker.encode("utf-8")
+            except UnicodeEncodeError as error:
+                raise ConfigurationError("web marker must be UTF-8") from error
+            validate_url(web_url, origin_only=False)
     except ConfigurationError:
         return fail("configuration_error", EXIT_CONFIG)
 
     result = check_health(
         health_url(base_parts),
-        args.connect_timeout,
-        args.total_timeout,
+        connect_timeout,
+        total_timeout,
     )
     if result:
         return result
 
     web_status = "skipped"
-    if args.web_url is not None:
+    if web_url is not None:
         result = check_web(
-            args.web_url,
-            args.web_marker,
-            args.connect_timeout,
-            args.total_timeout,
+            web_url,
+            web_marker_bytes,
+            connect_timeout,
+            total_timeout,
         )
         if result:
             return result
