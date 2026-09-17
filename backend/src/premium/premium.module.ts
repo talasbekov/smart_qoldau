@@ -17,7 +17,7 @@ import { PremiumRenewalService } from './premium-renewal.service';
     PrismaModule,
     AuditModule,
     ClockModule,
-    NotificationsModule,
+    forwardRef(() => NotificationsModule),
     forwardRef(() => PaymentsModule),
   ],
   controllers: [PremiumPublicController, PremiumController],

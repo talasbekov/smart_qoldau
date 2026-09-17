@@ -37,7 +37,7 @@ import { PaymentsWebhookController } from './payments-webhook.controller';
     ClockModule,
     forwardRef(() => ConsultationsModule),
     ExpertsModule,
-    NotificationsModule,
+    forwardRef(() => NotificationsModule),
     // Цикл: PremiumModule берёт отсюда PaymentProviderPort, а PaymentsService
     // спрашивает у PremiumService, есть ли подписка на момент оплаты.
     forwardRef(() => PremiumModule),

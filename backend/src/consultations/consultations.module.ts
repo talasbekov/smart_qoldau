@@ -39,7 +39,7 @@ import { ScheduledSweepService } from './scheduled-sweep.service';
     RedisModule,
     forwardRef(() => ChatModule),
     forwardRef(() => PaymentsModule),
-    NotificationsModule,
+    forwardRef(() => NotificationsModule),
     // Слоты для записи (E6b): BookingService живёт здесь, потому что ему
     // нужен PaymentsService, а Payments↔Consultations уже связаны
     // forwardRef — третий участник цикла ломает разрешение зависимостей.
