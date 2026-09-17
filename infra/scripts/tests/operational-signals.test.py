@@ -5,6 +5,7 @@ import contextlib
 import datetime as dt
 import http.server
 import importlib.util
+import io
 import json
 import os
 from pathlib import Path
@@ -250,26 +251,39 @@ class OperationalSignalsTest(unittest.TestCase):
             check=False,
         )
 
-    def assert_config_failure(self, arguments, *, secret=None):
+    def assert_config_failure(self, arguments, *, secret=None, timeout=3):
         result = subprocess.run(
             [sys.executable, str(RUNNER), *arguments],
             env={"PATH": os.environ.get("PATH", ""), "PYTHONDONTWRITEBYTECODE": "1"},
             text=True,
             capture_output=True,
-            timeout=3,
+            timeout=timeout,
             check=False,
         )
         self.assertEqual(result.returncode, 2, result.stderr)
         self.assertEqual(result.stderr, "collector: configuration_error\n")
         record = json.loads(result.stdout)
         self.assertEqual(
-            set(record), {"schema", "collectedAt", "overall", "code"}
+            list(record), ["schema", "collectedAt", "window", "overall", "sources"]
         )
-        self.assertEqual(record["schema"], "qoldau-operational-signals/config-error/v1")
+        self.assertEqual(record["schema"], "qoldau-operational-signals/v1")
+        self.assertIsNone(record["window"])
         self.assertEqual(record["overall"], "unknown")
-        self.assertEqual(record["code"], "configuration_error")
+        self.assertEqual(list(record["sources"]), list(SOURCE_PATHS))
+        for source in record["sources"].values():
+            self.assertEqual(
+                source,
+                {
+                    "collection": "error",
+                    "state": None,
+                    "observedAt": None,
+                    "metrics": {},
+                },
+            )
+        self.assertNotIn("code", record)
         if secret:
             self.assertNotIn(secret, result.stdout + result.stderr)
+        return result
 
     def test_success_uses_four_fixed_gets_matching_credentials_and_exact_window(self):
         payloads = valid_payloads(self.window_from, self.window_to)
@@ -617,6 +631,59 @@ class OperationalSignalsTest(unittest.TestCase):
                 arguments[index] = str(bad)
                 self.assert_config_failure(arguments)
 
+    def test_fifo_credential_is_rejected_without_blocking_or_network(self):
+        fifo = self.work / "credential-fifo"
+        os.mkfifo(fifo, mode=0o600)
+        payloads = valid_payloads(self.window_from, self.window_to)
+        with fixture_server(json_responder(payloads)) as (origin, requests):
+            arguments = self.arguments(origin)
+            index = arguments.index("--verification-bearer-file") + 1
+            arguments[index] = str(fifo)
+            started = time.monotonic()
+            self.assert_config_failure(arguments, timeout=1)
+            elapsed = time.monotonic() - started
+        self.assertLess(elapsed, 0.6)
+        self.assertEqual(requests, [])
+
+    def test_whole_deadline_covers_configuration_before_network(self):
+        collector = load_collector()
+        arguments = self.arguments("http://127.0.0.1:9")
+        real_reader = collector.read_bearer_file
+        calls = 0
+
+        def stalled_first_read(path):
+            nonlocal calls
+            calls += 1
+            if calls == 1:
+                time.sleep(0.8)
+            return real_reader(path)
+
+        stdout = io.StringIO()
+        stderr = io.StringIO()
+        with (
+            mock.patch.object(collector, "WHOLE_RUN_TIMEOUT_SECONDS", 0.2),
+            mock.patch.object(collector, "read_bearer_file", side_effect=stalled_first_read),
+            mock.patch.object(
+                collector,
+                "get_response",
+                return_value=collector.Response(503, b"", False),
+            ) as request,
+            contextlib.redirect_stdout(stdout),
+            contextlib.redirect_stderr(stderr),
+        ):
+            started = time.monotonic()
+            status = collector.main(arguments)
+            elapsed = time.monotonic() - started
+
+        self.assertEqual(status, 2)
+        self.assertLess(elapsed, 0.6)
+        self.assertEqual(stderr.getvalue(), "collector: configuration_error\n")
+        record = json.loads(stdout.getvalue())
+        self.assertEqual(record["schema"], "qoldau-operational-signals/v1")
+        self.assertIsNone(record["window"])
+        self.assertEqual(record["overall"], "unknown")
+        request.assert_not_called()
+
     def test_invalid_origins_and_windows_fail_without_network_or_secret_echo(self):
         secret = "argv-secret-must-not-echo"
         collector = load_collector()
@@ -687,6 +754,35 @@ class OperationalSignalsTest(unittest.TestCase):
 
     def test_transport_deadline_bounds_dns_headers_and_body(self):
         collector = load_collector()
+
+        trust_fifo = self.work / "trust-store-fifo"
+        os.mkfifo(trust_fifo, mode=0o600)
+        started = time.monotonic()
+        with mock.patch.dict(
+            os.environ,
+            {"SSL_CERT_FILE": str(trust_fifo)},
+            clear=False,
+        ):
+            with self.assertRaises(collector.RequestDeadlineExceeded):
+                collector.get_response(
+                    "https", "127.0.0.1", 9, "/", "token", 0.1, 0.2
+                )
+        self.assertLess(time.monotonic() - started, 0.6)
+
+        def stalled_trust_load(*_args, **_kwargs):
+            time.sleep(0.8)
+
+        started = time.monotonic()
+        with mock.patch.object(
+            collector.ssl.SSLContext,
+            "load_default_certs",
+            side_effect=stalled_trust_load,
+        ):
+            with self.assertRaises(collector.RequestDeadlineExceeded):
+                collector.get_response(
+                    "https", "127.0.0.1", 9, "/", "token", 0.1, 0.2
+                )
+        self.assertLess(time.monotonic() - started, 0.6)
 
         def stalled_dns(*_args, **_kwargs):
             time.sleep(0.8)
@@ -762,15 +858,50 @@ class OperationalSignalsTest(unittest.TestCase):
         self.assertEqual(openssl.returncode, 0, openssl.stderr)
         context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
         context.load_cert_chain(cert, key)
+        missing_keylog = self.work / "must-not-create.keys"
+        existing_keylog = self.work / "must-not-change.keys"
+        existing_keylog.write_bytes(b"sentinel-keylog-content\n")
+        existing_keylog_before = existing_keylog.stat()
         payloads = valid_payloads(self.window_from, self.window_to)
         with fixture_server(json_responder(payloads), tls_context=context) as (origin, _requests):
             untrusted = self.run_collector(origin)
-            trusted = self.run_collector(origin, environment={"SSL_CERT_FILE": str(cert)})
+            trusted_missing = self.run_collector(
+                origin,
+                environment={
+                    "SSL_CERT_FILE": str(cert),
+                    "SSLKEYLOGFILE": str(missing_keylog),
+                },
+            )
+            trusted_existing = self.run_collector(
+                origin,
+                environment={
+                    "SSL_CERT_FILE": str(cert),
+                    "SSLKEYLOGFILE": str(existing_keylog),
+                },
+            )
 
         self.assertEqual(untrusted.returncode, 2)
         self.assertEqual(untrusted.stderr.count("request_failed"), 4)
-        self.assertEqual(trusted.returncode, 0, trusted.stderr)
-        self.assertEqual(json.loads(trusted.stdout)["overall"], "ok")
+        for trusted in (trusted_missing, trusted_existing):
+            self.assertEqual(trusted.returncode, 0, trusted.stderr)
+            self.assertEqual(json.loads(trusted.stdout)["overall"], "ok")
+        self.assertFalse(missing_keylog.exists())
+        self.assertEqual(existing_keylog.read_bytes(), b"sentinel-keylog-content\n")
+        existing_keylog_after = existing_keylog.stat()
+        self.assertEqual(
+            (
+                existing_keylog_after.st_ino,
+                existing_keylog_after.st_size,
+                existing_keylog_after.st_mtime_ns,
+                stat.S_IMODE(existing_keylog_after.st_mode),
+            ),
+            (
+                existing_keylog_before.st_ino,
+                existing_keylog_before.st_size,
+                existing_keylog_before.st_mtime_ns,
+                stat.S_IMODE(existing_keylog_before.st_mode),
+            ),
+        )
 
 
 if __name__ == "__main__":
