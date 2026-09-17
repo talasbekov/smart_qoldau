@@ -1,4 +1,5 @@
-import { Module } from '@nestjs/common';
+import { forwardRef, Module } from '@nestjs/common';
+import { AdminModule } from '../admin/admin.module';
 import { PrismaModule } from '../prisma/prisma.module';
 import { RedisModule } from '../redis/redis.module';
 import { ClockModule } from '../common/clock/clock.module';
@@ -12,14 +13,26 @@ import { OfferPushFallbackService } from './offer-push-fallback.service';
 import { SmsBudgetService } from './sms-budget.service';
 import { OutboxService } from './outbox.service';
 import { OutboxSweepService } from './outbox-sweep.service';
+import { NotificationsAdminController } from './notifications-admin.controller';
+import { PushObservationService } from './push-observation.service';
 
 // EventsService — @Global() WsModule, явный импорт не нужен. AuthModule —
 // источник SMS_PROVIDER_TOKEN (SMS-fallback критичных уведомлений, задача 5).
 @Module({
-  imports: [PrismaModule, RedisModule, ClockModule, AuditModule, AuthModule],
-  controllers: [NotificationsController],
+  imports: [
+    // Admin -> Chat -> Consultations -> Payments -> Notifications.
+    // Resolve the admin-guard dependency without changing that graph.
+    forwardRef(() => AdminModule),
+    PrismaModule,
+    RedisModule,
+    ClockModule,
+    AuditModule,
+    AuthModule,
+  ],
+  controllers: [NotificationsController, NotificationsAdminController],
   providers: [
     NotificationsService,
+    PushObservationService,
     OfferPushFallbackService,
     SmsBudgetService,
     OutboxService,
