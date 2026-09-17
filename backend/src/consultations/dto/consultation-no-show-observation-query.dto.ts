@@ -2,11 +2,11 @@ import { ApiProperty } from '@nestjs/swagger';
 import { IsString } from 'class-validator';
 import { IsStrictUtcInstant } from '../../common/validation/strict-utc-instant.validator';
 
-export class PushObservationQueryDto {
+export class ConsultationNoShowObservationQueryDto {
   @ApiProperty({
     format: 'date-time',
     example: '2026-09-17T00:00:00Z',
-    description: 'Inclusive UTC cohort boundary.',
+    description: 'Inclusive UTC endedAt cohort boundary.',
   })
   @IsString()
   @IsStrictUtcInstant()
@@ -15,7 +15,7 @@ export class PushObservationQueryDto {
   @ApiProperty({
     format: 'date-time',
     example: '2026-09-18T00:00:00Z',
-    description: 'Exclusive UTC cohort boundary.',
+    description: 'Exclusive UTC endedAt cohort boundary.',
   })
   @IsString()
   @IsStrictUtcInstant()
