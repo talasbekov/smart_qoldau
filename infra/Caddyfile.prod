@@ -1,0 +1,25 @@
+# Caddy obtains and renews public certificates automatically after all three
+# operator-supplied names resolve to this host and inbound 80/443 are open.
+
+{$WEB_HOSTNAME} {
+	# The browser opens Socket.IO on the web origin. `/ws` is the Socket.IO
+	# namespace; the transport itself still upgrades through `/socket.io/`.
+	@realtime path /socket.io /socket.io/*
+	reverse_proxy @realtime backend:3000
+
+	reverse_proxy web:3000
+	log
+}
+
+{$API_HOSTNAME} {
+	# Preserve `/v1` and every remaining path exactly as received. Caddy has no
+	# request-body ceiling here: the backend owns the 5 MiB photo and 10 MiB
+	# document limits and therefore keeps its established error semantics.
+	reverse_proxy backend:3000
+	log
+}
+
+{$ADMIN_HOSTNAME} {
+	reverse_proxy admin:80
+	log
+}

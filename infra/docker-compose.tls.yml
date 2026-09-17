@@ -1,0 +1,36 @@
+# Opt-in TLS edge for the pilot. Apply only together with the production file:
+#
+#   docker compose -f docker-compose.prod.yml -f docker-compose.tls.yml \
+#     --env-file .env up -d
+#
+# WEB_HOSTNAME, API_HOSTNAME, and ADMIN_HOSTNAME are deliberately required;
+# this overlay never guesses operator DNS names.
+services:
+  proxy:
+    image: caddy:2.10.2-alpine
+    restart: unless-stopped
+    environment:
+      WEB_HOSTNAME: ${WEB_HOSTNAME:?set WEB_HOSTNAME to the public web DNS name}
+      API_HOSTNAME: ${API_HOSTNAME:?set API_HOSTNAME to the public API DNS name}
+      ADMIN_HOSTNAME: ${ADMIN_HOSTNAME:?set ADMIN_HOSTNAME to the public admin DNS name}
+    ports:
+      - '80:80'
+      - '443:443'
+      - '443:443/udp'
+    volumes:
+      - ./Caddyfile.prod:/etc/caddy/Caddyfile:ro
+      # /data contains Caddy's ACME account, private keys, and certificates.
+      - caddy_data:/data
+      # /config contains Caddy's persisted autosave configuration.
+      - caddy_config:/config
+    depends_on: [backend, admin, web]
+    networks: [edge]
+    logging:
+      driver: json-file
+      options:
+        max-size: '10m'
+        max-file: '3'
+
+volumes:
+  caddy_data:
+  caddy_config:
