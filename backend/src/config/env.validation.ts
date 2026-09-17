@@ -1,6 +1,14 @@
 import Joi from 'joi';
+import { parseTrustedProxyIps } from './trusted-proxy';
 
 export const envValidationSchema = Joi.object({
+  TRUSTED_PROXY_IPS: Joi.string()
+    .allow('')
+    .custom((value: string) => {
+      parseTrustedProxyIps(value);
+      return value;
+    })
+    .optional(),
   DATABASE_URL: Joi.string().uri().required(),
   REDIS_URL: Joi.string().uri().required(),
   JWT_SECRET: Joi.string().min(32).required(),

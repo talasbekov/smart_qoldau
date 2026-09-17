@@ -5,6 +5,8 @@ import {
 } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import helmet from 'helmet';
+import type { Application } from 'express';
+import { parseTrustedProxyIps } from './config/trusted-proxy';
 import { AppExceptionFilter } from './common/filters/app-exception.filter';
 
 // Общий для /v1/docs и backend/scripts/dump-openapi.ts конфиг — контракт,
@@ -16,6 +18,12 @@ export const swaggerConfig = new DocumentBuilder()
   .build();
 
 export function configureApp(app: INestApplication): void {
+  const trustedPeers = parseTrustedProxyIps(process.env.TRUSTED_PROXY_IPS);
+  const express = app.getHttpAdapter().getInstance() as Application;
+  // Express walks XFF right-to-left and stops at the first untrusted peer.
+  // BFF traffic retains the BFF socket IP; trust is never inferred from topology.
+  express.set('trust proxy', trustedPeers);
+
   // Базовые заголовки безопасности. CSP выключен: единственная HTML-страница
   // проекта — Swagger UI на /v1/docs, и дефолтная политика helmet ломает
   // его инлайновые скрипты; API-ответам CSP не нужен.
