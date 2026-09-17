@@ -233,6 +233,7 @@ services:
       API_HOSTNAME: api.fixture.localhost
       ADMIN_HOSTNAME: admin.fixture.localhost
     ports:
+      - "127.0.0.1::80"
       - "127.0.0.1::443"
     volumes:
       - "$CADDYFILE:/etc/caddy/Caddyfile:ro"
@@ -268,6 +269,9 @@ done
 HTTPS_ENDPOINT="$(docker compose -p "$PROJECT" -f "$FIXTURE_COMPOSE" port proxy 443)"
 HTTPS_PORT="${HTTPS_ENDPOINT##*:}"
 [[ "$HTTPS_PORT" =~ ^[0-9]+$ ]] || fail "could not resolve fixture HTTPS port: $HTTPS_ENDPOINT"
+HTTP_ENDPOINT="$(docker compose -p "$PROJECT" -f "$FIXTURE_COMPOSE" port proxy 80)"
+HTTP_PORT="${HTTP_ENDPOINT##*:}"
+[[ "$HTTP_PORT" =~ ^[0-9]+$ ]] || fail "could not resolve fixture HTTP port: $HTTP_ENDPOINT"
 
 assert_route() {
   local hostname="$1"
@@ -285,6 +289,18 @@ readonly API_QUERY_SECRET="api_query_secret_$$"
 readonly ADMIN_QUERY_SECRET="admin_query_secret_$$"
 readonly WS_QUERY_SECRET="ws_query_secret_$$"
 readonly ERROR_QUERY_SECRET="error_query_secret_$$"
+readonly REDIRECT_QUERY_SECRET="redirect_query_secret_$$"
+
+redirect_status="$(curl --silent --show-error --output /dev/null \
+  --dump-header "$WORK_DIR/redirect.headers" \
+  --write-out '%{http_code}' \
+  --header 'Host: web.fixture.localhost' \
+  "http://127.0.0.1:$HTTP_PORT/?token=$REDIRECT_QUERY_SECRET")"
+[[ "$redirect_status" == '308' ]] || fail "HTTP redirect returned $redirect_status, want 308"
+redirect_location="$(tr -d '\r' <"$WORK_DIR/redirect.headers" | awk 'tolower($1) == "location:" { print $2 }')"
+expected_location="https://web.fixture.localhost/?token=$REDIRECT_QUERY_SECRET"
+[[ "$redirect_location" == "$expected_location" ]] \
+  || fail "client redirect was '$redirect_location', want '$expected_location'"
 
 assert_route web.fixture.localhost "/hello?review_token=$WEB_QUERY_SECRET" \
   "web:/hello?review_token=$WEB_QUERY_SECRET"
@@ -338,13 +354,14 @@ for secret in \
   "$API_QUERY_SECRET" \
   "$ADMIN_QUERY_SECRET" \
   "$WS_QUERY_SECRET" \
-  "$ERROR_QUERY_SECRET"; do
+  "$ERROR_QUERY_SECRET" \
+  "$REDIRECT_QUERY_SECRET"; do
   if grep -Fq -- "$secret" "$WORK_DIR/proxy.log"; then
     fail "query secret leaked into Caddy logs: $secret"
   fi
 done
 redacted_count="$(grep -Fo -- '?REDACTED' "$WORK_DIR/proxy.log" | wc -l)"
-(( redacted_count >= 5 )) || fail "expected at least five redacted request URIs, found $redacted_count"
+(( redacted_count >= 7 )) || fail "expected redacted request and redirect fields, found $redacted_count"
 python3 - "$WORK_DIR/proxy.log" <<'PY'
 import json
 import sys
@@ -370,6 +387,7 @@ successful = {
     if record.get("logger", "").startswith("http.log.access")
 }
 for expected in {
+    (308, "/?REDACTED"),
     (200, "/hello?REDACTED"),
     (200, "/v1/health?REDACTED"),
     (200, "/verification?REDACTED"),
@@ -377,6 +395,15 @@ for expected in {
 }:
     if expected not in successful:
         raise SystemExit(f"missing redacted successful access log: {expected!r}")
+
+redirect_locations = {
+    location
+    for record in records
+    if record.get("status") == 308
+    for location in record.get("resp_headers", {}).get("Location", [])
+}
+if redirect_locations != {"https://web.fixture.localhost/?REDACTED"}:
+    raise SystemExit(f"redirect Location was not query-redacted in logs: {redirect_locations!r}")
 PY
 
 # The documented rollback stops and removes only proxy. Named certificate
