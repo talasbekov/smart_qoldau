@@ -6,11 +6,11 @@ export default async function Header() {
   const t = await getTranslations('nav');
   return (
     <header className="sticky top-0 z-50 bg-white/90 backdrop-blur border-b border-border">
-      <div className="max-w-[1240px] mx-auto flex items-center justify-between gap-4 px-8 py-4">
+      <div className="mx-auto flex max-w-[1240px] flex-wrap items-center justify-between gap-4 px-4 py-4 sm:px-8">
         <Link href="/" className="flex items-center gap-2">
           <span className="font-extrabold text-ink text-base">SmartQoldau</span>
         </Link>
-        <nav className="flex items-center gap-4">
+        <nav className="order-3 flex w-full flex-wrap items-center gap-x-4 gap-y-1 sm:order-none sm:w-auto sm:flex-nowrap">
           <NavLink href="/" className="rounded px-1 py-2 text-xs font-semibold text-ink-soft aria-[current=page]:text-primary aria-[current=page]:underline aria-[current=page]:underline-offset-4">
             {t('home')}
           </NavLink>

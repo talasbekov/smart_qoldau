@@ -25,6 +25,12 @@ describe('CatalogList', () => {
     expect(screen.getByText('По заданным фильтрам специалисты не найдены')).toBeInTheDocument();
   });
 
+  it('uses Kazakh copy on the Kazakh catalog', () => {
+    render(<CatalogList experts={[]} page={1} pageSize={12} query={{}} locale="kz" />);
+
+    expect(screen.getByText('Осы сүзгілер бойынша мамандар табылмады')).toBeInTheDocument();
+  });
+
   it('на первой странице не показывает ссылку «назад»', () => {
     render(<CatalogList experts={[EXPERT]} page={1} pageSize={12} query={QUERY} locale="ru" />);
 

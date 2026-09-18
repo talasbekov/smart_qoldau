@@ -31,8 +31,8 @@ export default async function HomePage() {
   return (
     <main>
       <section className="max-w-[1240px] mx-auto px-8 py-16 flex items-center gap-14 flex-wrap">
-        <div className="flex-1 min-w-[340px]">
-          <h1 className="text-[44px] font-extrabold text-ink leading-tight mb-4">{t('heroTitle')}</h1>
+        <div className="min-w-0 flex-1 sm:min-w-[340px]">
+          <h1 className="mb-4 text-[36px] font-extrabold leading-tight text-ink sm:text-[44px]">{t('heroTitle')}</h1>
           <p className="text-body text-lg mb-6 max-w-[480px]">{t('heroSubtitle')}</p>
           <div className="flex gap-3 flex-wrap mb-4">
             <Link
@@ -84,7 +84,7 @@ export default async function HomePage() {
 
       <section className="px-8 pb-20">
         <div className="max-w-[1240px] mx-auto bg-chip rounded-3xl p-11 flex items-center justify-between gap-8 flex-wrap">
-          <div className="flex-1 min-w-[280px]">
+          <div className="min-w-0 flex-1 sm:min-w-[280px]">
             <h2 className="text-2xl font-extrabold text-ink mb-2">{t('urgentTitle')}</h2>
             <p className="text-[#3f6b62] text-sm mb-1 max-w-[520px]">{t('urgentText')}</p>
             <p className="text-[#52736b] text-xs">{t('urgentEmergency')}</p>
@@ -184,7 +184,7 @@ export default async function HomePage() {
 
       <section className="bg-surface py-20 px-8">
         <div className="max-w-[1240px] mx-auto flex items-center gap-12 flex-wrap">
-          <div className="flex-1 min-w-[300px]">
+          <div className="min-w-0 flex-1 sm:min-w-[300px]">
             <h2 className="text-2xl font-extrabold text-ink mb-2">{t('expertTeaserTitle')}</h2>
             <p className="text-body mb-5">{t('expertTeaserText')}</p>
             <div className="grid grid-cols-2 gap-1.5 mb-6">

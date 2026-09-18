@@ -27,7 +27,7 @@ describe('HomePage', () => {
         {ui}
       </NextIntlClientProvider>,
     );
-    expect(screen.getByText(ru.home.heroTitle)).toBeInTheDocument();
+    expect(screen.getByText(ru.home.heroTitle)).toHaveClass('text-[36px]', 'sm:text-[44px]');
     expect(screen.getByText(ru.home.specialistsEmpty)).toBeInTheDocument();
   });
 });

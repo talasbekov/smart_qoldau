@@ -11,6 +11,13 @@ function flattenKeys(obj: Record<string, unknown>, prefix = ''): string[] {
 }
 
 describe('переводы ru/kz', () => {
+  it('содержат отдельные строки для каталога и материалов', () => {
+    expect(kz).toMatchObject({
+      catalog: { title: expect.any(String), filters: { format: expect.any(String) } },
+      materials: { title: expect.any(String), kindArticle: expect.any(String) },
+    });
+  });
+
   it('наборы ключей совпадают', () => {
     const ruKeys = flattenKeys(ru).sort();
     const kzKeys = flattenKeys(kz).sort();

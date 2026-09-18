@@ -2,20 +2,11 @@ import Link from 'next/link';
 import type { ExpertPublic } from '@/lib/api/public';
 import type { Selected } from './CatalogFilters';
 import ExpertAvatar from '@/components/expert/ExpertAvatar';
+import ru from '@/messages/ru.json';
+import kz from '@/messages/kz.json';
 
-const EXPERIENCE_LABELS: Record<string, string> = {
-  LESS_THAN_YEAR: 'менее года',
-  ONE_TO_THREE: '1–3 года',
-  THREE_TO_FIVE: '3–5 лет',
-  FIVE_TO_TEN: '5–10 лет',
-  MORE_THAN_TEN: 'более 10 лет',
-};
-
-const LANGUAGE_LABELS: Record<string, string> = { ru: 'Рус', kz: 'Каз', en: 'Eng' };
-const FORMAT_LABELS: Record<string, string> = { chat: 'Чат', audio: 'Аудио', video: 'Видео' };
-
-function tenge(priceTiyn: number): string {
-  return `${new Intl.NumberFormat('ru-KZ').format(Math.round(priceTiyn / 100))} ₸`;
+function tenge(priceTiyn: number, locale: string): string {
+  return `${new Intl.NumberFormat(locale === 'kz' ? 'kk-KZ' : 'ru-KZ').format(Math.round(priceTiyn / 100))} ₸`;
 }
 
 function pageHref(locale: string, query: Selected, page: number): string {
@@ -39,9 +30,20 @@ export default function CatalogList({
   query: Selected;
   locale: string;
 }) {
+  const copy = locale === 'kz' ? kz.catalog : ru.catalog;
+  const languageLabels: Record<string, string> = {
+    ru: copy.languageRussianShort,
+    kz: copy.languageKazakhShort,
+    en: copy.languageEnglish,
+  };
+  const formatLabels: Record<string, string> = {
+    chat: copy.formatChat,
+    audio: copy.formatAudio,
+    video: copy.formatVideo,
+  };
   if (experts.length === 0) {
     return (
-      <p className="py-16 text-center text-muted">По заданным фильтрам специалисты не найдены</p>
+      <p className="py-16 text-center text-muted">{copy.empty}</p>
     );
   }
 
@@ -65,35 +67,36 @@ export default function CatalogList({
                   </Link>
                 </h2>
                 <p className="text-xs font-medium text-faint">
-                  Психолог · {EXPERIENCE_LABELS[expert.experience] ?? expert.experience} опыта
+                  {copy.experienceText
+                    .replace('{experience}', copy.experience[expert.experience] ?? expert.experience)}
                 </p>
               </div>
             </div>
             {expert.ratingCount > 0 && (
               <p className="mb-2 text-sm font-bold text-ink">
-                ⭐ {expert.ratingAvg.toFixed(1)} · {expert.ratingCount} отзывов
+                ⭐ {expert.ratingAvg.toFixed(1)} · {copy.reviewsCount.replace('{count}', String(expert.ratingCount))}
               </p>
             )}
             <p className="mb-2 text-xs text-muted">
-              {expert.languages.map((code) => LANGUAGE_LABELS[code] ?? code).join(', ')}
+              {expert.languages.map((code) => languageLabels[code] ?? code).join(', ')}
               {' · '}
-              {expert.formats.map((code) => FORMAT_LABELS[code] ?? code).join(', ')}
+              {expert.formats.map((code) => formatLabels[code] ?? code).join(', ')}
             </p>
-            <p className="text-sm font-extrabold text-ink">{tenge(expert.priceTiyn)}</p>
+            <p className="text-sm font-extrabold text-ink">{tenge(expert.priceTiyn, locale)}</p>
           </article>
         ))}
       </div>
 
       {(page > 1 || mayHaveMore) && (
-        <nav aria-label="Страницы каталога" className="mt-8 flex justify-center gap-4">
+        <nav aria-label={copy.paginationLabel} className="mt-8 flex justify-center gap-4">
           {page > 1 && (
             <Link href={pageHref(locale, query, page - 1)} className="rounded-lg px-3 py-2 font-bold text-primary focus:outline-none focus:ring-2 focus:ring-primary">
-              ← Назад
+              ← {copy.previous}
             </Link>
           )}
           {mayHaveMore && (
             <Link href={pageHref(locale, query, page + 1)} className="rounded-lg px-3 py-2 font-bold text-primary focus:outline-none focus:ring-2 focus:ring-primary">
-              Дальше →
+              {copy.next} →
             </Link>
           )}
         </nav>

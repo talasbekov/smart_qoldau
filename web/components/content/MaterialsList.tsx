@@ -1,20 +1,15 @@
 import Link from 'next/link';
 import type { ContentItem } from '@/lib/api/public';
+import ru from '@/messages/ru.json';
+import kz from '@/messages/kz.json';
 
 // Один раздел с фильтрами, а не четыре отдельных экрана — решение
 // владельца от 2026-09-02 (расхождение №11).
-const KINDS = [
-  { value: 'ARTICLE', label: 'Статьи' },
-  { value: 'MEDITATION', label: 'Медитации' },
-  { value: 'BREATHING', label: 'Дыхание' },
-  { value: 'MUSIC', label: 'Музыка' },
-] as const;
-
 export type Selected = { kind?: string; category?: string };
 
-function minutes(durationSec: number | null | undefined): string {
+function minutes(durationSec: number | null | undefined, unit: string): string {
   if (!durationSec) return '';
-  return `${Math.round(durationSec / 60)} мин`;
+  return `${Math.round(durationSec / 60)} ${unit}`;
 }
 
 function hrefWith(locale: string, selected: Selected, kind: string): string {
@@ -38,10 +33,17 @@ export default function MaterialsList({
   selected: Selected;
   locale: string;
 }) {
+  const copy = locale === 'kz' ? kz.materials : ru.materials;
+  const kinds = [
+    { value: 'ARTICLE', label: copy.kindArticle },
+    { value: 'MEDITATION', label: copy.kindMeditation },
+    { value: 'BREATHING', label: copy.kindBreathing },
+    { value: 'MUSIC', label: copy.kindMusic },
+  ];
   return (
     <>
-      <nav aria-label="Виды материалов" className="mb-7 flex flex-wrap gap-2">
-        {KINDS.map((kind) => {
+      <nav aria-label={copy.kindsLabel} className="mb-7 flex flex-wrap gap-2">
+        {kinds.map((kind) => {
           const active = selected.kind === kind.value;
           return (
             <Link
@@ -61,7 +63,7 @@ export default function MaterialsList({
       </nav>
 
       {items.length === 0 ? (
-        <p className="py-12 text-body">Материалов по этим фильтрам нет</p>
+        <p className="py-12 text-body">{copy.empty}</p>
       ) : (
         <ul className="grid grid-cols-[repeat(auto-fit,minmax(260px,1fr))] gap-[18px]">
           {items.map((item) => (
@@ -76,7 +78,7 @@ export default function MaterialsList({
               </h2>
               {item.summary && <p className="mb-2 text-sm text-body">{item.summary}</p>}
               <p className="flex flex-wrap items-center gap-2 text-xs text-faint">
-                {minutes(item.durationSec)}
+                {minutes(item.durationSec, copy.minute)}
                 {/* Карточку платного материала показываем всегда: человек
                     должен понимать, что именно за подпиской. */}
                 {item.locked && (

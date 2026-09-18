@@ -27,6 +27,13 @@ async function renderHeader(messages: typeof ru) {
 }
 
 describe('Header', () => {
+  it('allows the navigation to wrap on a narrow viewport instead of widening the page', async () => {
+    const { container } = render(await Header());
+
+    expect(container.querySelector('nav')).toHaveClass('flex-wrap');
+    expect(container.querySelector('header > div')).toHaveClass('flex-wrap');
+  });
+
   it('ведёт в каталог — главный вход в продукт из шапки', async () => {
     await renderHeader(ru);
 

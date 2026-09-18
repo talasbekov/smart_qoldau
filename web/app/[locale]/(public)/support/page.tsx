@@ -12,7 +12,7 @@ export default async function SupportPage() {
   const t = await getTranslations('support');
 
   return (
-    <main className="max-w-[900px] mx-auto px-8 py-14">
+    <main className="mx-auto max-w-[900px] px-4 py-14 sm:px-8">
       <h1 className="text-[30px] font-extrabold text-ink mb-2">{t('title')}</h1>
       <p className="text-body mb-5">{t('subtitle')}</p>
 

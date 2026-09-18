@@ -2,6 +2,8 @@ import type { Metadata } from 'next';
 import { listExperts, listTopics, type ListExpertsParams } from '@/lib/api/public';
 import CatalogFilters, { type Selected } from '@/components/catalog/CatalogFilters';
 import CatalogList from '@/components/catalog/CatalogList';
+import ru from '@/messages/ru.json';
+import kz from '@/messages/kz.json';
 
 const PAGE_SIZE = 12;
 const SORTS = ['price_asc', 'price_desc', 'rating'] as const;
@@ -26,6 +28,7 @@ export default async function CatalogPage({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const { locale } = await params;
+  const copy = locale === 'kz' ? kz.catalog : ru.catalog;
   const raw = await searchParams;
   const one = (key: string): string | undefined => {
     const value = raw[key];
@@ -51,15 +54,15 @@ export default async function CatalogPage({
   ]);
 
   return (
-    <main className="mx-auto max-w-[1240px] px-8 pb-16 pt-11">
-      <h1 className="mb-1.5 text-[30px] font-extrabold text-ink">Найдите своего специалиста</h1>
+    <main className="mx-auto max-w-[1240px] px-4 pb-16 pt-11 sm:px-8">
+      <h1 className="mb-1.5 text-[30px] font-extrabold text-ink">{copy.title}</h1>
       <p className="mb-7 text-[14.5px] font-medium text-muted">
         {experts.length > 0
-          ? `${experts.length} специалистов на этой странице`
-          : 'Подберите фильтры под свой запрос'}
+          ? copy.resultsCount.replace('{count}', String(experts.length))
+          : copy.resultsEmpty}
       </p>
 
-      <CatalogFilters topics={topics} selected={selected} action={`/${locale}/catalog`} />
+      <CatalogFilters topics={topics} selected={selected} action={`/${locale}/catalog`} locale={locale} />
       <CatalogList
         experts={experts}
         page={page}

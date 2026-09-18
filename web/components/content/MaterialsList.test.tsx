@@ -29,6 +29,15 @@ describe('MaterialsList', () => {
     expect(screen.getByText(/материалов по этим фильтрам нет/i)).toBeInTheDocument();
   });
 
+  it('uses Kazakh copy for material filters', () => {
+    render(<MaterialsList items={[item()]} selected={{}} locale="kz" />);
+
+    expect(screen.getByRole('link', { name: 'Мақалалар' })).toHaveAttribute(
+      'href',
+      '/kz/materials?kind=ARTICLE',
+    );
+  });
+
   it('фильтры по виду — ссылки, значит выборкой можно поделиться', () => {
     render(<MaterialsList items={[item()]} selected={{}} locale="ru" />);
 

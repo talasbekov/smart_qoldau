@@ -1,4 +1,6 @@
 import type { Topic } from '@/lib/api/public';
+import ru from '@/messages/ru.json';
+import kz from '@/messages/kz.json';
 
 export type Selected = {
   topic?: string;
@@ -6,24 +8,6 @@ export type Selected = {
   format?: string;
   sort?: string;
 };
-
-const FORMATS = [
-  { value: 'chat', label: 'Чат' },
-  { value: 'audio', label: 'Аудио' },
-  { value: 'video', label: 'Видео' },
-];
-
-const LANGUAGES = [
-  { value: 'ru', label: 'Русский' },
-  { value: 'kz', label: 'Қазақша' },
-  { value: 'en', label: 'English' },
-];
-
-const SORTS = [
-  { value: 'rating', label: 'По рейтингу' },
-  { value: 'price_asc', label: 'Сначала дешевле' },
-  { value: 'price_desc', label: 'Сначала дороже' },
-];
 
 const SELECT_CLASS =
   'h-11 rounded-2xl border border-border bg-white px-4 text-[13px] font-semibold text-ink focus:outline-none focus:ring-2 focus:ring-primary';
@@ -70,28 +54,46 @@ export default function CatalogFilters({
   topics,
   selected,
   action,
+  locale = 'ru',
 }: {
   topics: Topic[];
   selected: Selected;
   action: string;
+  locale?: string;
 }) {
+  const copy = locale === 'kz' ? kz.catalog : ru.catalog;
+  const formats = [
+    { value: 'chat', label: copy.formatChat },
+    { value: 'audio', label: copy.formatAudio },
+    { value: 'video', label: copy.formatVideo },
+  ];
+  const languages = [
+    { value: 'ru', label: copy.languageRussian },
+    { value: 'kz', label: copy.languageKazakh },
+    { value: 'en', label: copy.languageEnglish },
+  ];
+  const sorts = [
+    { value: 'rating', label: copy.sortRating },
+    { value: 'price_asc', label: copy.sortPriceAsc },
+    { value: 'price_desc', label: copy.sortPriceDesc },
+  ];
   return (
     <form method="get" action={action} className="mb-7 flex flex-wrap items-end gap-2.5">
       <Field
         name="topic"
-        label="Специализация"
+        label={copy.specialization}
         value={selected.topic}
-        anyLabel="Все специализации"
+        anyLabel={copy.allSpecializations}
         options={topics.map((topic) => ({ value: topic.slug, label: topic.name }))}
       />
-      <Field name="format" label="Формат" value={selected.format} anyLabel="Любой формат" options={FORMATS} />
-      <Field name="language" label="Язык" value={selected.language} anyLabel="Любой язык" options={LANGUAGES} />
-      <Field name="sort" label="Сортировка" value={selected.sort} anyLabel="По умолчанию" options={SORTS} />
+      <Field name="format" label={copy.filters.format} value={selected.format} anyLabel={copy.anyFormat} options={formats} />
+      <Field name="language" label={copy.filters.language} value={selected.language} anyLabel={copy.anyLanguage} options={languages} />
+      <Field name="sort" label={copy.filters.sort} value={selected.sort} anyLabel={copy.defaultSort} options={sorts} />
       <button
         type="submit"
         className="h-11 rounded-2xl bg-primary px-5 text-[13px] font-bold text-white focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
       >
-        Показать
+        {copy.show}
       </button>
     </form>
   );
