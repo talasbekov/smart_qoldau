@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { listStaff, createStaff, updateStaff, type StaffCard } from '@/lib/staff';
 import { ApiError } from '@/lib/api';
 import type { AdminRole } from '@/lib/types';
@@ -22,6 +22,7 @@ export default function StaffPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [roles, setRoles] = useState<AdminRole[]>([]);
+  const latestLoadRequest = useRef(0);
 
   function messageFor(error: unknown, fallback: string) {
     if (error instanceof ApiError && error.status === 403) {
@@ -30,15 +31,18 @@ export default function StaffPage() {
     return error instanceof Error && error.message ? error.message : fallback;
   }
 
-  async function load() {
+  async function load(successfulMutation?: string) {
+    const request = ++latestLoadRequest.current;
     setLoadState('loading');
     setLoadError(null);
     try {
       const result = await listStaff({ take: 100, skip: 0 });
+      if (request !== latestLoadRequest.current) return;
       setItems(result.items);
       setLoadState('ready');
     } catch (error) {
-      setLoadError(messageFor(error, 'Не удалось загрузить сотрудников.'));
+      if (request !== latestLoadRequest.current) return;
+      setLoadError(successfulMutation ? `${successfulMutation}, но не удалось обновить список.` : messageFor(error, 'Не удалось загрузить сотрудников.'));
       setLoadState(error instanceof ApiError && error.status === 403 ? 'forbidden' : 'error');
     }
   }
@@ -75,7 +79,7 @@ export default function StaffPage() {
       setEmail('');
       setPassword('');
       setRoles([]);
-      await load();
+      await load('Сотрудник создан');
     } catch (error) {
       setActionError(messageFor(error, 'Не удалось создать сотрудника.'));
     } finally {

@@ -1,6 +1,7 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import StaffPage from './StaffPage';
 import * as staffApi from '@/lib/staff';
+import type { StaffCard } from '@/lib/staff';
 import { ApiError } from '@/lib/api';
 
 vi.mock('@/lib/staff');
@@ -177,6 +178,29 @@ describe('StaffPage', () => {
     expect(screen.getByRole('button', { name: 'Создать' })).toBeEnabled();
   });
 
+  it('сообщает об успешном создании, если обновление списка не удалось, без повтора POST', async () => {
+    vi.mocked(staffApi.listStaff)
+      .mockResolvedValueOnce({ items: [], total: 0 })
+      .mockRejectedValueOnce(new ApiError('LIST_FAILED', 'Не удалось обновить список', 500));
+    vi.mocked(staffApi.createStaff).mockResolvedValue({
+      id: '2',
+      email: 'new@b.kz',
+      roles: ['SUPPORT_OPERATOR'],
+      isActive: true,
+      lastLoginAt: null,
+      createdAt: '2026-01-01',
+    });
+
+    render(<StaffPage />);
+    await screen.findByText('Нет сотрудников');
+    fireEvent.change(screen.getByPlaceholderText('Email'), { target: { value: 'new@b.kz' } });
+    fireEvent.change(screen.getByPlaceholderText('Пароль'), { target: { value: '0123456789' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Создать' }));
+
+    expect(await screen.findByText('Сотрудник создан, но не удалось обновить список.')).toBeInTheDocument();
+    expect(staffApi.createStaff).toHaveBeenCalledTimes(1);
+  });
+
   it('показывает ошибку при неудачном изменении статуса', async () => {
     vi.mocked(staffApi.listStaff).mockResolvedValue({
       items: [{ id: '1', email: 'a@b.kz', roles: ['SUPPORT_OPERATOR'], isActive: true, lastLoginAt: null, createdAt: '2026-01-01' }],
@@ -189,5 +213,56 @@ describe('StaffPage', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Деактивировать' }));
 
     expect(await screen.findByText('Не удалось обновить сотрудника')).toBeInTheDocument();
+  });
+
+  it('не допускает, чтобы устаревшая ошибка reload скрыла результат более новой мутации', async () => {
+    let resolveCreate: (value: staffApi.StaffCard) => void = () => undefined;
+    let resolveUpdate: (value: staffApi.StaffCard) => void = () => undefined;
+    let rejectReloadA: (reason: unknown) => void = () => undefined;
+    let resolveReloadB: (value: { items: staffApi.StaffCard[]; total: number }) => void = () => undefined;
+
+    const activeStaff: StaffCard = { id: '1', email: 'a@b.kz', roles: ['SUPPORT_OPERATOR'], isActive: true, lastLoginAt: null, createdAt: '2026-01-01' };
+    const newStaff: StaffCard = { id: '2', email: 'new@b.kz', roles: ['SUPPORT_OPERATOR'], isActive: true, lastLoginAt: null, createdAt: '2026-01-01' };
+
+    vi.mocked(staffApi.listStaff)
+      .mockResolvedValueOnce({ items: [activeStaff], total: 1 })
+      .mockReturnValueOnce(
+        new Promise<never>((_resolve, reject) => {
+          rejectReloadA = reject;
+        }),
+      )
+      .mockReturnValueOnce(
+        new Promise((resolve) => {
+          resolveReloadB = resolve;
+        }),
+      );
+    vi.mocked(staffApi.createStaff).mockReturnValue(
+      new Promise((resolve) => {
+        resolveCreate = resolve;
+      }),
+    );
+    vi.mocked(staffApi.updateStaff).mockReturnValue(
+      new Promise((resolve) => {
+        resolveUpdate = resolve;
+      }),
+    );
+
+    render(<StaffPage />);
+    await screen.findByText('a@b.kz');
+    fireEvent.change(screen.getByPlaceholderText('Email'), { target: { value: 'new@b.kz' } });
+    fireEvent.change(screen.getByPlaceholderText('Пароль'), { target: { value: '0123456789' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Создать' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Деактивировать' }));
+
+    resolveUpdate({ ...activeStaff, isActive: false });
+    await waitFor(() => expect(staffApi.listStaff).toHaveBeenCalledTimes(2));
+    resolveCreate(newStaff);
+    await waitFor(() => expect(staffApi.listStaff).toHaveBeenCalledTimes(3));
+    resolveReloadB({ items: [activeStaff, newStaff], total: 2 });
+    await screen.findByText('new@b.kz');
+    rejectReloadA(new ApiError('LIST_FAILED', 'stale reload failed', 500));
+
+    await waitFor(() => expect(screen.getByText('new@b.kz')).toBeInTheDocument());
+    expect(screen.queryByText('stale reload failed')).not.toBeInTheDocument();
   });
 });
