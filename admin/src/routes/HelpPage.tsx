@@ -40,7 +40,7 @@ export default function HelpPage() {
         {hasRole(roles, 'CONTENT_EDITOR') && <GuideCard title="Материалы">
           <ol className="list-decimal space-y-2 pl-5"><li>Откройте создание материала и выберите вид.</li><li>Заполните русскую и казахскую карточки и содержимое. Для статьи используется Markdown; дыхательные фазы вводятся построчно.</li><li>Сохраните черновик. Он не виден клиентам.</li><li>Проверьте данные и нажмите «Опубликовать» в списке.</li><li>Откройте раздел «Материалы» в клиентском веб-интерфейсе и проверьте обе локали и Premium-ограничение.</li></ol>
           <p>Для аудио и обложки загрузчика сейчас нет: форма принимает уже существующий ключ приватного хранилища. Публичные URL вставлять нельзя.</p>
-          <div className="flex flex-wrap gap-2"><Link to="/content/new" className={linkClass}>Создать материал</Link><Link to="/content" className={linkClass}>Открыть список</Link><a href="/ru/materials" className={linkClass}>Проверить RU</a><a href="/kk/materials" className={linkClass}>Проверить KK</a></div>
+          <div className="flex flex-wrap gap-2"><Link to="/content/new" className={linkClass}>Создать материал</Link><Link to="/content" className={linkClass}>Открыть список</Link><a href="/ru/materials" className={linkClass}>Проверить RU</a><a href="/kz/materials" className={linkClass}>Проверить KK</a></div>
         </GuideCard>}
 
         {hasRole(roles, 'SUPERADMIN') && <GuideCard title="Сотрудники">

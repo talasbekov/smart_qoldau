@@ -31,6 +31,7 @@ describe('HelpPage', () => {
     render(<MemoryRouter><HelpPage /></MemoryRouter>);
 
     expect(screen.getByRole('link', { name: 'Создать материал' })).toHaveAttribute('href', '/content/new');
+    expect(screen.getByRole('link', { name: 'Проверить KK' })).toHaveAttribute('href', '/kz/materials');
     expect(screen.getByRole('link', { name: 'Открыть сотрудников' })).toHaveAttribute('href', '/staff');
     expect(screen.getByRole('link', { name: 'Открыть настройки' })).toHaveAttribute('href', '/settings');
     expect(screen.getByText(/Кнопки сброса пароля сотрудника здесь пока нет/)).toBeInTheDocument();
