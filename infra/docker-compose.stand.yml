@@ -13,16 +13,41 @@ services:
   backend:
     environment:
       TOTP_REQUIRED: 'false'
+      # URL подписывается как bearer-link и должен быть тем же
+      # origin, который видит браузер. Backend по нему в S3 не ходит.
+      S3_CONTENT_PUBLIC_ENDPOINT: ${STAND_URL:-http://localhost:8080}
+      # Backend и nginx template получают одно и то же имя: тихого
+      # расхождения signer/route быть не может.
+      S3_BUCKET_CONTENT: ${S3_BUCKET_CONTENT:-sq-content}
 
   proxy:
     image: nginx:1.27-alpine
     restart: unless-stopped
+    environment:
+      S3_BUCKET_CONTENT: ${S3_BUCKET_CONTENT:-sq-content}
+      NGINX_ENVSUBST_FILTER: '^S3_BUCKET_CONTENT$'
     volumes:
-      - ./nginx.stand.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./nginx.stand.conf:/etc/nginx/templates/default.conf.template:ro
+    command:
+      - /bin/sh
+      - -ec
+      - |
+        bucket="$${S3_BUCKET_CONTENT}"
+        case "$${bucket}" in
+          ''|*[!a-z0-9.-]*|.*|*.|*..*)
+            echo 'S3_BUCKET_CONTENT must be a 3-63 character lowercase S3 bucket name' >&2
+            exit 1
+            ;;
+        esac
+        if [ "$${#bucket}" -lt 3 ] || [ "$${#bucket}" -gt 63 ]; then
+          echo 'S3_BUCKET_CONTENT must be a 3-63 character lowercase S3 bucket name' >&2
+          exit 1
+        fi
+        exec nginx -g 'daemon off;'
     ports:
       - '8080:80'
-    depends_on: [backend, admin, web]
-    networks: [edge]
+    depends_on: [backend, admin, web, minio]
+    networks: [edge, internal]
 
   # Админка собирается с относительным адресом API: за прокси она и бэкенд
   # на одном источнике, поэтому абсолютный адрес туннеля в бандл вшивать не
@@ -44,4 +69,3 @@ services:
       # Со значением по умолчанию (:3000) вход отвечал бы 403 — поймано
       # живой проверкой, а не тестами.
       SITE_URL: ${STAND_URL:-http://localhost:8080}
-

@@ -262,10 +262,21 @@ describe('Контент: списки и карточки (E13, e2e)', () => {
     );
     expect(byDraft.body.error.code).toBe('CONTENT_NOT_FOUND');
 
+    const draftMedia = await get(
+      ru.accessToken,
+      `/v1/content/${draft.id}/media`,
+    ).expect(404);
+    expect(draftMedia.body.error.code).toBe('CONTENT_NOT_FOUND');
+
     await get(
       ru.accessToken,
       '/v1/content/00000000-0000-0000-0000-000000000000',
     ).expect(404);
+    const missingMedia = await get(
+      ru.accessToken,
+      '/v1/content/00000000-0000-0000-0000-000000000000/media',
+    ).expect(404);
+    expect(missingMedia.body.error.code).toBe('CONTENT_NOT_FOUND');
   });
 
   it('обложка отдаётся подписанной ссылкой, а не ключом хранилища', async () => {

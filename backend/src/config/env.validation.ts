@@ -1,6 +1,35 @@
 import Joi from 'joi';
 import { parseTrustedProxyIps } from './trusted-proxy';
 
+function validateRootHttpEndpoint(value: string): string {
+  let endpoint: URL;
+  try {
+    endpoint = new URL(value);
+  } catch {
+    throw new Error(
+      'S3_CONTENT_PUBLIC_ENDPOINT must be a root http(s) URL without credentials, query or fragment',
+    );
+  }
+
+  if (
+    value.trim() !== value ||
+    value.includes('?') ||
+    value.includes('#') ||
+    !['http:', 'https:'].includes(endpoint.protocol) ||
+    endpoint.username !== '' ||
+    endpoint.password !== '' ||
+    endpoint.search !== '' ||
+    endpoint.hash !== '' ||
+    endpoint.pathname !== '/'
+  ) {
+    throw new Error(
+      'S3_CONTENT_PUBLIC_ENDPOINT must be a root http(s) URL without credentials, query or fragment',
+    );
+  }
+
+  return value;
+}
+
 export const envValidationSchema = Joi.object({
   TRUSTED_PROXY_IPS: Joi.string()
     .allow('')
@@ -26,6 +55,13 @@ export const envValidationSchema = Joi.object({
   // Поднимать ли /v1/docs. Не задан — включено везде, кроме NODE_ENV=production.
   SWAGGER_ENABLED: Joi.string().valid('true', 'false').optional(),
   S3_ENDPOINT: Joi.string().uri().required(),
+  // Адрес, который видит плеер: SigV4 включает Host и URI,
+  // поэтому префикс пути или credential/query здесь недопустимы.
+  // Если переменная не задана, signer сохраняет старое поведение
+  // и подписывает S3_ENDPOINT; это не обещает browser reachability.
+  S3_CONTENT_PUBLIC_ENDPOINT: Joi.string()
+    .custom(validateRootHttpEndpoint)
+    .optional(),
   S3_ACCESS_KEY: Joi.string().required(),
   S3_SECRET_KEY: Joi.string().required(),
   S3_BUCKET_DOCUMENTS: Joi.string().default('expert-documents'),

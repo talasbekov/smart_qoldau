@@ -14,6 +14,7 @@ import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 @Injectable()
 export class StorageService implements OnModuleInit {
   private readonly s3: S3Client;
+  private readonly contentSigningS3: S3Client;
   private readonly bucket: string;
   // Аватары держатся отдельно от документов верификации: документы
   // зашифрованы и закрыты (ТЗ §6), фото раздаётся всем. Общий бакет — это
@@ -26,22 +27,30 @@ export class StorageService implements OnModuleInit {
   private readonly publicBaseUrl: string;
 
   constructor(config: ConfigService) {
+    const endpoint = config.getOrThrow<string>('S3_ENDPOINT');
+    const credentials = {
+      accessKeyId: config.getOrThrow<string>('S3_ACCESS_KEY'),
+      secretAccessKey: config.getOrThrow<string>('S3_SECRET_KEY'),
+    };
     this.bucket = config.getOrThrow('S3_BUCKET_DOCUMENTS');
     this.avatarsBucket = config.getOrThrow('S3_BUCKET_AVATARS');
     this.contentBucket = config.getOrThrow('S3_BUCKET_CONTENT');
     // В проде клиент ходит на публичный домен (CDN), а бэкенд пишет во
     // внутренний адрес хранилища — по умолчанию это одно и то же.
     this.publicBaseUrl = String(
-      config.get('S3_PUBLIC_BASE_URL') ?? config.getOrThrow('S3_ENDPOINT'),
+      config.get('S3_PUBLIC_BASE_URL') ?? endpoint,
     ).replace(/\/+$/, '');
     this.s3 = new S3Client({
-      endpoint: config.getOrThrow('S3_ENDPOINT'),
+      endpoint,
       region: 'us-east-1',
       forcePathStyle: true, // MinIO
-      credentials: {
-        accessKeyId: config.getOrThrow('S3_ACCESS_KEY'),
-        secretAccessKey: config.getOrThrow('S3_SECRET_KEY'),
-      },
+      credentials,
+    });
+    this.contentSigningS3 = new S3Client({
+      endpoint: config.get<string>('S3_CONTENT_PUBLIC_ENDPOINT') ?? endpoint,
+      region: 'us-east-1',
+      forcePathStyle: true,
+      credentials,
     });
   }
 
@@ -157,7 +166,7 @@ export class StorageService implements OnModuleInit {
   /// сотне слушателей. TTL короткий, потому что ссылка И ЕСТЬ доступ.
   contentUrl(key: string, ttlSec = 900): Promise<string> {
     return getSignedUrl(
-      this.s3,
+      this.contentSigningS3,
       new GetObjectCommand({ Bucket: this.contentBucket, Key: key }),
       { expiresIn: ttlSec },
     );

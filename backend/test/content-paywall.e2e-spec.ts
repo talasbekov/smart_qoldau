@@ -192,6 +192,7 @@ describe('Контент: пейволл Premium (E13, e2e)', () => {
       `/v1/content/${premiumId}/media`,
     ).expect(403);
     expect(res.body.error.code).toBe('PREMIUM_REQUIRED');
+    expect(res.body.url).toBeUndefined();
     // Ключ файла наружу не уходит вообще — иначе пейволл обходится
     // знанием имени объекта.
     expect(JSON.stringify(res.body)).not.toContain('sleep-1.mp3');
@@ -266,7 +267,16 @@ describe('Контент: пейволл Premium (E13, e2e)', () => {
       cli.accessToken,
       `/v1/content/${freeId}/media`,
     ).expect(200);
-    expect(res.body.url).toContain('free-1.mp3');
+    const mediaUrl = new URL(res.body.url);
+    const expectedEndpoint =
+      process.env.S3_CONTENT_PUBLIC_ENDPOINT ??
+      process.env.S3_ENDPOINT ??
+      'http://localhost:9000';
+    expect(mediaUrl.origin).toBe(new URL(expectedEndpoint).origin);
+    expect(mediaUrl.pathname).toBe(
+      `/${process.env.S3_BUCKET_CONTENT ?? 'sq-content'}/meditations/free-1.mp3`,
+    );
+    expect(mediaUrl.searchParams.get('X-Amz-Expires')).toBe('900');
     expect(new Date(res.body.expiresAt).getTime()).toBeGreaterThan(Date.now());
   });
 
