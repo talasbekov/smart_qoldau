@@ -123,3 +123,29 @@ if printf '%s\n' "$failure_logs" | grep -Eq 'X-Amz-|Credential=|Signature='; the
   exit 1
 fi
 echo 'upstream_failure_proxy_logs_contain_signature=false'
+
+# Restore the real MinIO child for authenticated bucket-isolation checks.
+compose restart minio >/dev/null
+attempt=0
+until curl -fsS "http://127.0.0.1:${minio_port}/minio/health/ready" >/dev/null 2>&1; do
+  attempt=$((attempt + 1))
+  if [ "$attempt" -ge 60 ]; then
+    compose logs --no-color minio >&2
+    exit 1
+  fi
+  sleep 1
+done
+node "$infra_dir/private-audio-proxy.spec.cjs" isolation
+
+# Bounded mutation control: widening only the rendered object location to a
+# wildcard must expose the correctly signed other-bucket object. Traversal
+# mutations retain a query signed for the original URI, so their S3 response
+# is an expected signature/canonical-URI rejection with an x-amz-request-id;
+# the production literal route returns the deterministic non-S3 catch-all 502.
+compose exec -T proxy sed -i \
+  "s|location ^~ /${S3_BUCKET_CONTENT}/ {|location ~ ^/[^/]+/ {|" \
+  /etc/nginx/conf.d/default.conf
+compose exec -T proxy nginx -t
+compose exec -T proxy nginx -s reload
+E13_EXPECT_WILDCARD=true node "$infra_dir/private-audio-proxy.spec.cjs" isolation
+echo 'wildcard_route_negative_control_detected=true'

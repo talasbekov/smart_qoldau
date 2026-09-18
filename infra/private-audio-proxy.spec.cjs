@@ -40,6 +40,7 @@ function rawGet(path) {
         response.on("end", () =>
           resolve({
             status: response.statusCode,
+            headers: response.headers,
             body: Buffer.concat(chunks).toString("utf8"),
           }),
         );
@@ -162,18 +163,6 @@ async function healthy() {
   );
   assert.equal((await fetch(signedList)).status, 404);
 
-  const other = await rawGet(`/${otherBucket}/secret.txt`);
-  assert.notEqual(other.status, 200);
-  assert.equal(other.body.includes("other-bucket-secret"), false);
-  for (const path of [
-    `/${contentBucket}/../${otherBucket}/secret.txt`,
-    `/${contentBucket}/%2e%2e/${otherBucket}/secret.txt`,
-  ]) {
-    const traversal = await rawGet(path);
-    assert.notEqual(traversal.status, 200);
-    assert.equal(traversal.body.includes("other-bucket-secret"), false);
-  }
-
   console.log(
     JSON.stringify({
       signedGet: 200,
@@ -185,8 +174,6 @@ async function healthy() {
       put: 405,
       delete: 405,
       listing: 404,
-      otherBucketExposed: false,
-      traversalExposed: false,
     }),
   );
 }
@@ -199,12 +186,97 @@ async function upstreamFailure() {
   console.log(`upstream_failure_status=${response.status}`);
 }
 
+async function isolation() {
+  const internal = new S3Client({
+    ...common,
+    endpoint: `http://127.0.0.1:${minioPort}`,
+  });
+  const external = new S3Client({
+    ...common,
+    endpoint: `http://127.0.0.1:${proxyPort}`,
+  });
+  const directOtherUrl = await getSignedUrl(
+    internal,
+    new GetObjectCommand({ Bucket: otherBucket, Key: "secret.txt" }),
+    { expiresIn: 60 },
+  );
+  const directOther = await fetch(directOtherUrl);
+  assert.equal(directOther.status, 200);
+  assert.equal(await directOther.text(), "other-bucket-secret");
+
+  const edgeOtherUrl = await getSignedUrl(
+    external,
+    new GetObjectCommand({ Bucket: otherBucket, Key: "secret.txt" }),
+    { expiresIn: 60 },
+  );
+  const edgeOther = await fetch(edgeOtherUrl);
+  const edgeOtherBody = await edgeOther.text();
+
+  const signedContentUrl = new URL(
+    await getSignedUrl(
+      external,
+      new GetObjectCommand({ Bucket: contentBucket, Key: key }),
+      { expiresIn: 60 },
+    ),
+  );
+  // The query is valid for the original content-object URI. Mutating the path
+  // invalidates SigV4; exact catch-all 502 vs an S3 response carrying a
+  // request ID tests nginx route selection, not traversal-signature validity.
+  const traversalResponses = [];
+  for (const path of [
+    `/${contentBucket}/../${otherBucket}/secret.txt${signedContentUrl.search}`,
+    `/${contentBucket}/%2e%2e/${otherBucket}/secret.txt${signedContentUrl.search}`,
+  ]) {
+    const traversal = await rawGet(path);
+    traversalResponses.push(traversal);
+    assert.equal(traversal.body.includes("other-bucket-secret"), false);
+  }
+  const traversalStatuses = traversalResponses.map(({ status }) => status);
+
+  const wildcardNegativeControl = process.env.E13_EXPECT_WILDCARD === "true";
+  if (wildcardNegativeControl) {
+    assert.equal(edgeOther.status, 200);
+    assert.equal(edgeOtherBody, "other-bucket-secret");
+    assert.equal(
+      traversalStatuses.every((status) => status !== 502),
+      true,
+    );
+    assert.equal(
+      traversalResponses.every(
+        ({ headers }) => typeof headers["x-amz-request-id"] === "string",
+      ),
+      true,
+    );
+  } else {
+    // The test override maps the non-S3 catch-all upstream to a closed port,
+    // so 502 proves these normalized paths did not reach MinIO. A wildcard S3
+    // route produces the negative-control statuses asserted above.
+    assert.equal(edgeOther.status, 502);
+    assert.equal(edgeOtherBody.includes("other-bucket-secret"), false);
+    assert.deepEqual(traversalStatuses, [502, 502]);
+  }
+
+  console.log(
+    JSON.stringify({
+      directInternalOtherBucket: directOther.status,
+      signedOtherBucketThroughEdge: edgeOther.status,
+      mutatedSignedTraversalRouteStatuses: traversalStatuses,
+      mutatedSignedTraversalReachedMinio: traversalResponses.every(
+        ({ headers }) => typeof headers["x-amz-request-id"] === "string",
+      ),
+      wildcardNegativeControl,
+    }),
+  );
+}
+
 const operation =
   mode === "healthy"
     ? healthy
     : mode === "upstream-failure"
       ? upstreamFailure
-      : null;
+      : mode === "isolation"
+        ? isolation
+        : null;
 if (!operation) throw new Error(`unknown mode: ${mode}`);
 operation().catch((error) => {
   console.error(error);
