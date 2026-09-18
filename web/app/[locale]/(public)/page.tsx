@@ -160,7 +160,7 @@ export default async function HomePage() {
             ))}
           </div>
           <div className="text-center">
-            <Link href="/support" className="text-primary font-bold text-sm">
+            <Link href="/materials" className="text-primary font-bold text-sm">
               {t('materialsAll')}
             </Link>
           </div>

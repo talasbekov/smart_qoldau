@@ -61,4 +61,22 @@ describe('HomePage', () => {
       `/${_locale}/requests/new`,
     );
   });
+
+  it.each([
+    ['ru', ru],
+    ['kz', kz],
+  ])('ведёт из CTA материалов %s в локализованный раздел материалов', async (_locale, messages) => {
+    currentMessages = messages as typeof ru;
+    const ui = await HomePage();
+    render(
+      <NextIntlClientProvider locale={_locale} messages={messages as typeof ru}>
+        {ui}
+      </NextIntlClientProvider>,
+    );
+
+    expect(screen.getByRole('link', { name: messages.home.materialsAll })).toHaveAttribute(
+      'href',
+      `/${_locale}/materials`,
+    );
+  });
 });
