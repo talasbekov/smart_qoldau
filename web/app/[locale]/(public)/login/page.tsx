@@ -7,14 +7,20 @@ export const metadata: Metadata = {
   robots: { index: false, follow: true },
 };
 
-export default function LoginPage() {
+export default async function LoginPage({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}) {
+  const { locale } = await params;
+
   return (
     <main className="mx-auto flex max-w-md flex-col items-center px-8 py-20">
       <h1 className="mb-2 text-2xl font-extrabold text-ink">Вход в SmartQoldau</h1>
       <p className="mb-8 text-center text-sm text-muted">
         Пришлём код в SMS — пароль не нужен
       </p>
-      <LoginForm />
+      <LoginForm locale={locale} />
     </main>
   );
 }

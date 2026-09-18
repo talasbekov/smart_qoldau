@@ -24,7 +24,7 @@ const FIELD =
 const BUTTON =
   'h-12 w-full rounded-2xl bg-primary text-sm font-bold text-white disabled:opacity-60 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2';
 
-export default function LoginForm() {
+export default function LoginForm({ locale }: { locale: string }) {
   const router = useRouter();
   const [step, setStep] = useState<'phone' | 'code'>('phone');
   const [phone, setPhone] = useState('');
@@ -63,6 +63,7 @@ export default function LoginForm() {
     event.preventDefault();
     setError(null);
     setBusy(true);
+    let navigating = false;
     try {
       const response = await fetch('/api/auth/verify-code', {
         method: 'POST',
@@ -73,11 +74,15 @@ export default function LoginForm() {
         setError(message(((await response.json()) as { code?: string }).code));
         return;
       }
-      router.refresh();
+      const payload = (await response.json()) as { user?: { role?: string } };
+      navigating = true;
+      router.replace(`/${locale}/${payload.user?.role === 'EXPERT' ? 'expert' : 'profile'}`);
     } catch {
       setError(message(null));
     } finally {
-      setBusy(false);
+      // После успешного входа форма остаётся заблокированной, пока Next
+      // начинает замену маршрута: так один OTP не уходит повторно.
+      if (!navigating) setBusy(false);
     }
   }
 

@@ -1,7 +1,7 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 
-const refresh = jest.fn();
-jest.mock('next/navigation', () => ({ useRouter: () => ({ refresh }) }));
+const replace = jest.fn();
+jest.mock('next/navigation', () => ({ useRouter: () => ({ replace }) }));
 
 // eslint-disable-next-line import/first
 import LoginForm from './LoginForm';
@@ -28,11 +28,12 @@ function mockFetch(responses: { status: number; body?: unknown }[]) {
 async function enterPhone(phone = '+77010000000') {
   fireEvent.change(screen.getByLabelText('Номер телефона'), { target: { value: phone } });
   fireEvent.click(screen.getByRole('button', { name: 'Получить код' }));
+  await screen.findByLabelText('Код из SMS');
 }
 
 describe('LoginForm', () => {
   it('у полей есть видимые подписи и правильный тип ввода', () => {
-    render(<LoginForm />);
+    render(<LoginForm locale="ru" />);
 
     const phone = screen.getByLabelText('Номер телефона');
     expect(phone).toHaveAttribute('type', 'tel');
@@ -41,9 +42,10 @@ describe('LoginForm', () => {
 
   it('не шлёт SMS на явно неверный номер', async () => {
     const fetchMock = mockFetch([{ status: 204 }]);
-    render(<LoginForm />);
+    render(<LoginForm locale="ru" />);
 
-    await enterPhone('123');
+    fireEvent.change(screen.getByLabelText('Номер телефона'), { target: { value: '123' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Получить код' }));
 
     await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent(/формат/i));
     expect(fetchMock).not.toHaveBeenCalled();
@@ -51,7 +53,7 @@ describe('LoginForm', () => {
 
   it('после запроса кода показывает поле кода с автозаполнением из SMS', async () => {
     mockFetch([{ status: 204 }]);
-    render(<LoginForm />);
+    render(<LoginForm locale="ru" />);
 
     await enterPhone();
 
@@ -64,7 +66,7 @@ describe('LoginForm', () => {
 
   it('код — одно поле, а не шесть клеточек: в клеточки не вставить', async () => {
     mockFetch([{ status: 204 }]);
-    render(<LoginForm />);
+    render(<LoginForm locale="ru" />);
 
     await enterPhone();
     await screen.findByLabelText('Код из SMS');
@@ -74,7 +76,7 @@ describe('LoginForm', () => {
 
   it('показывает ошибку бэкенда словами, а не кодом', async () => {
     mockFetch([{ status: 204 }, { status: 400, body: { code: 'SMS_CODE_INVALID' } }]);
-    render(<LoginForm />);
+    render(<LoginForm locale="ru" />);
 
     await enterPhone();
     fireEvent.change(await screen.findByLabelText('Код из SMS'), { target: { value: '000000' } });
@@ -83,9 +85,48 @@ describe('LoginForm', () => {
     await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent('Неверный код'));
   });
 
+  it('после успешной проверки кода ведёт клиента в локализованный кабинет без повторного POST', async () => {
+    const fetchMock = mockFetch([{ status: 204 }, { status: 200, body: { user: { role: 'CLIENT' } } }]);
+    render(<LoginForm locale="kz" />);
+
+    await enterPhone();
+    fireEvent.change(await screen.findByLabelText('Код из SMS'), { target: { value: '123456' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Войти' }));
+
+    await waitFor(() => expect(replace).toHaveBeenCalledWith('/kz/profile'));
+    expect(screen.getByRole('button', { name: 'Отправляем…' })).toBeDisabled();
+    fireEvent.click(screen.getByRole('button', { name: 'Отправляем…' }));
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it('после успешной проверки кода ведёт эксперта в его локализованный кабинет', async () => {
+    mockFetch([{ status: 204 }, { status: 200, body: { user: { role: 'EXPERT' } } }]);
+    render(<LoginForm locale="ru" />);
+
+    await enterPhone();
+    fireEvent.change(await screen.findByLabelText('Код из SMS'), { target: { value: '123456' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Войти' }));
+
+    await waitFor(() => expect(replace).toHaveBeenCalledWith('/ru/expert'));
+  });
+
+  it('не уходит со страницы и показывает универсальную ошибку для неизвестного envelope', async () => {
+    mockFetch([{ status: 204 }, { status: 400, body: { message: 'OTP already used' } }]);
+    render(<LoginForm locale="ru" />);
+
+    await enterPhone();
+    fireEvent.change(await screen.findByLabelText('Код из SMS'), { target: { value: '123456' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Войти' }));
+
+    await waitFor(() =>
+      expect(screen.getByRole('alert')).toHaveTextContent('Что-то пошло не так. Попробуйте ещё раз'),
+    );
+    expect(replace).not.toHaveBeenCalled();
+  });
+
   it('на время запроса блокирует кнопку, чтобы не отправить дважды', async () => {
     mockFetch([{ status: 204 }]);
-    render(<LoginForm />);
+    render(<LoginForm locale="ru" />);
 
     await enterPhone();
 
@@ -94,7 +135,7 @@ describe('LoginForm', () => {
 
   it('можно вернуться и исправить номер', async () => {
     mockFetch([{ status: 204 }]);
-    render(<LoginForm />);
+    render(<LoginForm locale="ru" />);
 
     await enterPhone();
     fireEvent.click(await screen.findByRole('button', { name: /Изменить номер/ }));
