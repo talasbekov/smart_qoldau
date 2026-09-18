@@ -1,7 +1,8 @@
 import { tokenStore } from './tokenStore';
 import type { Session } from './types';
 
-export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:3000/v1';
+export const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:3000/v1';
 
 export class ApiError extends Error {
   code: string;
@@ -27,10 +28,15 @@ async function refresh(): Promise<boolean> {
   return true;
 }
 
-export async function apiFetch<T>(path: string, init: RequestInit = {}, isRetry = false): Promise<T> {
+export async function apiFetch<T>(
+  path: string,
+  init: RequestInit = {},
+  isRetry = false,
+): Promise<T> {
   const session = tokenStore.get();
+  const isFormData = init.body instanceof FormData;
   const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
+    ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
     ...(init.headers as Record<string, string> | undefined),
     ...(session ? { Authorization: `Bearer ${session.accessToken}` } : {}),
   };
@@ -44,8 +50,14 @@ export async function apiFetch<T>(path: string, init: RequestInit = {}, isRetry 
   }
 
   if (!response.ok) {
-    const body = (await response.json().catch(() => null)) as { error?: { code: string; message: string } } | null;
-    throw new ApiError(body?.error?.code ?? 'UNKNOWN', body?.error?.message ?? response.statusText, response.status);
+    const body = (await response.json().catch(() => null)) as {
+      error?: { code: string; message: string };
+    } | null;
+    throw new ApiError(
+      body?.error?.code ?? 'UNKNOWN',
+      body?.error?.message ?? response.statusText,
+      response.status,
+    );
   }
 
   if (response.status === 204) return undefined as T;

@@ -1,4 +1,10 @@
-import { listContent, createContent, patchContent, deleteContent } from './content';
+import {
+  listContent,
+  createContent,
+  patchContent,
+  deleteContent,
+  uploadContentAudio,
+} from './content';
 import { apiFetch } from './api';
 
 vi.mock('./api', async (importOriginal) => {
@@ -46,6 +52,23 @@ describe('content API', () => {
   it('deleteContent -> DELETE /admin/content/:id', async () => {
     vi.mocked(apiFetch).mockResolvedValue(undefined);
     await deleteContent('c1');
-    expect(apiFetch).toHaveBeenCalledWith('/admin/content/c1', { method: 'DELETE' });
+    expect(apiFetch).toHaveBeenCalledWith('/admin/content/c1', {
+      method: 'DELETE',
+    });
+  });
+
+  it('uploadContentAudio передаёт тот же File в multipart-поле file', async () => {
+    vi.mocked(apiFetch).mockResolvedValue({});
+    const file = new File(['mp3'], 'calm.mp3', { type: 'audio/mpeg' });
+
+    await uploadContentAudio('c1', file);
+
+    const [, init] = vi.mocked(apiFetch).mock.lastCall ?? [];
+    expect(apiFetch).toHaveBeenCalledWith('/admin/content/c1/audio', {
+      method: 'POST',
+      body: expect.any(FormData),
+    });
+    expect(init?.body).toBeInstanceOf(FormData);
+    expect((init?.body as FormData).get('file')).toBe(file);
   });
 });

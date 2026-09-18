@@ -3,6 +3,7 @@ import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import { AppModule } from '../src/app.module';
 import { PrismaService } from '../src/prisma/prisma.service';
+import { StorageService } from '../src/storage/storage.service';
 import { SMS_PROVIDER_TOKEN, SmsProvider } from '../src/auth/sms/sms.provider';
 import { createApp } from './utils/create-app';
 import { adminUser } from './utils/admin-helpers';
@@ -59,10 +60,37 @@ const ARTICLE = {
   sortOrder: 10,
 };
 
+const AUDIO_DRAFT = {
+  ...ARTICLE,
+  kind: 'MEDITATION',
+  slug: `${SLUG_PREFIX}meditation`,
+  titleRu: 'Спокойная медитация',
+  titleKk: 'Тыныш медитация',
+  payload: {},
+  published: false,
+};
+
+const MP3 = Buffer.from([0xff, 0xfb, 0x90, 0x00]);
+
 describe('Контент: CMS редактора (E13, e2e)', () => {
   let prisma: PrismaService;
+  let storage: StorageService;
 
   async function cleanup() {
+    const audioItems = await prisma.contentItem.findMany({
+      where: { slug: { startsWith: SLUG_PREFIX } },
+      select: { payload: true },
+    });
+    await Promise.all(
+      audioItems.map(async ({ payload }) => {
+        const value = payload as Record<string, unknown>;
+        if (typeof value.audioKey === 'string') {
+          await storage
+            .deleteContentObject(value.audioKey)
+            .catch(() => undefined);
+        }
+      }),
+    );
     const users = await prisma.user.findMany({
       where: { phone: { in: [PH_C1] } },
       select: { id: true },
@@ -99,6 +127,7 @@ describe('Контент: CMS редактора (E13, e2e)', () => {
         .useClass(FakeSmsProvider),
     );
     prisma = app.get(PrismaService);
+    storage = app.get(StorageService);
   });
 
   beforeEach(() => cleanup());
@@ -172,16 +201,146 @@ describe('Контент: CMS редактора (E13, e2e)', () => {
       })
       .expect(400);
     expect(wrongBreathing.body.error.code).toBe('VALIDATION_FAILED');
+  });
 
-    const wrongAudio = await post(ed.token, '/v1/admin/content')
-      .send({
-        ...ARTICLE,
-        kind: 'MEDITATION',
-        slug: `${SLUG_PREFIX}meditation`,
-        payload: {},
+  it('создаёт аудио-черновик, загружает и заменяет MP3, затем разрешает публикацию', async () => {
+    const ed = await editor();
+    const cli = await clientUser(app, PH_C1, () => lastCode);
+    const created = await post(ed.token, '/v1/admin/content')
+      .send(AUDIO_DRAFT)
+      .expect(201);
+
+    expect(created.body.payload).toEqual({});
+    expect(created.body.publishedAt).toBeNull();
+    expect(await clientFixtureSlugs(cli.accessToken)).toEqual([]);
+
+    const blocked = await patch(
+      ed.token,
+      `/v1/admin/content/${created.body.id}`,
+    )
+      .send({ published: true })
+      .expect(400);
+    expect(blocked.body.error.code).toBe('VALIDATION_FAILED');
+
+    const uploaded = await post(
+      ed.token,
+      `/v1/admin/content/${created.body.id}/audio`,
+    )
+      .attach('file', MP3, {
+        filename: 'calm.mp3',
+        contentType: 'audio/mpeg',
+      })
+      .expect(200);
+    expect(uploaded.body.payload.audioKey).toMatch(
+      new RegExp(`^content/${created.body.id}/[0-9a-f-]{36}\\.mp3$`),
+    );
+    expect(uploaded.body.payload.audioKey).not.toBe('calm.mp3');
+
+    const replaced = await post(
+      ed.token,
+      `/v1/admin/content/${created.body.id}/audio`,
+    )
+      .attach('file', MP3, {
+        filename: 'replacement.mp3',
+        contentType: 'audio/mpeg',
+      })
+      .expect(200);
+    expect(replaced.body.payload.audioKey).not.toBe(
+      uploaded.body.payload.audioKey,
+    );
+
+    await patch(ed.token, `/v1/admin/content/${created.body.id}`)
+      .send({ published: true })
+      .expect(200);
+    expect(await clientFixtureSlugs(cli.accessToken)).toEqual([
+      AUDIO_DRAFT.slug,
+    ]);
+  });
+
+  it('отклоняет отсутствующий, подозрительный и слишком большой аудиофайл', async () => {
+    const ed = await editor();
+    const created = await post(ed.token, '/v1/admin/content')
+      .send(AUDIO_DRAFT)
+      .expect(201);
+    const url = `/v1/admin/content/${created.body.id}/audio`;
+
+    const missing = await post(ed.token, url).expect(400);
+    expect(missing.body.error.code).toBe('VALIDATION_FAILED');
+
+    const suspicious = await post(ed.token, url)
+      .attach('file', Buffer.from('not an mp3'), {
+        filename: 'fake.mp3',
+        contentType: 'audio/mpeg',
       })
       .expect(400);
-    expect(wrongAudio.body.error.code).toBe('VALIDATION_FAILED');
+    expect(suspicious.body.error.code).toBe('VALIDATION_FAILED');
+
+    const tooLarge = await post(ed.token, url)
+      .attach('file', Buffer.alloc(25 * 1024 * 1024 + 1, 0xff), {
+        filename: 'large.mp3',
+        contentType: 'audio/mpeg',
+      })
+      .expect(413);
+    expect(tooLarge.body.error.code).toBe('FILE_TOO_LARGE');
+  });
+
+  it('не принимает аудио для другого вида и не пускает роль без прав', async () => {
+    const ed = await editor();
+    const outsider = await adminUser(
+      app,
+      ['VERIFICATION_OPERATOR'],
+      OPERATOR_EMAIL,
+    );
+    const article = await post(ed.token, '/v1/admin/content')
+      .send(ARTICLE)
+      .expect(201);
+
+    const wrongKind = await post(
+      ed.token,
+      `/v1/admin/content/${article.body.id}/audio`,
+    )
+      .attach('file', MP3, {
+        filename: 'calm.mp3',
+        contentType: 'audio/mpeg',
+      })
+      .expect(400);
+    expect(wrongKind.body.error.code).toBe('VALIDATION_FAILED');
+
+    await post(outsider.token, `/v1/admin/content/${article.body.id}/audio`)
+      .attach('file', MP3, {
+        filename: 'calm.mp3',
+        contentType: 'audio/mpeg',
+      })
+      .expect(403);
+  });
+
+  it('не принимает audioKey из JSON и не создаёт аудио сразу опубликованным', async () => {
+    const ed = await editor();
+
+    const suppliedKey = await post(ed.token, '/v1/admin/content')
+      .send({ ...AUDIO_DRAFT, payload: { audioKey: 'shared/manual.mp3' } })
+      .expect(400);
+    expect(suppliedKey.body.error.code).toBe('VALIDATION_FAILED');
+
+    const published = await post(ed.token, '/v1/admin/content')
+      .send({
+        ...AUDIO_DRAFT,
+        slug: `${SLUG_PREFIX}published`,
+        published: true,
+      })
+      .expect(400);
+    expect(published.body.error.code).toBe('VALIDATION_FAILED');
+
+    const created = await post(ed.token, '/v1/admin/content')
+      .send(AUDIO_DRAFT)
+      .expect(201);
+    const patched = await patch(
+      ed.token,
+      `/v1/admin/content/${created.body.id}`,
+    )
+      .send({ payload: { audioKey: 'shared/manual.mp3' } })
+      .expect(400);
+    expect(patched.body.error.code).toBe('VALIDATION_FAILED');
   });
 
   it('роль без прав на контент -> 403', async () => {

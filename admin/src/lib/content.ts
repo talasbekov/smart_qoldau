@@ -22,7 +22,10 @@ export interface ContentItem {
   publishedAt: string | null;
 }
 
-export type NewContentItem = Omit<ContentItem, 'id' | 'sortOrder' | 'publishedAt'> &
+export type NewContentItem = Omit<
+  ContentItem,
+  'id' | 'sortOrder' | 'publishedAt'
+> &
   Partial<Pick<ContentItem, 'sortOrder'>> & { published?: boolean };
 
 export function listContent(): Promise<ContentItem[]> {
@@ -30,18 +33,44 @@ export function listContent(): Promise<ContentItem[]> {
 }
 
 export function createContent(item: NewContentItem): Promise<ContentItem> {
-  return apiFetch('/admin/content', { method: 'POST', body: JSON.stringify(item) });
+  return apiFetch('/admin/content', {
+    method: 'POST',
+    body: JSON.stringify(item),
+  });
 }
 
 export function patchContent(
   id: string,
-  patch: Partial<Pick<ContentItem, 'access' | 'titleRu' | 'titleKk' | 'summaryRu' | 'summaryKk' | 'payload' | 'sortOrder'>> & {
+  patch: Partial<
+    Pick<
+      ContentItem,
+      | 'access'
+      | 'titleRu'
+      | 'titleKk'
+      | 'summaryRu'
+      | 'summaryKk'
+      | 'payload'
+      | 'sortOrder'
+    >
+  > & {
     published?: boolean;
   },
 ): Promise<ContentItem> {
-  return apiFetch(`/admin/content/${id}`, { method: 'PATCH', body: JSON.stringify(patch) });
+  return apiFetch(`/admin/content/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify(patch),
+  });
 }
 
 export function deleteContent(id: string): Promise<void> {
   return apiFetch(`/admin/content/${id}`, { method: 'DELETE' });
+}
+
+export function uploadContentAudio(
+  id: string,
+  file: File,
+): Promise<ContentItem> {
+  const form = new FormData();
+  form.append('file', file);
+  return apiFetch(`/admin/content/${id}/audio`, { method: 'POST', body: form });
 }
