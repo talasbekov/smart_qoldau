@@ -16,6 +16,7 @@ export interface ContentItem {
   /** Форма зависит от вида: markdown у статьи, фазы у дыхания, audioKey у аудио. */
   payload: Record<string, unknown>;
   durationSec?: number | null;
+  coverKey?: string | null;
   sortOrder: number;
   /** null — черновик: клиенту такой материал не виден вовсе. */
   publishedAt: string | null;

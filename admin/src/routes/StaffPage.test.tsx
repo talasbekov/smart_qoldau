@@ -20,12 +20,12 @@ describe('StaffPage', () => {
     render(<StaffPage />);
 
     expect(screen.getByText('Загрузка сотрудников…')).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Создать' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Создать сотрудника' })).not.toBeInTheDocument();
 
     rejectLoad(new ApiError('ADMIN_FORBIDDEN', 'Forbidden', 403));
 
     expect(await screen.findByText('У вас нет доступа к управлению сотрудниками.')).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Создать' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Создать сотрудника' })).not.toBeInTheDocument();
   });
 
   it('показывает ошибку загрузки без формы', async () => {
@@ -34,7 +34,7 @@ describe('StaffPage', () => {
     render(<StaffPage />);
 
     expect(await screen.findByText('Не удалось получить список')).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Создать' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Создать сотрудника' })).not.toBeInTheDocument();
   });
 
   it('показывает список сотрудников', async () => {
@@ -83,10 +83,10 @@ describe('StaffPage', () => {
     render(<StaffPage />);
     await waitFor(() => screen.getByText('Нет сотрудников'));
 
-    fireEvent.change(screen.getByPlaceholderText('Email'), { target: { value: 'new@b.kz' } });
-    fireEvent.change(screen.getByPlaceholderText('Пароль'), { target: { value: '0123456789' } });
-    fireEvent.click(screen.getByLabelText('SUPPORT_OPERATOR'));
-    fireEvent.click(screen.getByText('Создать'));
+    fireEvent.change(screen.getByLabelText('Рабочий email'), { target: { value: 'new@b.kz' } });
+    fireEvent.change(screen.getByLabelText('Пароль для входа'), { target: { value: '0123456789' } });
+    fireEvent.click(screen.getByLabelText(/Поддержка/));
+    fireEvent.click(screen.getByText('Создать сотрудника'));
 
     await waitFor(() =>
       expect(staffApi.createStaff).toHaveBeenCalledWith({
@@ -95,6 +95,37 @@ describe('StaffPage', () => {
         roles: ['SUPPORT_OPERATOR'],
       }),
     );
+  });
+
+  it('до запроса объясняет ограничения и не отправляет неверные данные', async () => {
+    vi.mocked(staffApi.listStaff).mockResolvedValue({ items: [], total: 0 });
+    render(<StaffPage />);
+    await screen.findByText('Нет сотрудников');
+
+    expect(screen.getByText(/Пароль должен содержать от 10 до 100 символов/)).toBeInTheDocument();
+    expect(screen.getByText(/Это учётная запись сотрудника админки/)).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText('Рабочий email'), { target: { value: 'not-email' } });
+    fireEvent.change(screen.getByLabelText('Пароль для входа'), { target: { value: 'short' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Создать сотрудника' }));
+
+    expect(await screen.findByText('Введите корректный email.')).toBeInTheDocument();
+    expect(screen.getByText('Введите пароль длиной от 10 до 100 символов.')).toBeInTheDocument();
+    expect(screen.getByText('Выберите хотя бы одну роль.')).toBeInTheDocument();
+    expect(staffApi.createStaff).not.toHaveBeenCalled();
+  });
+
+  it('превращает 400 в инструкцию, как исправить данные', async () => {
+    vi.mocked(staffApi.listStaff).mockResolvedValue({ items: [], total: 0 });
+    vi.mocked(staffApi.createStaff).mockRejectedValue(new ApiError('VALIDATION_FAILED', 'Validation failed', 400));
+    render(<StaffPage />);
+    await screen.findByText('Нет сотрудников');
+
+    fireEvent.change(screen.getByLabelText('Рабочий email'), { target: { value: 'new@b.kz' } });
+    fireEvent.change(screen.getByLabelText('Пароль для входа'), { target: { value: '0123456789' } });
+    fireEvent.click(screen.getByLabelText(/Поддержка/));
+    fireEvent.click(screen.getByRole('button', { name: 'Создать сотрудника' }));
+
+    expect(await screen.findByText(/Проверьте email, пароль \(10–100 символов\)/)).toBeInTheDocument();
   });
 
   it('позволяет создать сотрудника с ролью CONTENT_EDITOR', async () => {
@@ -111,10 +142,10 @@ describe('StaffPage', () => {
     render(<StaffPage />);
     await waitFor(() => screen.getByText('Нет сотрудников'));
 
-    fireEvent.change(screen.getByPlaceholderText('Email'), { target: { value: 'editor@b.kz' } });
-    fireEvent.change(screen.getByPlaceholderText('Пароль'), { target: { value: '0123456789' } });
-    fireEvent.click(screen.getByRole('checkbox', { name: 'CONTENT_EDITOR' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Создать' }));
+    fireEvent.change(screen.getByLabelText('Рабочий email'), { target: { value: 'editor@b.kz' } });
+    fireEvent.change(screen.getByLabelText('Пароль для входа'), { target: { value: '0123456789' } });
+    fireEvent.click(screen.getByRole('checkbox', { name: /Редактор контента/ }));
+    fireEvent.click(screen.getByRole('button', { name: 'Создать сотрудника' }));
 
     await waitFor(() =>
       expect(staffApi.createStaff).toHaveBeenCalledWith({
@@ -139,10 +170,10 @@ describe('StaffPage', () => {
     render(<StaffPage />);
     await screen.findByText('Нет сотрудников');
 
-    fireEvent.change(screen.getByPlaceholderText('Email'), { target: { value: 'admin@b.kz' } });
-    fireEvent.change(screen.getByPlaceholderText('Пароль'), { target: { value: '0123456789' } });
-    fireEvent.click(screen.getByRole('checkbox', { name: 'SUPERADMIN' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Создать' }));
+    fireEvent.change(screen.getByLabelText('Рабочий email'), { target: { value: 'admin@b.kz' } });
+    fireEvent.change(screen.getByLabelText('Пароль для входа'), { target: { value: '0123456789' } });
+    fireEvent.click(screen.getByRole('checkbox', { name: /Суперадминистратор/ }));
+    fireEvent.click(screen.getByRole('button', { name: 'Создать сотрудника' }));
 
     await waitFor(() =>
       expect(staffApi.createStaff).toHaveBeenCalledWith({
@@ -164,18 +195,19 @@ describe('StaffPage', () => {
 
     render(<StaffPage />);
     await screen.findByText('Нет сотрудников');
-    fireEvent.change(screen.getByPlaceholderText('Email'), { target: { value: 'new@b.kz' } });
-    fireEvent.change(screen.getByPlaceholderText('Пароль'), { target: { value: '0123456789' } });
+    fireEvent.change(screen.getByLabelText('Рабочий email'), { target: { value: 'new@b.kz' } });
+    fireEvent.change(screen.getByLabelText('Пароль для входа'), { target: { value: '0123456789' } });
+    fireEvent.click(screen.getByLabelText(/Поддержка/));
 
-    fireEvent.click(screen.getByRole('button', { name: 'Создать' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Создать сотрудника' }));
     expect(screen.getByRole('button', { name: 'Создание…' })).toBeDisabled();
     fireEvent.click(screen.getByRole('button', { name: 'Создание…' }));
     expect(staffApi.createStaff).toHaveBeenCalledTimes(1);
 
     rejectCreate(new ApiError('INVALID_STAFF', 'Данные некорректны', 400));
 
-    expect(await screen.findByText('Данные некорректны')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Создать' })).toBeEnabled();
+    expect(await screen.findByText(/Проверьте email, пароль \(10–100 символов\)/)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Создать сотрудника' })).toBeEnabled();
   });
 
   it('сообщает об успешном создании, если обновление списка не удалось, без повтора POST', async () => {
@@ -193,9 +225,10 @@ describe('StaffPage', () => {
 
     render(<StaffPage />);
     await screen.findByText('Нет сотрудников');
-    fireEvent.change(screen.getByPlaceholderText('Email'), { target: { value: 'new@b.kz' } });
-    fireEvent.change(screen.getByPlaceholderText('Пароль'), { target: { value: '0123456789' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Создать' }));
+    fireEvent.change(screen.getByLabelText('Рабочий email'), { target: { value: 'new@b.kz' } });
+    fireEvent.change(screen.getByLabelText('Пароль для входа'), { target: { value: '0123456789' } });
+    fireEvent.click(screen.getByLabelText(/Поддержка/));
+    fireEvent.click(screen.getByRole('button', { name: 'Создать сотрудника' }));
 
     expect(await screen.findByText('Сотрудник создан, но не удалось обновить список.')).toBeInTheDocument();
     expect(staffApi.createStaff).toHaveBeenCalledTimes(1);
@@ -249,9 +282,10 @@ describe('StaffPage', () => {
 
     render(<StaffPage />);
     await screen.findByText('a@b.kz');
-    fireEvent.change(screen.getByPlaceholderText('Email'), { target: { value: 'new@b.kz' } });
-    fireEvent.change(screen.getByPlaceholderText('Пароль'), { target: { value: '0123456789' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Создать' }));
+    fireEvent.change(screen.getByLabelText('Рабочий email'), { target: { value: 'new@b.kz' } });
+    fireEvent.change(screen.getByLabelText('Пароль для входа'), { target: { value: '0123456789' } });
+    fireEvent.click(screen.getByLabelText(/Поддержка/));
+    fireEvent.click(screen.getByRole('button', { name: 'Создать сотрудника' }));
     fireEvent.click(screen.getByRole('button', { name: 'Деактивировать' }));
 
     resolveUpdate({ ...activeStaff, isActive: false });

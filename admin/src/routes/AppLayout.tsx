@@ -19,18 +19,20 @@ export default function AppLayout() {
   }
 
   return (
-    <div className="flex min-h-screen bg-sq-background">
-      <aside className="w-[260px] shrink-0 bg-sq-primary-dark p-5 flex flex-col gap-0.5">
+    <div className="flex min-h-screen flex-col bg-sq-background md:flex-row">
+      <aside className="flex w-full shrink-0 flex-col gap-0.5 bg-sq-primary-dark p-5 md:w-[260px]">
         <div className="mb-6">
           <div className="text-sm font-extrabold text-white leading-tight">SmartQoldau</div>
           <div className="text-[11px] font-bold tracking-wide text-[#7FD6C2]">ADMIN</div>
         </div>
-        <NavLink to="/verification" className={linkClass}>
-          Верификация
-        </NavLink>
-        <NavLink to="/profile-moderation" className={linkClass}>
-          Модерация профиля
-        </NavLink>
+        <RoleGate roles={['VERIFICATION_OPERATOR']}>
+          <NavLink to="/verification" className={linkClass}>
+            Верификация
+          </NavLink>
+          <NavLink to="/profile-moderation" className={linkClass}>
+            Модерация профиля
+          </NavLink>
+        </RoleGate>
         <RoleGate roles={['QUALITY_TEAM']}>
           <NavLink to="/flagged-experts" className={linkClass}>
             Эксперты с низким рейтингом
@@ -49,9 +51,11 @@ export default function AppLayout() {
             Выплаты
           </NavLink>
         </RoleGate>
-        <NavLink to="/tickets" className={linkClass}>
-          Тикеты
-        </NavLink>
+        <RoleGate roles={['SUPPORT_OPERATOR', 'VERIFICATION_OPERATOR', 'FINANCE_CONTROL', 'QUALITY_TEAM']}>
+          <NavLink to="/tickets" className={linkClass}>
+            Тикеты
+          </NavLink>
+        </RoleGate>
         <RoleGate roles={['SUPERADMIN']}>
           <NavLink to="/staff" className={linkClass}>
             Сотрудники
@@ -60,6 +64,9 @@ export default function AppLayout() {
         <NavLink to="/settings" className={linkClass}>
           Настройки
         </NavLink>
+        <NavLink to="/help" className={linkClass}>
+          Помощник
+        </NavLink>
         <div className="mt-auto pt-4 border-t border-white/10">
           <div className="text-xs text-white/55 mb-2">{session?.admin.email}</div>
           <button onClick={handleLogout} className="text-sm text-white/80 hover:text-white">
@@ -67,7 +74,7 @@ export default function AppLayout() {
           </button>
         </div>
       </aside>
-      <main className="flex-1 p-8 text-sq-text">
+      <main className="min-w-0 flex-1 p-4 text-sq-text md:p-8">
         <Outlet />
       </main>
     </div>

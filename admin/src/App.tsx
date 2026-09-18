@@ -14,6 +14,8 @@ import ReviewsModerationPage from './routes/ReviewsModerationPage';
 import PayoutsPage from './routes/PayoutsPage';
 import TicketsPage from './routes/TicketsPage';
 import TicketDetailPage from './routes/TicketDetailPage';
+import ContentEditorPage from './routes/ContentEditorPage';
+import HelpPage from './routes/HelpPage';
 import { tokenStore } from './lib/tokenStore';
 import type { Session } from './lib/types';
 import './index.css';
@@ -62,10 +64,13 @@ export default function App() {
             <Route path="/profile-moderation" element={<ProfileModerationPage />} />
             <Route path="/flagged-experts" element={<FlaggedExpertsPage />} />
             <Route path="/content" element={<ContentPage />} />
+            <Route path="/content/new" element={<ContentEditorPage />} />
+            <Route path="/content/:id/edit" element={<ContentEditorPage />} />
             <Route path="/reviews" element={<ReviewsModerationPage />} />
             <Route path="/payouts" element={<PayoutsPage />} />
             <Route path="/tickets" element={<TicketsPage />} />
             <Route path="/tickets/:id" element={<TicketDetailPage />} />
+            <Route path="/help" element={<HelpPage />} />
           </Route>
         </Route>
       </Routes>

@@ -1,4 +1,5 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
 import ContentPage from './ContentPage';
 import * as api from '@/lib/content';
 
@@ -42,7 +43,7 @@ describe('ContentPage', () => {
 
   it('показывает вид, доступ и статус публикации', async () => {
     vi.mocked(api.listContent).mockResolvedValue(ITEMS);
-    render(<ContentPage />);
+    render(<MemoryRouter><ContentPage /></MemoryRouter>);
 
     await waitFor(() => expect(screen.getByText('Тревога')).toBeInTheDocument());
     expect(screen.getByText('Глубокий сон')).toBeInTheDocument();
@@ -56,7 +57,7 @@ describe('ContentPage', () => {
   it('публикует черновик и перечитывает список', async () => {
     vi.mocked(api.listContent).mockResolvedValue(ITEMS);
     vi.mocked(api.patchContent).mockResolvedValue({ ...ITEMS[0], publishedAt: 'now' });
-    render(<ContentPage />);
+    render(<MemoryRouter><ContentPage /></MemoryRouter>);
     await waitFor(() => expect(screen.getByText('Тревога')).toBeInTheDocument());
 
     fireEvent.click(screen.getByTestId('publish-c1'));
@@ -70,7 +71,7 @@ describe('ContentPage', () => {
   it('удаление спрашивает подтверждение', async () => {
     vi.mocked(api.listContent).mockResolvedValue(ITEMS);
     vi.mocked(api.deleteContent).mockResolvedValue(undefined);
-    render(<ContentPage />);
+    render(<MemoryRouter><ContentPage /></MemoryRouter>);
     await waitFor(() => expect(screen.getByText('Тревога')).toBeInTheDocument());
 
     fireEvent.click(screen.getByTestId('delete-c1'));
@@ -82,9 +83,18 @@ describe('ContentPage', () => {
 
   it('ошибка загрузки объясняется, а не оставляет пустой экран', async () => {
     vi.mocked(api.listContent).mockRejectedValue(new Error('boom'));
-    render(<ContentPage />);
+    render(<MemoryRouter><ContentPage /></MemoryRouter>);
     await waitFor(() =>
       expect(screen.getByTestId('content-error')).toBeInTheDocument(),
     );
+  });
+
+  it('даёт явные действия создания и редактирования', async () => {
+    vi.mocked(api.listContent).mockResolvedValue(ITEMS);
+    render(<MemoryRouter><ContentPage /></MemoryRouter>);
+    await screen.findByText('Тревога');
+
+    expect(screen.getByRole('link', { name: 'Создать материал' })).toHaveAttribute('href', '/content/new');
+    expect(screen.getByRole('link', { name: 'Редактировать Тревога' })).toHaveAttribute('href', '/content/c1/edit');
   });
 });
