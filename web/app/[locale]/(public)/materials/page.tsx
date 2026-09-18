@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { getTranslations } from 'next-intl/server';
 import { listContent } from '@/lib/api/public';
 import MaterialsList, { type Selected } from '@/components/content/MaterialsList';
 import ru from '@/messages/ru.json';
@@ -6,11 +7,10 @@ import kz from '@/messages/kz.json';
 
 const PAGE_SIZE = 24;
 
-export const metadata: Metadata = {
-  title: 'Материалы для самопомощи',
-  description:
-    'Статьи, медитации, дыхательные практики и музыка — бесплатно и по подписке.',
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations('materials');
+  return { title: t('metadataTitle'), description: t('metadataDescription') };
+}
 
 export default async function MaterialsPage({
   params,

@@ -13,8 +13,8 @@ function flattenKeys(obj: Record<string, unknown>, prefix = ''): string[] {
 describe('переводы ru/kz', () => {
   it('содержат отдельные строки для каталога и материалов', () => {
     expect(kz).toMatchObject({
-      catalog: { title: expect.any(String), filters: { format: expect.any(String) } },
-      materials: { title: expect.any(String), kindArticle: expect.any(String) },
+      catalog: { title: expect.any(String), metadataTitle: expect.any(String), metadataDescription: expect.any(String), filters: { format: expect.any(String) } },
+      materials: { title: expect.any(String), metadataTitle: expect.any(String), metadataDescription: expect.any(String), kindArticle: expect.any(String) },
     });
   });
 

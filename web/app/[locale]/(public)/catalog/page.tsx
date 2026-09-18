@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { getTranslations } from 'next-intl/server';
 import { listExperts, listTopics, type ListExpertsParams } from '@/lib/api/public';
 import CatalogFilters, { type Selected } from '@/components/catalog/CatalogFilters';
 import CatalogList from '@/components/catalog/CatalogList';
@@ -8,11 +9,10 @@ import kz from '@/messages/kz.json';
 const PAGE_SIZE = 12;
 const SORTS = ['price_asc', 'price_desc', 'rating'] as const;
 
-export const metadata: Metadata = {
-  title: 'Каталог психологов',
-  description:
-    'Проверенные психологи: чат, аудио и видео. Выберите специалиста по теме, языку и формату.',
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations('catalog');
+  return { title: t('metadataTitle'), description: t('metadataDescription') };
+}
 
 function readSort(value: string | undefined): ListExpertsParams['sort'] {
   return SORTS.includes(value as (typeof SORTS)[number])
