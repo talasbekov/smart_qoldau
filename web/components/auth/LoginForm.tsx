@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { validatedConsultationReturnTo } from '@/lib/auth/return-to';
 
 // Тот же формат, что проверяет RequestCodeDto на бэкенде. Проверка здесь
 // не защита, а вежливость: не тратить SMS и время человека на заведомо
@@ -24,7 +25,7 @@ const FIELD =
 const BUTTON =
   'h-12 w-full rounded-2xl bg-primary text-sm font-bold text-white disabled:opacity-60 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2';
 
-export default function LoginForm({ locale }: { locale: string }) {
+export default function LoginForm({ locale, returnTo }: { locale: string; returnTo?: string }) {
   const router = useRouter();
   const [step, setStep] = useState<'phone' | 'code'>('phone');
   const [phone, setPhone] = useState('');
@@ -76,7 +77,19 @@ export default function LoginForm({ locale }: { locale: string }) {
       }
       const payload = (await response.json()) as { user?: { role?: string } };
       navigating = true;
-      router.replace(`/${locale}/${payload.user?.role === 'EXPERT' ? 'expert' : 'profile'}`);
+      // Login может быть статически пререндерен, поэтому query читаем при
+      // действии в браузере: серверный prop не всегда содержит его после
+      // клиентской навигации.
+      const queryReturnTo =
+        typeof window === 'undefined'
+          ? undefined
+          : new URLSearchParams(window.location.search).get('returnTo') ?? undefined;
+      const continuation = validatedConsultationReturnTo(returnTo ?? queryReturnTo, locale);
+      router.replace(
+        payload.user?.role === 'EXPERT'
+          ? `/${locale}/expert`
+          : (continuation ?? `/${locale}/profile`),
+      );
     } catch {
       setError(message(null));
     } finally {

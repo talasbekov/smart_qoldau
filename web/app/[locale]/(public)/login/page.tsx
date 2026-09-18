@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import LoginForm from '@/components/auth/LoginForm';
+import { validatedConsultationReturnTo } from '@/lib/auth/return-to';
 
 export const metadata: Metadata = {
   title: 'Вход',
@@ -9,10 +10,17 @@ export const metadata: Metadata = {
 
 export default async function LoginPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ locale: string }>;
+  searchParams: Promise<{ returnTo?: string | string[] }>;
 }) {
   const { locale } = await params;
+  const rawReturnTo = (await searchParams).returnTo;
+  const returnTo = validatedConsultationReturnTo(
+    Array.isArray(rawReturnTo) ? rawReturnTo[0] : rawReturnTo,
+    locale,
+  );
 
   return (
     <main className="mx-auto flex max-w-md flex-col items-center px-8 py-20">
@@ -20,7 +28,7 @@ export default async function LoginPage({
       <p className="mb-8 text-center text-sm text-muted">
         Пришлём код в SMS — пароль не нужен
       </p>
-      <LoginForm locale={locale} />
+      <LoginForm locale={locale} returnTo={returnTo ?? undefined} />
     </main>
   );
 }

@@ -1,7 +1,9 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 
 const replace = jest.fn();
-jest.mock('next/navigation', () => ({ useRouter: () => ({ replace }) }));
+jest.mock('next/navigation', () => ({
+  useRouter: () => ({ replace }),
+}));
 
 // eslint-disable-next-line import/first
 import LoginForm from './LoginForm';
@@ -108,6 +110,17 @@ describe('LoginForm', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Войти' }));
 
     await waitFor(() => expect(replace).toHaveBeenCalledWith('/ru/expert'));
+  });
+
+  it('после SMS возвращает клиента к начатому созданию заявки', async () => {
+    mockFetch([{ status: 204 }, { status: 200, body: { user: { role: 'CLIENT' } } }]);
+    render(<LoginForm locale="kz" returnTo="/kz/requests/new" />);
+
+    await enterPhone();
+    fireEvent.change(await screen.findByLabelText('Код из SMS'), { target: { value: '123456' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Войти' }));
+
+    await waitFor(() => expect(replace).toHaveBeenCalledWith('/kz/requests/new'));
   });
 
   it('не уходит со страницы и показывает универсальную ошибку для неизвестного envelope', async () => {

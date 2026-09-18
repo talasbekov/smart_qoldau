@@ -36,13 +36,14 @@ export default async function HomePage() {
           <p className="text-body text-lg mb-6 max-w-[480px]">{t('heroSubtitle')}</p>
           <div className="flex gap-3 flex-wrap mb-4">
             <Link
-              href="/support"
+              href="/requests/new"
+              prefetch={false}
               className="h-13 px-6 rounded-full bg-primary text-white font-bold flex items-center"
             >
               {t('heroCtaHelp')}
             </Link>
             <Link
-              href="/support"
+              href="/catalog"
               className="h-13 px-6 rounded-full border border-border font-bold flex items-center text-ink"
             >
               {t('heroCtaCatalog')}
@@ -90,7 +91,8 @@ export default async function HomePage() {
             <p className="text-[#52736b] text-xs">{t('urgentEmergency')}</p>
           </div>
           <Link
-            href="/support"
+            href="/requests/new"
+            prefetch={false}
             className="h-13 px-7 rounded-full bg-primary text-white font-bold flex items-center whitespace-nowrap"
           >
             {t('urgentCta')}
@@ -230,11 +232,15 @@ export default async function HomePage() {
           <h2 className="text-3xl font-extrabold text-ink mb-3">{t('finalTitle')}</h2>
           <p className="text-body mb-7">{t('finalText')}</p>
           <div className="flex gap-3 justify-center flex-wrap">
-            <Link href="/support" className="h-13 px-7 rounded-full bg-primary text-white font-bold flex items-center">
+            <Link
+              href="/requests/new"
+              prefetch={false}
+              className="h-13 px-7 rounded-full bg-primary text-white font-bold flex items-center"
+            >
               {t('finalCtaHelp')}
             </Link>
             <Link
-              href="/support"
+              href="/catalog"
               className="h-13 px-7 rounded-full border border-border text-ink font-bold flex items-center"
             >
               {t('finalCtaCatalog')}
