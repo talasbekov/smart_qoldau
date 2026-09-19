@@ -1,0 +1,30 @@
+# Disposable override for test-private-audio-proxy.sh. It keeps the committed
+# stand proxy startup, mounts and entrypoint intact while isolating host ports
+# and avoiding unrelated application services.
+services:
+  backend:
+    env_file: !reset []
+
+  minio:
+    restart: 'no'
+    # Keep the disposable container/network endpoint alive after stopping the
+    # MinIO child so nginx gets an immediate connection refusal for log tests.
+    entrypoint: ['/bin/sh', '-ec']
+    command:
+      - |
+        minio server /data --console-address :9001 &
+        minio_pid=$$!
+        echo "$$minio_pid" >/tmp/minio.pid
+        trap 'kill "$$minio_pid" 2>/dev/null || true; exit 0' TERM INT
+        while :; do sleep 3600 & wait $$!; done
+    ports: !override
+      - '127.0.0.1:${E13_MINIO_PORT:-19000}:9000'
+
+  proxy:
+    restart: 'no'
+    ports: !override
+      - '127.0.0.1:${E13_PROXY_PORT:-18080}:80'
+    extra_hosts:
+      - 'backend=127.0.0.1'
+      - 'admin=127.0.0.1'
+      - 'web=127.0.0.1'
