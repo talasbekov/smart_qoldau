@@ -9,7 +9,7 @@ describe('apiFetch', () => {
   });
 
   it('добавляет Authorization из tokenStore', async () => {
-    tokenStore.set({
+    await tokenStore.set({
       accessToken: 'tok',
       refreshToken: 'r',
       admin: { id: '1', email: 'a', roles: [] },
@@ -23,12 +23,7 @@ describe('apiFetch', () => {
 
     await apiFetch('/admin/staff');
 
-    expect(globalThis.fetch).toHaveBeenCalledWith(
-      expect.stringContaining('/admin/staff'),
-      expect.objectContaining({
-        headers: expect.objectContaining({ Authorization: 'Bearer tok' }),
-      }),
-    );
+    expect(new Headers(vi.mocked(globalThis.fetch).mock.calls[0][1]?.headers).get('Authorization')).toBe('Bearer tok');
   });
 
   it('возвращает undefined на 204 и не пытается читать JSON', async () => {
@@ -104,7 +99,7 @@ describe('apiFetch', () => {
   });
 
   it('на 401 один раз обновляет токен через refresh и повторяет запрос', async () => {
-    tokenStore.set({
+    await tokenStore.set({
       accessToken: 'old',
       refreshToken: 'r',
       admin: { id: '1', email: 'a', roles: [] },
@@ -144,7 +139,7 @@ describe('apiFetch', () => {
   });
 
   it('для FormData сохраняет Authorization и не задаёт JSON Content-Type', async () => {
-    tokenStore.set({
+    await tokenStore.set({
       accessToken: 'tok',
       refreshToken: 'r',
       admin: { id: '1', email: 'a', roles: [] },
@@ -167,7 +162,7 @@ describe('apiFetch', () => {
   });
 
   it('повторяет тот же FormData после refresh с новым Authorization и без ручной boundary', async () => {
-    tokenStore.set({
+    await tokenStore.set({
       accessToken: 'old',
       refreshToken: 'r',
       admin: { id: '1', email: 'a', roles: [] },
@@ -182,7 +177,7 @@ describe('apiFetch', () => {
       .mockResolvedValueOnce({
         ok: true,
         status: 200,
-        json: async () => ({ accessToken: 'new', refreshToken: 'r2' }),
+        json: async () => ({ accessToken: 'new', refreshToken: 'r2', admin: { id: '1', email: 'a', roles: [] } }),
       })
       .mockResolvedValueOnce(
         new Response(JSON.stringify({ ok: true }), {
@@ -199,12 +194,8 @@ describe('apiFetch', () => {
     const retryRequest = vi.mocked(globalThis.fetch).mock.calls[2][1];
     expect(firstRequest?.body).toBe(form);
     expect(retryRequest?.body).toBe(form);
-    expect(firstRequest?.headers).toMatchObject({
-      Authorization: 'Bearer old',
-    });
-    expect(retryRequest?.headers).toMatchObject({
-      Authorization: 'Bearer new',
-    });
-    expect(retryRequest?.headers).not.toHaveProperty('Content-Type');
+    expect(new Headers(firstRequest?.headers).get('Authorization')).toBe('Bearer old');
+    expect(new Headers(retryRequest?.headers).get('Authorization')).toBe('Bearer new');
+    expect(new Headers(retryRequest?.headers).has('Content-Type')).toBe(false);
   });
 });
