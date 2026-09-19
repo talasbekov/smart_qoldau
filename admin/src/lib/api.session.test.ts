@@ -194,7 +194,7 @@ it('rejects a late successful body after A switches to B', async () => {
   const body = deferred<unknown>();
   vi.stubGlobal(
     'fetch',
-    vi.fn(async () => ({ ok: true, status: 200, json: () => body.promise })),
+    vi.fn(async () => ({ ok: true, status: 200, text: () => body.promise.then(value => JSON.stringify(value)) })),
   );
   const result = apiFetch('/private').catch((error) => error);
   await Promise.resolve();

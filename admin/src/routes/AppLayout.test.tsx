@@ -4,9 +4,9 @@ import AppLayout from './AppLayout';
 import { tokenStore } from '@/lib/tokenStore';
 
 describe('AppLayout', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     localStorage.clear();
-    tokenStore.set({
+    await tokenStore.set({
       accessToken: 'access',
       refreshToken: 'refresh',
       admin: { id: 'a1', email: 'admin@smartqoldau.kz', roles: ['SUPERADMIN'] },
@@ -17,7 +17,7 @@ describe('AppLayout', () => {
     render(
       <MemoryRouter initialEntries={['/help']}>
         <Routes>
-          <Route element={<AppLayout />}>
+          <Route element={<AppLayout onLogout={async () => { await tokenStore.clear(); }} />}>
             <Route path="/help" element={<p>Содержимое</p>} />
           </Route>
         </Routes>
@@ -29,15 +29,15 @@ describe('AppLayout', () => {
     expect(screen.getByRole('main')).toHaveClass('min-w-0');
   });
 
-  it('показывает в меню только доступные по роли рабочие разделы', () => {
-    tokenStore.set({
+  it('показывает в меню только доступные по роли рабочие разделы', async () => {
+    await tokenStore.set({
       accessToken: 'access',
       refreshToken: 'refresh',
       admin: { id: 'e1', email: 'editor@smartqoldau.kz', roles: ['CONTENT_EDITOR'] },
     });
     render(
       <MemoryRouter initialEntries={['/help']}>
-        <Routes><Route element={<AppLayout />}><Route path="/help" element={<p>Содержимое</p>} /></Route></Routes>
+        <Routes><Route element={<AppLayout onLogout={async () => { await tokenStore.clear(); }} />}><Route path="/help" element={<p>Содержимое</p>} /></Route></Routes>
       </MemoryRouter>,
     );
 

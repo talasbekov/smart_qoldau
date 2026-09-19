@@ -157,8 +157,8 @@ describe('apiFetch', () => {
 
     const [, request] = vi.mocked(globalThis.fetch).mock.calls[0];
     expect(request?.body).toBe(form);
-    expect(request?.headers).toMatchObject({ Authorization: 'Bearer tok' });
-    expect(request?.headers).not.toHaveProperty('Content-Type');
+    expect(new Headers(request?.headers).get('Authorization')).toBe('Bearer tok');
+    expect(new Headers(request?.headers).has('Content-Type')).toBe(false);
   });
 
   it('повторяет тот же FormData после refresh с новым Authorization и без ручной boundary', async () => {

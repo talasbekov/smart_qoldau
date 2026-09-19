@@ -6,8 +6,8 @@ import { tokenStore } from '@/lib/tokenStore';
 describe('HelpPage', () => {
   beforeEach(() => localStorage.clear());
 
-  it('объясняет разницу между сотрудником и пользователями приложения', () => {
-    tokenStore.set({
+  it('объясняет разницу между сотрудником и пользователями приложения', async () => {
+    await tokenStore.set({
       accessToken: 'access',
       refreshToken: 'refresh',
       admin: {
@@ -44,8 +44,8 @@ describe('HelpPage', () => {
     ).not.toBeInTheDocument();
   });
 
-  it('для суперадмина показывает ссылки на материалы, сотрудников и настройки', () => {
-    tokenStore.set({
+  it('для суперадмина показывает ссылки на материалы, сотрудников и настройки', async () => {
+    await tokenStore.set({
       accessToken: 'access',
       refreshToken: 'refresh',
       admin: { id: 'a1', email: 'admin@smartqoldau.kz', roles: ['SUPERADMIN'] },
