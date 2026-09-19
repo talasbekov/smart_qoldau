@@ -24,16 +24,12 @@ export default async function OffersPage({
       <h1 className="mb-6 text-2xl font-extrabold text-ink">
         {copy.offersTitle}
       </h1>
-      {offers ? (
-        <OfferList initial={offers} topics={topics} locale={locale} />
-      ) : (
-        <p
-          role="alert"
-          className="rounded-2xl border border-border bg-white p-6 text-body"
-        >
+      {!offers ? (
+        <p role="alert" className="mb-3 text-sm text-red-700">
           {copy.offersSyncError}
         </p>
-      )}
+      ) : null}
+      <OfferList initial={offers ?? []} topics={topics} locale={locale} />
     </>
   );
 }

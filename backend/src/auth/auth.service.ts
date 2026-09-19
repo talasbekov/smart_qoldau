@@ -10,6 +10,8 @@ import { AuditService } from '../audit/audit.service';
 import { apiError } from '../common/filters/app-exception.filter';
 import { SMS_PROVIDER_TOKEN, SmsProvider } from './sms/sms.provider';
 
+const DEMO_PHONE = /^\+7700000\d{4}$/;
+
 @Injectable()
 export class AuthService {
   private readonly refreshTtlDays: number;
@@ -25,6 +27,41 @@ export class AuthService {
   }
 
   async requestCode(phone: string): Promise<void> {
+    const code = await this.issueCode(phone);
+    await this.sms.send(phone, `SmartQoldau: код входа ${code}`);
+  }
+
+  // This route is deliberately fail-closed. A demo code is never available
+  // merely because the SMS provider happens to be a development provider.
+  demoConfig(): { enabled: boolean; phones: string[] } {
+    const enabled =
+      this.config.get<string>('DEMO_AUTH_ENABLED') === 'true' &&
+      this.config.get<string>('SMS_PROVIDER') === 'dev' &&
+      this.config.get<string>('PAYMENT_PROVIDER') === 'mock';
+    if (!enabled) return { enabled: false, phones: [] };
+
+    const phones = (this.config.get<string>('DEMO_AUTH_PHONES') ?? '')
+      .split(',')
+      .map((phone) => phone.trim())
+      .filter(Boolean);
+    // A malformed allow-list disables the feature rather than silently
+    // accepting only part of an operator's configuration.
+    if (!phones.length || phones.some((phone) => !DEMO_PHONE.test(phone)))
+      return { enabled: false, phones: [] };
+    return { enabled: true, phones };
+  }
+
+  async demoRequestCode(phone: string): Promise<{ demoCode: string }> {
+    const config = this.demoConfig();
+    if (!config.enabled || !config.phones.includes(phone))
+      apiError('NOT_FOUND', 'Маршрут не найден', 404);
+    return { demoCode: await this.issueCode(phone) };
+  }
+
+  // The normal and demo flows share the exact record, cooldown, expiry,
+  // hashing and attempt-reset pipeline. Only the caller decides whether the
+  // code is sent to the SMS provider or returned to a synthetic test account.
+  private async issueCode(phone: string): Promise<string> {
     const existing = await this.prisma.smsCode.findUnique({ where: { phone } });
     if (existing && Date.now() - existing.lastSentAt.getTime() < 45_000)
       apiError(
@@ -49,7 +86,7 @@ export class AuthService {
       update: data,
       create: { phone, ...data },
     });
-    await this.sms.send(phone, `SmartQoldau: код входа ${code}`);
+    return code;
   }
 
   async verifyCode(

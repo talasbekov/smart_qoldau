@@ -107,3 +107,11 @@ describe('RequestForm', () => {
     await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent(/слишком часто/i));
   });
 });
+
+// These component tests exercise payloads and uncertain mutation outcomes.
+// Cross-tab renewal is covered by browser-session tests; keep this transport
+// boundary at the component's existing fetch fixture.
+jest.mock('@/lib/auth/browser-session', () => ({
+  ...jest.requireActual('@/lib/auth/browser-session'),
+  sessionFetch: (...args: Parameters<typeof fetch>) => fetch(...args),
+}));

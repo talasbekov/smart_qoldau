@@ -17,7 +17,7 @@ export default async function BecomeExpertPage() {
           <h1 className="text-[38px] font-extrabold text-ink leading-tight mb-4">{t('heroTitle')}</h1>
           <p className="text-body text-lg mb-6">{t('heroSubtitle')}</p>
           <Link
-            href="/support"
+            href="/expert-onboarding"
             className="inline-flex h-13 px-6 rounded-full bg-primary text-white font-bold items-center"
           >
             {t('heroCta')}
@@ -65,7 +65,7 @@ export default async function BecomeExpertPage() {
             ))}
           </div>
           <Link
-            href="/support"
+            href="/expert-onboarding"
             className="inline-flex h-12 px-6 rounded-full bg-primary text-white font-bold items-center"
           >
             {t('heroCta')}

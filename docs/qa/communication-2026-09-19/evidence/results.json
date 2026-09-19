@@ -1,0 +1,170 @@
+{
+  "testEnvironment": "disposable local source build; real Nest/Postgres/Redis/WebSocket/LiveKit; synthetic users and hardware",
+  "scenarios": [
+    {
+      "format": "chat",
+      "passed": true,
+      "steps": [
+        "bidirectional real WebSocket messages, one copy each",
+        "history persists after both participants reload",
+        "expert completes consultation; client becomes read-only automatically; both media senders stop"
+      ],
+      "completion": {
+        "status": "COMPLETED",
+        "paymentStatus": "CAPTURED"
+      }
+    },
+    {
+      "format": "audio",
+      "passed": true,
+      "steps": [
+        "bidirectional real WebSocket messages, one copy each",
+        "nonzero inbound audio energy and packets on both peers",
+        "microphone controls affect real local tracks for both participants",
+        "client leaves; expert loses remote track; client rejoins and both receive media again",
+        "expert completes consultation; client becomes read-only automatically; both media senders stop"
+      ],
+      "media": {
+        "client": {
+          "inbound": [
+            {
+              "kind": "audio",
+              "bytes": 6646,
+              "packets": 26,
+              "frames": 0,
+              "energy": 0.3402797463379577
+            }
+          ],
+          "sending": [
+            {
+              "kind": "audio",
+              "enabled": true,
+              "state": "live"
+            }
+          ],
+          "remoteAudioTracks": 1,
+          "audioPlaying": true,
+          "videoWidth": 0,
+          "videoHeight": 0,
+          "videoReady": 0
+        },
+        "expert": {
+          "inbound": [
+            {
+              "kind": "audio",
+              "bytes": 4954,
+              "packets": 23,
+              "frames": 0,
+              "energy": 0.019742693768289035
+            }
+          ],
+          "sending": [
+            {
+              "kind": "audio",
+              "enabled": true,
+              "state": "live"
+            }
+          ],
+          "remoteAudioTracks": 1,
+          "audioPlaying": true,
+          "videoWidth": 0,
+          "videoHeight": 0,
+          "videoReady": 0
+        }
+      },
+      "completion": {
+        "status": "COMPLETED",
+        "paymentStatus": "CAPTURED"
+      }
+    },
+    {
+      "format": "video",
+      "passed": true,
+      "steps": [
+        "bidirectional real WebSocket messages, one copy each",
+        "nonzero inbound audio energy and packets on both peers",
+        "decoded video frames and rendered remote video on both peers",
+        "microphone controls affect real local tracks for both participants",
+        "video resumes with new decoded frames after both cameras toggle",
+        "client leaves; expert loses remote track; client rejoins and both receive media again",
+        "expert completes consultation; client becomes read-only automatically; both media senders stop"
+      ],
+      "media": {
+        "client": {
+          "inbound": [
+            {
+              "kind": "audio",
+              "bytes": 8170,
+              "packets": 32,
+              "frames": 0,
+              "energy": 0.34108346295984954
+            },
+            {
+              "kind": "video",
+              "bytes": 3094,
+              "packets": 9,
+              "frames": 9,
+              "energy": 0
+            }
+          ],
+          "sending": [
+            {
+              "kind": "audio",
+              "enabled": true,
+              "state": "live"
+            },
+            {
+              "kind": "video",
+              "enabled": true,
+              "state": "live"
+            }
+          ],
+          "remoteAudioTracks": 1,
+          "audioPlaying": true,
+          "videoWidth": 320,
+          "videoHeight": 180,
+          "videoReady": 4
+        },
+        "expert": {
+          "inbound": [
+            {
+              "kind": "audio",
+              "bytes": 7260,
+              "packets": 29,
+              "frames": 0,
+              "energy": 0.02239194433770347
+            },
+            {
+              "kind": "video",
+              "bytes": 2742,
+              "packets": 7,
+              "frames": 6,
+              "energy": 0
+            }
+          ],
+          "sending": [
+            {
+              "kind": "audio",
+              "enabled": true,
+              "state": "live"
+            },
+            {
+              "kind": "video",
+              "enabled": true,
+              "state": "live"
+            }
+          ],
+          "remoteAudioTracks": 1,
+          "audioPlaying": true,
+          "videoWidth": 320,
+          "videoHeight": 180,
+          "videoReady": 4
+        }
+      },
+      "completion": {
+        "status": "COMPLETED",
+        "paymentStatus": "CAPTURED"
+      }
+    }
+  ]
+}

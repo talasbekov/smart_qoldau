@@ -6,12 +6,15 @@ let current: typeof ru = ru;
 
 jest.mock('next-intl/server', () => ({
   getTranslations: async (namespace: string) => {
-    const dict = (current as Record<string, Record<string, string>>)[namespace] ?? {};
-    return (key: string) => dict[key] ?? `${namespace}.${key}`;
+    const dict = (current as Record<string, Record<string, unknown>>)[namespace] ?? {};
+    return (key: string) => typeof dict[key] === 'string' ? dict[key] : `${namespace}.${key}`;
   },
 }));
 
-jest.mock('next/navigation', () => ({ usePathname: () => '/ru/catalog' }));
+jest.mock('next/navigation', () => ({
+  usePathname: () => '/ru/catalog',
+  useSearchParams: () => new URLSearchParams('format=video'),
+}));
 jest.mock('@/lib/i18n/navigation', () => ({
   Link: ({ children, ...props }: { children: React.ReactNode } & Record<string, unknown>) => (
     <a {...props}>{children}</a>
@@ -27,6 +30,17 @@ async function renderHeader(messages: typeof ru) {
 }
 
 describe('Header', () => {
+  it('provides the login entry from the prototype', async () => {
+    await renderHeader(ru);
+    expect(screen.getByRole('link', { name: 'Войти' })).toHaveAttribute('href', '/login');
+  });
+
+  it('lets the reader change language without losing the current filter', async () => {
+    await renderHeader(ru);
+    expect(screen.getByRole('link', { name: 'Қазақша' })).toHaveAttribute(
+      'href', '/kz/catalog?format=video',
+    );
+  });
   it('allows the navigation to wrap on a narrow viewport instead of widening the page', async () => {
     const { container } = render(await Header());
 

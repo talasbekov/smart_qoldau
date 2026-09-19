@@ -1,0 +1,6 @@
+      method: 'POST',
+      body: JSON.stringify({ ids: items.filter((i) => !i.readAt).map((i) => i.id) }),
+    }).catch(() => null);
+    setBusy(false);
+    router.refresh();
+  }

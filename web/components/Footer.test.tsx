@@ -6,9 +6,9 @@ let current: typeof ru = ru;
 
 jest.mock('next-intl/server', () => ({
   getTranslations: async (namespace: string) => {
-    const dict = (current as Record<string, Record<string, string>>)[namespace] ?? {};
+    const dict = (current as Record<string, Record<string, unknown>>)[namespace] ?? {};
     // Так же, как next-intl: отсутствующий ключ печатается сырым.
-    return (key: string) => dict[key] ?? `${namespace}.${key}`;
+    return (key: string) => typeof dict[key] === 'string' ? dict[key] : `${namespace}.${key}`;
   },
 }));
 

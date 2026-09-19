@@ -1,0 +1,21 @@
+{
+  "npm test -- --runInBand": {
+    "exitCode": 0,
+    "suites": 95,
+    "tests": 647
+  },
+  "npm run lint": {
+    "exitCode": 0
+  },
+  "npm run e2e": {
+    "exitCode": 0,
+    "tests": 30,
+    "includesProductionBuild": true
+  },
+  "npx tsc --noEmit": {
+    "exitCode": 0
+  },
+  "git diff --check": {
+    "exitCode": 0
+  }
+}

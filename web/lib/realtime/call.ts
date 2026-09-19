@@ -1,3 +1,4 @@
+import { sessionFetch } from '@/lib/auth/browser-session';
 import {
   Room,
   RoomEvent,
@@ -62,7 +63,7 @@ async function requestGrant(
 ): Promise<Grant> {
   let response: Response;
   try {
-    response = await fetch(
+    response = await sessionFetch(
       `/api/proxy/consultations/${consultationId}/media-token`,
       {
         method: 'POST',
@@ -76,9 +77,11 @@ async function requestGrant(
   }
 
   if (!response.ok) {
-    const code = (
-      (await response.json().catch(() => null)) as { code?: string } | null
-    )?.code;
+    const payload = (await response.json().catch(() => null)) as {
+      code?: string;
+      error?: { code?: string };
+    } | null;
+    const code = payload?.error?.code ?? payload?.code;
     if (code === 'CONSULTATION_NOT_ACTIVE') throw new CallError('not-active');
     if (code === 'PAYMENT_HOLD_REQUIRED') {
       throw new CallError('payment-required');

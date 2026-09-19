@@ -1,5 +1,6 @@
 'use client';
 
+import { RoomEvent, Track } from 'livekit-client';
 import { useEffect, useRef, useState } from 'react';
 import {
   CallError,
@@ -44,6 +45,8 @@ export default function Session({
 }) {
   const copy = locale === 'kz' ? kz.session : ru.session;
   const [call, setCall] = useState<Call | null>(null);
+  const [peerPresent, setPeerPresent] = useState(false);
+  const localVideoRef = useRef<HTMLVideoElement>(null);
   const [callState, setCallState] = useState<CallState>('disconnected');
   const [error, setError] = useState<string | null>(null);
   const [connecting, setConnecting] = useState(false);
@@ -87,6 +90,22 @@ export default function Session({
       void call.leave();
     };
   }, [call, copy.disconnected, format]);
+
+  useEffect(() => {
+    if (!call) { setPeerPresent(false); return; }
+    const updatePeer = () => setPeerPresent(call.room.remoteParticipants.size > 0);
+    updatePeer();
+    call.room.on(RoomEvent.ParticipantConnected, updatePeer);
+    call.room.on(RoomEvent.ParticipantDisconnected, updatePeer);
+    const localVideo = localVideoRef.current;
+    const track = call.room.localParticipant.getTrackPublication(Track.Source.Camera)?.track;
+    if (localVideo && track) track.attach(localVideo);
+    return () => {
+      call.room.off(RoomEvent.ParticipantConnected, updatePeer);
+      call.room.off(RoomEvent.ParticipantDisconnected, updatePeer);
+      if (localVideo && track) track.detach(localVideo);
+    };
+  }, [call, cameraOn]);
 
   async function connect(devices: Chosen) {
     if (connecting || pendingJoinRef.current) return;
@@ -203,15 +222,19 @@ export default function Session({
               <div className="flex min-h-52 items-center justify-center rounded-[20px] bg-ink p-6 text-center text-white">
                 <div>
                   <p className="text-lg font-extrabold">
-                    {copy.audioConnected}
+                    {peerPresent ? (locale === 'kz' ? 'Қатысушы қосылды' : 'Собеседник подключён') : (locale === 'kz' ? 'Қатысушыны күту' : 'Ожидаем собеседника')}
                   </p>
                   <p className="mt-2 text-sm text-white/80">
-                    {copy.audioWaiting}
+                    {peerPresent ? (locale === 'kz' ? 'Микрофон арқылы сөйлесе аласыз' : 'Можно говорить через микрофон') : copy.audioWaiting}
                   </p>
                 </div>
               </div>
             )}
 
+            {format === 'video' && <div className="flex flex-wrap items-center gap-3">
+              <video ref={localVideoRef} autoPlay muted playsInline aria-label={locale === 'kz' ? 'Сіздің камераңыз' : 'Ваша камера'} className="aspect-video w-40 rounded-xl bg-ink object-cover" />
+              <p role="status" className="text-sm text-body">{peerPresent ? (locale === 'kz' ? 'Қатысушы қосылды' : 'Собеседник подключён') : (locale === 'kz' ? 'Қатысушыны күту' : 'Ожидаем подключения собеседника')}</p>
+            </div>}
             {callState === 'reconnecting' ? (
               <p
                 role="status"

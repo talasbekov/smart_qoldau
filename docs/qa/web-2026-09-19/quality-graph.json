@@ -1,0 +1,38 @@
+{
+  "nodes": [
+    "prototype/documents",
+    "web/pages",
+    "web/BFF",
+    "backend/contracts",
+    "local/Docker-backend",
+    "browser/cookies",
+    "browser/WebLocks"
+  ],
+  "edges": [
+    [
+      "prototype/documents",
+      "web/pages"
+    ],
+    [
+      "web/pages",
+      "web/BFF"
+    ],
+    [
+      "web/BFF",
+      "backend/contracts"
+    ],
+    [
+      "web/BFF",
+      "local/Docker-backend"
+    ],
+    [
+      "browser/WebLocks",
+      "browser/cookies"
+    ]
+  ],
+  "impact": [
+    "auth change affects login/logout, SSR, apiFetch and realtime",
+    "sitemap change affects discovery only",
+    "locale changes affect labels, dates and navigation"
+  ]
+}

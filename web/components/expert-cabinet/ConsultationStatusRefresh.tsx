@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { connectRealtime, type SqSocket } from '@/lib/realtime/socket';
 import { apiFetch } from '@/lib/api/client';
 import ru from '@/messages/ru.json';
 import kz from '@/messages/kz.json';
@@ -11,14 +12,18 @@ const REFRESH_MS = 15_000;
 export default function ConsultationStatusRefresh({
   consultationId,
   initialStatus,
+  initialPaymentStatus,
+  initialFormat,
   locale,
 }: {
   consultationId: string;
   initialStatus: string;
+  initialPaymentStatus?: string;
+  initialFormat?: string;
   locale: string;
 }) {
   const copy = locale === 'kz' ? kz.expertCabinet : ru.expertCabinet;
-  const router = useRouter();
+  const { refresh } = useRouter();
   const mounted = useRef(true);
   const checkLock = useRef(false);
   const [checking, setChecking] = useState(false);
@@ -30,17 +35,19 @@ export default function ConsultationStatusRefresh({
     setChecking(true);
     setFailed(false);
     try {
-      const current = await apiFetch<{ status: string }>(
+      const current = await apiFetch<{ status: string; paymentStatus: string; format: string }>(
         `consultations/${consultationId}`,
       );
       if (!mounted.current) return;
-      if (current?.status && current.status !== initialStatus) {
+      if (current?.status && (current.status !== initialStatus ||
+        (initialPaymentStatus !== undefined && current.paymentStatus !== initialPaymentStatus) ||
+        (initialFormat !== undefined && current.format !== initialFormat))) {
         if (current.status === 'ACTIVE') {
           window.dispatchEvent(
             new CustomEvent('sq:expert-work-status', { detail: 'BUSY' }),
           );
         }
-        router.refresh();
+        refresh();
       }
     } catch {
       if (mounted.current) setFailed(true);
@@ -48,17 +55,47 @@ export default function ConsultationStatusRefresh({
       checkLock.current = false;
       if (mounted.current) setChecking(false);
     }
-  }, [consultationId, initialStatus, router]);
+  }, [consultationId, initialStatus, initialPaymentStatus, initialFormat, refresh]);
 
   useEffect(() => {
     mounted.current = true;
-    if (initialStatus !== 'SCHEDULED') return;
+    if (initialStatus !== 'SCHEDULED' && initialStatus !== 'ACTIVE') {
+      return () => {
+        mounted.current = false;
+      };
+    }
+    let dropped = false;
+    let socket: SqSocket | null = null;
     const timer = setInterval(() => void check(), REFRESH_MS);
+    void connectRealtime()
+      .then((connected) => {
+        if (dropped) {
+          connected.close();
+          return;
+        }
+        socket = connected;
+        connected.on('consultation.updated', (payload) => {
+          if (
+            !dropped &&
+            (payload as { id?: string } | null)?.id === consultationId
+          ) {
+            void check();
+          }
+        });
+        // Ready fires again after reconnect. REST also covers events missed
+        // while the tab was offline; polling remains if socket setup fails.
+        connected.onReady(() => {
+          if (!dropped) void check();
+        });
+      })
+      .catch(() => undefined);
     return () => {
+      dropped = true;
       mounted.current = false;
       clearInterval(timer);
+      socket?.close();
     };
-  }, [check, initialStatus]);
+  }, [check, initialStatus, consultationId]);
 
   if (initialStatus !== 'SCHEDULED') return null;
 

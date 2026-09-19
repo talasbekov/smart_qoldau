@@ -1,6 +1,8 @@
+import Link from 'next/link';
 import type { Metadata } from 'next';
 import { requireUser } from '@/lib/auth/require-user';
 import { authorizedFetch } from '@/lib/api/authorized';
+import IncomingOffers from '@/components/expert-desk/IncomingOffers';
 import ExpertNav from '@/components/expert-cabinet/ExpertNav';
 import WorkStatusToggle from '@/components/expert-cabinet/WorkStatusToggle';
 import EmergencyBar from '@/components/emergency/EmergencyBar';
@@ -24,7 +26,7 @@ export default async function ExpertLayout({
   params: Promise<{ locale: string }>;
 }) {
   const { locale } = await params;
-  await requireUser(locale);
+  const sessionUser = await requireUser(locale);
   const me = await authorizedFetch<ExpertMe>('experts/me');
   const copy = locale === 'kz' ? kz.expertCabinet : ru.expertCabinet;
 
@@ -36,6 +38,9 @@ export default async function ExpertLayout({
           className="rounded-2xl border border-border bg-white p-6 text-body"
         >
           {copy.expertAccessError}
+          <Link className="mt-4 block font-bold text-primary underline" href={`/${locale}/expert-onboarding`}>
+            {locale === 'kz' ? 'Маманның сауалнамасын толтыру' : 'Заполнить анкету специалиста'}
+          </Link>
         </p>
       </main>
     );
@@ -57,7 +62,8 @@ export default async function ExpertLayout({
           <WorkStatusToggle initial={me.workStatus} locale={locale} />
           <ExpertNav locale={locale} />
         </aside>
-        <main id="main" className="min-w-0 flex-1">
+        <main data-session-owner={sessionUser.id} id="main" className="min-w-0 flex-1">
+          <IncomingOffers locale={locale} />
           {children}
         </main>
       </div>

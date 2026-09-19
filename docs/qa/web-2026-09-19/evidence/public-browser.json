@@ -1,0 +1,202 @@
+[
+  {
+    "path": "/ru",
+    "status": 200,
+    "layout": {
+      "viewport": 375,
+      "scroll": 375
+    },
+    "errors": [],
+    "violations": []
+  },
+  {
+    "path": "/ru/catalog",
+    "status": 200,
+    "layout": {
+      "viewport": 375,
+      "scroll": 375
+    },
+    "errors": [],
+    "violations": []
+  },
+  {
+    "path": "/ru/materials",
+    "status": 200,
+    "layout": {
+      "viewport": 375,
+      "scroll": 375
+    },
+    "errors": [],
+    "violations": []
+  },
+  {
+    "path": "/ru/login",
+    "status": 200,
+    "layout": {
+      "viewport": 375,
+      "scroll": 375
+    },
+    "errors": [],
+    "violations": []
+  },
+  {
+    "path": "/ru/support",
+    "status": 200,
+    "layout": {
+      "viewport": 375,
+      "scroll": 375
+    },
+    "errors": [],
+    "violations": []
+  },
+  {
+    "path": "/ru/premium",
+    "status": 200,
+    "layout": {
+      "viewport": 375,
+      "scroll": 375
+    },
+    "errors": [],
+    "violations": []
+  },
+  {
+    "path": "/ru/about",
+    "status": 200,
+    "layout": {
+      "viewport": 375,
+      "scroll": 375
+    },
+    "errors": [],
+    "violations": []
+  },
+  {
+    "path": "/ru/become-expert",
+    "status": 200,
+    "layout": {
+      "viewport": 375,
+      "scroll": 375
+    },
+    "errors": [],
+    "violations": []
+  },
+  {
+    "path": "/ru/terms",
+    "status": 200,
+    "layout": {
+      "viewport": 375,
+      "scroll": 375
+    },
+    "errors": [],
+    "violations": []
+  },
+  {
+    "path": "/ru/privacy",
+    "status": 200,
+    "layout": {
+      "viewport": 375,
+      "scroll": 375
+    },
+    "errors": [],
+    "violations": []
+  },
+  {
+    "path": "/kz",
+    "status": 200,
+    "layout": {
+      "viewport": 375,
+      "scroll": 375
+    },
+    "errors": [],
+    "violations": []
+  },
+  {
+    "path": "/kz/catalog",
+    "status": 200,
+    "layout": {
+      "viewport": 375,
+      "scroll": 375
+    },
+    "errors": [],
+    "violations": []
+  },
+  {
+    "path": "/kz/materials",
+    "status": 200,
+    "layout": {
+      "viewport": 375,
+      "scroll": 375
+    },
+    "errors": [],
+    "violations": []
+  },
+  {
+    "path": "/kz/login",
+    "status": 200,
+    "layout": {
+      "viewport": 375,
+      "scroll": 375
+    },
+    "errors": [],
+    "violations": []
+  },
+  {
+    "path": "/kz/support",
+    "status": 200,
+    "layout": {
+      "viewport": 375,
+      "scroll": 375
+    },
+    "errors": [],
+    "violations": []
+  },
+  {
+    "path": "/kz/premium",
+    "status": 200,
+    "layout": {
+      "viewport": 375,
+      "scroll": 375
+    },
+    "errors": [],
+    "violations": []
+  },
+  {
+    "path": "/kz/about",
+    "status": 200,
+    "layout": {
+      "viewport": 375,
+      "scroll": 375
+    },
+    "errors": [],
+    "violations": []
+  },
+  {
+    "path": "/kz/become-expert",
+    "status": 200,
+    "layout": {
+      "viewport": 375,
+      "scroll": 375
+    },
+    "errors": [],
+    "violations": []
+  },
+  {
+    "path": "/kz/terms",
+    "status": 200,
+    "layout": {
+      "viewport": 375,
+      "scroll": 375
+    },
+    "errors": [],
+    "violations": []
+  },
+  {
+    "path": "/kz/privacy",
+    "status": 200,
+    "layout": {
+      "viewport": 375,
+      "scroll": 375
+    },
+    "errors": [],
+    "violations": []
+  }
+]

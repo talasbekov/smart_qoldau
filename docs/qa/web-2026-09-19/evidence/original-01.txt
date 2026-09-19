@@ -1,0 +1,6 @@
+  if (segments.length === 0 || !ALLOWED.has(segments[0])) return null;
+
+  return segments.join('/');
+}
+
+function isAllowedTicketRoute(segments: string[], method: string): boolean {

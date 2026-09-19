@@ -98,6 +98,38 @@ describe('прокси кабинета', () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
+  it('отвергает обратный слэш, который URL нормализует в разделитель пути', async () => {
+    cookie.value = 'access-value';
+    const fetchMock = upstream();
+    const response = await GET(req('experts'), {
+      params: Promise.resolve({ path: ['experts', '\\..\\admin', 'experts'] }),
+    });
+    expect(response.status).toBe(404);
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('не нормализует повторно закодированный dot-сегмент за разрешённый префикс', async () => {
+    cookie.value = 'access-value';
+    const fetchMock = upstream();
+    await GET(req('experts/%252e%252e/admin/experts'), {
+      params: Promise.resolve({ path: ['experts', '%2e%2e', 'admin', 'experts'] }),
+    });
+    const upstreamUrl = new URL(fetchMock.mock.calls[0][0] as string);
+    expect(upstreamUrl.pathname).toMatch(/\/experts\/%252e%252e\/admin\/experts$/);
+  });
+
+  it('сохраняет query и fragment символы внутри сегмента', async () => {
+    cookie.value = 'access-value';
+    const fetchMock = upstream();
+    await GET(req('experts/name%3Ftake%3D50%23fragment'), {
+      params: Promise.resolve({ path: ['experts', 'name?take=50#fragment'] }),
+    });
+    const upstreamUrl = new URL(fetchMock.mock.calls[0][0] as string);
+    expect(upstreamUrl.pathname).toMatch(/\/experts\/name%3Ftake%3D50%23fragment$/);
+    expect(upstreamUrl.search).toBe('');
+    expect(upstreamUrl.hash).toBe('');
+  });
+
   it('не обманывается префиксом: «consultationsX» — не «consultations»', async () => {
     cookie.value = 'access-value';
     const fetchMock = upstream();

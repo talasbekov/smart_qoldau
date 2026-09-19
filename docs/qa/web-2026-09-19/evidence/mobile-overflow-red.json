@@ -1,0 +1,14 @@
+[
+  {
+    "path": "/ru",
+    "actual": 341,
+    "expectedMaximum": 320,
+    "passed": false
+  },
+  {
+    "path": "/kz",
+    "actual": 331,
+    "expectedMaximum": 320,
+    "passed": false
+  }
+]

@@ -1,4 +1,5 @@
 import { authorizedFetch } from '@/lib/api/authorized';
+import UrgentAvailability from '@/components/expert-desk/UrgentAvailability';
 import WeekSchedule from '@/components/expert-cabinet/WeekSchedule';
 import type { components } from '@/lib/api/generated';
 import ru from '@/messages/ru.json';
@@ -34,9 +35,10 @@ export default async function SchedulePage({
 }) {
   const { locale } = await params;
   const copy = locale === 'kz' ? kz.expertCabinet : ru.expertCabinet;
-  const schedule = await authorizedFetch<ScheduleResponse>(
-    'experts/me/schedule',
-  );
+  const [schedule, me] = await Promise.all([
+    authorizedFetch<ScheduleResponse>('experts/me/schedule'),
+    authorizedFetch<components['schemas']['ExpertMeDto']>('experts/me'),
+  ]);
 
   return (
     <>
@@ -54,6 +56,7 @@ export default async function SchedulePage({
           {copy.scheduleLoadError}
         </p>
       )}
+      <UrgentAvailability initial={me?.acceptsUrgent ?? null} locale={locale} />
     </>
   );
 }

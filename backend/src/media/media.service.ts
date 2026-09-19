@@ -101,10 +101,14 @@ export class MediaService {
     let effective = consultation;
     if (requestedRank > currentRank) {
       const from = consultation.format;
-      effective = await this.prisma.consultation.update({
-        where: { id: consultation.id },
+      const changed = await this.prisma.consultation.updateMany({
+        where: { id: consultation.id, format: consultation.format, status: 'ACTIVE', paymentStatus: 'HELD' },
         data: { format },
       });
+      // Concurrent upgrades must never let a stale audio request overwrite video.
+      // Re-read the canonical state, including access checks, after a lost race.
+      if (!changed.count) return this.requestMediaToken(consultationId, userSub, format);
+      effective = { ...consultation, format };
 
       await this.audit.log({
         actorType: role === 'client' ? 'user' : 'expert',

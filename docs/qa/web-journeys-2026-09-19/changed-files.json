@@ -1,0 +1,322 @@
+[
+  {
+    "path": "backend/src/auth/auth.controller.ts",
+    "sha256": "a8921db7ecbc2afafd43416770f30fa477ce982bb1219c5c439b769bdd49afbf"
+  },
+  {
+    "path": "backend/src/auth/auth.service.ts",
+    "sha256": "d00c574e9a524153c312a6d7f8abdc22caff8168c01bc14d82d573503c7f750f"
+  },
+  {
+    "path": "backend/src/auth/dto/demo-auth.dto.ts",
+    "sha256": "b46e0b03f9f6b5499669a061bae934b57ca480eb4abe8ffed757050194ad988a"
+  },
+  {
+    "path": "backend/src/config/env.validation.ts",
+    "sha256": "32b098fc6812e09b3be013d7f89c2ceb483586a64786293ebf569093ae41b966"
+  },
+  {
+    "path": "backend/src/experts/documents.service.ts",
+    "sha256": "8e6b2b162fafd9d81a0288bda9513d5cc2b4874f69f66ac9de0345887dfc55e6"
+  },
+  {
+    "path": "backend/src/experts/dto/document.dto.ts",
+    "sha256": "a87a2a41b695cb3bbb4e35f732a586c4c02ba6e3d759871a3a1e7b78bd8234e4"
+  },
+  {
+    "path": "backend/src/media/media.service.ts",
+    "sha256": "3599235e83f3ef0775163410d81b3505b337d8247b5eb0d41fa7c9938f7292ba"
+  },
+  {
+    "path": "backend/src/payments/payment-methods.controller.ts",
+    "sha256": "f25454208104c683545b6fa7aa4048e5ef4c4350e44a860996761b779d2f26d0"
+  },
+  {
+    "path": "backend/src/payments/payment-methods.service.ts",
+    "sha256": "024e1982ee94086cf9dcdc30cc8bbf59c4366f3b339457fe8d10b2d0bc306a1a"
+  },
+  {
+    "path": "backend/src/requests/dto/request.dto.ts",
+    "sha256": "6168056a36b4406f64e22336c6f99adbd8b70b3c33132b901b79807afc8236aa"
+  },
+  {
+    "path": "backend/src/requests/requests.controller.ts",
+    "sha256": "d28d25e8110ea584116da5d50b17bcabf0073bc6258a75e831d5fcec6a8cd448"
+  },
+  {
+    "path": "backend/src/requests/requests.service.ts",
+    "sha256": "570b6915c949bc445bce61bdbbaa00c031177db7ca6acb55cb924f88241bdbc0"
+  },
+  {
+    "path": "docs/qa/web-journeys-2026-09-19/client-kz-mobile.png",
+    "sha256": "ea57b0e03df8bb029814b4de6d3c4e90d59d5fbb946df727d81b3482411bedda"
+  },
+  {
+    "path": "docs/qa/web-journeys-2026-09-19/client-video.png",
+    "sha256": "59916b36857d509cbe3f3ef802ff07df49eca42cbb8a24ddaf0cfb32ce7ffbb0"
+  },
+  {
+    "path": "docs/qa/web-journeys-2026-09-19/expert-video.png",
+    "sha256": "d340b250b1525ad6a80e318892e19cabb33575530c329ae1f6c97df1cdc83f01"
+  },
+  {
+    "path": "docs/qa/web-journeys-2026-09-19/manual-test.md",
+    "sha256": "6d88543de2d0be60211f1d1ad13264df585fa1d750a7fbe169307bc98fc80f82"
+  },
+  {
+    "path": "docs/qa/web-journeys-2026-09-19/report.md",
+    "sha256": "73d6f8516f3cd0373c7ca014ca8134b77f9e55741f5e56059625f408e47cc91d"
+  },
+  {
+    "path": "docs/qa/web-journeys-2026-09-19/vps-client-video.png",
+    "sha256": "ba4cb5cf1d31ee3ece7382b0a2add695d669699b889d4f09f9119509018679b9"
+  },
+  {
+    "path": "docs/qa/web-journeys-2026-09-19/vps-expert-video.png",
+    "sha256": "cb4fe348d9e47b42304a0ff3a8519ef78cfffa254c0da20484b52285f18096db"
+  },
+  {
+    "path": "docs/superpowers/plans/2026-09-19-web-journeys-completion.md",
+    "sha256": "f25377de5f880b530ee55229df622653e7b66f7f1d890db87aed9bbfaab248ee"
+  },
+  {
+    "path": "web/app/[locale]/(client)/consultations/[id]/page.tsx",
+    "sha256": "542524d081e2c9cc8ac205430cd07c5ec338c090ba210fb15e114c482f123b30"
+  },
+  {
+    "path": "web/app/[locale]/(client)/payment-methods/page.tsx",
+    "sha256": "ebacd00b0229a985a3dfba7dfd46a98955c1ad6765b2246700b2135a1b2cf683"
+  },
+  {
+    "path": "web/app/[locale]/(client)/profile/page.tsx",
+    "sha256": "95beeb7e941f860101cf5c0f104d0d7f1bf620e4c09daecba8517905fa77fa9b"
+  },
+  {
+    "path": "web/app/[locale]/(client)/requests/new/page.tsx",
+    "sha256": "108a08c3f7cf1e633a96edc1b16617d256731a93e3d812b742d00beae96e7129"
+  },
+  {
+    "path": "web/app/[locale]/(client)/support/requests/[id]/page.test.tsx",
+    "sha256": "2ca20cea61ef8fe8cafe69a3adc6e1d84ac0fcecf3826437fa943741c8a157c6"
+  },
+  {
+    "path": "web/app/[locale]/(client)/support/requests/[id]/page.tsx",
+    "sha256": "2f16095e041883b5aed8b5a6fb30171135b04c0557b8bd5d1d0a4d07d81c3782"
+  },
+  {
+    "path": "web/app/[locale]/(client)/support/requests/page.test.tsx",
+    "sha256": "dc1204944648110cc897bbc6c74d19c9ba0723b085d49d0475eb65c9644bb8ae"
+  },
+  {
+    "path": "web/app/[locale]/(client)/support/requests/page.tsx",
+    "sha256": "2139eac7e1fdf9562ff8be1489f7fed1cad265d6fbbe05bb0aebc722b5b189a6"
+  },
+  {
+    "path": "web/app/[locale]/(expert)/expert/consultations/[id]/page.tsx",
+    "sha256": "a919fe3d23ebc34769b5b52267b07a7e793d6e1e6ce1ecc24894909773d161fb"
+  },
+  {
+    "path": "web/app/[locale]/(expert)/expert/offers/page.tsx",
+    "sha256": "0d31b945b3a65d22fd6ce8e07a4af09a97c0536599ae08a77836fafbbc596cc1"
+  },
+  {
+    "path": "web/app/[locale]/(expert)/expert/page.tsx",
+    "sha256": "ca3bcfbff9062c170f4281f403ce3e25134462086de89b18e0f13ec877dab952"
+  },
+  {
+    "path": "web/app/[locale]/(expert)/expert/profile/page.tsx",
+    "sha256": "b3d1473c84c5d6f4cfe991f38e3f0a4c9e745bbf2417c31f11385199019c8aba"
+  },
+  {
+    "path": "web/app/[locale]/(expert)/expert/schedule/page.tsx",
+    "sha256": "e7049fe97d5f4742908472e48c41a63ba8fb5b9a6c49d10fb31d1f17cc61045c"
+  },
+  {
+    "path": "web/app/[locale]/(expert)/expert/support/[id]/page.tsx",
+    "sha256": "ef8427725705246dedab87437b846177580284c8fd5b178ff15354681c9f8ebc"
+  },
+  {
+    "path": "web/app/[locale]/(expert)/expert/support/page.tsx",
+    "sha256": "259639ccdcb14b39c3da22e3a586480539ee3fc9c3cda8f0f6dab355a8a92f99"
+  },
+  {
+    "path": "web/app/[locale]/(expert)/layout.tsx",
+    "sha256": "44d1f7b5eb49cce9c86103441cb807ef366a79689a445cf0da0720a617699828"
+  },
+  {
+    "path": "web/app/[locale]/(onboarding)/expert-onboarding/page.tsx",
+    "sha256": "fa375f0d25e313c088a1caadc514d1540809f845ca25053494241ddd8461c7ac"
+  },
+  {
+    "path": "web/app/[locale]/(public)/become-expert/page.tsx",
+    "sha256": "e594000cab455ed3b1bbf15916f6b71a44729d2fd9428af992567ea6f89de046"
+  },
+  {
+    "path": "web/app/api/auth/demo-config/route.ts",
+    "sha256": "7f8c5fb7fde20692c824538f000263050047b5365b661e83e6365c6663623cd0"
+  },
+  {
+    "path": "web/app/api/auth/demo-request-code/route.ts",
+    "sha256": "3e4aaf748343ec9c192323920729a63b0d6dbd2c32d07b8a09b7cd2d9cd558f9"
+  },
+  {
+    "path": "web/app/api/auth/verify-code/route.ts",
+    "sha256": "286757565e22a3749ec277005730851dba977342287f44850a75bcbaf513f54e"
+  },
+  {
+    "path": "web/app/api/proxy/[...path]/route.ts",
+    "sha256": "35833d0c3d19a939272eb78c5f0baab9b9f1815a3f4c9176534c08b83525ec43"
+  },
+  {
+    "path": "web/components/Header.tsx",
+    "sha256": "9fdbe8995923e537883996784e5eb81a2c861683211c39773f98d2f7a6092133"
+  },
+  {
+    "path": "web/components/auth/LoginForm.tsx",
+    "sha256": "576c060f5bdad4a5e91894be8bd4485be81bfd58992a2eb16d061cf86c051a37"
+  },
+  {
+    "path": "web/components/client/BookingFlow.tsx",
+    "sha256": "a7c5b5e15f3e58f6091c10bc5d26b5b148601c58856dcba409fbf6e88816d1a4"
+  },
+  {
+    "path": "web/components/client/CabinetNav.tsx",
+    "sha256": "c9fbfd55858ce2ef904a581a6828ffb1dc59c56d240cec6f02e454084a88ff05"
+  },
+  {
+    "path": "web/components/client/Chat.tsx",
+    "sha256": "889c5028fa468582bfac139461eb3591d6755e1d06622bfd145bc2dd2c50a32b"
+  },
+  {
+    "path": "web/components/client/ConsultationAccess.tsx",
+    "sha256": "ec28960dc46863a7bc497a7c223ef54c3a399161d5a65738b739c4f23b4cf688"
+  },
+  {
+    "path": "web/components/client/ExpertVisibilityConsent.tsx",
+    "sha256": "23bbab28696cea5092d757f1e282fcdd61f7ccec4552a5b344cbdc5e858a9a16"
+  },
+  {
+    "path": "web/components/client/LiveConsultation.tsx",
+    "sha256": "2804da7b46967ddfc204ab99de7862be5ab4e1dc9afd2760a81073c923b727f4"
+  },
+  {
+    "path": "web/components/client/PaymentCheckout.tsx",
+    "sha256": "234d65239602ddb566cee81c6e068483115addb4f24b43ba62c75e80700fe1ec"
+  },
+  {
+    "path": "web/components/client/PaymentMethods.tsx",
+    "sha256": "2ed979b8cdcde229caa63c2eeea74e486c46aaf526c8a7d21fbcfb71126549c6"
+  },
+  {
+    "path": "web/components/client/RequestForm.tsx",
+    "sha256": "77f3a1ba34144f41538378608f06d6005bb1c212729306942e84a2f1db4def91"
+  },
+  {
+    "path": "web/components/client/RequestStatus.tsx",
+    "sha256": "1e2d2c534671ee466a51f0f373b9a0fce109e396a8539a215030535edf44bb30"
+  },
+  {
+    "path": "web/components/client/ReviewPanel.tsx",
+    "sha256": "ac7b199feed72f3d4c3cdf241812ba4cfef8699871284fda518b6678f0a9ecd1"
+  },
+  {
+    "path": "web/components/client/Session.tsx",
+    "sha256": "e4571a77cdbd4ff93f0bcef53e497e000d7f86f3a70b0f87401fee3d5d70081b"
+  },
+  {
+    "path": "web/components/client/journey-copy.ts",
+    "sha256": "01b2fed25e8585c5ca4ca75bad083d524090c90bfb914db2c9ff9a697b301eee"
+  },
+  {
+    "path": "web/components/expert-cabinet/ConsultationStatusRefresh.tsx",
+    "sha256": "0c32406e0317fe822022808ce33ee86a6c1c4f213a7666b4ceba5645a2d70a12"
+  },
+  {
+    "path": "web/components/expert-cabinet/ExpertNav.tsx",
+    "sha256": "9f814c154b762b2ed19eada506341c13d0da258571aa8010bea2d32ceccad0bb"
+  },
+  {
+    "path": "web/components/expert-cabinet/OfferList.tsx",
+    "sha256": "9b957258f03abc38ddd05005117f6213af6edbfe1f7767975c121eaa491c88c4"
+  },
+  {
+    "path": "web/components/expert-cabinet/WeekSchedule.tsx",
+    "sha256": "3c063ed236cefdee4835c23b8670626582e0aa4f5fe5caa64c0fbc36d8fff130"
+  },
+  {
+    "path": "web/components/expert-cabinet/WorkStatusToggle.tsx",
+    "sha256": "55f67de0de323a59b59413b9607bf56bb5dea93107c2ecc3764d3340c775d72a"
+  },
+  {
+    "path": "web/components/expert-desk/AvailabilityConditions.tsx",
+    "sha256": "dd0e758b74e0b7affa8154de3b6dc35525e0ba4c16647a98386805fc5b8c1d8c"
+  },
+  {
+    "path": "web/components/expert-desk/DeskRefresh.tsx",
+    "sha256": "8267870a88c7d29a3c40bc6a4de90608db42458f08bac28b78cc00620b574cc8"
+  },
+  {
+    "path": "web/components/expert-desk/IncomingOffers.tsx",
+    "sha256": "3e6a726c0098a2d8181c13cec3d1099536515eeb094c0f15ce34c2edfc34f047"
+  },
+  {
+    "path": "web/components/expert-desk/UrgentAvailability.tsx",
+    "sha256": "074afc66ae8247b5cda60a37779fd136a9a6c886ccfcafd88cd67a66b46061fd"
+  },
+  {
+    "path": "web/components/expert-desk/copy.ts",
+    "sha256": "cb51e95b47750f2e11a68098fb6accc8e1a18f7f97f60f133ea69460856b6d74"
+  },
+  {
+    "path": "web/components/expert-onboarding/ApplicationForm.tsx",
+    "sha256": "17d7d6668d057b0b167e0899ae1590e501cb3904f74f6e8498d0db3bce5aeeec"
+  },
+  {
+    "path": "web/components/expert-onboarding/DocumentList.tsx",
+    "sha256": "77d00e4da352ab3a9f9480bb1535a1da4fb222eeb0743f16de20059be2533a4c"
+  },
+  {
+    "path": "web/components/expert-onboarding/ExpertOnboarding.tsx",
+    "sha256": "b1531f3f3c89a8b479993bef30899725a6b054fe0692f369dc4ce55aa71c4e4b"
+  },
+  {
+    "path": "web/components/expert-onboarding/ExpertProfile.tsx",
+    "sha256": "a81f5c5bb4814c2d28176bc781efed7190759f5f0a4d08b489d1f3a1c81ab0bc"
+  },
+  {
+    "path": "web/components/expert-onboarding/ProfilePhoto.tsx",
+    "sha256": "a675e09af2a1f5d4a57502ce421b9327ddec74330779406787a9ead062eab556"
+  },
+  {
+    "path": "web/components/expert-onboarding/VerificationStatus.tsx",
+    "sha256": "6ee970f2faa95f93594598204dc9d925e785f95a873d9f766ceff9488dd9a93f"
+  },
+  {
+    "path": "web/components/expert-onboarding/copy.ts",
+    "sha256": "137d3fb291e18445a0e6d465c4157704ad4f4e8a7c4842688a609a554d48701b"
+  },
+  {
+    "path": "web/components/expert-onboarding/types.ts",
+    "sha256": "96c37b863c3f52b3bb159accf2b8158931ec5ea18b4f4d872ddd23c5c4eac50b"
+  },
+  {
+    "path": "web/components/support/SupportCenter.tsx",
+    "sha256": "3df63580cf22667a0835b7a0338e5757e4caff35f1754c829cb816b8a3e5dbad"
+  },
+  {
+    "path": "web/components/support/TicketConversation.tsx",
+    "sha256": "bfc512aa5001630a3f1c4ffd294f9f814a711be3d732f85450b448e6dcf6457b"
+  },
+  {
+    "path": "web/lib/auth/renewal-navigation.ts",
+    "sha256": "071bc7217123537f4b8cba724d2b9b124335f2badda9a15e4ed2280a191cff29"
+  },
+  {
+    "path": "web/lib/auth/return-to.ts",
+    "sha256": "ffad4f7c047580630459897312704e931c072445e560e19b6e6bb44cb91cfba5"
+  },
+  {
+    "path": "web/middleware.ts",
+    "sha256": "41fd18bc3bd8642ff16dd197e4cadec6fec9ea77019a5a11e16e22bc7164ee9d"
+  }
+]

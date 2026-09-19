@@ -45,12 +45,42 @@ describe('NotificationList', () => {
 
     fireEvent.click(screen.getByRole('button', { name: /Прочитано/ }));
 
-    await waitFor(() => expect(apiFetch).toHaveBeenCalledWith('notifications/read', expect.objectContaining({ method: 'POST' })));
+    await waitFor(() =>
+      expect(apiFetch).toHaveBeenCalledWith(
+        'notifications/read',
+        expect.objectContaining({ method: 'POST' }),
+      ),
+    );
   });
 
   it('не предлагает пометить прочитанным, когда непрочитанных нет', () => {
-    render(<NotificationList items={[item({ readAt: '2026-09-02T11:00:00.000Z' })]} unreadCount={0} />);
+    render(
+      <NotificationList
+        items={[item({ readAt: '2026-09-02T11:00:00.000Z' })]}
+        unreadCount={0}
+      />,
+    );
 
     expect(screen.queryByRole('button', { name: /Прочитано/ })).toBeNull();
   });
+});
+
+it('shows a recoverable error instead of refreshing after a failed read mutation', async () => {
+  apiFetch
+    .mockRejectedValueOnce(new Error('offline'))
+    .mockResolvedValueOnce(null);
+  render(<NotificationList items={[item()]} unreadCount={1} />);
+  fireEvent.click(screen.getByRole('button', { name: 'Прочитано' }));
+  expect(await screen.findByRole('alert')).toHaveTextContent(/Не удалось/);
+  expect(refresh).not.toHaveBeenCalled();
+  expect(screen.getByText('Новое')).toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: 'Прочитано' }));
+  await waitFor(() => expect(refresh).toHaveBeenCalledTimes(1));
+  expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+});
+
+it('localizes notification controls in Kazakh', () => {
+  render(<NotificationList items={[item()]} unreadCount={1} locale="kz" />);
+  expect(screen.getByRole('button', { name: 'Оқылды' })).toBeInTheDocument();
+  expect(screen.getByText('Жаңа')).toBeInTheDocument();
 });

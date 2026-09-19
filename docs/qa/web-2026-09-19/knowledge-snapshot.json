@@ -1,0 +1,13 @@
+{
+  "date": "2026-09-19",
+  "sources": [
+    "web/README.md",
+    "docs/openapi.json",
+    "../Obsidian_brain/smart_qoldau_vault/WIKI/planning/2026-09-15-MVP-CONTINUATION.md",
+    "../Obsidian_brain/smart_qoldau_vault/WIKI/planning/11a_SCREEN_REGISTRY.md",
+    "../Obsidian_brain/smart_qoldau_vault/WIKI/plans/2026-09-01-дизайн-E16-веб-приложение.md",
+    "../Obsidian_brain/smart_qoldau_vault/docs/Прототип/SmartQoldau.kz.dc.html"
+  ],
+  "rule": "Later approved product decisions override prototype money/status labels.",
+  "threat_intelligence_refresh": "not performed; not a full security audit"
+}

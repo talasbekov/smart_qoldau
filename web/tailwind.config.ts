@@ -4,6 +4,7 @@ const config: Config = {
   content: ['./app/**/*.{ts,tsx}', './components/**/*.{ts,tsx}'],
   theme: {
     extend: {
+      spacing: { 13: '3.25rem' },
       fontFamily: { sans: ['Inter', 'sans-serif'] },
       // Оттенки вторичного текста затемнены до WCAG AA (4.5:1) на всех
       // трёх подложках — белой, surface и chip. Порядок светлоты

@@ -35,8 +35,24 @@ describe('ClientList', () => {
   });
 
   it('не показывает телефона — его и не приходит', () => {
-    const { container } = render(<ClientList items={[client()] as never} locale="ru" />);
+    const { container } = render(
+      <ClientList items={[client()] as never} locale="ru" />,
+    );
 
     expect(container.textContent).not.toMatch(/\+7\d/);
   });
+});
+
+it('renders Kazakh consultation counts and the Almaty date across midnight', () => {
+  render(
+    <ClientList
+      items={[client({ lastAt: '2026-09-01T21:00:00.000Z' })] as never}
+      locale="kz"
+    />,
+  );
+  expect(screen.getByText(/3 кездесу/)).toHaveTextContent('2 қыркүйек');
+  expect(screen.getByRole('link', { name: 'Айгерим' })).toHaveAttribute(
+    'href',
+    '/kz/expert/clients/u1',
+  );
 });

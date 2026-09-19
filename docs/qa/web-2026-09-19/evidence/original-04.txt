@@ -1,0 +1,6 @@
+    // Cookie снимает сервер: браузеру они недоступны, и «выйти» без
+    // обращения к серверу невозможно — это цена httpOnly и она честная.
+    await fetch('/api/auth/logout', { method: 'POST' }).catch(() => null);
+    clearAllSupportStorage();
+    router.replace(`/${locale}`);
+    router.refresh();

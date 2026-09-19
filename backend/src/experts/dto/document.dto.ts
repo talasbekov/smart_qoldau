@@ -14,6 +14,11 @@ export class ExpertDocumentDto {
 
   @ApiProperty({ required: false, format: 'date-time' })
   updatedAt?: Date;
+
+  // Только владелец анкеты получает комментарий оператора. Ссылка на файл
+  // намеренно не выдаётся: документы остаются закрытыми.
+  @ApiProperty({ nullable: true, required: false })
+  comment?: string | null;
 }
 
 export class SubmitVerificationDto {

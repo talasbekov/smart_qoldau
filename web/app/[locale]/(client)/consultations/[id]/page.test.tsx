@@ -1,10 +1,25 @@
-import { render, screen } from '@testing-library/react';
+import { act, render, screen } from '@testing-library/react';
 
 const authorizedFetch = jest.fn();
+const apiFetch = jest.fn();
+jest.mock('@/lib/api/client', () => ({
+  apiFetch: (...args: unknown[]) => apiFetch(...args),
+}));
 jest.mock('@/lib/api/authorized', () => ({
   authorizedFetch: (...args: unknown[]) => authorizedFetch(...args),
 }));
-jest.mock('next/navigation', () => ({ notFound: jest.fn() }));
+const refresh = jest.fn();
+jest.mock('next/navigation', () => ({
+  notFound: jest.fn(),
+  useRouter: () => ({ refresh }),
+}));
+jest.mock('@/lib/realtime/socket', () => ({
+  connectRealtime: async () => ({
+    on: () => () => {},
+    onReady: () => () => {},
+    close: jest.fn(),
+  }),
+}));
 jest.mock('@/components/client/ConsultationAccess', () => ({
   __esModule: true,
   default: () => <div>access</div>,
@@ -56,4 +71,23 @@ describe('ConsultationPage', () => {
     expect(screen.getByText(/09:00/)).toBeInTheDocument();
     expect(screen.getByText(/Алматы уақыты.*Asia\/Almaty/)).toBeInTheDocument();
   });
+});
+
+it('refreshes the client detail after completion even if the websocket event is lost', async () => {
+  jest.useFakeTimers();
+  authorizedFetch.mockResolvedValue({ ...CONSULTATION, status: 'ACTIVE' });
+  apiFetch.mockResolvedValue({ status: 'COMPLETED' });
+  const view = render(
+    await ConsultationPage({
+      params: Promise.resolve({ locale: 'ru', id: 'c1' }),
+    }),
+  );
+  try {
+    await act(async () => jest.advanceTimersByTime(15_000));
+    expect(apiFetch).toHaveBeenCalledWith('consultations/c1');
+    expect(refresh).toHaveBeenCalledTimes(1);
+  } finally {
+    view.unmount();
+    jest.useRealTimers();
+  }
 });

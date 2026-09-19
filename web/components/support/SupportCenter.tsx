@@ -35,9 +35,11 @@ type ExpertProbe = { id?: string };
 export default function SupportCenter({
   locale,
   userId,
+  basePath = "/support/requests",
 }: {
   locale: string;
   userId: string;
+  basePath?: string;
 }) {
   const copy = locale === 'kz' ? kz.supportPortal : ru.supportPortal;
   const storage = useMemo(() => createSupportStorage(userId), [userId]);
@@ -453,7 +455,7 @@ export default function SupportCenter({
                   </span>
                 </div>
                 <Link
-                  href={`/support/requests/${ticket.id}`}
+                  href={`${basePath}/${ticket.id}`}
                   className="mt-4 inline-flex min-h-11 items-center rounded-xl text-sm font-bold text-primary underline underline-offset-4 focus:outline-none focus:ring-2 focus:ring-primary"
                 >
                   {copy.open}

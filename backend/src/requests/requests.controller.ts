@@ -55,6 +55,18 @@ export class RequestsController {
     return this.requestsService.create(user.sub, dto);
   }
 
+  @Get('current')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary:
+      'Последняя SEARCHING или MATCHED-заявка с ACTIVE-консультацией пользователя, иначе null',
+  })
+  @ApiOkResponse({ type: RequestDto })
+  current(@CurrentUser() user: JwtPayload): Promise<RequestDto | null> {
+    return this.requestsService.findCurrentForOwner(user.sub);
+  }
+
   @Get(':id')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()

@@ -1,0 +1,6 @@
+function when(iso: string | null): string {
+  if (!iso) return '';
+  return new Date(iso).toLocaleString('ru-KZ', {
+    day: 'numeric',
+    month: 'long',
+    hour: '2-digit',

@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation';
 import { authorizedFetch } from '@/lib/api/authorized';
-import Session from '@/components/client/Session';
+import LiveConsultation from '@/components/client/LiveConsultation';
 import Chat from '@/components/client/Chat';
 import ExpertSessionActions from '@/components/expert-cabinet/ExpertSessionActions';
 import ConsultationStatusRefresh from '@/components/expert-cabinet/ConsultationStatusRefresh';
@@ -23,8 +23,6 @@ export default async function ExpertConsultationPage({
 
   const live = consultation.status === 'ACTIVE';
   const paidLive = live && consultation.paymentStatus === 'HELD';
-  const callFormat =
-    consultation.format === 'chat' ? null : consultation.format;
   const checkoutCopy = locale === 'kz' ? kz.checkout : ru.checkout;
   const expertCopy = locale === 'kz' ? kz.expertSession : ru.expertSession;
   const statusLabels: Record<string, string> = {
@@ -49,15 +47,17 @@ export default async function ExpertConsultationPage({
       <ConsultationStatusRefresh
         consultationId={id}
         initialStatus={consultation.status}
+        initialPaymentStatus={consultation.paymentStatus}
+        initialFormat={consultation.format}
         locale={locale}
       />
 
-      {paidLive && callFormat ? (
+      {paidLive ? (
         // Тот же компонент, что у клиента: разговор устроен одинаково с
         // обеих сторон, и копия кода разъехалась бы с оригиналом.
-        <Session
+        <LiveConsultation
           consultationId={id}
-          format={callFormat as 'audio' | 'video'}
+          format={consultation.format as 'chat' | 'audio' | 'video'}
           locale={locale}
           senderRole="expert"
         />

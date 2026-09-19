@@ -564,6 +564,34 @@ export class RequestsService {
     return this.toRequestDto(fresh);
   }
 
+  async findCurrentForOwner(clientUserId: string): Promise<RequestDto | null> {
+    // requestId is a scalar unique key, not a Prisma relation. Read both
+    // owner-scoped tables in one snapshot so completion cannot split the read.
+    const request = await this.prisma.$transaction(
+      async (tx) => {
+        const active = await tx.consultation.findMany({
+          where: { clientUserId, status: 'ACTIVE' },
+          select: { requestId: true },
+        });
+        return tx.request.findFirst({
+          where: {
+            clientUserId,
+            OR: [
+              { status: RequestStatus.SEARCHING },
+              {
+                status: RequestStatus.MATCHED,
+                id: { in: active.map((item) => item.requestId) },
+              },
+            ],
+          },
+          orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+        });
+      },
+      { isolationLevel: 'RepeatableRead' },
+    );
+    return request ? this.toRequestDto(request) : null;
+  }
+
   async findForOwner(
     requestId: string,
     clientUserId: string,
@@ -627,7 +655,13 @@ export class RequestsService {
   }
 
   private async toRequestDto(request: Request): Promise<RequestDto> {
+    const topic = await this.prisma.topic.findUnique({
+      where: { id: request.topicId },
+      select: { slug: true },
+    });
     const dto: RequestDto = {
+      topicSlug: topic?.slug,
+      format: request.format,
       id: request.id,
       status: request.status,
       isEmergency: request.isEmergency,

@@ -1,0 +1,6 @@
+  return (
+    <div className="rounded-[20px] border border-border p-5">
+      <p className="mb-2 text-sm font-bold text-ink">Удалить аккаунт безвозвратно?</p>
+      <p className="mb-4 text-sm text-body">
+        Вместе с аккаунтом удалится история консультаций и переписка. Восстановить их
+        нельзя.

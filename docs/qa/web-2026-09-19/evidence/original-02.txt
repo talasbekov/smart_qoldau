@@ -1,0 +1,6 @@
+// выгрузку всей базы при росте каталога. Когда специалистов станет
+// больше, здесь появится разбиение на несколько файлов через индекс.
+const EXPERTS_IN_SITEMAP = 500;
+
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  const lastModified = new Date();

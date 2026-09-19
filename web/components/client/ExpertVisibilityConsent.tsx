@@ -6,7 +6,12 @@ import { apiFetch } from '@/lib/api/client';
 
 // Р-27. Один экран, а не два шага: между «объяснили» и «спросили имя»
 // человек, решившийся попросить помощи, легко передумает.
-export default function ExpertVisibilityConsent() {
+export default function ExpertVisibilityConsent({
+  locale = 'ru',
+}: {
+  locale?: string;
+}) {
+  const kk = locale === 'kz';
   const router = useRouter();
   const [name, setName] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -16,7 +21,11 @@ export default function ExpertVisibilityConsent() {
     event.preventDefault();
     const trimmed = name.trim();
     if (!trimmed) {
-      setError('Напишите, как к вам обращаться');
+      setError(
+        kk
+          ? 'Сізге қалай жүгінуге болатынын жазыңыз'
+          : 'Напишите, как к вам обращаться',
+      );
       return;
     }
 
@@ -29,33 +38,40 @@ export default function ExpertVisibilityConsent() {
       });
       router.refresh();
     } catch {
-      setError('Не удалось сохранить. Попробуйте ещё раз');
+      setError(
+        kk
+          ? 'Сақтау мүмкін болмады. Қайталап көріңіз'
+          : 'Не удалось сохранить. Попробуйте ещё раз',
+      );
       setBusy(false);
     }
   }
 
   return (
     <form onSubmit={submit} className="flex w-full max-w-lg flex-col gap-5">
-      <h1 className="text-2xl font-extrabold text-ink">Прежде чем начать</h1>
+      <h1 className="text-2xl font-extrabold text-ink">
+        {kk ? 'Бастамас бұрын' : 'Прежде чем начать'}
+      </h1>
 
       <div className="rounded-[20px] bg-chip p-5 text-sm leading-relaxed text-body">
         <p className="mb-3">
-          Психолог, который будет с вами работать, увидит{' '}
-          <strong className="text-ink">ваше имя</strong> и{' '}
-          <strong className="text-ink">историю встреч с ним</strong>: когда вы
-          общались, о чём и что он записал по итогам.
+          {kk
+            ? 'Сізбен жұмыс істейтін психолог атыңызды және онымен өткен кездесулер тарихын: уақытын, тақырыбын және өз жазбаларын көреді.'
+            : 'Психолог, который будет с вами работать, увидит ваше имя и историю встреч с ним: когда вы общались, о чём и что он записал по итогам.'}
         </p>
-        {/* Сказать, чего НЕ видно, не менее важно: иначе человек додумает
-            худшее — например, что видно телефон. */}
         <p>
-          Ваш <strong className="text-ink">телефон психологу не показывается</strong>, и
-          другие специалисты вашу историю не видят.
+          {kk
+            ? 'Телефоныңыз психологқа көрсетілмейді. Басқа мамандар кездесу тарихыңызды көрмейді.'
+            : 'Ваш телефон психологу не показывается, и другие специалисты вашу историю не видят.'}
         </p>
       </div>
 
       <div>
-        <label htmlFor="display-name" className="mb-1 block text-xs font-semibold text-muted">
-          Как к вам обращаться
+        <label
+          htmlFor="display-name"
+          className="mb-1 block text-xs font-semibold text-muted"
+        >
+          {kk ? 'Сізге қалай жүгінуге болады' : 'Как к вам обращаться'}
         </label>
         <input
           id="display-name"
@@ -65,7 +81,9 @@ export default function ExpertVisibilityConsent() {
           className="h-12 w-full rounded-2xl border border-border px-4 text-base text-ink focus:outline-none focus:ring-2 focus:ring-primary"
         />
         <p className="mt-1 text-xs text-muted">
-          Можно указать только имя или любое обращение — документы мы не проверяем
+          {kk
+            ? 'Тек атыңызды немесе кез келген атауды көрсетуге болады — құжаттарды тексермейміз'
+            : 'Можно указать только имя или любое обращение — документы мы не проверяем'}
         </p>
       </div>
 
@@ -80,7 +98,13 @@ export default function ExpertVisibilityConsent() {
         disabled={busy}
         className="h-12 rounded-2xl bg-primary text-sm font-bold text-white disabled:opacity-60 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
       >
-        {busy ? 'Сохраняем…' : 'Продолжить'}
+        {busy
+          ? kk
+            ? 'Сақталуда…'
+            : 'Сохраняем…'
+          : kk
+            ? 'Жалғастыру'
+            : 'Продолжить'}
       </button>
     </form>
   );

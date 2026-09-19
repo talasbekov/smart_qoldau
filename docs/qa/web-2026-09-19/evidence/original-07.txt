@@ -1,0 +1,6 @@
+            href="/requests/new"
+            prefetch={false}
+            className="h-13 px-7 rounded-full bg-primary text-white font-bold flex items-center whitespace-nowrap"
+          >
+            {t('urgentCta')}
+          </Link>

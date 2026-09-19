@@ -27,6 +27,10 @@ export default function CabinetNav() {
       aria-label={copy.navLabel}
       className="flex flex-wrap gap-1 lg:flex-col lg:flex-nowrap"
     >
+      <Link href="/requests/new" className="mb-2 block rounded-xl bg-primary px-4 py-3 text-sm font-bold text-white focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2">
+        {locale === 'kz' ? 'Кеңесті бастау' : 'Начать консультацию'}
+      </Link>
+      <Link href="/catalog" className={ITEM}>{locale === 'kz' ? 'Маманды таңдау' : 'Выбрать специалиста'}</Link>
       {SECTIONS.map((section) => {
         // Раздел активен и на своих вложенных страницах: карточка
         // консультации — часть раздела консультаций, и подсветка там

@@ -1,6 +1,8 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import Link from 'next/link';
+import { journeyCopy } from './journey-copy';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import type { components } from '@/lib/api/generated';
@@ -148,10 +150,29 @@ export default function BookingFlow({
       };
     }
     setPhase('loading');
-    setTopicSlug(relevantTopics[0]?.slug ?? '');
-    setFormat(
-      expert.formats.includes('video') ? 'video' : (expert.formats[0] ?? ''),
+    const resume = new URLSearchParams(window.location.search);
+    const resumedTopic = resume.get('topic') ?? '';
+    const resumedFormat = resume.get('format') ?? '';
+    const resumedSlot = resume.get('slot') ?? '';
+    setTopicSlug(
+      relevantTopics.some((topic) => topic.slug === resumedTopic)
+        ? resumedTopic
+        : (relevantTopics[0]?.slug ?? ''),
     );
+    setFormat(
+      expert.formats.includes(resumedFormat)
+        ? resumedFormat
+        : expert.formats.includes('video')
+          ? 'video'
+          : (expert.formats[0] ?? ''),
+    );
+    if (
+      !isReschedule &&
+      /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{3})?Z$/.test(resumedSlot)
+    ) {
+      // loadSlots below keeps this selection only if it is still available.
+      setSelectedSlot(resumedSlot);
+    }
     void Promise.all([loadSlots(), loadMethods()]).finally(() => {
       if (mounted.current && !cancelled && !pendingMutation.current) {
         setPhase('idle');
@@ -160,7 +181,7 @@ export default function BookingFlow({
     return () => {
       cancelled = true;
     };
-  }, [expert.formats, loadMethods, loadSlots, relevantTopics]);
+  }, [expert.formats, isReschedule, loadMethods, loadSlots, relevantTopics]);
 
   const byDay = useMemo(() => {
     const grouped = new Map<string, Slots['items']>();
@@ -211,24 +232,25 @@ export default function BookingFlow({
         };
     pendingMutation.current = command;
     try {
-      const result = command.mode === 'reschedule'
-        ? await apiFetch<BookingResult>(
-            `consultations/${command.consultationId}/reschedule`,
-            {
+      const result =
+        command.mode === 'reschedule'
+          ? await apiFetch<BookingResult>(
+              `consultations/${command.consultationId}/reschedule`,
+              {
+                method: 'POST',
+                body: JSON.stringify({ slotStartAt: command.slotStartAt }),
+              },
+            )
+          : await apiFetch<BookingResult>('bookings', {
               method: 'POST',
-              body: JSON.stringify({ slotStartAt: command.slotStartAt }),
-            },
-          )
-        : await apiFetch<BookingResult>('bookings', {
-            method: 'POST',
-            body: JSON.stringify({
-              expertId: command.expertId,
-              topicSlug: command.topicSlug,
-              format: command.format,
-              slotStartAt: command.slotStartAt,
-              paymentMethodId: command.paymentMethodId,
-            }),
-          });
+              body: JSON.stringify({
+                expertId: command.expertId,
+                topicSlug: command.topicSlug,
+                format: command.format,
+                slotStartAt: command.slotStartAt,
+                paymentMethodId: command.paymentMethodId,
+              }),
+            });
       if (!mounted.current) return;
       if (!result?.consultationId) {
         setPhase('unknown');
@@ -335,6 +357,10 @@ export default function BookingFlow({
     audio: t('formatAudio'),
     video: t('formatVideo'),
   };
+
+  const resumeQuery = new URLSearchParams({ topic: topicSlug, format });
+  if (selectedSlot) resumeQuery.set('slot', selectedSlot);
+  const paymentMethodsHref = `/${locale}/payment-methods?returnTo=${encodeURIComponent(`/${locale}/consultations/book/${expert.id}?${resumeQuery}`)}`;
 
   return (
     <form onSubmit={submit} className="flex max-w-3xl flex-col gap-6">
@@ -482,6 +508,15 @@ export default function BookingFlow({
             <h2 id="payment-title" className="mb-2 text-sm font-bold text-ink">
               {t('paymentMethod')}
             </h2>
+            <p className="mb-3 rounded-xl bg-chip p-3 text-sm">
+              {journeyCopy(locale).demo}
+            </p>
+            <Link
+              className="mb-3 inline-flex min-h-11 items-center text-sm font-bold text-primary underline"
+              href={paymentMethodsHref}
+            >
+              {journeyCopy(locale).manage}
+            </Link>
             {methodsError ? (
               <div role="alert" className="text-sm text-red-700">
                 <p>{t('methodsError')}</p>

@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { journeyCopy } from './journey-copy';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
@@ -455,6 +456,12 @@ export default function PaymentCheckout({
             </div>
           ) : null}
 
+          <Link
+            className="mt-4 inline-flex min-h-11 items-center text-sm font-bold text-primary underline"
+            href={`/${locale}/payment-methods?returnTo=${encodeURIComponent(`/${locale}/consultations/${consultation.id}/payment`)}`}
+          >
+            {journeyCopy(locale).manage}
+          </Link>
           {methods?.length === 0 ? (
             <div className="mt-4 rounded-2xl bg-surface p-4">
               <p className="font-bold text-ink">{t('emptyMethodsTitle')}</p>

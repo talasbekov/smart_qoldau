@@ -1,3 +1,5 @@
+import { sessionFetch, SessionError } from '@/lib/auth/browser-session';
+
 export class ApiError extends Error {
   constructor(
     readonly status: number,
@@ -14,9 +16,12 @@ export async function apiFetch<T>(
   path: string,
   init: RequestInit = {},
 ): Promise<T | null> {
-  const response = await fetch(`/api/proxy/${path}`, {
+  const response = await sessionFetch(`/api/proxy/${path}`, {
     ...init,
     headers: { 'Content-Type': 'application/json', ...(init.headers ?? {}) },
+  }).catch((error: unknown) => {
+    if (error instanceof SessionError) throw new ApiError(error.status, error.code);
+    throw error;
   });
 
   if (response.status === 204) return null;

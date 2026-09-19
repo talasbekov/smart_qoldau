@@ -1,3 +1,4 @@
+import SessionBoundary from '@/components/auth/SessionBoundary';
 import { NextIntlClientProvider } from 'next-intl';
 import { getMessages } from 'next-intl/server';
 import type { Metadata } from 'next';
@@ -32,6 +33,7 @@ export default async function LocaleLayout({
   return (
     <html lang={htmlLang(locale)}>
       <body>
+        <SessionBoundary />
         {/* Шапка и подвал переехали в раскладку группы (public):
             кабинеты клиента и эксперта их не показывают. */}
         <NextIntlClientProvider messages={messages}>{children}</NextIntlClientProvider>

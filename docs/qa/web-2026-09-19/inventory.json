@@ -1,0 +1,382 @@
+{
+  "scope": "web routes/BFF runtime coverage; unit suite is separate",
+  "counts": {
+    "discovered": 41,
+    "tested": 21,
+    "passed": 21,
+    "failed": 0,
+    "blocked": 20,
+    "not_applicable": 0
+  },
+  "items": [
+    {
+      "id": "ui:/[locale]/consultations/[id]",
+      "source": "web/app/[locale]/(client)/consultations/[id]/page.tsx",
+      "kind": "page",
+      "state": "blocked",
+      "result": null,
+      "method": "source and unit checks only",
+      "limitation": "Authenticated live scenario not verified against current backend"
+    },
+    {
+      "id": "ui:/[locale]/consultations/[id]/payment",
+      "source": "web/app/[locale]/(client)/consultations/[id]/payment/page.tsx",
+      "kind": "page",
+      "state": "blocked",
+      "result": null,
+      "method": "source and unit checks only",
+      "limitation": "Authenticated live scenario not verified against current backend"
+    },
+    {
+      "id": "ui:/[locale]/consultations/[id]/reschedule",
+      "source": "web/app/[locale]/(client)/consultations/[id]/reschedule/page.tsx",
+      "kind": "page",
+      "state": "blocked",
+      "result": null,
+      "method": "source and unit checks only",
+      "limitation": "Authenticated live scenario not verified against current backend"
+    },
+    {
+      "id": "ui:/[locale]/consultations/book/[expertId]",
+      "source": "web/app/[locale]/(client)/consultations/book/[expertId]/page.tsx",
+      "kind": "page",
+      "state": "blocked",
+      "result": null,
+      "method": "source and unit checks only",
+      "limitation": "Authenticated live scenario not verified against current backend"
+    },
+    {
+      "id": "ui:/[locale]/consultations",
+      "source": "web/app/[locale]/(client)/consultations/page.tsx",
+      "kind": "page",
+      "state": "tested",
+      "result": "passed",
+      "method": "synthetic browser/anonymous redirect",
+      "limitation": "Authenticated live scenario not verified against current backend"
+    },
+    {
+      "id": "ui:/[locale]/favorites",
+      "source": "web/app/[locale]/(client)/favorites/page.tsx",
+      "kind": "page",
+      "state": "tested",
+      "result": "passed",
+      "method": "synthetic browser/anonymous redirect",
+      "limitation": "Authenticated live scenario not verified against current backend"
+    },
+    {
+      "id": "ui:/[locale]/notifications",
+      "source": "web/app/[locale]/(client)/notifications/page.tsx",
+      "kind": "page",
+      "state": "blocked",
+      "result": null,
+      "method": "source and unit checks only",
+      "limitation": "Authenticated live scenario not verified against current backend"
+    },
+    {
+      "id": "ui:/[locale]/profile",
+      "source": "web/app/[locale]/(client)/profile/page.tsx",
+      "kind": "page",
+      "state": "tested",
+      "result": "passed",
+      "method": "synthetic browser/anonymous redirect",
+      "limitation": "Authenticated live scenario not verified against current backend"
+    },
+    {
+      "id": "ui:/[locale]/requests/[id]",
+      "source": "web/app/[locale]/(client)/requests/[id]/page.tsx",
+      "kind": "page",
+      "state": "blocked",
+      "result": null,
+      "method": "source and unit checks only",
+      "limitation": "Authenticated live scenario not verified against current backend"
+    },
+    {
+      "id": "ui:/[locale]/requests/new",
+      "source": "web/app/[locale]/(client)/requests/new/page.tsx",
+      "kind": "page",
+      "state": "tested",
+      "result": "passed",
+      "method": "synthetic browser/anonymous redirect",
+      "limitation": "Authenticated live scenario not verified against current backend"
+    },
+    {
+      "id": "ui:/[locale]/expert/clients/[id]",
+      "source": "web/app/[locale]/(expert)/expert/clients/[id]/page.tsx",
+      "kind": "page",
+      "state": "blocked",
+      "result": null,
+      "method": "source and unit checks only",
+      "limitation": "Authenticated live scenario not verified against current backend"
+    },
+    {
+      "id": "ui:/[locale]/expert/clients",
+      "source": "web/app/[locale]/(expert)/expert/clients/page.tsx",
+      "kind": "page",
+      "state": "blocked",
+      "result": null,
+      "method": "source and unit checks only",
+      "limitation": "Authenticated live scenario not verified against current backend"
+    },
+    {
+      "id": "ui:/[locale]/expert/consultations/[id]",
+      "source": "web/app/[locale]/(expert)/expert/consultations/[id]/page.tsx",
+      "kind": "page",
+      "state": "blocked",
+      "result": null,
+      "method": "source and unit checks only",
+      "limitation": "Authenticated live scenario not verified against current backend"
+    },
+    {
+      "id": "ui:/[locale]/expert/consultations",
+      "source": "web/app/[locale]/(expert)/expert/consultations/page.tsx",
+      "kind": "page",
+      "state": "blocked",
+      "result": null,
+      "method": "source and unit checks only",
+      "limitation": "Authenticated live scenario not verified against current backend"
+    },
+    {
+      "id": "ui:/[locale]/expert/earnings",
+      "source": "web/app/[locale]/(expert)/expert/earnings/page.tsx",
+      "kind": "page",
+      "state": "blocked",
+      "result": null,
+      "method": "source and unit checks only",
+      "limitation": "Authenticated live scenario not verified against current backend"
+    },
+    {
+      "id": "ui:/[locale]/expert/offers",
+      "source": "web/app/[locale]/(expert)/expert/offers/page.tsx",
+      "kind": "page",
+      "state": "blocked",
+      "result": null,
+      "method": "source and unit checks only",
+      "limitation": "Authenticated live scenario not verified against current backend"
+    },
+    {
+      "id": "ui:/[locale]/expert",
+      "source": "web/app/[locale]/(expert)/expert/page.tsx",
+      "kind": "page",
+      "state": "blocked",
+      "result": null,
+      "method": "source and unit checks only",
+      "limitation": "Authenticated live scenario not verified against current backend"
+    },
+    {
+      "id": "ui:/[locale]/expert/reviews",
+      "source": "web/app/[locale]/(expert)/expert/reviews/page.tsx",
+      "kind": "page",
+      "state": "blocked",
+      "result": null,
+      "method": "source and unit checks only",
+      "limitation": "Authenticated live scenario not verified against current backend"
+    },
+    {
+      "id": "ui:/[locale]/expert/schedule",
+      "source": "web/app/[locale]/(expert)/expert/schedule/page.tsx",
+      "kind": "page",
+      "state": "blocked",
+      "result": null,
+      "method": "source and unit checks only",
+      "limitation": "Authenticated live scenario not verified against current backend"
+    },
+    {
+      "id": "ui:/[locale]/about",
+      "source": "web/app/[locale]/(public)/about/page.tsx",
+      "kind": "page",
+      "state": "tested",
+      "result": "passed",
+      "method": "public browser/axe",
+      "limitation": null
+    },
+    {
+      "id": "ui:/[locale]/become-expert",
+      "source": "web/app/[locale]/(public)/become-expert/page.tsx",
+      "kind": "page",
+      "state": "tested",
+      "result": "passed",
+      "method": "public browser/axe",
+      "limitation": null
+    },
+    {
+      "id": "ui:/[locale]/catalog",
+      "source": "web/app/[locale]/(public)/catalog/page.tsx",
+      "kind": "page",
+      "state": "tested",
+      "result": "passed",
+      "method": "public browser/axe",
+      "limitation": null
+    },
+    {
+      "id": "ui:/[locale]/experts/[id]",
+      "source": "web/app/[locale]/(public)/experts/[id]/page.tsx",
+      "kind": "page",
+      "state": "tested",
+      "result": "passed",
+      "method": "synthetic browser/anonymous redirect",
+      "limitation": "Authenticated live scenario not verified against current backend"
+    },
+    {
+      "id": "ui:/[locale]/login",
+      "source": "web/app/[locale]/(public)/login/page.tsx",
+      "kind": "page",
+      "state": "tested",
+      "result": "passed",
+      "method": "public browser/axe",
+      "limitation": null
+    },
+    {
+      "id": "ui:/[locale]/materials/[id]",
+      "source": "web/app/[locale]/(public)/materials/[id]/page.tsx",
+      "kind": "page",
+      "state": "blocked",
+      "result": null,
+      "method": "source and unit checks only",
+      "limitation": "Authenticated live scenario not verified against current backend"
+    },
+    {
+      "id": "ui:/[locale]/materials",
+      "source": "web/app/[locale]/(public)/materials/page.tsx",
+      "kind": "page",
+      "state": "tested",
+      "result": "passed",
+      "method": "public browser/axe",
+      "limitation": null
+    },
+    {
+      "id": "ui:/[locale]",
+      "source": "web/app/[locale]/(public)/page.tsx",
+      "kind": "page",
+      "state": "tested",
+      "result": "passed",
+      "method": "public browser/axe",
+      "limitation": null
+    },
+    {
+      "id": "ui:/[locale]/premium",
+      "source": "web/app/[locale]/(public)/premium/page.tsx",
+      "kind": "page",
+      "state": "tested",
+      "result": "passed",
+      "method": "public browser/axe",
+      "limitation": null
+    },
+    {
+      "id": "ui:/[locale]/privacy",
+      "source": "web/app/[locale]/(public)/privacy/page.tsx",
+      "kind": "page",
+      "state": "tested",
+      "result": "passed",
+      "method": "public browser/axe",
+      "limitation": null
+    },
+    {
+      "id": "ui:/[locale]/support",
+      "source": "web/app/[locale]/(public)/support/page.tsx",
+      "kind": "page",
+      "state": "tested",
+      "result": "passed",
+      "method": "public browser/axe",
+      "limitation": null
+    },
+    {
+      "id": "ui:/[locale]/support/requests/[id]",
+      "source": "web/app/[locale]/(public)/support/requests/[id]/page.tsx",
+      "kind": "page",
+      "state": "blocked",
+      "result": null,
+      "method": "source and unit checks only",
+      "limitation": "Authenticated live scenario not verified against current backend"
+    },
+    {
+      "id": "ui:/[locale]/support/requests",
+      "source": "web/app/[locale]/(public)/support/requests/page.tsx",
+      "kind": "page",
+      "state": "blocked",
+      "result": null,
+      "method": "source and unit checks only",
+      "limitation": "Authenticated live scenario not verified against current backend"
+    },
+    {
+      "id": "ui:/[locale]/terms",
+      "source": "web/app/[locale]/(public)/terms/page.tsx",
+      "kind": "page",
+      "state": "tested",
+      "result": "passed",
+      "method": "public browser/axe",
+      "limitation": null
+    },
+    {
+      "id": "ui:/[locale]/renew-session",
+      "source": "web/app/[locale]/renew-session/page.tsx",
+      "kind": "page",
+      "state": "tested",
+      "result": "passed",
+      "method": "synthetic browser/anonymous redirect",
+      "limitation": "Authenticated live scenario not verified against current backend"
+    },
+    {
+      "id": "bff:/api/auth/logout",
+      "source": "web/app/api/auth/logout/route.ts",
+      "kind": "bff",
+      "state": "blocked",
+      "result": null,
+      "method": "covered indirectly by synthetic browser only",
+      "limitation": "No real SMS/payment/provider certification"
+    },
+    {
+      "id": "bff:/api/auth/refresh",
+      "source": "web/app/api/auth/refresh/route.ts",
+      "kind": "bff",
+      "state": "tested",
+      "result": "passed",
+      "method": "route unit",
+      "limitation": "No real SMS/payment/provider certification"
+    },
+    {
+      "id": "bff:/api/auth/request-code",
+      "source": "web/app/api/auth/request-code/route.ts",
+      "kind": "bff",
+      "state": "blocked",
+      "result": null,
+      "method": "covered indirectly by synthetic browser only",
+      "limitation": "No real SMS/payment/provider certification"
+    },
+    {
+      "id": "bff:/api/auth/session",
+      "source": "web/app/api/auth/session/route.ts",
+      "kind": "bff",
+      "state": "tested",
+      "result": "passed",
+      "method": "route unit",
+      "limitation": "No real SMS/payment/provider certification"
+    },
+    {
+      "id": "bff:/api/auth/verify-code",
+      "source": "web/app/api/auth/verify-code/route.ts",
+      "kind": "bff",
+      "state": "tested",
+      "result": "passed",
+      "method": "route unit",
+      "limitation": "No real SMS/payment/provider certification"
+    },
+    {
+      "id": "bff:/api/proxy/[...path]",
+      "source": "web/app/api/proxy/[...path]/route.ts",
+      "kind": "bff",
+      "state": "tested",
+      "result": "passed",
+      "method": "route unit",
+      "limitation": "No real SMS/payment/provider certification"
+    },
+    {
+      "id": "bff:/api/realtime/token",
+      "source": "web/app/api/realtime/token/route.ts",
+      "kind": "bff",
+      "state": "tested",
+      "result": "passed",
+      "method": "route unit",
+      "limitation": "No real SMS/payment/provider certification"
+    }
+  ]
+}

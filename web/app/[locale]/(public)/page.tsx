@@ -29,10 +29,10 @@ export default async function HomePage() {
   }));
 
   return (
-    <main>
+    <main className="[overflow-wrap:anywhere]">
       <section className="max-w-[1240px] mx-auto px-8 py-16 flex items-center gap-14 flex-wrap">
         <div className="min-w-0 flex-1 sm:min-w-[340px]">
-          <h1 className="mb-4 text-[36px] font-extrabold leading-tight text-ink sm:text-[44px]">{t('heroTitle')}</h1>
+          <h1 className="mb-4 text-[clamp(1.75rem,8vw,2.25rem)] font-extrabold leading-tight text-ink sm:text-[44px]">{t('heroTitle')}</h1>
           <p className="text-body text-lg mb-6 max-w-[480px]">{t('heroSubtitle')}</p>
           <div className="flex gap-3 flex-wrap mb-4">
             <Link
@@ -93,7 +93,7 @@ export default async function HomePage() {
           <Link
             href="/requests/new"
             prefetch={false}
-            className="h-13 px-7 rounded-full bg-primary text-white font-bold flex items-center whitespace-nowrap"
+            className="min-h-[52px] max-w-full px-5 py-3 rounded-full bg-primary text-white font-bold flex items-center justify-center text-center sm:shrink-0 sm:px-7"
           >
             {t('urgentCta')}
           </Link>

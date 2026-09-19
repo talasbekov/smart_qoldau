@@ -416,8 +416,8 @@ export default function Chat({
             key={message.id}
             className={
               message.senderRole === senderRole
-                ? 'max-w-[80%] self-end rounded-2xl bg-primary px-4 py-2 text-sm text-white'
-                : 'max-w-[80%] self-start rounded-2xl bg-chip px-4 py-2 text-sm text-ink'
+                ? 'max-w-[80%] break-words self-end rounded-2xl bg-primary px-4 py-2 text-sm text-white'
+                : 'max-w-[80%] break-words self-start rounded-2xl bg-chip px-4 py-2 text-sm text-ink'
             }
           >
             {message.text}
@@ -513,14 +513,14 @@ export default function Chat({
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
             placeholder={copy.placeholder}
-            className="h-12 flex-1 rounded-2xl border border-border px-4 text-base text-ink focus:outline-none focus:ring-2 focus:ring-primary"
+            className="h-12 min-w-0 flex-1 rounded-2xl border border-border px-4 text-base text-ink focus:outline-none focus:ring-2 focus:ring-primary"
           />
           <button
             type="submit"
             disabled={
               deliveryStatus === 'pending' ||
               deliveryStatus === 'checking' ||
-              deliveryStatus === 'unknown'
+              deliveryStatus === 'unknown' || connectionStatus !== 'ready'
             }
             className="h-12 rounded-2xl bg-primary px-5 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-60 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
           >

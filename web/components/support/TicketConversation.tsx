@@ -27,10 +27,12 @@ export default function TicketConversation({
   ticketId,
   locale,
   userId,
+  basePath = "/support/requests",
 }: {
   ticketId: string;
   locale: string;
   userId: string;
+  basePath?: string;
 }) {
   const copy = locale === 'kz' ? kz.supportPortal : ru.supportPortal;
   const storage = useMemo(() => createSupportStorage(userId), [userId]);
@@ -328,7 +330,7 @@ export default function TicketConversation({
   return (
     <article className="mx-auto max-w-3xl">
       <Link
-        href="/support/requests"
+        href={basePath}
         className="inline-flex min-h-11 items-center text-sm font-bold text-primary underline underline-offset-4 focus:outline-none focus:ring-2 focus:ring-primary"
       >
         {copy.back}

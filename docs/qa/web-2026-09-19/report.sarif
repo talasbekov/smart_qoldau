@@ -1,0 +1,298 @@
+{
+  "version": "2.1.0",
+  "$schema": "https://json.schemastore.org/sarif-2.1.0.json",
+  "runs": [
+    {
+      "tool": {
+        "driver": {
+          "name": "SmartQoldau scoped web QA"
+        }
+      },
+      "results": [
+        {
+          "ruleId": "proxy-path-normalization",
+          "level": "warning",
+          "message": {
+            "text": "Некодированные сегменты обходили белый список прокси"
+          },
+          "properties": {
+            "remediationStatus": "fixed",
+            "evidence": [
+              "evidence/original-01.txt",
+              "evidence/contracts-proxy-red.log",
+              "evidence/contracts-proxy-green.log"
+            ]
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "web/app/api/proxy/[...path]/route.ts"
+                },
+                "region": {
+                  "startLine": 38
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "sitemap-pagination",
+          "level": "warning",
+          "message": {
+            "text": "Sitemap превышал лимит API и терял страницы"
+          },
+          "properties": {
+            "remediationStatus": "fixed",
+            "evidence": [
+              "evidence/original-02.txt",
+              "evidence/sitemap-red.log",
+              "evidence/sitemap-green.log"
+            ]
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "web/app/sitemap.ts"
+                },
+                "region": {
+                  "startLine": 13
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "notification-failure",
+          "level": "warning",
+          "message": {
+            "text": "Ошибка отметки уведомлений скрывалась"
+          },
+          "properties": {
+            "remediationStatus": "fixed",
+            "evidence": [
+              "evidence/original-03.txt",
+              "evidence/ui-notifications-red.log",
+              "evidence/ui-notifications-green.log"
+            ]
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "web/components/client/NotificationList.tsx"
+                },
+                "region": {
+                  "startLine": 25
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "logout-failure",
+          "level": "warning",
+          "message": {
+            "text": "Неуспешный выход выглядел успешным"
+          },
+          "properties": {
+            "remediationStatus": "fixed",
+            "evidence": [
+              "evidence/original-04.txt",
+              "evidence/ui-logout-red.log",
+              "evidence/ui-logout-green.log"
+            ]
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "web/components/client/LogoutButton.tsx"
+                },
+                "region": {
+                  "startLine": 12
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "locale-hardcoded-copy",
+          "level": "warning",
+          "message": {
+            "text": "Русские строки оставались в казахских кабинетах и входе"
+          },
+          "properties": {
+            "remediationStatus": "fixed",
+            "evidence": [
+              "evidence/original-05.txt",
+              "evidence/ui-account-red.log",
+              "evidence/ui-owned-final.log"
+            ]
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "web/components/client/DeleteAccount.tsx"
+                },
+                "region": {
+                  "startLine": 43
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "timezone-history",
+          "level": "warning",
+          "message": {
+            "text": "История клиента использовала время сервера и русские темы"
+          },
+          "properties": {
+            "remediationStatus": "fixed",
+            "evidence": [
+              "evidence/original-06.txt",
+              "evidence/ui-expert-red.log",
+              "evidence/ui-expert-green.log"
+            ]
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "web/app/[locale]/(expert)/expert/clients/[id]/page.tsx"
+                },
+                "region": {
+                  "startLine": 18
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "responsive-overflow",
+          "level": "warning",
+          "message": {
+            "text": "Главная выходила за ширину 320 пикселей"
+          },
+          "properties": {
+            "remediationStatus": "fixed",
+            "evidence": [
+              "evidence/original-07.txt",
+              "evidence/mobile-overflow-red.json",
+              "evidence/mobile-overflow-green.json"
+            ]
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "web/app/[locale]/(public)/page.tsx"
+                },
+                "region": {
+                  "startLine": 96
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "missing-spacing-token",
+          "level": "note",
+          "message": {
+            "text": "Основные кнопки были ниже 52 пикселей из прототипа"
+          },
+          "properties": {
+            "remediationStatus": "fixed",
+            "evidence": [
+              "evidence/original-08.txt",
+              "evidence/cta-height-baseline.json",
+              "evidence/final-e2e.log"
+            ]
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "web/tailwind.config.ts"
+                },
+                "region": {
+                  "startLine": 6
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "missing-header-entry",
+          "level": "warning",
+          "message": {
+            "text": "В шапке отсутствовали вход и смена языка"
+          },
+          "properties": {
+            "remediationStatus": "fixed",
+            "evidence": [
+              "evidence/original-09.txt",
+              "evidence/header-red.log",
+              "evidence/language-green.log"
+            ]
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "web/components/Header.tsx"
+                },
+                "region": {
+                  "startLine": 40
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "session-renewal-absent",
+          "level": "warning",
+          "message": {
+            "text": "Истёкшая веб-сессия не обновлялась через refresh"
+          },
+          "properties": {
+            "remediationStatus": "fixed",
+            "evidence": [
+              "evidence/original-10.txt",
+              "evidence/contracts-ssr-red.log",
+              "evidence/final-e2e.log"
+            ]
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "web/lib/auth/require-user.ts"
+                },
+                "region": {
+                  "startLine": 12
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "runtime-source-drift",
+          "level": "warning",
+          "message": {
+            "text": "Локальный backend образ устарел: публичный content возвращает 401"
+          },
+          "properties": {
+            "remediationStatus": "open",
+            "evidence": [
+              "evidence/backend-runtime.txt"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -7,12 +7,17 @@ import { ApiError, apiFetch } from '@/lib/api/client';
 import { connectRealtime, type SqSocket } from '@/lib/realtime/socket';
 import type { Topic } from '@/lib/api/public';
 import type { components } from '@/lib/api/generated';
+import { deskCopy } from '@/components/expert-desk/copy';
 import ru from '@/messages/ru.json';
 import kz from '@/messages/kz.json';
 
 type Offer = components['schemas']['OfferDto'];
 type Accepted = components['schemas']['AcceptOfferDto'];
 type Notice = { kind: 'status' | 'alert'; text: string };
+
+// A route transition can briefly overlap two lists. Never submit the same
+// offer twice from this document; the backend arbitrates between tabs.
+const pendingOffers = new Set<string>();
 
 const DEFINITIVE_OFFER_ERRORS = new Set([
   'OFFER_NOT_FOUND',
@@ -24,13 +29,22 @@ export default function OfferList({
   initial,
   topics,
   locale,
+  hideEmpty = false,
 }: {
   initial: Offer[];
   topics: Topic[];
   locale: string;
+  hideEmpty?: boolean;
 }) {
   const copy = locale === 'kz' ? kz.expertCabinet : ru.expertCabinet;
   const router = useRouter();
+  const desk = deskCopy(locale);
+  const [now, setNow] = useState<number | null>(null);
+  useEffect(() => {
+    setNow(Date.now());
+    const timer = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(timer);
+  }, []);
   const [offers, setOffers] = useState(initial);
   const [busy, setBusy] = useState<{
     id: string;
@@ -129,7 +143,12 @@ export default function OfferList({
       }
     })();
 
+    void resync();
+    const poll = setInterval(() => {
+      if (document.visibilityState === 'visible') void resync();
+    }, 15_000);
     return () => {
+      clearInterval(poll);
       mounted.current = false;
       dropped = true;
       socket?.close();
@@ -157,7 +176,13 @@ export default function OfferList({
   }
 
   async function accept(offerId: string) {
-    if (actionLock.current || blocked.has(offerId)) return;
+    if (
+      actionLock.current ||
+      pendingOffers.has(offerId) ||
+      blocked.has(offerId)
+    )
+      return;
+    pendingOffers.add(offerId);
     actionLock.current = true;
     // Any REST snapshot already in flight predates this mutation. It may be
     // applied only after a fresh follow-up snapshot, and it must never clear
@@ -171,6 +196,7 @@ export default function OfferList({
       });
       if (!result?.consultationId) throw new TypeError('accept result missing');
       if (mounted.current) {
+        removeOffer(offerId);
         window.dispatchEvent(
           new CustomEvent('sq:expert-work-status', { detail: 'BUSY' }),
         );
@@ -185,13 +211,20 @@ export default function OfferList({
         setBlocked((current) => new Set(current).add(offerId));
       }
     } finally {
+      pendingOffers.delete(offerId);
       actionLock.current = false;
       if (mounted.current) setBusy(null);
     }
   }
 
   async function decline(offerId: string) {
-    if (actionLock.current || blocked.has(offerId)) return;
+    if (
+      actionLock.current ||
+      pendingOffers.has(offerId) ||
+      blocked.has(offerId)
+    )
+      return;
+    pendingOffers.add(offerId);
     actionLock.current = true;
     eventRevision.current += 1;
     setBusy({ id: offerId, action: 'decline' });
@@ -208,6 +241,7 @@ export default function OfferList({
         setBlocked((current) => new Set(current).add(offerId));
       }
     } finally {
+      pendingOffers.delete(offerId);
       actionLock.current = false;
       if (mounted.current) setBusy(null);
     }
@@ -215,6 +249,11 @@ export default function OfferList({
 
   return (
     <div className="flex flex-col gap-4">
+      {hideEmpty && offers.length > 0 ? (
+        <h2 role="status" className="text-lg font-extrabold text-ink">
+          {desk.incoming}: {offers.length}
+        </h2>
+      ) : null}
       {blocked.size > 0 ? (
         <div
           role="alert"
@@ -241,6 +280,15 @@ export default function OfferList({
         >
           <p>{notice.text}</p>
           {notice.kind === 'alert' ? (
+            <button
+              type="button"
+              onClick={() => void resync()}
+              className="min-h-11 font-bold text-primary"
+            >
+              {desk.retry}
+            </button>
+          ) : null}
+          {notice.kind === 'alert' ? (
             <Link
               href={`/${locale}/expert/consultations`}
               className="mt-2 inline-flex min-h-11 items-center font-bold text-primary focus:outline-none focus:ring-2 focus:ring-primary"
@@ -252,11 +300,24 @@ export default function OfferList({
       ) : null}
 
       {offers.length === 0 ? (
-        <p className="py-8 text-body">{copy.offersEmpty}</p>
+        hideEmpty ? null : (
+          <p className="py-8 text-body">{copy.offersEmpty}</p>
+        )
       ) : (
         <ul className="flex flex-col gap-3">
           {offers.map((offer) => {
-            const expired = new Date(offer.deadlineAt).getTime() <= Date.now();
+            const remaining =
+              now === null
+                ? null
+                : Math.max(
+                    0,
+                    Math.ceil(
+                      (new Date(offer.deadlineAt).getTime() - now) / 1000,
+                    ),
+                  );
+            const expired =
+              remaining !== null &&
+              (!Number.isFinite(remaining) || remaining <= 0);
             const actionBlocked = busy !== null || blocked.has(offer.offerId);
 
             return (
@@ -282,6 +343,10 @@ export default function OfferList({
                   · {formatLabels[offer.format] ?? offer.format}
                 </p>
 
+                <p className="mb-3 text-sm font-bold text-ink">
+                  {desk.remaining}: {remaining === null ? '…' : remaining}{' '}
+                  {desk.seconds}
+                </p>
                 <div className="flex flex-wrap gap-3">
                   <button
                     type="button"
@@ -296,7 +361,7 @@ export default function OfferList({
                   <button
                     type="button"
                     onClick={() => decline(offer.offerId)}
-                    disabled={actionBlocked}
+                    disabled={expired || actionBlocked}
                     className="min-h-11 rounded-2xl border border-border px-5 py-3 text-sm font-bold text-ink disabled:opacity-60 focus:outline-none focus:ring-2 focus:ring-primary"
                   >
                     {busy?.id === offer.offerId && busy.action === 'decline'

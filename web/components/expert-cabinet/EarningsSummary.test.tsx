@@ -8,7 +8,8 @@ function tile(label: string): string {
   const heading = screen
     .getAllByText(label)
     .find((node) => node.tagName === 'P')!;
-  const text = heading.parentElement!.querySelector('p:last-child')!.textContent!;
+  const text =
+    heading.parentElement!.querySelector('p:last-child')!.textContent!;
   // Intl разделяет разряды неразрывным пробелом (U+00A0) и узкими
   // пробелами — глазами не отличить, сравнением строк отличается.
   return text.replace(/[\u00a0\u202f\u2009]/g, ' ');
@@ -23,14 +24,26 @@ const days = [
 
 describe('EarningsSummary', () => {
   it('показывает доход за период и число консультаций', () => {
-    render(<EarningsSummary days={days} balanceTiyn={1_017_450} availableTiyn={500_000} />);
+    render(
+      <EarningsSummary
+        days={days}
+        balanceTiyn={1_017_450}
+        availableTiyn={500_000}
+      />,
+    );
 
     expect(tile('Доход за период')).toBe('10 175 ₸');
     expect(tile('Консультаций')).toBe('3');
   });
 
   it('показывает средний чек по дням с консультациями, а не по всем', () => {
-    render(<EarningsSummary days={days} balanceTiyn={1_017_450} availableTiyn={500_000} />);
+    render(
+      <EarningsSummary
+        days={days}
+        balanceTiyn={1_017_450}
+        availableTiyn={500_000}
+      />,
+    );
 
     // 10 175 ₸ на 3 консультации ≈ 3 392 ₸, а не на 3 дня.
     expect(tile('Средний чек')).toBe('3 392 ₸');
@@ -54,4 +67,20 @@ describe('EarningsSummary', () => {
 
     expect(screen.queryByText(/NaN/)).toBeNull();
   });
+});
+
+it('renders Kazakh earnings labels and dates without changing the money', () => {
+  render(
+    <EarningsSummary
+      days={days}
+      balanceTiyn={1_017_450}
+      availableTiyn={500_000}
+      locale="kz"
+    />,
+  );
+  expect(tile('Кезеңдегі табыс')).toBe('10 175 ₸');
+  expect(
+    screen.getByRole('columnheader', { name: 'Күні' }),
+  ).toBeInTheDocument();
+  expect(screen.getByText(/1 қыркүйек/)).toBeInTheDocument();
 });

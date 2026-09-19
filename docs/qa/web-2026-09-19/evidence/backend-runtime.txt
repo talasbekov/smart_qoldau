@@ -1,0 +1,2 @@
+container=/smartqoldau-backend-1 created=2026-09-01T23:09:44.969880769Z image=sha256:ec5ea93d5289fb91f93a8b6ffccd5ff57275d944470b80e410da8817a025ccef
+{"status":401,"body":"{\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Unauthorized\"}}"}

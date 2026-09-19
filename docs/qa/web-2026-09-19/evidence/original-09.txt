@@ -1,0 +1,6 @@
+        </nav>
+        <Link
+          href="/support"
+          className="h-10 px-5 rounded-full bg-primary text-white text-xs font-bold flex items-center"
+        >
+          {t('support')}

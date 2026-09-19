@@ -9,6 +9,16 @@ test.describe('главные CTA', () => {
   ] as const;
 
   for (const [locale, help, catalog] of localeCases) {
+    test(`главная ${locale} помещается в узкий экран без горизонтального скролла`, async ({ page }) => {
+      await page.setViewportSize({ width: 320, height: 800 });
+      await page.goto(`/${locale}`);
+      const width = await page.evaluate(() => ({
+        content: document.documentElement.scrollWidth,
+        viewport: window.innerWidth,
+      }));
+      expect(width.content).toBeLessThanOrEqual(width.viewport);
+    });
+
     test(`в ${locale} ведут в консультацию и локализованный каталог`, async ({ page }) => {
       await page.goto(`/${locale}`);
 
@@ -20,6 +30,12 @@ test.describe('главные CTA', () => {
         'href',
         `/${locale}/catalog`,
       );
+      // The prototype uses 52px buttons; missing Tailwind spacing tokens
+      // previously collapsed these touch targets to a single text line.
+      for (const name of [help, catalog]) {
+        const bounds = await page.getByRole('link', { name }).first().boundingBox();
+        expect(bounds?.height).toBeGreaterThanOrEqual(52);
+      }
     });
   }
 

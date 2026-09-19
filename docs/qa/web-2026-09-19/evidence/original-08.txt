@@ -1,0 +1,6 @@
+  content: ['./app/**/*.{ts,tsx}', './components/**/*.{ts,tsx}'],
+  theme: {
+    extend: {
+      fontFamily: { sans: ['Inter', 'sans-serif'] },
+      // Оттенки вторичного текста затемнены до WCAG AA (4.5:1) на всех
+      // трёх подложках — белой, surface и chip. Порядок светлоты

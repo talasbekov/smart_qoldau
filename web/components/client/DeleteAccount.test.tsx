@@ -28,7 +28,9 @@ describe('DeleteAccount', () => {
     fireEvent.click(screen.getByRole('button', { name: /Удалить аккаунт/ }));
 
     // ТЗ §5.1: удаление необратимо и уносит историю консультаций.
-    expect(screen.getByText(/безвозвратно|нельзя восстановить/i)).toBeInTheDocument();
+    expect(
+      screen.getByText(/безвозвратно|нельзя восстановить/i),
+    ).toBeInTheDocument();
     expect(screen.getByText(/истори/i)).toBeInTheDocument();
   });
 
@@ -39,7 +41,9 @@ describe('DeleteAccount', () => {
     fireEvent.click(screen.getByRole('button', { name: /Удалить аккаунт/ }));
     fireEvent.click(screen.getByRole('button', { name: /Да, удалить/ }));
 
-    await waitFor(() => expect(apiFetch).toHaveBeenCalledWith('me', { method: 'DELETE' }));
+    await waitFor(() =>
+      expect(apiFetch).toHaveBeenCalledWith('me', { method: 'DELETE' }),
+    );
   });
 
   it('передумать можно', () => {
@@ -71,4 +75,18 @@ describe('DeleteAccount', () => {
     expect(await screen.findByRole('alert')).toBeInTheDocument();
     expect(replace).not.toHaveBeenCalled();
   });
+});
+
+it('explains irreversible deletion and lets the Kazakh user cancel', () => {
+  render(<DeleteAccount locale="kz" />);
+  fireEvent.click(screen.getByRole('button', { name: 'Аккаунтты жою' }));
+  expect(
+    screen.getByText('Аккаунтты біржола жою керек пе?'),
+  ).toBeInTheDocument();
+  expect(screen.getByText(/Қалпына келтіру мүмкін емес/)).toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: 'Бас тарту' }));
+  expect(
+    screen.queryByRole('button', { name: 'Иә, жою' }),
+  ).not.toBeInTheDocument();
+  expect(apiFetch).not.toHaveBeenCalled();
 });

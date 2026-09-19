@@ -9,7 +9,8 @@ jest.mock('next/navigation', () => ({
 }));
 
 const token = { value: null as string | null };
-jest.mock('./cookies', () => ({ readAccessToken: async () => token.value }));
+const refresh = { value: null as string | null };
+jest.mock('./cookies', () => ({ readAccessToken: async () => token.value, readRefreshToken: async () => refresh.value }));
 
 // eslint-disable-next-line import/first
 import { redirect } from 'next/navigation';
@@ -23,7 +24,7 @@ function jwt(payload: Record<string, unknown>): string {
   return `header.${part(payload)}.signature`;
 }
 
-beforeEach(() => jest.clearAllMocks());
+beforeEach(() => { jest.clearAllMocks(); refresh.value = null; });
 
 describe('requireUser', () => {
   it('без сессии уводит на вход, а не показывает пустой кабинет', async () => {
@@ -59,4 +60,15 @@ describe('requireUser', () => {
 
     await expect(requireUser('ru')).resolves.toMatchObject({ isGuest: true });
   });
+});
+it('redirects expired SSR access to renewal when a refresh cookie exists', async () => {
+  token.value = jwt({ sub: 'u1', exp: 1 });
+  refresh.value = 'refresh';
+  await expect(requireUser('kz')).rejects.toThrow('NEXT_REDIRECT');
+  expect(mockRedirect).toHaveBeenCalledWith('/kz/renew-session');
+});
+it('redirects expired access without refresh to login', async () => {
+  token.value = jwt({ sub: 'u1', exp: 1 });
+  await expect(requireUser('ru')).rejects.toThrow('NEXT_REDIRECT');
+  expect(mockRedirect).toHaveBeenCalledWith('/ru/login');
 });

@@ -5,8 +5,8 @@ import kz from '@/messages/kz.json';
 let current: typeof ru = ru;
 jest.mock('next-intl/server', () => ({
   getTranslations: async (namespace: string) => {
-    const dict = (current as Record<string, Record<string, string>>)[namespace] ?? {};
-    return (key: string) => dict[key] ?? `${namespace}.${key}`;
+    const dict = (current as Record<string, Record<string, unknown>>)[namespace] ?? {};
+    return (key: string) => typeof dict[key] === 'string' ? dict[key] : `${namespace}.${key}`;
   },
 }));
 

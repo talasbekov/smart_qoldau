@@ -38,6 +38,11 @@ jest.mock('livekit-client', () => ({
 const originalFetch = global.fetch;
 
 beforeEach(() => {
+  localStorage.clear();
+  Object.defineProperty(navigator, 'locks', {
+    configurable: true,
+    value: { request: async (_name: string, work: () => unknown) => work() },
+  });
   handlers.clear();
   room.remoteParticipants.clear();
   room.connect.mockResolvedValue(undefined);
@@ -52,11 +57,22 @@ afterEach(() => {
 });
 
 function tokenResponds(status: number, payload: unknown) {
-  global.fetch = jest.fn().mockResolvedValue({
-    ok: status >= 200 && status < 300,
-    status,
-    json: async () => payload,
-  }) as unknown as typeof fetch;
+  global.fetch = jest.fn(async (path) =>
+    path === '/api/auth/session'
+      ? {
+          ok: true,
+          status: 200,
+          json: async () => ({
+            user: { id: 'u1' },
+            expiresAt: Date.now() + 120_000,
+          }),
+        }
+      : {
+          ok: status >= 200 && status < 300,
+          status,
+          json: async () => payload,
+        },
+  ) as unknown as typeof fetch;
 }
 
 function remoteTrack(kind: 'audio' | 'video') {
@@ -79,8 +95,9 @@ describe('joinCall', () => {
 
     await joinCall('c1', 'video', { cameraId: null, microphoneId: null });
 
-    expect((global.fetch as jest.Mock).mock.calls[0][0]).toBe(
+    expect(global.fetch).toHaveBeenCalledWith(
       '/api/proxy/consultations/c1/media-token',
+      expect.objectContaining({ method: 'POST' }),
     );
   });
 
@@ -89,7 +106,10 @@ describe('joinCall', () => {
 
     await joinCall('c1', 'video', { cameraId: null, microphoneId: null });
 
-    expect(room.connect).toHaveBeenCalledWith('wss://livekit.example', 'lk-token');
+    expect(room.connect).toHaveBeenCalledWith(
+      'wss://livekit.example',
+      'lk-token',
+    );
   });
 
   it('прикрепляет уже подписанные remote audio/video после позднего bind UI', async () => {
@@ -103,7 +123,10 @@ describe('joinCall', () => {
       ]),
     });
 
-    const call = await joinCall('c1', 'video', { cameraId: null, microphoneId: null });
+    const call = await joinCall('c1', 'video', {
+      cameraId: null,
+      microphoneId: null,
+    });
     const audio = document.createElement('audio');
     const video = document.createElement('video');
     call.bindRemoteMedia({ audio, video });
@@ -114,7 +137,10 @@ describe('joinCall', () => {
 
   it('прикрепляет новые remote tracks и отсоединяет их при unsubscribe', async () => {
     tokenResponds(200, GRANT);
-    const call = await joinCall('c1', 'video', { cameraId: null, microphoneId: null });
+    const call = await joinCall('c1', 'video', {
+      cameraId: null,
+      microphoneId: null,
+    });
     const audio = document.createElement('audio');
     const video = document.createElement('video');
     call.bindRemoteMedia({ audio, video });
@@ -129,7 +155,10 @@ describe('joinCall', () => {
 
   it('отсоединяет tracks ушедшего участника даже без TrackUnsubscribed', async () => {
     tokenResponds(200, GRANT);
-    const call = await joinCall('c1', 'audio', { cameraId: null, microphoneId: null });
+    const call = await joinCall('c1', 'audio', {
+      cameraId: null,
+      microphoneId: null,
+    });
     const audio = document.createElement('audio');
     call.bindRemoteMedia({ audio, video: null });
     const track = remoteTrack('audio');
@@ -145,7 +174,10 @@ describe('joinCall', () => {
 
   it('сообщает reconnect/reconnected/disconnected и позволяет снять подписку', async () => {
     tokenResponds(200, GRANT);
-    const call = await joinCall('c1', 'audio', { cameraId: null, microphoneId: null });
+    const call = await joinCall('c1', 'audio', {
+      cameraId: null,
+      microphoneId: null,
+    });
     const listener = jest.fn();
     const unsubscribe = call.onStateChange(listener);
 
@@ -166,10 +198,15 @@ describe('joinCall', () => {
 
     await joinCall('c1', 'audio', { cameraId: 'cam1', microphoneId: 'mic1' });
 
-    expect(room.localParticipant.setCameraEnabled).not.toHaveBeenCalledWith(true);
-    expect(room.localParticipant.setMicrophoneEnabled).toHaveBeenCalledWith(true, {
-      deviceId: 'mic1',
-    });
+    expect(room.localParticipant.setCameraEnabled).not.toHaveBeenCalledWith(
+      true,
+    );
+    expect(room.localParticipant.setMicrophoneEnabled).toHaveBeenCalledWith(
+      true,
+      {
+        deviceId: 'mic1',
+      },
+    );
   });
 
   it('при ошибке камеры останавливает микрофон, снимает listeners и отключается', async () => {
@@ -180,16 +217,23 @@ describe('joinCall', () => {
 
     await expect(
       joinCall('c1', 'video', { cameraId: 'cam1', microphoneId: 'mic1' }),
-    ).rejects.toMatchObject<Partial<CallError>>({ reason: 'permission-denied' });
+    ).rejects.toMatchObject<Partial<CallError>>({
+      reason: 'permission-denied',
+    });
 
-    expect(room.localParticipant.setMicrophoneEnabled).toHaveBeenLastCalledWith(false);
+    expect(room.localParticipant.setMicrophoneEnabled).toHaveBeenLastCalledWith(
+      false,
+    );
     expect(room.disconnect).toHaveBeenCalled();
     expect(room.off).toHaveBeenCalled();
   });
 
   it('leave идемпотентно останавливает local tracks, remote media и listeners', async () => {
     tokenResponds(200, GRANT);
-    const call = await joinCall('c1', 'video', { cameraId: null, microphoneId: null });
+    const call = await joinCall('c1', 'video', {
+      cameraId: null,
+      microphoneId: null,
+    });
     const track = remoteTrack('audio');
     const audio = document.createElement('audio');
     call.bindRemoteMedia({ audio, video: document.createElement('video') });
@@ -198,7 +242,9 @@ describe('joinCall', () => {
     await Promise.all([call.leave(), call.leave()]);
 
     expect(track.detach).toHaveBeenCalledWith(audio);
-    expect(room.localParticipant.setMicrophoneEnabled).toHaveBeenCalledWith(false);
+    expect(room.localParticipant.setMicrophoneEnabled).toHaveBeenCalledWith(
+      false,
+    );
     expect(room.localParticipant.setCameraEnabled).toHaveBeenCalledWith(false);
     expect(room.disconnect).toHaveBeenCalledTimes(1);
     expect(room.off).toHaveBeenCalled();
@@ -215,11 +261,19 @@ describe('joinCall', () => {
 
   it('отмена до позднего grant не создаёт комнату и не включает микрофон', async () => {
     let resolveGrant!: (value: unknown) => void;
-    global.fetch = jest.fn(
-      () =>
-        new Promise((resolve) => {
-          resolveGrant = resolve;
-        }),
+    global.fetch = jest.fn((path) =>
+      path === '/api/auth/session'
+        ? Promise.resolve({
+            ok: true,
+            status: 200,
+            json: async () => ({
+              user: { id: 'u1' },
+              expiresAt: Date.now() + 120_000,
+            }),
+          })
+        : new Promise((resolve) => {
+            resolveGrant = resolve;
+          }),
     ) as unknown as typeof fetch;
     const controller = new AbortController();
     const joining = (joinCall as typeof joinCall)(
@@ -229,6 +283,7 @@ describe('joinCall', () => {
       controller.signal,
     );
 
+    await waitFor(() => expect(resolveGrant).toBeDefined());
     controller.abort();
     resolveGrant({ ok: true, json: async () => GRANT });
 
@@ -268,10 +323,52 @@ describe('joinCall', () => {
       await waitFor(() => expect(room.disconnect).toHaveBeenCalled(), {
         timeout: 150,
       });
-      expect(room.localParticipant.setMicrophoneEnabled).toHaveBeenCalledWith(false);
+      expect(room.localParticipant.setMicrophoneEnabled).toHaveBeenCalledWith(
+        false,
+      );
     } finally {
       resolveCamera();
       await joining.catch(() => undefined);
     }
   });
+});
+
+it.each([
+  ['CONSULTATION_NOT_ACTIVE', 'not-active'],
+  ['PAYMENT_HOLD_REQUIRED', 'payment-required'],
+])(
+  'classifies the canonical Nest error envelope %s before joining media',
+  async (code, reason) => {
+    tokenResponds(403, { error: { code, message: 'Rejected' } });
+    await expect(
+      joinCall('c1', 'audio', { cameraId: null, microphoneId: null }),
+    ).rejects.toMatchObject({ reason });
+    expect(room.connect).not.toHaveBeenCalled();
+  },
+);
+
+it('renews an expired session before requesting media access exactly once', async () => {
+  const paths: string[] = [];
+  Object.defineProperty(navigator, 'locks', {
+    configurable: true,
+    value: { request: async (_name: string, work: () => unknown) => work() },
+  });
+  localStorage.clear();
+  global.fetch = jest.fn(async (path) => {
+    paths.push(String(path));
+    const payload =
+      path === '/api/auth/session'
+        ? { user: null, expiresAt: null }
+        : path === '/api/auth/refresh'
+          ? { user: { id: 'u1' }, expiresAt: Date.now() + 120_000 }
+          : GRANT;
+    return { ok: true, status: 200, json: async () => payload };
+  }) as unknown as typeof fetch;
+  await joinCall('c1', 'audio', { cameraId: null, microphoneId: null });
+  expect(paths).toEqual([
+    '/api/auth/session',
+    '/api/auth/refresh',
+    '/api/proxy/consultations/c1/media-token',
+  ]);
+  expect(room.connect).toHaveBeenCalledWith(GRANT.url, GRANT.token);
 });

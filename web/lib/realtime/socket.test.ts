@@ -1,4 +1,5 @@
 import { EventEmitter } from 'node:events';
+import { changeSession } from '@/lib/auth/browser-session';
 import { connectRealtime, type SqSocket } from './socket';
 
 class FakeSocket extends EventEmitter {
@@ -21,6 +22,10 @@ jest.mock('socket.io-client', () => ({
 }));
 
 const originalFetch = global.fetch;
+beforeEach(() => {
+  localStorage.clear();
+  Object.defineProperty(navigator, 'locks', { configurable: true, value: { request: (_name: string, work: () => unknown) => work() } });
+});
 afterEach(() => {
   global.fetch = originalFetch;
   jest.clearAllMocks();
@@ -29,11 +34,9 @@ afterEach(() => {
 });
 
 function tokenResponds(status: number, payload: unknown) {
-  global.fetch = jest.fn().mockResolvedValue({
-    ok: status >= 200 && status < 300,
-    status,
-    json: async () => payload,
-  }) as unknown as typeof fetch;
+  global.fetch = jest.fn(async (path: string) => path === '/api/auth/session'
+    ? { ok: true, status: 200, json: async () => ({ user: { id: 'u1' }, expiresAt: Date.now() + 120_000 }) }
+    : { ok: status >= 200 && status < 300, status, json: async () => payload }) as unknown as typeof fetch;
 }
 
 describe('connectRealtime', () => {
@@ -42,9 +45,7 @@ describe('connectRealtime', () => {
 
     await connectRealtime();
 
-    expect((global.fetch as jest.Mock).mock.calls[0][0]).toBe(
-      '/api/realtime/token',
-    );
+    expect((global.fetch as jest.Mock).mock.calls.map(([path]) => path)).toEqual(['/api/auth/session', '/api/realtime/token']);
   });
 
   it('передаёт токен в рукопожатии, как ждёт шлюз', async () => {
@@ -53,9 +54,11 @@ describe('connectRealtime', () => {
     await connectRealtime();
 
     const options = io.mock.calls[0][1] as unknown as {
-      auth: { token: string };
+      auth: (done: (credentials: { token: string }) => void) => void;
     };
-    expect(options.auth.token).toBe('access-value');
+    const done = jest.fn();
+    options.auth(done);
+    expect(done).toHaveBeenCalledWith({ token: 'access-value' });
   });
 
   it('подключается к неймспейсу /ws, а не к корню', async () => {
@@ -134,4 +137,24 @@ describe('connectRealtime', () => {
 
     expect(fake.disconnect).toHaveBeenCalled();
   });
+});
+
+ it('obtains a fresh realtime token on reconnect', async () => {
+  tokenResponds(200, { token: 'first-token' });
+  const socket = await connectRealtime();
+  const options = io.mock.calls[0][1] as unknown as { auth: (done: (credentials: { token: string }) => void) => void };
+  options.auth(jest.fn());
+  tokenResponds(200, { token: 'renewed-token' });
+  const credentials = await new Promise((resolve) => options.auth(resolve));
+  expect(credentials).toEqual({ token: 'renewed-token' });
+  socket.close();
+});
+it('disconnects on an account change and cannot send queued chat as the next account', async () => {
+  tokenResponds(200, { token: 'token-a' });
+  const socket = await connectRealtime();
+  fake.emit('ready', {});
+  await changeSession('/api/auth/logout', { method: 'POST' });
+  expect(fake.disconnect).toHaveBeenCalled();
+  expect(socket.send('chat.send', { text: 'old message' })).toBe(false);
+  socket.close();
 });

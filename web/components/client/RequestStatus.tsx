@@ -1,6 +1,8 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import Link from 'next/link';
+import { journeyCopy } from './journey-copy';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { apiFetch } from '@/lib/api/client';
 import { connectRealtime, type SqSocket } from '@/lib/realtime/socket';
@@ -13,6 +15,9 @@ type SyncStatus = 'connecting' | 'online' | 'recovering' | 'offline';
 
 export type RequestState = {
   id: string;
+  topicSlug?: string;
+  format?: string;
+  isEmergency?: boolean;
   status:
     'SEARCHING' | 'MATCHED' | 'CANCELLED' | 'NO_EXPERTS' | 'CALLBACK_REQUESTED';
   consultationId?: string | null;
@@ -29,10 +34,102 @@ export default function RequestStatus({
   locale: string;
 }) {
   const router = useRouter();
+  const actionCopy = journeyCopy(locale);
+  const [cancelBusy, setCancelBusy] = useState(false);
+  const [cancelError, setCancelError] = useState(false);
+  const [count, setCount] = useState<number | null>(null);
+  const cancelLock = useRef(false);
   const [state, setState] = useState(initial);
   const [syncStatus, setSyncStatus] = useState<SyncStatus>('connecting');
   const [retryNonce, setRetryNonce] = useState(0);
   const copy = locale === 'kz' ? kz.requestStatus : ru.requestStatus;
+
+  useEffect(() => {
+    if (state.status !== 'SEARCHING' || !state.topicSlug || !state.format)
+      return;
+    let stopped = false;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const abort = new AbortController();
+    const poll = async () => {
+      try {
+        const query = new URLSearchParams({
+          topicSlug: state.topicSlug!,
+          format: state.format!,
+          urgentOnly: String(Boolean(state.isEmergency)),
+        });
+        const result = await apiFetch<{ count: number }>(
+          `matching/online-count?${query}`,
+          { signal: abort.signal },
+        );
+        if (!stopped)
+          setCount(
+            result && Number.isInteger(result.count) && result.count >= 0
+              ? result.count
+              : null,
+          );
+      } catch {
+        if (!stopped) setCount(null);
+      } finally {
+        if (!stopped) timer = setTimeout(() => void poll(), 15_000);
+      }
+    };
+    void poll();
+    return () => {
+      stopped = true;
+      abort.abort();
+      if (timer) clearTimeout(timer);
+    };
+  }, [state.status, state.topicSlug, state.format, state.isEmergency]);
+
+  async function cancel() {
+    if (cancelLock.current) return;
+    cancelLock.current = true;
+    setCancelBusy(true);
+    setCancelError(false);
+    try {
+      // After an unknown outcome only GET is allowed until the state is known.
+      const fresh = await apiFetch<RequestState>(`requests/${requestId}`);
+      if (!fresh) throw new Error('Missing request');
+      if (fresh.status !== 'SEARCHING') {
+        setState(fresh);
+        return;
+      }
+      const cancelled = await apiFetch<RequestState>(
+        `requests/${requestId}/cancel`,
+        { method: 'POST' },
+      );
+      if (!cancelled) throw new Error('Missing cancellation');
+      setState(cancelled);
+    } catch {
+      try {
+        const fresh = await apiFetch<RequestState>(`requests/${requestId}`);
+        if (fresh) setState(fresh);
+        setCancelError(!fresh || fresh.status === 'SEARCHING');
+      } catch {
+        setCancelError(true);
+      }
+    } finally {
+      cancelLock.current = false;
+      setCancelBusy(false);
+    }
+  }
+
+  const navigation = (
+    <div className="mt-5 flex flex-wrap gap-4">
+      <Link
+        className="min-h-11 rounded-xl bg-primary px-4 py-3 font-bold text-white"
+        href={`/${locale}/requests/new`}
+      >
+        {actionCopy.repeat}
+      </Link>
+      <Link
+        className="min-h-11 px-4 py-3 text-primary underline"
+        href={`/${locale}`}
+      >
+        {actionCopy.home}
+      </Link>
+    </div>
+  );
 
   useEffect(() => {
     if (state.status !== 'SEARCHING') return;
@@ -145,7 +242,9 @@ export default function RequestStatus({
           // несколько за сессию — чужое событие игнорируем.
           if (fresh.id === requestId) {
             setState((current) =>
-              current.status === 'SEARCHING' ? fresh : current,
+              current.status === 'SEARCHING'
+                ? { ...current, ...fresh }
+                : current,
             );
           }
         });
@@ -171,7 +270,12 @@ export default function RequestStatus({
   }, [state, locale, router]);
 
   if (state.status === 'CANCELLED') {
-    return <p className="text-body">{copy.cancelled}</p>;
+    return (
+      <div>
+        <p className="text-body">{copy.cancelled}</p>
+        {navigation}
+      </div>
+    );
   }
 
   if (state.status === 'NO_EXPERTS' || state.status === 'CALLBACK_REQUESTED') {
@@ -193,6 +297,7 @@ export default function RequestStatus({
             </li>
           ))}
         </ul>
+        {navigation}
       </div>
     );
   }
@@ -205,6 +310,24 @@ export default function RequestStatus({
       <p className="text-sm text-muted" aria-live="polite">
         {copy.searchingBody}
       </p>
+      {count !== null && (
+        <p className="mt-3 text-sm" aria-live="polite">
+          {actionCopy.online}: {count}
+        </p>
+      )}
+      <button
+        type="button"
+        disabled={cancelBusy}
+        onClick={() => void cancel()}
+        className="mt-4 min-h-11 rounded-xl border border-border px-4 font-bold text-primary disabled:opacity-50"
+      >
+        {cancelBusy ? actionCopy.loading : actionCopy.cancel}
+      </button>
+      {cancelError && (
+        <p role="alert" className="mt-2 text-sm">
+          {actionCopy.cancelError}
+        </p>
+      )}
       {syncStatus === 'recovering' ? (
         <p role="status" className="mt-3 text-sm font-semibold text-body">
           {copy.recovering}

@@ -14,6 +14,8 @@ export const envValidationSchema = Joi.object({
   JWT_SECRET: Joi.string().min(32).required(),
   JWT_ACCESS_TTL: Joi.string().default('15m'),
   JWT_REFRESH_TTL_DAYS: Joi.number().default(30),
+  DEMO_AUTH_ENABLED: Joi.string().valid('true', 'false').default('false'),
+  DEMO_AUTH_PHONES: Joi.string().allow('').optional(),
   SMS_PROVIDER: Joi.string().valid('dev', 'mobizon').default('dev'),
   MOBIZON_API_KEY: Joi.string().when('SMS_PROVIDER', {
     is: 'mobizon',

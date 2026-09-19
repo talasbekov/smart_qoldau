@@ -18,7 +18,7 @@ export default async function ClientLayout({
   const { locale } = await params;
   // Не проверка прав — их проверяет NestJS на каждом запросе, — а
   // вежливость: не показывать каркас тому, кто не получит ни строки данных.
-  await requireUser(locale);
+  const sessionUser = await requireUser(locale);
 
   return (
     <>
@@ -34,7 +34,7 @@ export default async function ClientLayout({
         <aside className="lg:w-56 lg:shrink-0">
           <CabinetNav />
         </aside>
-        <main id="main" className="min-w-0 flex-1">
+        <main data-session-owner={sessionUser.id} id="main" className="min-w-0 flex-1">
           {children}
         </main>
       </div>

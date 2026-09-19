@@ -1,6 +1,15 @@
 import { test, expect } from '@playwright/test';
 import { expectNoA11yViolations } from './a11y';
 
+test('смена языка сохраняет страницу каталога и фильтр', async ({ page }) => {
+  await page.goto('/ru/catalog?format=video');
+  await page.getByRole('link', { name: 'Қазақша', exact: true }).click();
+  await expect(page).toHaveURL(/\/kz\/catalog\?format=video$/);
+  await expect(page.getByLabel('Формат')).toHaveValue('video');
+  await page.getByRole('link', { name: 'Русский', exact: true }).click();
+  await expect(page).toHaveURL(/\/ru\/catalog\?format=video$/);
+});
+
 test('каталог приходит готовым из сервера, а не собирается скриптами', async ({ request }) => {
   const response = await request.get('/ru/catalog');
 

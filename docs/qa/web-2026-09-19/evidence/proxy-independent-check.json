@@ -1,0 +1,10 @@
+{
+  "segments": [
+    "experts",
+    "%2e%2e",
+    "admin",
+    "experts"
+  ],
+  "before": "/v1/admin/experts",
+  "after": "/v1/experts/%252e%252e/admin/experts"
+}

@@ -1,0 +1,5 @@
+{
+  "formLogin": "confirmed for both TESTONLY numbers through request-code and verify-code UI",
+  "observedLanding": "/ru/profile",
+  "harnessNote": "Initial expected destination /ru/consultations or /ru/expert was incorrect. Both browser runs navigated to the authenticated profile page. Expert cabinet is opened explicitly at /ru/expert as documented."
+}

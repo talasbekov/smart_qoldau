@@ -1,3 +1,4 @@
+import { sessionFetch, sessionEpoch, documentSessionEpoch, SESSION_CHANGE_EVENT } from '@/lib/auth/browser-session';
 import { io, type Socket } from 'socket.io-client';
 
 export type SqSocket = {
@@ -11,8 +12,8 @@ const NOT_READY = Symbol('not-ready');
 
 // Токен берётся у BFF на каждое подключение: в браузере он нигде не
 // хранится, а cookie скриптам недоступны.
-async function realtimeToken(): Promise<string> {
-  const response = await fetch('/api/realtime/token');
+async function realtimeToken(epoch: string): Promise<string> {
+  const response = await sessionFetch('/api/realtime/token', {}, epoch);
   if (!response.ok)
     throw new Error('Нет сессии: подключение к реальному времени невозможно');
 
@@ -21,16 +22,44 @@ async function realtimeToken(): Promise<string> {
 }
 
 export async function connectRealtime(): Promise<SqSocket> {
-  const token = await realtimeToken();
+  const epoch = documentSessionEpoch();
+  const token = await realtimeToken(epoch);
+  let firstHandshake = true;
+  let closed = false;
 
   // Неймспейс '/ws' — как у шлюза. Не путь socket.io: там свой дефолт
   // '/socket.io', и прокси стенда проксирует именно его.
   const socket: Socket = io('/ws', {
-    auth: { token },
+    auth: (done) => {
+      if (closed) return;
+      if (firstHandshake) {
+        firstHandshake = false;
+        done({ token });
+        return;
+      }
+      void realtimeToken(epoch).then((fresh) => {
+        if (!closed) done({ token: fresh });
+      }).catch(() => close());
+    },
     transports: ['websocket', 'polling'],
   });
   let readyPayload: unknown | typeof NOT_READY = NOT_READY;
   const readyHandlers = new Set<(payload: unknown) => void>();
+  function close() {
+    closed = true;
+    readyPayload = NOT_READY;
+    window.removeEventListener('storage', checkSession);
+    window.removeEventListener(SESSION_CHANGE_EVENT, checkSession);
+    socket.disconnect();
+  }
+  function checkSession() {
+    try { if (sessionEpoch() !== epoch) close(); }
+    catch { close(); }
+  }
+  window.addEventListener('storage', checkSession);
+  window.addEventListener(SESSION_CHANGE_EVENT, checkSession);
+  checkSession();
+
 
   // Подписываемся до возврата обёртки, чтобы быстрый server ready не
   // потерялся между созданием socket.io и регистрацией React-эффекта.
@@ -68,10 +97,11 @@ export async function connectRealtime(): Promise<SqSocket> {
     // UI не знает, когда действие реально уйдёт. Отказываемся от emit до
     // server ready и возвращаем вызывающему точный локальный результат.
     send: (event, payload) => {
-      if (readyPayload === NOT_READY) return false;
+      checkSession();
+      if (closed || readyPayload === NOT_READY) return false;
       socket.emit(event, payload);
       return true;
     },
-    close: () => socket.disconnect(),
+    close,
   };
 }

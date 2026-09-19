@@ -1,0 +1,556 @@
+{
+  "workflow": "fix verification and scoped web review",
+  "release_verdict": "INCOMPLETE",
+  "verification_verdict": "fixed",
+  "date": "2026-09-19",
+  "base_revision": "2236df554cee01ed43d281c48ba3262e25256574",
+  "changes_committed": false,
+  "deployed": false,
+  "counts": {
+    "discovered": 41,
+    "tested": 21,
+    "passed": 21,
+    "failed": 0,
+    "blocked": 20,
+    "not_applicable": 0
+  },
+  "checks": {
+    "unit": {
+      "suites": 95,
+      "tests": 647,
+      "result": "passed"
+    },
+    "e2e": {
+      "tests": 30,
+      "result": "passed",
+      "mode": "production build + standalone, synthetic auth fixtures"
+    },
+    "public_browser": {
+      "pages": 20,
+      "violations": 0,
+      "javascript_errors": 0,
+      "viewport": 375
+    },
+    "narrow_home": {
+      "locales": 2,
+      "viewport": 320,
+      "overflow": false
+    },
+    "lint": "passed",
+    "typescript": "passed"
+  },
+  "findings": [
+    {
+      "id": "RAW-00000001-0",
+      "client_id": "proxy-path-normalization",
+      "agents": [
+        "orchestrator",
+        "specialist"
+      ],
+      "domain": "security",
+      "domains": [
+        "security"
+      ],
+      "category": "proxy-path-normalization",
+      "root_cause_key": "proxy-path-normalization",
+      "title": "Некодированные сегменты обходили белый список прокси",
+      "severity": "high",
+      "confidence": 0.99,
+      "status": "confirmed",
+      "synthetic": false,
+      "location": {
+        "file": "web/app/api/proxy/[...path]/route.ts",
+        "line": 38,
+        "symbol": "return segments.join",
+        "source_revision": "2236df554cee01ed43d281c48ba3262e25256574",
+        "source_sha256": "78d8912d08ebf664b8e70e000da05af1b74072cb319e62f43ab7075a1b9718d1",
+        "related": []
+      },
+      "surface_ids": [
+        "source:web/app/api/proxy/[...path]/route.ts"
+      ],
+      "evidence": {
+        "tier": "source_and_artifact",
+        "artifacts": [
+          "evidence/original-01.txt",
+          "evidence/contracts-proxy-red.log",
+          "evidence/contracts-proxy-green.log"
+        ]
+      },
+      "recommendation": {
+        "confidence_label": "grounded",
+        "text": "Кодировать сегменты URL и запрещать обратный слэш."
+      },
+      "remediation": {
+        "status": "fixed",
+        "verification": "evidence/contracts-proxy-green.log"
+      },
+      "fingerprint": "cc52866cc04f3c7cd521d4cf98627772322c04dc9567ad58910fecbd256a58b2"
+    },
+    {
+      "id": "RAW-00000002-0",
+      "client_id": "sitemap-pagination",
+      "agents": [
+        "orchestrator",
+        "specialist"
+      ],
+      "domain": "api",
+      "domains": [
+        "api"
+      ],
+      "category": "sitemap-pagination",
+      "root_cause_key": "sitemap-pagination",
+      "title": "Sitemap превышал лимит API и терял страницы",
+      "severity": "medium",
+      "confidence": 0.99,
+      "status": "confirmed",
+      "synthetic": false,
+      "location": {
+        "file": "web/app/sitemap.ts",
+        "line": 13,
+        "symbol": "EXPERTS_IN_SITEMAP = 500",
+        "source_revision": "2236df554cee01ed43d281c48ba3262e25256574",
+        "source_sha256": "7d5b150bd17b7a116a58d0067b862acea4b3b7d7f27e3013d5cf8d5133cc60da",
+        "related": []
+      },
+      "surface_ids": [
+        "source:web/app/sitemap.ts"
+      ],
+      "evidence": {
+        "tier": "source_and_artifact",
+        "artifacts": [
+          "evidence/original-02.txt",
+          "evidence/sitemap-red.log",
+          "evidence/sitemap-green.log"
+        ]
+      },
+      "recommendation": {
+        "confidence_label": "grounded",
+        "text": "Загружать страницы по 100 записей; независимо собирать материалы ru/kk и разделы."
+      },
+      "remediation": {
+        "status": "fixed",
+        "verification": "evidence/sitemap-green.log"
+      },
+      "fingerprint": "24dcf6b9380bc14eb3089c3b892f1e2fc5b9a4067dad040f1baf1a3842567d23"
+    },
+    {
+      "id": "RAW-00000003-0",
+      "client_id": "notification-failure",
+      "agents": [
+        "orchestrator"
+      ],
+      "domain": "ui",
+      "domains": [
+        "ui"
+      ],
+      "category": "notification-failure",
+      "root_cause_key": "notification-failure",
+      "title": "Ошибка отметки уведомлений скрывалась",
+      "severity": "medium",
+      "confidence": 0.99,
+      "status": "confirmed",
+      "synthetic": false,
+      "location": {
+        "file": "web/components/client/NotificationList.tsx",
+        "line": 25,
+        "symbol": "catch",
+        "source_revision": "2236df554cee01ed43d281c48ba3262e25256574",
+        "source_sha256": "a2e9cc3531e35978bdaecdb83aae120bee64423e961f074104c89b83df31c3fb",
+        "related": []
+      },
+      "surface_ids": [
+        "source:web/components/client/NotificationList.tsx"
+      ],
+      "evidence": {
+        "tier": "source_and_artifact",
+        "artifacts": [
+          "evidence/original-03.txt",
+          "evidence/ui-notifications-red.log",
+          "evidence/ui-notifications-green.log"
+        ]
+      },
+      "recommendation": {
+        "confidence_label": "grounded",
+        "text": "Показывать ошибку и обновлять интерфейс только после успешного ответа."
+      },
+      "remediation": {
+        "status": "fixed",
+        "verification": "evidence/ui-notifications-green.log"
+      },
+      "fingerprint": "85f0a3477462bc5fa179be58556f93322df75634038229af0d142726f80a9860"
+    },
+    {
+      "id": "RAW-00000004-0",
+      "client_id": "logout-failure",
+      "agents": [
+        "orchestrator",
+        "specialist"
+      ],
+      "domain": "security",
+      "domains": [
+        "security"
+      ],
+      "category": "logout-failure",
+      "root_cause_key": "logout-failure",
+      "title": "Неуспешный выход выглядел успешным",
+      "severity": "high",
+      "confidence": 0.99,
+      "status": "confirmed",
+      "synthetic": false,
+      "location": {
+        "file": "web/components/client/LogoutButton.tsx",
+        "line": 12,
+        "symbol": "catch",
+        "source_revision": "2236df554cee01ed43d281c48ba3262e25256574",
+        "source_sha256": "d52dceb8cb85a2157992e777f3207d6cd40fad8c97703e6ca57f10928c43ef4f",
+        "related": []
+      },
+      "surface_ids": [
+        "source:web/components/client/LogoutButton.tsx"
+      ],
+      "evidence": {
+        "tier": "source_and_artifact",
+        "artifacts": [
+          "evidence/original-04.txt",
+          "evidence/ui-logout-red.log",
+          "evidence/ui-logout-green.log"
+        ]
+      },
+      "recommendation": {
+        "confidence_label": "grounded",
+        "text": "Проверять HTTP-результат, сохранять экран и черновики при ошибке, сериализовать смену сессии."
+      },
+      "remediation": {
+        "status": "fixed",
+        "verification": "evidence/ui-logout-green.log"
+      },
+      "fingerprint": "9f6ca5f0f45de40fdd37e25da157ef70d68c08c5cf69e8ca31f489470927e49b"
+    },
+    {
+      "id": "RAW-00000005-0",
+      "client_id": "locale-hardcoded-copy",
+      "agents": [
+        "orchestrator",
+        "specialist"
+      ],
+      "domain": "a11y_i18n",
+      "domains": [
+        "a11y_i18n"
+      ],
+      "category": "locale-hardcoded-copy",
+      "root_cause_key": "locale-hardcoded-copy",
+      "title": "Русские строки оставались в казахских кабинетах и входе",
+      "severity": "medium",
+      "confidence": 0.99,
+      "status": "confirmed",
+      "synthetic": false,
+      "location": {
+        "file": "web/components/client/DeleteAccount.tsx",
+        "line": 43,
+        "symbol": "Удалить аккаунт безвозвратно",
+        "source_revision": "2236df554cee01ed43d281c48ba3262e25256574",
+        "source_sha256": "b414477ecfeb481b86d8ee89fc46d06a7996996676b6b7b1988cb51780ba6b1b",
+        "related": []
+      },
+      "surface_ids": [
+        "source:web/components/client/DeleteAccount.tsx"
+      ],
+      "evidence": {
+        "tier": "source_and_artifact",
+        "artifacts": [
+          "evidence/original-05.txt",
+          "evidence/ui-account-red.log",
+          "evidence/ui-owned-final.log"
+        ]
+      },
+      "recommendation": {
+        "confidence_label": "grounded",
+        "text": "Использовать RU/KK словари для входа, уведомлений, профиля, избранного, клиентов и дохода."
+      },
+      "remediation": {
+        "status": "fixed",
+        "verification": "evidence/ui-owned-final.log"
+      },
+      "fingerprint": "f6aa63e593a6a463b4f95c68e40e17e33d7c550dc38b794a4449135ec8866d4a"
+    },
+    {
+      "id": "RAW-00000006-0",
+      "client_id": "timezone-history",
+      "agents": [
+        "orchestrator",
+        "specialist"
+      ],
+      "domain": "a11y_i18n",
+      "domains": [
+        "a11y_i18n"
+      ],
+      "category": "timezone-history",
+      "root_cause_key": "timezone-history",
+      "title": "История клиента использовала время сервера и русские темы",
+      "severity": "medium",
+      "confidence": 0.99,
+      "status": "confirmed",
+      "synthetic": false,
+      "location": {
+        "file": "web/app/[locale]/(expert)/expert/clients/[id]/page.tsx",
+        "line": 18,
+        "symbol": "toLocaleString('ru-KZ'",
+        "source_revision": "2236df554cee01ed43d281c48ba3262e25256574",
+        "source_sha256": "c6e653dde68b2af57687e16cda74c46897f5e40eeefb5644a59683ac0d1b929a",
+        "related": []
+      },
+      "surface_ids": [
+        "source:web/app/[locale]/(expert)/expert/clients/[id]/page.tsx"
+      ],
+      "evidence": {
+        "tier": "source_and_artifact",
+        "artifacts": [
+          "evidence/original-06.txt",
+          "evidence/ui-expert-red.log",
+          "evidence/ui-expert-green.log"
+        ]
+      },
+      "recommendation": {
+        "confidence_label": "grounded",
+        "text": "Использовать Asia/Almaty и локализованный список тем."
+      },
+      "remediation": {
+        "status": "fixed",
+        "verification": "evidence/ui-expert-green.log"
+      },
+      "fingerprint": "03b7c6038ab27d9be2708fa04de8b861129ac3a0f13e96a85cf7883ae5976de6"
+    },
+    {
+      "id": "RAW-00000007-0",
+      "client_id": "responsive-overflow",
+      "agents": [
+        "orchestrator"
+      ],
+      "domain": "ui",
+      "domains": [
+        "ui"
+      ],
+      "category": "responsive-overflow",
+      "root_cause_key": "responsive-overflow",
+      "title": "Главная выходила за ширину 320 пикселей",
+      "severity": "medium",
+      "confidence": 0.99,
+      "status": "confirmed",
+      "synthetic": false,
+      "location": {
+        "file": "web/app/[locale]/(public)/page.tsx",
+        "line": 96,
+        "symbol": "whitespace-nowrap",
+        "source_revision": "2236df554cee01ed43d281c48ba3262e25256574",
+        "source_sha256": "f4ebad88313ae21e84591c84ac5602e464a513f4f6b474cd63dc2265627137d6",
+        "related": []
+      },
+      "surface_ids": [
+        "source:web/app/[locale]/(public)/page.tsx"
+      ],
+      "evidence": {
+        "tier": "source_and_artifact",
+        "artifacts": [
+          "evidence/original-07.txt",
+          "evidence/mobile-overflow-red.json",
+          "evidence/mobile-overflow-green.json"
+        ]
+      },
+      "recommendation": {
+        "confidence_label": "grounded",
+        "text": "Разрешить перенос кнопки и длинных слов, адаптировать заголовок."
+      },
+      "remediation": {
+        "status": "fixed",
+        "verification": "evidence/mobile-overflow-green.json"
+      },
+      "fingerprint": "f9bf15ae24677c5c59a3b625e47747b1e7aa8084f8248d14bd4506df5015b06b"
+    },
+    {
+      "id": "RAW-00000008-0",
+      "client_id": "missing-spacing-token",
+      "agents": [
+        "orchestrator"
+      ],
+      "domain": "ui",
+      "domains": [
+        "ui"
+      ],
+      "category": "missing-spacing-token",
+      "root_cause_key": "missing-spacing-token",
+      "title": "Основные кнопки были ниже 52 пикселей из прототипа",
+      "severity": "low",
+      "confidence": 0.99,
+      "status": "confirmed",
+      "synthetic": false,
+      "location": {
+        "file": "web/tailwind.config.ts",
+        "line": 6,
+        "symbol": "extend:",
+        "source_revision": "2236df554cee01ed43d281c48ba3262e25256574",
+        "source_sha256": "bb6ba2d98884627ece26b978a3e92c1523713186683384a08ac00133f271fb70",
+        "related": []
+      },
+      "surface_ids": [
+        "source:web/tailwind.config.ts"
+      ],
+      "evidence": {
+        "tier": "source_and_artifact",
+        "artifacts": [
+          "evidence/original-08.txt",
+          "evidence/cta-height-baseline.json",
+          "evidence/final-e2e.log"
+        ]
+      },
+      "recommendation": {
+        "confidence_label": "grounded",
+        "text": "Добавить отсутствующий размер spacing.13=3.25rem и проверить фактическую высоту в браузере."
+      },
+      "remediation": {
+        "status": "fixed",
+        "verification": "evidence/final-e2e.log"
+      },
+      "fingerprint": "4370b76fac56a19756e33336cf4a1ff4e4152403ffa8bd9c716a2f30bdb96916"
+    },
+    {
+      "id": "RAW-00000009-0",
+      "client_id": "missing-header-entry",
+      "agents": [
+        "orchestrator"
+      ],
+      "domain": "ui",
+      "domains": [
+        "ui"
+      ],
+      "category": "missing-header-entry",
+      "root_cause_key": "missing-header-entry",
+      "title": "В шапке отсутствовали вход и смена языка",
+      "severity": "medium",
+      "confidence": 0.99,
+      "status": "confirmed",
+      "synthetic": false,
+      "location": {
+        "file": "web/components/Header.tsx",
+        "line": 40,
+        "symbol": "href=\"/support\"",
+        "source_revision": "2236df554cee01ed43d281c48ba3262e25256574",
+        "source_sha256": "95420d8c57274426d3ea624afc634bba2f4fbf095546d5c3e9bcc3c7e71cbd76",
+        "related": []
+      },
+      "surface_ids": [
+        "source:web/components/Header.tsx"
+      ],
+      "evidence": {
+        "tier": "source_and_artifact",
+        "artifacts": [
+          "evidence/original-09.txt",
+          "evidence/header-red.log",
+          "evidence/language-green.log"
+        ]
+      },
+      "recommendation": {
+        "confidence_label": "grounded",
+        "text": "Добавить вход и переключатель языка с сохранением страницы, фильтра и безопасного returnTo."
+      },
+      "remediation": {
+        "status": "fixed",
+        "verification": "evidence/language-green.log"
+      },
+      "fingerprint": "018c1a54c5387f44f189c3e91a55b17347ac00920935f7e52e56c2673db07a0e"
+    },
+    {
+      "id": "RAW-00000010-0",
+      "client_id": "session-renewal-absent",
+      "agents": [
+        "orchestrator",
+        "specialist"
+      ],
+      "domain": "security",
+      "domains": [
+        "security"
+      ],
+      "category": "session-renewal-absent",
+      "root_cause_key": "session-renewal-absent",
+      "title": "Истёкшая веб-сессия не обновлялась через refresh",
+      "severity": "high",
+      "confidence": 0.99,
+      "status": "confirmed",
+      "synthetic": false,
+      "location": {
+        "file": "web/lib/auth/require-user.ts",
+        "line": 12,
+        "symbol": "if (!user) redirect",
+        "source_revision": "2236df554cee01ed43d281c48ba3262e25256574",
+        "source_sha256": "3971007b57f3c94ec1fa1eb65fc3ac83aeb63e372f68fc7641f129181d194e1f",
+        "related": []
+      },
+      "surface_ids": [
+        "source:web/lib/auth/require-user.ts"
+      ],
+      "evidence": {
+        "tier": "source_and_artifact",
+        "artifacts": [
+          "evidence/original-10.txt",
+          "evidence/contracts-ssr-red.log",
+          "evidence/final-e2e.log"
+        ]
+      },
+      "recommendation": {
+        "confidence_label": "grounded",
+        "text": "Обновлять cookie через BFF под общим WebLock; immutable document epoch, SSR owner и запрет повторов мутаций."
+      },
+      "remediation": {
+        "status": "fixed",
+        "verification": "evidence/final-e2e.log"
+      },
+      "fingerprint": "fdf61064349073936f2bd2d767fe3533f7d96af7a0fe3fa5cd9bfd08739911ea"
+    },
+    {
+      "id": "RAW-00000011-0",
+      "client_id": "stale-local-backend",
+      "agents": [
+        "web_contracts"
+      ],
+      "domain": "api",
+      "domains": [
+        "api"
+      ],
+      "category": "runtime-source-drift",
+      "root_cause_key": "runtime-source-drift",
+      "title": "Локальный backend образ устарел: публичный content возвращает 401",
+      "severity": "high",
+      "confidence": 0.99,
+      "status": "confirmed",
+      "synthetic": false,
+      "source_mapping": "unresolved",
+      "location": {
+        "file": "runtime:smartqoldau-backend-1"
+      },
+      "surface_ids": [
+        "api:GET:/v1/content"
+      ],
+      "evidence": {
+        "tier": "artifact_backed",
+        "artifacts": [
+          "evidence/backend-runtime.txt"
+        ]
+      },
+      "recommendation": {
+        "confidence_label": "supported",
+        "text": "Обновить локальный интеграционный стенд до текущего кода после сверки миграций; повторить живые сценарии."
+      },
+      "remediation": {
+        "status": "open"
+      },
+      "fingerprint": "07553058f9f871c31fcddfbe907a84db2ecb12b2eb742a7072a31dacc45523d3"
+    }
+  ],
+  "limitations": [
+    "Live backend is an old Docker image; source and deployed behavior differ.",
+    "Payment acquiring, SMS delivery and two-party LiveKit calls were not tested.",
+    "Only homepage was visually compared with prototype; all-screen pixel parity is not claimed.",
+    "Native Kazakh and legal review remain external.",
+    "Web Locks/localStorage and a secure browser context are required for credential writes."
+  ]
+}

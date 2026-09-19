@@ -1,0 +1,86 @@
+[
+  {
+    "format": "chat",
+    "actor": "outsider",
+    "endpoint": "messages",
+    "status": 404,
+    "code": "CONSULTATION_NOT_FOUND"
+  },
+  {
+    "format": "chat",
+    "actor": "outsider",
+    "endpoint": "media-token",
+    "status": 404,
+    "code": "CONSULTATION_NOT_FOUND"
+  },
+  {
+    "format": "chat",
+    "actor": "client",
+    "endpoint": "media-token",
+    "status": 409,
+    "code": "CONSULTATION_NOT_ACTIVE"
+  },
+  {
+    "format": "chat",
+    "actor": "expert",
+    "endpoint": "media-token",
+    "status": 409,
+    "code": "CONSULTATION_NOT_ACTIVE"
+  },
+  {
+    "format": "audio",
+    "actor": "outsider",
+    "endpoint": "messages",
+    "status": 404,
+    "code": "CONSULTATION_NOT_FOUND"
+  },
+  {
+    "format": "audio",
+    "actor": "outsider",
+    "endpoint": "media-token",
+    "status": 404,
+    "code": "CONSULTATION_NOT_FOUND"
+  },
+  {
+    "format": "audio",
+    "actor": "client",
+    "endpoint": "media-token",
+    "status": 409,
+    "code": "CONSULTATION_NOT_ACTIVE"
+  },
+  {
+    "format": "audio",
+    "actor": "expert",
+    "endpoint": "media-token",
+    "status": 409,
+    "code": "CONSULTATION_NOT_ACTIVE"
+  },
+  {
+    "format": "video",
+    "actor": "outsider",
+    "endpoint": "messages",
+    "status": 404,
+    "code": "CONSULTATION_NOT_FOUND"
+  },
+  {
+    "format": "video",
+    "actor": "outsider",
+    "endpoint": "media-token",
+    "status": 404,
+    "code": "CONSULTATION_NOT_FOUND"
+  },
+  {
+    "format": "video",
+    "actor": "client",
+    "endpoint": "media-token",
+    "status": 409,
+    "code": "CONSULTATION_NOT_ACTIVE"
+  },
+  {
+    "format": "video",
+    "actor": "expert",
+    "endpoint": "media-token",
+    "status": 409,
+    "code": "CONSULTATION_NOT_ACTIVE"
+  }
+]

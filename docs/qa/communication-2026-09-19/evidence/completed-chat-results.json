@@ -1,0 +1,32 @@
+[
+  {
+    "format": "chat",
+    "actor": "client",
+    "result": "CONSULTATION_NOT_ACTIVE"
+  },
+  {
+    "format": "chat",
+    "actor": "expert",
+    "result": "CONSULTATION_NOT_ACTIVE"
+  },
+  {
+    "format": "audio",
+    "actor": "client",
+    "result": "CONSULTATION_NOT_ACTIVE"
+  },
+  {
+    "format": "audio",
+    "actor": "expert",
+    "result": "CONSULTATION_NOT_ACTIVE"
+  },
+  {
+    "format": "video",
+    "actor": "client",
+    "result": "CONSULTATION_NOT_ACTIVE"
+  },
+  {
+    "format": "video",
+    "actor": "expert",
+    "result": "CONSULTATION_NOT_ACTIVE"
+  }
+]

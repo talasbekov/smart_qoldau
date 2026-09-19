@@ -1,16 +1,18 @@
 import { apiFetch, ApiError } from './client';
 
 const originalFetch = global.fetch;
+beforeEach(() => {
+  localStorage.clear();
+  Object.defineProperty(navigator, 'locks', { configurable: true, value: { request: (_name: string, work: () => unknown) => work() } });
+});
 afterEach(() => {
   global.fetch = originalFetch;
 });
 
 function mock(status: number, payload: unknown) {
-  const fn = jest.fn().mockResolvedValue({
-    ok: status >= 200 && status < 300,
-    status,
-    json: async () => payload,
-  });
+  const fn = jest.fn(async (path: string) => path === '/api/auth/session'
+    ? { ok: true, status: 200, json: async () => ({ user: { id: 'u1' }, expiresAt: Date.now() + 120_000 }) }
+    : { ok: status >= 200 && status < 300, status, json: async () => payload });
   global.fetch = fn as unknown as typeof fetch;
   return fn;
 }
@@ -21,7 +23,7 @@ describe('apiFetch', () => {
 
     await apiFetch('consultations');
 
-    expect(fetchMock.mock.calls[0][0]).toBe('/api/proxy/consultations');
+    expect(fetchMock.mock.calls.map(([path]) => path)).toEqual(['/api/auth/session', '/api/proxy/consultations']);
   });
 
   it('на ошибку бросает ApiError с кодом бэкенда', async () => {
@@ -60,13 +62,7 @@ describe('apiFetch', () => {
   });
 
   it('переживает пустое тело у 204', async () => {
-    global.fetch = jest.fn().mockResolvedValue({
-      ok: true,
-      status: 204,
-      json: async () => {
-        throw new Error('пустое тело');
-      },
-    }) as unknown as typeof fetch;
+    mock(204, null);
 
     await expect(
       apiFetch('notifications/read', { method: 'POST' }),

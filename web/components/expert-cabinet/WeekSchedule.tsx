@@ -133,6 +133,7 @@ export default function WeekSchedule({
       if (revision.current === submittedRevision) {
         setDays(confirmed.days);
         setPhase('saved');
+        window.dispatchEvent(new Event('sq:expert-availability-sync'));
       } else {
         setPhase('unsaved');
       }
@@ -155,6 +156,7 @@ export default function WeekSchedule({
           if (revision.current === submittedRevision) {
             setDays(current.days);
             setPhase('saved');
+            window.dispatchEvent(new Event('sq:expert-availability-sync'));
           } else {
             setPhase('unsaved');
           }

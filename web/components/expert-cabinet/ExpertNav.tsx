@@ -2,6 +2,7 @@
 
 import { usePathname } from 'next/navigation';
 import { Link } from '@/lib/i18n/navigation';
+import { deskCopy } from '@/components/expert-desk/copy';
 import ru from '@/messages/ru.json';
 import kz from '@/messages/kz.json';
 
@@ -21,7 +22,9 @@ export default function ExpertNav({ locale = 'ru' }: { locale?: string }) {
     { href: '/expert/schedule', label: copy.navSchedule },
     { href: '/expert/earnings', label: copy.navEarnings },
     { href: '/expert/reviews', label: copy.navRating },
-    { href: '/support/requests', label: copy.navSupport },
+    { href: '/expert/profile', label: deskCopy(locale).profile },
+    { href: '/expert-onboarding', label: deskCopy(locale).documents },
+    { href: '/expert/support', label: copy.navSupport },
   ] as const;
   const pathname = usePathname();
   const withoutLocale = pathname.replace(/^\/[^/]+/, '') || '/';

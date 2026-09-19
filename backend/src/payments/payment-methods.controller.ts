@@ -34,6 +34,23 @@ import { PaymentMethodDto } from './dto/payment-method.dto';
 export class PaymentMethodsController {
   constructor(private paymentMethods: PaymentMethodsService) {}
 
+  @Get('setup')
+  @ApiOkResponse({
+    description: 'Доступность привязки тестового способа оплаты',
+  })
+  setup(): { mode: 'mock' | 'unavailable'; canAddDemo: boolean } {
+    return this.paymentMethods.setup();
+  }
+
+  @Post('demo')
+  @ApiCreatedResponse({
+    type: PaymentMethodDto,
+    description: 'Только mock: тестовая карта без реальных списаний',
+  })
+  addDemo(@CurrentUser() user: JwtPayload): Promise<PaymentMethodDto> {
+    return this.paymentMethods.addDemo(user.sub);
+  }
+
   @Post()
   @ApiCreatedResponse({
     type: PaymentMethodDto,

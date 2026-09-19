@@ -12,6 +12,27 @@ export class PaymentMethodsService {
     private provider: PaymentProviderPort,
   ) {}
 
+  setup(): { mode: 'mock' | 'unavailable'; canAddDemo: boolean } {
+    const canAddDemo = process.env.PAYMENT_PROVIDER === 'mock';
+    return { mode: canAddDemo ? 'mock' : 'unavailable', canAddDemo };
+  }
+
+  async addDemo(userId: string): Promise<PaymentMethodDto> {
+    if (!this.setup().canAddDemo) {
+      apiError(
+        'PAYMENT_SETUP_UNAVAILABLE',
+        'Тестовый способ оплаты недоступен',
+        503,
+      );
+    }
+    // No user-supplied card details. This endpoint is explicitly mock-only.
+    return this.add(userId, {
+      pan: '4111111111111111',
+      expiry: '12/39',
+      holderName: 'TEST ONLY',
+    });
+  }
+
   async add(
     userId: string,
     dto: AddPaymentMethodDto,

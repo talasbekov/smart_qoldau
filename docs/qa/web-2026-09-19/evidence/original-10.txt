@@ -1,0 +1,6 @@
+  const user = token ? decodeToken(token) : null;
+
+  if (!user) redirect(`/${locale}/login`);
+
+  return user;
+}

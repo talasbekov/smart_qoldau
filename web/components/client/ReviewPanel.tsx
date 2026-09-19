@@ -1,5 +1,7 @@
 'use client';
 
+import Link from 'next/link';
+import { journeyCopy } from './journey-copy';
 import { useRef, useState } from 'react';
 import type { components } from '@/lib/api/generated';
 import { apiFetch, ApiError } from '@/lib/api/client';
@@ -33,6 +35,10 @@ export default function ReviewPanel({
   consultation: Consultation;
   locale: string;
 }) {
+  const actionsCopy = journeyCopy(locale);
+  const [deleting, setDeleting] = useState(false);
+  const [deleted, setDeleted] = useState(false);
+  const deleteLock = useRef(false);
   const copy = locale === 'kz' ? kz.review : ru.review;
   const [rating, setRating] = useState(0);
   const [tags, setTags] = useState<string[]>([]);
@@ -169,6 +175,71 @@ export default function ReviewPanel({
     }
   }
 
+  async function removeReview() {
+    if (deleteLock.current || !window.confirm(actionsCopy.reviewConfirm))
+      return;
+    deleteLock.current = true;
+    setDeleting(true);
+    setError(null);
+    try {
+      // Resolve the current ID even after REVIEW_EXISTS or a lost creation response.
+      const current = await apiFetch<Consultation>(
+        `consultations/${consultation.id}`,
+      );
+      if (!current || current.reviewId === undefined)
+        throw new Error('Unknown review state');
+      if (current.reviewId)
+        await apiFetch(`reviews/${current.reviewId}`, { method: 'DELETE' });
+      setDeleted(true);
+    } catch {
+      try {
+        const fresh = await apiFetch<Consultation>(
+          `consultations/${consultation.id}`,
+        );
+        if (fresh?.reviewId === null) setDeleted(true);
+        else setError(actionsCopy.error);
+      } catch {
+        setError(actionsCopy.error);
+      }
+    } finally {
+      deleteLock.current = false;
+      setDeleting(false);
+    }
+  }
+
+  const afterReview = (
+    <div className="mt-5 flex flex-col items-start gap-3">
+      {error && (
+        <p role="alert" className="text-sm text-red-700">
+          {error}
+        </p>
+      )}
+      {!deleted && (
+        <button
+          type="button"
+          disabled={deleting}
+          onClick={() => void removeReview()}
+          className="min-h-11 rounded-xl border border-border px-4 font-bold text-primary disabled:opacity-50"
+        >
+          {deleting ? actionsCopy.loading : actionsCopy.reviewDelete}
+        </button>
+      )}
+      <Link
+        className="inline-flex min-h-11 items-center font-bold text-primary underline"
+        href={`/${locale}/consultations/book/${consultation.expert.id}`}
+      >
+        {actionsCopy.again}
+      </Link>
+    </div>
+  );
+  if (deleted)
+    return (
+      <section className="rounded-[20px] border border-border p-5">
+        <p role="status">{actionsCopy.reviewDeleted}</p>
+        {afterReview}
+      </section>
+    );
+
   if (phase === 'already') {
     return (
       <section
@@ -183,6 +254,7 @@ export default function ReviewPanel({
           {copy.alreadyTitle}
         </h2>
         <p className="mt-2 text-sm leading-6 text-body">{copy.alreadyBody}</p>
+        {afterReview}
       </section>
     );
   }
@@ -224,6 +296,7 @@ export default function ReviewPanel({
             {saved.publicText ?? copy.savedWithoutPublicText}
           </p>
         </div>
+        {afterReview}
         {privateSubmitted ? (
           <p className="mt-4 text-sm leading-6 text-body">
             {copy.privateSubmitted}
@@ -414,6 +487,14 @@ export default function ReviewPanel({
           {phase === 'submitting' ? copy.sending : copy.submit}
         </button>
       </form>
+      {phase !== 'submitting' && (
+        <Link
+          className="mt-4 inline-flex min-h-11 items-center font-bold text-primary underline"
+          href={`/${locale}/consultations/book/${consultation.expert.id}`}
+        >
+          {actionsCopy.again}
+        </Link>
+      )}
     </section>
   );
 }

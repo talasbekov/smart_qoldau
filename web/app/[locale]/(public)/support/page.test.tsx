@@ -4,8 +4,8 @@ import ru from '@/messages/ru.json';
 jest.mock('next-intl/server', () => ({
   getTranslations: async (namespace: string) => {
     const dict =
-      (ru as Record<string, Record<string, string>>)[namespace] ?? {};
-    return (key: string) => dict[key] ?? key;
+      (ru as Record<string, Record<string, unknown>>)[namespace] ?? {};
+    return (key: string) => typeof dict[key] === 'string' ? dict[key] : key;
   },
 }));
 jest.mock('@/components/SupportForm', () => ({

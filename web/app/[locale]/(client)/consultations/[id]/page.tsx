@@ -1,3 +1,4 @@
+import ConsultationStatusRefresh from '@/components/expert-cabinet/ConsultationStatusRefresh';
 import { notFound } from 'next/navigation';
 import { authorizedFetch } from '@/lib/api/authorized';
 import type { Consultation } from '@/components/client/ConsultationList';
@@ -37,6 +38,13 @@ export default async function ConsultationPage({
         {copy.timezoneAlmaty}
       </p>
 
+      <ConsultationStatusRefresh
+        consultationId={id}
+        initialStatus={consultation.status}
+        initialPaymentStatus={consultation.paymentStatus}
+        initialFormat={consultation.format}
+        locale={locale}
+      />
       <ConsultationAccess consultation={consultation} locale={locale} />
     </>
   );

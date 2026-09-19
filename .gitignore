@@ -15,3 +15,7 @@ build/
 .packages
 *.iml
 .idea/
+
+# Server-only tunnel/media secrets
+infra/ngrok.yml
+infra/livekit.vps.yml

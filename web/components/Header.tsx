@@ -1,9 +1,16 @@
-import { getTranslations } from 'next-intl/server';
+import { authorizedFetch } from '@/lib/api/authorized';
+import { readAccessToken, readRefreshToken } from '@/lib/auth/cookies';
+import { getTranslations, getLocale } from 'next-intl/server';
 import { Link } from '@/lib/i18n/navigation';
 import NavLink from './NavLink';
+import LanguageSwitcher from './LanguageSwitcher';
 
 export default async function Header() {
   const t = await getTranslations('nav');
+  const locale = await getLocale();
+  const signedIn = Boolean(await readAccessToken()) || Boolean(await readRefreshToken());
+  const expert = signedIn ? await authorizedFetch('experts/me') : null;
+  const cabinet = expert ? '/expert' : '/profile';
   return (
     <header className="sticky top-0 z-50 bg-white/90 backdrop-blur border-b border-border">
       <div className="mx-auto flex max-w-[1240px] flex-wrap items-center justify-between gap-4 px-4 py-4 sm:px-8">
@@ -36,12 +43,18 @@ export default async function Header() {
             {t('premium')}
           </NavLink>
         </nav>
-        <Link
-          href="/support"
-          className="h-10 px-5 rounded-full bg-primary text-white text-xs font-bold flex items-center"
-        >
-          {t('support')}
-        </Link>
+        <div className="flex flex-wrap items-center gap-2">
+          <LanguageSwitcher />
+          <Link href={signedIn ? cabinet : "/login"} className="inline-flex min-h-11 items-center rounded-xl px-3 text-sm font-semibold text-ink focus:outline-none focus:ring-2 focus:ring-primary">
+            {signedIn ? (locale === 'kz' ? 'Жеке кабинет' : (expert ? 'Кабинет специалиста' : 'Кабинет')) : t('login')}
+          </Link>
+          <Link
+            href="/support"
+            className="min-h-11 px-5 rounded-full bg-primary text-white text-xs font-bold flex items-center"
+          >
+            {t('support')}
+          </Link>
+        </div>
       </div>
     </header>
   );

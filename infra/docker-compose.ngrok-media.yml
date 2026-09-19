@@ -1,0 +1,31 @@
+# Overlay for the existing VPS initial edge deployment.
+# Secrets: server-only ngrok.yml and livekit.vps.yml (never commit them).
+services:
+  livekit:
+    image: livekit/livekit-server:v1.13.5
+    restart: unless-stopped
+    command: ["--config", "/etc/livekit.yaml"]
+    volumes:
+      - ./livekit.vps.yml:/etc/livekit.yaml:ro
+    ports:
+      - "7881:7881/tcp"
+      - "7882:7882/udp"
+    networks: [edge]
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  ngrok:
+    image: ngrok/ngrok:latest
+    restart: unless-stopped
+    command: ["http", "http://edge:80", "--config", "/etc/ngrok.yml"]
+    volumes:
+      - ./ngrok.yml:/etc/ngrok.yml:ro
+    networks: [edge]
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"

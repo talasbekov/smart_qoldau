@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import type { Consultation } from './ConsultationList';
-import Session from './Session';
+import LiveConsultation from './LiveConsultation';
 import Chat from './Chat';
 import ReviewPanel from './ReviewPanel';
 import ru from '@/messages/ru.json';
@@ -71,17 +71,7 @@ export default function ConsultationAccess({
       );
     }
 
-    return consultation.format === 'chat' ? (
-      <div className="rounded-[20px] border border-border bg-white p-4">
-        <Chat consultationId={consultation.id} locale={locale} />
-      </div>
-    ) : (
-      <Session
-        consultationId={consultation.id}
-        format={consultation.format as 'audio' | 'video'}
-        locale={locale}
-      />
-    );
+    return <LiveConsultation consultationId={consultation.id} format={consultation.format as 'chat' | 'audio' | 'video'} locale={locale} />;
   }
 
   if (consultation.status === 'SCHEDULED') {

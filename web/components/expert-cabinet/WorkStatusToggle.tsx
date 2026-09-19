@@ -2,6 +2,9 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { apiFetch } from '@/lib/api/client';
+import Link from 'next/link';
+import { deskCopy } from '@/components/expert-desk/copy';
+import AvailabilityConditions from '@/components/expert-desk/AvailabilityConditions';
 import ru from '@/messages/ru.json';
 import kz from '@/messages/kz.json';
 
@@ -666,12 +669,17 @@ export default function WorkStatusToggle({
     }
   }
 
+  const desk = deskCopy(locale);
   const label =
     phase === 'saving'
       ? copy.statusSaving
-      : accepting
-        ? copy.accepting
-        : copy.notAccepting;
+      : canonicalStatus === 'BUSY'
+        ? desk.busy
+        : canonicalStatus === 'UNAVAILABLE'
+          ? desk.unavailable
+          : accepting
+            ? copy.accepting
+            : copy.notAccepting;
 
   return (
     <div className="flex flex-col gap-1">
@@ -693,7 +701,27 @@ export default function WorkStatusToggle({
         />
         {label}
       </button>
-      <p className="text-xs text-muted">{copy.statusHint}</p>
+      <p className="text-xs text-muted">
+        {canonicalStatus === 'BUSY'
+          ? desk.busyHint
+          : canonicalStatus === 'UNAVAILABLE'
+            ? desk.unavailableHint
+            : copy.statusHint}
+      </p>
+      {canonicalStatus === 'BUSY' ? (
+        <Link
+          href={`/${locale}/expert/consultations`}
+          className="inline-flex min-h-11 items-center text-xs font-bold text-primary"
+        >
+          {desk.openConsultations}
+        </Link>
+      ) : null}
+      {accepting ? (
+        <p className="text-xs text-muted">
+          {confirmedOnline ? desk.connected : desk.disconnected}
+        </p>
+      ) : null}
+      <AvailabilityConditions locale={locale} />
       {paused ? (
         <p role="status" className="text-xs font-semibold text-muted">
           {copy.statusPaused}

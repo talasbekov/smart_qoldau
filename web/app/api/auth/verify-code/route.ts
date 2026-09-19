@@ -20,7 +20,9 @@ export async function POST(request: Request): Promise<NextResponse> {
   // Наружу — только пользователь. Токены остаются на сервере: в этом и
   // состоит вся защита, ради которой заведён BFF.
   const tokens = upstream.payload as Tokens;
-  const response = NextResponse.json({ user: tokens.user });
+  // Resolve the cabinet from canonical expert data; UserDto has no role.
+  const expert = await callBackend('/experts/me', { method: 'GET', token: tokens.accessToken }).catch(() => null);
+  const response = NextResponse.json({ user: tokens.user, cabinet: expert?.ok ? 'expert' : 'client' });
   setSessionCookies(response, tokens);
   return response;
 }

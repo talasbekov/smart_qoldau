@@ -1,10 +1,11 @@
-import { Body, Controller, HttpCode, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, Post, UseGuards } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
   ApiBearerAuth,
   ApiConflictResponse,
   ApiForbiddenResponse,
   ApiNoContentResponse,
+  ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
   ApiTags,
@@ -25,6 +26,7 @@ import { apiError } from '../common/filters/app-exception.filter';
 import { Throttle } from '@nestjs/throttler';
 import { THROTTLE } from '../common/throttle/throttle.constants';
 import { PhoneThrottlerGuard } from '../common/throttle/throttle.guards';
+import { DemoAuthConfigDto, DemoRequestCodeDto } from './dto/demo-auth.dto';
 
 @ApiTags('auth')
 @Controller('auth')
@@ -48,6 +50,28 @@ export class AuthController {
   })
   requestCode(@Body() dto: RequestCodeDto): Promise<void> {
     return this.authService.requestCode(dto.phone);
+  }
+
+  @Get('demo-config')
+  @ApiOperation({ summary: 'Публичная конфигурация синтетических demo-аккаунтов' })
+  @ApiOkResponse({ type: DemoAuthConfigDto })
+  demoConfig(): DemoAuthConfigDto {
+    return this.authService.demoConfig();
+  }
+
+  @Post('demo-request-code')
+  // Same phone key and rate profile as the normal endpoint: demo traffic must
+  // not create a second route around SMS-code abuse controls.
+  @UseGuards(PhoneThrottlerGuard)
+  @Throttle({ default: THROTTLE.smsRequest })
+  @HttpCode(200)
+  @ApiOperation({ summary: 'Выдать OTP только для allowlisted demo-номера' })
+  @ApiOkResponse({ type: DemoRequestCodeDto })
+  @ApiBadRequestResponse({ description: 'VALIDATION_FAILED' })
+  @ApiTooManyRequestsResponse({ description: 'SMS_RATE_LIMITED | RATE_LIMITED' })
+  @ApiNotFoundResponse({ description: 'NOT_FOUND — demo выключен или номер не allowlisted' })
+  demoRequestCode(@Body() dto: RequestCodeDto): Promise<DemoRequestCodeDto> {
+    return this.authService.demoRequestCode(dto.phone);
   }
 
   @Post('verify-code')

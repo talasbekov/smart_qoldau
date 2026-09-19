@@ -84,8 +84,13 @@ export class DocumentsService {
     const byType = new Map(docs.map((d) => [d.type, d]));
     return DOCUMENT_TYPE_ORDER.map((type) => {
       const doc = byType.get(type);
-      if (!doc) return { type, status: null };
-      return { type, status: doc.status, updatedAt: doc.updatedAt };
+      if (!doc) return { type, status: null, comment: null };
+      return {
+        type,
+        status: doc.status,
+        updatedAt: doc.updatedAt,
+        comment: doc.comment,
+      };
     });
   }
 

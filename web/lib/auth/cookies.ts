@@ -1,3 +1,4 @@
+import { accessExpiresAt } from './token-expiry';
 import { cookies } from 'next/headers';
 import type { NextResponse } from 'next/server';
 
@@ -23,7 +24,9 @@ export function setSessionCookies(
   response: NextResponse,
   tokens: { accessToken: string; refreshToken: string },
 ): void {
-  response.cookies.set(ACCESS_COOKIE, tokens.accessToken, { ...BASE, maxAge: ACCESS_MAX_AGE });
+  const expiresAt = accessExpiresAt(tokens.accessToken);
+  const maxAge = expiresAt === null ? ACCESS_MAX_AGE : Math.max(0, Math.floor((expiresAt - Date.now()) / 1000));
+  response.cookies.set(ACCESS_COOKIE, tokens.accessToken, { ...BASE, maxAge });
   response.cookies.set(REFRESH_COOKIE, tokens.refreshToken, { ...BASE, maxAge: REFRESH_MAX_AGE });
 }
 
